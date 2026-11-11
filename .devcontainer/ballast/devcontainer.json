@@ -1,0 +1,18 @@
+{
+  // Ballast dev container for GitHub Codespaces. Reuses Sure's compose setup in
+  // ../docker-compose.yml and adds an SSH server so `gh codespace ssh` and
+  // `gh codespace ports forward` work from a local terminal.
+  "name": "Ballast",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "runServices": ["db", "redis"],
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": { "version": "latest" }
+  },
+  "forwardPorts": [3000],
+  "remoteEnv": {
+    "PATH": "/workspace/bin:${containerEnv:PATH}"
+  },
+  "postCreateCommand": "bundle install && npm install"
+}
