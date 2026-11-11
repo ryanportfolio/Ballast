@@ -17,6 +17,10 @@ sleep 2
 rm -f tmp/pids/server.pid
 
 export PORT="${PORT:-3000}"
+# Sure's config/initializers/codespaces.rb makes session cookies secure-only
+# when CODESPACES=true, which breaks sign-in over the plain-HTTP localhost
+# forward (gh codespace ports forward 3000:3000). Run as ordinary development.
+unset CODESPACES
 setsid nohup bin/rails server -b 0.0.0.0 -p "$PORT" > /tmp/ballast-web.log 2>&1 < /dev/null &
 setsid nohup bundle exec sidekiq > /tmp/ballast-worker.log 2>&1 < /dev/null &
 setsid nohup bin/rails 'tailwindcss:watch[always]' > /tmp/ballast-css.log 2>&1 < /dev/null &
