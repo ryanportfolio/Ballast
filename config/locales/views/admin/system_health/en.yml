@@ -167,10 +167,6 @@ en:
         storage_backends:
           local: Local disk
           test: Test disk
-          amazon: Amazon S3
-          cloudflare: Cloudflare R2
-          generic_s3: S3-compatible storage
-          google: Google Cloud Storage
           other: Custom or unrecognized backend
         checks:
           smtp:
@@ -207,17 +203,13 @@ en:
           storage:
             title: File uploads and storage
             statuses:
-              configured: "Storage settings are present; local disk needs no cloud credentials."
-              not_configured: "The selected storage backend has no matching configuration. File uploads may be unavailable."
+              configured: "Local disk storage settings are present."
+              not_configured: "The selected storage service has no matching configuration. File uploads may be unavailable."
               incomplete: "Required storage settings are missing or incomplete. File uploads or retrieval may not work."
-              not_checked: "This backend uses external credential discovery or a custom configuration. Its access cannot be determined from these settings alone."
-            guidance: "Review ACTIVE_STORAGE_SERVICE and the selected backend's deployment settings. Local disk needs persistent storage shared by the web and worker services. Changing backends does not migrate existing files; plan any migration separately."
+              not_checked: "This storage service uses a custom configuration. Its access cannot be determined from these settings alone."
+            guidance: "Uploaded files are stored on local disk. The storage folder needs a persistent volume shared by the web and worker services."
             issues:
               root: Local storage root
-              bucket: Storage bucket
-              region: Storage region
-              credentials: Storage access key and secret key (supply both or use external credential discovery)
-              endpoint: Storage endpoint (and CLOUDFLARE_ACCOUNT_ID for R2)
       show:
         title: System health
         tabs:

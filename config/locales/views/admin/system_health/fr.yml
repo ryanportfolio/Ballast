@@ -394,17 +394,13 @@ fr:
               not_configured: SMTP n'est pas configuré. Les réinitialisations de mot de passe, les invitations et les autres e-mails système ne peuvent pas être envoyés via SMTP.
             title: E-mail (SMTP)
           storage:
-            guidance: Vérifiez ACTIVE_STORAGE_SERVICE et les paramètres de déploiement du stockage sélectionné. Le disque local nécessite un stockage persistant partagé par les services web et worker. Changer de stockage ne migre pas les fichiers existants ; prévoyez toute migration séparément.
+            guidance: Les fichiers téléversés sont stockés sur le disque local. Le dossier de stockage nécessite un volume persistant partagé par les services web et worker.
             issues:
-              bucket: Bucket de stockage
-              credentials: Clé d'accès et clé secrète du stockage (renseignez les deux ou utilisez une découverte externe des identifiants)
-              endpoint: Point de terminaison du stockage (et CLOUDFLARE_ACCOUNT_ID pour R2)
-              region: Région de stockage
               root: Racine du stockage local
             statuses:
-              configured: Les paramètres de stockage sont présents ; le disque local ne nécessite pas d'identifiants cloud.
+              configured: Les paramètres du stockage sur disque local sont présents.
               incomplete: Des paramètres de stockage requis sont manquants ou incomplets. Le téléversement ou la récupération des fichiers risque de ne pas fonctionner.
-              not_checked: Ce stockage utilise une découverte externe des identifiants ou une configuration personnalisée. Son accès ne peut pas être déterminé à partir de ces seuls paramètres.
+              not_checked: Ce stockage utilise une configuration personnalisée. Son accès ne peut pas être déterminé à partir de ces seuls paramètres.
               not_configured: Le stockage sélectionné n'a pas de configuration correspondante. Les téléversements de fichiers peuvent être indisponibles.
             title: Téléversements et stockage de fichiers
         configure_providers: Ouvrir les paramètres d'auto-hébergement
@@ -422,10 +418,6 @@ fr:
           not_configured: Non configuré
         storage_backend: 'Stockage sélectionné : %{backend}'
         storage_backends:
-          amazon: Amazon S3
-          cloudflare: Cloudflare R2
-          generic_s3: Stockage compatible S3
-          google: Google Cloud Storage
           local: Disque local
           other: Stockage personnalisé ou non reconnu
           test: Disque de test

@@ -196,47 +196,6 @@ class ConfigurationHealthTest < ActiveSupport::TestCase
     assert_no_match(%r{/private/storage}, check.inspect)
   end
 
-  test "cloud storage settings are checked without constructing a storage client" do
-    stub_storage("amazon", {
-      service: "S3", region: "us-east-1", bucket: "private-bucket",
-      access_key_id: "private-access-key", secret_access_key: "private-secret-key"
-    })
-    ActiveStorage::Service.expects(:configure).never
-
-    check = ConfigurationHealth.new.storage
-    assert_equal :configured, check.status
-    assert_equal :amazon, check.backend
-    assert_no_match(/private-/, check.inspect)
-  end
-
-  test "cloud role credentials are unverified rather than missing" do
-    stub_storage("amazon", { service: "S3", region: "us-east-1", bucket: "private-bucket" })
-    assert_equal :not_checked, ConfigurationHealth.new.storage.status
-
-    stub_storage("google", { service: "GCS", bucket: "private-bucket" })
-    assert_equal :not_checked, ConfigurationHealth.new.storage.status
-  end
-
-  test "incomplete cloud storage shows only missing field names" do
-    stub_storage("generic_s3", { service: "S3", access_key_id: "private-key" })
-
-    check = ConfigurationHealth.new.storage
-    assert_equal :incomplete, check.status
-    assert_equal [ :bucket, :region, :credentials, :endpoint ], check.issues
-    assert_no_match(/private-key/, check.inspect)
-  end
-
-  test "R2 with no account ID is incomplete despite the interpolated endpoint" do
-    stub_storage("cloudflare", {
-      service: "S3", region: "auto", bucket: "bucket",
-      endpoint: "https://.r2.cloudflarestorage.com", access_key_id: "key", secret_access_key: "secret"
-    })
-
-    check = ConfigurationHealth.new.storage
-    assert_equal :incomplete, check.status
-    assert_equal [ :endpoint ], check.issues
-  end
-
   test "missing selected storage configuration is not configured and name is sanitized" do
     Rails.application.config.active_storage.stubs(:service).returns(:unexpected_secret)
     Rails.application.config.active_storage.stubs(:service_configurations).returns({})

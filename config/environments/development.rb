@@ -33,8 +33,8 @@ Rails.application.configure do
     config.cache_store = :null_store
   end
 
-  # Store uploaded files on the local file system (see config/storage.yml for options).
-  config.active_storage.service = ENV.fetch("ACTIVE_STORAGE_SERVICE", "local").to_sym
+  # Ballast stores uploaded files on local disk only; cloud services were removed.
+  config.active_storage.service = :local
   config.after_initialize do
     ActiveStorage::Current.url_options = { host: "localhost", port: 3000 }
   end

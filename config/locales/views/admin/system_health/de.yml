@@ -167,10 +167,6 @@ de:
         storage_backends:
           local: Lokaler Datenträger
           test: Test-Datenträger
-          amazon: Amazon S3
-          cloudflare: Cloudflare R2
-          generic_s3: S3-kompatibler Speicher
-          google: Google Cloud Storage
           other: Benutzerdefinierter oder unbekannter Speicher
         checks:
           smtp:
@@ -207,17 +203,13 @@ de:
           storage:
             title: Datei-Uploads und Speicher
             statuses:
-              configured: "Speichereinstellungen sind vorhanden; lokaler Speicher benötigt keine Cloud-Zugangsdaten."
+              configured: "Einstellungen für den lokalen Speicher sind vorhanden."
               not_configured: "Für den ausgewählten Speicher ist keine passende Konfiguration vorhanden. Datei-Uploads sind möglicherweise nicht verfügbar."
               incomplete: "Erforderliche Speichereinstellungen fehlen oder sind unvollständig. Datei-Uploads oder Abrufe funktionieren möglicherweise nicht."
-              not_checked: "Dieser Speicher verwendet eine externe Zugangsdatenquelle oder eine benutzerdefinierte Konfiguration. Der Zugriff lässt sich allein anhand dieser Einstellungen nicht beurteilen."
-            guidance: "Prüfen Sie ACTIVE_STORAGE_SERVICE und die Bereitstellungseinstellungen des gewählten Speichers. Lokaler Speicher muss dauerhaft und für Web- und Worker-Dienst gemeinsam verfügbar sein. Ein Speicherwechsel verschiebt bestehende Dateien nicht; planen Sie eine Migration gesondert."
+              not_checked: "Dieser Speicher verwendet eine benutzerdefinierte Konfiguration. Der Zugriff lässt sich allein anhand dieser Einstellungen nicht beurteilen."
+            guidance: "Hochgeladene Dateien werden auf dem lokalen Datenträger gespeichert. Der Speicherordner braucht ein dauerhaftes Volume, das Web- und Worker-Dienst gemeinsam nutzen."
             issues:
               root: Stammverzeichnis des lokalen Speichers
-              bucket: Speicher-Bucket
-              region: Speicherregion
-              credentials: Zugriffsschlüssel und geheimer Schlüssel (beide angeben oder externe Zugangsdatenquelle verwenden)
-              endpoint: Speicher-Endpunkt (und CLOUDFLARE_ACCOUNT_ID für R2)
       show:
         title: Systemstatus
         tabs:

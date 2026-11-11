@@ -867,12 +867,9 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     })
     ApplicationMailer.stubs(:default).returns({ from: "Sure <private-sender@private.test>" })
     ApplicationMailer.stubs(:default_url_options).returns({ host: "private-domain.test" })
-    Rails.application.config.active_storage.stubs(:service).returns(:generic_s3)
+    Rails.application.config.active_storage.stubs(:service).returns(:local)
     Rails.application.config.active_storage.stubs(:service_configurations).returns({
-      generic_s3: {
-        service: "S3", region: "private-region", bucket: "private-bucket", endpoint: "https://private-endpoint.test",
-        access_key_id: "private-access-key", secret_access_key: "private-secret"
-      }
+      local: { service: "Disk", root: "/private-storage-root" }
     })
 
     get admin_system_health_url(tab: "configuration")

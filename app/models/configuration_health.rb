@@ -3,10 +3,7 @@
 # A read-only snapshot of optional installation configuration. Resolving a
 # provider constructs its client; it never tests credentials or fetches data.
 class ConfigurationHealth
-  STORAGE_BACKENDS = {
-    "local" => "Disk", "test" => "Disk", "amazon" => "S3",
-    "cloudflare" => "S3", "generic_s3" => "S3", "google" => "GCS"
-  }.freeze
+  STORAGE_BACKENDS = { "local" => "Disk", "test" => "Disk" }.freeze
 
   Check = Data.define(:key, :status, :issues, :providers, :backend) do
     def tone
@@ -76,17 +73,8 @@ class ConfigurationHealth
     unless STORAGE_BACKENDS[name] == settings[:service]
       return check(:storage, :not_checked, backend: :other)
     end
-    issues = storage_issues(name, settings)
-    status = if issues.any?
-      :incomplete
-    elsif name.in?(%w[amazon cloudflare generic_s3]) && settings[:access_key_id].blank?
-      :not_checked # An SDK credential chain / instance role may supply access.
-    elsif name == "google" && settings[:credentials].blank?
-      :not_checked # Application Default Credentials may supply access.
-    else
-      :configured
-    end
-    check(:storage, status, issues: issues, backend: backend)
+    issues = settings[:root].present? ? [] : [ :root ]
+    check(:storage, issues.any? ? :incomplete : :configured, issues: issues, backend: backend)
   end
 
   private
@@ -99,25 +87,6 @@ class ConfigurationHealth
       sender.local.present? && sender.domain.present? && sender.address != "sender@sure.local"
     rescue Mail::Field::ParseError
       false
-    end
-
-    def storage_issues(name, settings)
-      return settings[:root].present? ? [] : [ :root ] if name.in?(%w[local test])
-
-      issues = []
-      issues << :bucket if settings[:bucket].blank?
-      if name.in?(%w[amazon cloudflare generic_s3])
-        issues << :region if settings[:region].blank?
-        if settings[:access_key_id].present? != settings[:secret_access_key].present?
-          issues << :credentials
-        end
-      end
-      if name.in?(%w[cloudflare generic_s3])
-        if settings[:endpoint].blank? || settings[:endpoint] == "https://.r2.cloudflarestorage.com"
-          issues << :endpoint
-        end
-      end
-      issues
     end
 
     def provider_statuses(concept, names)
