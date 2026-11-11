@@ -1,0 +1,221 @@
+require "test_helper"
+
+class OidcIdentityTest < ActiveSupport::TestCase
+  setup do
+    @user = users(:family_admin)
+    @oidc_identity = oidc_identities(:bob_google)
+  end
+
+  test "belongs to user" do
+    assert_equal @user, @oidc_identity.user
+  end
+
+  test "validates presence of provider" do
+    @oidc_identity.provider = nil
+    assert_not @oidc_identity.valid?
+    assert_includes @oidc_identity.errors[:provider], "can't be blank"
+  end
+
+  test "validates presence of uid" do
+    @oidc_identity.uid = nil
+    assert_not @oidc_identity.valid?
+    assert_includes @oidc_identity.errors[:uid], "can't be blank"
+  end
+
+  test "validates presence of user_id" do
+    @oidc_identity.user_id = nil
+    assert_not @oidc_identity.valid?
+    assert_includes @oidc_identity.errors[:user_id], "can't be blank"
+  end
+
+  test "validates uniqueness of uid scoped to provider" do
+    duplicate = OidcIdentity.new(
+      user: users(:family_member),
+      provider: @oidc_identity.provider,
+      uid: @oidc_identity.uid
+    )
+
+    assert_not duplicate.valid?
+    assert_includes duplicate.errors[:uid], "has already been taken"
+  end
+
+  test "allows same uid for different providers" do
+    different_provider = OidcIdentity.new(
+      user: users(:family_member),
+      provider: "different_provider",
+      uid: @oidc_identity.uid
+    )
+
+    assert different_provider.valid?
+  end
+
+  test "records authentication timestamp" do
+    old_timestamp = @oidc_identity.last_authenticated_at
+    travel_to 1.hour.from_now do
+      @oidc_identity.record_authentication!
+      assert @oidc_identity.last_authenticated_at > old_timestamp
+    end
+  end
+
+  test "sync_user_attributes! preserves user-edited first and last name" do
+    # Regression for #1103: every SSO login used to overwrite user.first_name
+    # with the IdP value, clobbering edits the user made inside Sure.
+    @user.update!(first_name: "Adam", last_name: "Smith")
+    auth = OmniAuth::AuthHash.new(
+      provider: @oidc_identity.provider,
+      uid: @oidc_identity.uid,
+      info: { email: @user.email, first_name: "Ben", last_name: "Jones" }
+    )
+
+    @oidc_identity.sync_user_attributes!(auth)
+
+    @user.reload
+    assert_equal "Adam", @user.first_name
+    assert_equal "Smith", @user.last_name
+    # Identity record itself still mirrors the IdP for audit / debugging.
+    assert_equal "Ben",   @oidc_identity.info["first_name"]
+    assert_equal "Jones", @oidc_identity.info["last_name"]
+  end
+
+  test "sync_user_attributes! fills blank user names from the IdP" do
+    @user.update!(first_name: nil, last_name: nil)
+    auth = OmniAuth::AuthHash.new(
+      provider: @oidc_identity.provider,
+      uid: @oidc_identity.uid,
+      info: { email: @user.email, first_name: "Ben", last_name: "Jones" }
+    )
+
+    @oidc_identity.sync_user_attributes!(auth)
+
+    @user.reload
+    assert_equal "Ben", @user.first_name
+    assert_equal "Jones", @user.last_name
+  end
+
+  test "sync_user_attributes! applies guest role mapping from groups claim" do
+    @user.update!(role: :member)
+    AuthConfig.stubs(:sso_providers).returns([
+      {
+        name: @oidc_identity.provider,
+        settings: {
+          role_mapping: {
+            guest: [ "sure-guests" ]
+          }
+        }
+      }
+    ])
+    auth = OmniAuth::AuthHash.new(
+      provider: @oidc_identity.provider,
+      uid: @oidc_identity.uid,
+      info: { email: @user.email },
+      extra: {
+        raw_info: {
+          groups: [ "sure-guests" ]
+        }
+      }
+    )
+
+    @oidc_identity.sync_user_attributes!(auth)
+
+    assert_predicate @user.reload, :guest?
+  end
+
+  test "sync_user_attributes! prefers member over guest when both group mappings match" do
+    @user.update!(role: :guest)
+    AuthConfig.stubs(:sso_providers).returns([
+      {
+        name: @oidc_identity.provider,
+        settings: {
+          role_mapping: {
+            member: [ "sure-members" ],
+            guest: [ "sure-guests" ]
+          }
+        }
+      }
+    ])
+    auth = OmniAuth::AuthHash.new(
+      provider: @oidc_identity.provider,
+      uid: @oidc_identity.uid,
+      info: { email: @user.email },
+      extra: {
+        raw_info: {
+          groups: [ "sure-members", "sure-guests" ]
+        }
+      }
+    )
+
+    @oidc_identity.sync_user_attributes!(auth)
+
+    assert_predicate @user.reload, :member?
+  end
+
+  test "sync_user_attributes! leaves role unchanged when mapped groups claim is absent" do
+    @user.update!(role: :member)
+    AuthConfig.stubs(:sso_providers).returns([
+      {
+        name: @oidc_identity.provider,
+        settings: {
+          role_mapping: {
+            admin: [ "sure-admins" ],
+            guest: [ "sure-guests" ]
+          }
+        }
+      }
+    ])
+    auth = OmniAuth::AuthHash.new(
+      provider: @oidc_identity.provider,
+      uid: @oidc_identity.uid,
+      info: { email: @user.email },
+      extra: {
+        raw_info: {
+          name: "No Groups User"
+        }
+      }
+    )
+
+    @oidc_identity.sync_user_attributes!(auth)
+
+    assert_predicate @user.reload, :member?
+    assert_equal [], @oidc_identity.reload.info["groups"]
+  end
+
+  test "creates from omniauth hash" do
+    auth = OmniAuth::AuthHash.new({
+      provider: "google_oauth2",
+      uid: "google-123456",
+      info: {
+        email: "test@example.com",
+        name: "Test User",
+        first_name: "Test",
+        last_name: "User"
+      }
+    })
+
+    identity = OidcIdentity.create_from_omniauth(auth, @user)
+
+    assert identity.persisted?
+    assert_equal "google_oauth2", identity.provider
+    assert_equal "google-123456", identity.uid
+    assert_equal "test@example.com", identity.info["email"]
+    assert_equal "Test User", identity.info["name"]
+    assert_equal @user, identity.user
+    assert_not_nil identity.last_authenticated_at
+  end
+
+  test "refuses to create an identity after it is blocked" do
+    auth = OmniAuth::AuthHash.new({
+      provider: "google_oauth2",
+      uid: "blocked-google-subject",
+      info: { email: "blocked@example.com" }
+    })
+    existing = OidcIdentity.create_from_omniauth(auth, @user)
+    SsoIdentityBlock.block_all!(OidcIdentity.where(id: existing.id), identity_label: @user.email)
+    existing.destroy!
+
+    assert_no_difference "OidcIdentity.count" do
+      assert_raises(SsoIdentityBlock::BlockedIdentity) do
+        OidcIdentity.create_from_omniauth(auth, @user)
+      end
+    end
+  end
+end

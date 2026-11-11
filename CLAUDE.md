@@ -6,6 +6,10 @@
 
 ## What this project is
 
+Ballast: stripped, hardened, self-hosted copy of `we-promise/sure` (Rails personal-finance app, AGPL-3.0) for one household. Remote `upstream` = Sure; merge its releases often. Our changes go in our own files where possible; anything woven into core gets switched off by config, not deleted. Sure's coding conventions: `.claude/reference/sure-conventions.md`, read before touching app code.
+
+Public repo holding a bank-data app: never commit real financial data, `.env` files, the SimpleFIN access URL, database dumps, or screenshots of real accounts. `scripts/check-secrets.mjs` enforces it (hook: `git config core.hooksPath .githooks`, once per clone).
+
 <!-- FILL IN (via /init-project): two or three sentences — what this is and who it serves; a short "won't compromise on" list; optional glossary of terms the team uses. Cap ~10 lines: this file loads every turn, and direction earns its weight only while it stays short. A model that knows what the product refuses to compromise on tests for it without being told. -->
 
 ## Default prose mode: caveman ultra

@@ -1,0 +1,22 @@
+<%# locals: (color: nil, pulse: false) %>
+<%#
+  Thin shim over DS::Pill: maps the shared/_badge string color values
+  (`success` / `error` / `warning` / nil) to semantic tones and renders
+  the yielded block as the pill label. `pulse: true` wraps the pill in
+  an `animate-pulse` span (DS::Pill itself doesn't support pulse).
+%>
+<%
+  tone = case color
+         when "success" then :success
+         when "error"   then :error
+         when "warning" then :warning
+         else                :neutral
+         end
+  label = yield
+  pill = render DS::Pill.new(label: label, tone: tone, marker: false, show_dot: false)
+%>
+<% if pulse %>
+  <span class="animate-pulse inline-flex"><%= pill %></span>
+<% else %>
+  <%= pill %>
+<% end %>

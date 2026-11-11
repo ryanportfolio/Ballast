@@ -34,7 +34,7 @@ const PATH_RULES = [
 const CONTENT_RULES = [
   { id: "simplefin-url", why: "SimpleFIN access URL (reads every linked account)",
     re: /https?:\/\/[^\s"'`<>\/@:]+:[^\s"'`<>\/@]+@[^\s"'`<>\/]*simplefin/i },
-  { id: "private-key", why: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+  { id: "private-key", why: "private key block", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----(\r?\n|\\n)[A-Za-z0-9+\/]{40,}/ },
   { id: "secret-key-base", why: "Rails SECRET_KEY_BASE value",
     re: /SECRET_KEY_BASE\s*[=:]\s*["']?[0-9a-f]{64,}/i },
   { id: "aws-key", why: "AWS access key id", re: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/ },

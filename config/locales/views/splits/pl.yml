@@ -1,0 +1,48 @@
+---
+pl:
+  splits:
+    child:
+      description: Ten wpis jest częścią podzielonej transakcji.
+      edit_split: Edytuj podział
+      title: Część podziału
+      unsplit: Cofnij podział
+    create:
+      not_splittable: Tej transakcji nie można podzielić.
+      success: Transakcja została pomyślnie podzielona
+    destroy:
+      success: Podział transakcji został pomyślnie cofnięty
+    edit:
+      description: Zmodyfikuj wpisy podziału dla tej transakcji.
+      not_split: Ta transakcja nie jest podzielona.
+      submit: Zaktualizuj podział
+      title: Edytuj podział
+    new:
+      add_row: Dodaj podział
+      amount_label: Kwota
+      amounts_must_match: Kwoty podziału muszą być równe kwocie oryginalnej transakcji.
+      cancel: Anuluj
+      category_label: Kategoria
+      description: Podziel tę transakcję na wiele wpisów z różnymi kategoriami i kwotami.
+      name_label: Nazwa
+      name_placeholder: Nazwa podziału
+      original_amount: Kwota
+      original_date: 'Data:'
+      original_name: 'Nazwa:'
+      remaining: Pozostało
+      remove_row: Usuń
+      split_number: Podział nr %{number}
+      submit: Podziel transakcję
+      title: Podziel transakcję
+      uncategorized: "(bez kategorii)"
+    show:
+      button: Podziel
+      button_description: Podziel tę transakcję na wiele wpisów z różnymi kategoriami
+        i kwotami.
+      button_title: Podziel transakcję
+      description: Ta transakcja została podzielona na poniższe wpisy.
+      title: Podzielone wpisy
+      unsplit_button: Cofnij podział
+      unsplit_confirm: To usunie wszystkie wpisy podziału i przywróci oryginalną transakcję.
+      unsplit_title: Cofnij podział transakcji
+    update:
+      success: Podział został pomyślnie zaktualizowany

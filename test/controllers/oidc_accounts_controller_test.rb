@@ -1,0 +1,469 @@
+require "test_helper"
+
+class OidcAccountsControllerTest < ActionController::TestCase
+  setup do
+    @user = users(:family_admin)
+  end
+
+  def pending_auth
+    {
+      "provider" => "openid_connect",
+      "uid" => "new-uid-12345",
+      "email" => @user.email,
+      "name" => "Bob Dylan",
+      "first_name" => "Bob",
+      "last_name" => "Dylan"
+    }
+  end
+
+  test "should show link page when pending auth exists" do
+    session[:pending_oidc_auth] = pending_auth
+    get :link
+    assert_response :success
+  end
+
+  test "should redirect to login when no pending auth" do
+    get :link
+    assert_redirected_to new_session_path
+    assert_equal "No pending OIDC authentication found", flash[:alert]
+  end
+
+  test "should create OIDC identity with valid password" do
+    session[:pending_oidc_auth] = pending_auth
+
+    assert_difference "OidcIdentity.count", 1 do
+      post :create_link,
+        params: {
+          email: @user.email,
+          password: user_password_test
+        }
+    end
+
+    assert_redirected_to root_path
+    assert_not_nil @user.oidc_identities.find_by(
+      provider: pending_auth["provider"],
+      uid: pending_auth["uid"]
+    )
+  end
+
+  test "rolls back identity linking when session creation fails" do
+    session[:pending_oidc_auth] = pending_auth
+    @controller.stubs(:create_session_for).returns(false)
+
+    assert_no_difference [ "OidcIdentity.count", "SsoAuditLog.count" ] do
+      post :create_link,
+        params: {
+          email: @user.email,
+          password: user_password_test
+        }
+    end
+
+    assert_redirected_to new_session_path
+    assert session[:pending_oidc_auth].present?
+  end
+
+  test "should reject linking with invalid password" do
+    session[:pending_oidc_auth] = pending_auth
+
+    assert_no_difference "OidcIdentity.count" do
+      post :create_link,
+        params: {
+          email: @user.email,
+          password: "wrongpassword"
+        }
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal "Invalid email or password", flash[:alert]
+  end
+
+  test "should reject linking for a deactivated user even with correct password" do
+    @user.sessions.destroy_all # @user (family_admin) has a pre-existing fixture session
+    @user.update_column(:active, false)
+    session[:pending_oidc_auth] = pending_auth
+
+    assert_no_difference "OidcIdentity.count" do
+      post :create_link,
+        params: {
+          email: @user.email,
+          password: user_password_test
+        }
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal "Invalid email or password", flash[:alert]
+  end
+
+  test "should reject linking for a user deactivated between the initial check and session creation" do
+    session[:pending_oidc_auth] = pending_auth
+    @user.sessions.destroy_all
+
+    # Simulate deactivation landing after the initial active? check but
+    # before create_session_for's reload catches it — SsoAuditLog.log_link!
+    # runs in that window in the real flow, so hook the deactivation there.
+    # create_link wraps identity creation, the audit log, and session creation
+    # in one transaction, so a failed session creation rolls back the identity
+    # link too — no dangling, unlinked OidcIdentity left behind.
+    SsoAuditLog.stubs(:log_link!).with do |**kwargs|
+      kwargs[:user].update_column(:active, false)
+      true
+    end
+
+    assert_no_difference "OidcIdentity.count" do
+      post :create_link,
+        params: {
+          email: @user.email,
+          password: user_password_test
+        }
+    end
+
+    assert_redirected_to new_session_path
+    assert_equal "Could not authenticate via OpenID Connect.", flash[:alert]
+    assert_not Session.exists?(user_id: @user.id)
+  end
+
+  test "should redirect to MFA when user has MFA enabled" do
+    @user.setup_mfa!
+    @user.enable_mfa!
+
+    session[:pending_oidc_auth] = pending_auth
+
+    post :create_link,
+      params: {
+        email: @user.email,
+        password: user_password_test
+      }
+
+    assert_redirected_to verify_mfa_path
+  end
+
+  test "should reject create_link when no pending auth" do
+    post :create_link, params: {
+      email: @user.email,
+      password: user_password_test
+    }
+
+    assert_redirected_to new_session_path
+    assert_equal "No pending OIDC authentication found", flash[:alert]
+  end
+
+  # New user registration tests
+  def new_user_auth
+    {
+      "provider" => "openid_connect",
+      "uid" => "new-uid-99999",
+      "email" => "newuser@example.com",
+      "name" => "New User",
+      "first_name" => "New",
+      "last_name" => "User"
+    }
+  end
+
+  test "should show new_user page when pending auth exists" do
+    session[:pending_oidc_auth] = new_user_auth
+    get :new_user
+    assert_response :success
+  end
+
+  test "should redirect new_user to login when no pending auth" do
+    get :new_user
+    assert_redirected_to new_session_path
+    assert_equal "No pending OIDC authentication found", flash[:alert]
+  end
+
+  test "should show create account option for new user" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    get :link
+    assert_response :success
+    assert_select "p", text: /Create New Account/
+    assert_select "strong", text: new_user_auth["email"]
+  end
+
+  test "does not show create account button when JIT link-only mode" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    AuthConfig.stubs(:jit_link_only?).returns(true)
+    AuthConfig.stubs(:allowed_oidc_domain?).returns(true)
+
+    get :link
+    assert_response :success
+
+    assert_select "p", text: /Create New Account/
+    # No create account button rendered
+    assert_select "button", text: "Create Account", count: 0
+    assert_select "p", text: /New account creation via single sign-on is disabled/
+  end
+
+  test "create_user redirects when JIT link-only mode" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    AuthConfig.stubs(:jit_link_only?).returns(true)
+    AuthConfig.stubs(:allowed_oidc_domain?).returns(true)
+
+    assert_no_difference [ "User.count", "OidcIdentity.count", "Family.count" ] do
+      post :create_user
+    end
+
+    assert_redirected_to new_session_path
+    assert_equal "SSO account creation is disabled. Please contact an administrator.", flash[:alert]
+  end
+
+  test "create_user redirects when email domain not allowed" do
+    disallowed_auth = new_user_auth.merge("email" => "newuser@notallowed.com")
+    session[:pending_oidc_auth] = disallowed_auth
+
+    AuthConfig.stubs(:jit_link_only?).returns(false)
+    AuthConfig.stubs(:allowed_oidc_domain?).with(disallowed_auth["email"]).returns(false)
+
+    assert_no_difference [ "User.count", "OidcIdentity.count", "Family.count" ] do
+      post :create_user
+    end
+
+    assert_redirected_to new_session_path
+    assert_equal "SSO account creation is disabled. Please contact an administrator.", flash[:alert]
+  end
+
+  test "should create new user account via OIDC" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    assert_difference [ "User.count", "OidcIdentity.count", "Family.count" ], 1 do
+      post :create_user
+    end
+
+    assert_redirected_to root_path
+    assert_equal "Welcome! Your account has been created.", flash[:notice]
+
+    # Verify user was created with correct details
+    new_user = User.find_by(email: new_user_auth["email"])
+    assert_not_nil new_user
+    assert_equal new_user_auth["first_name"], new_user.first_name
+    assert_equal new_user_auth["last_name"], new_user.last_name
+    assert_equal "admin", new_user.role  # Family creators should be admin
+
+    # Verify OIDC identity was created
+    oidc_identity = new_user.oidc_identities.first
+    assert_not_nil oidc_identity
+    assert_equal new_user_auth["provider"], oidc_identity.provider
+    assert_equal new_user_auth["uid"], oidc_identity.uid
+  end
+
+  test "create_user makes new family creator admin even when provider default role is member" do
+    session[:pending_oidc_auth] = new_user_auth
+    Rails.configuration.x.auth.stubs(:sso_providers).returns([
+      { name: new_user_auth["provider"], settings: { default_role: "member" } }
+    ])
+
+    assert_difference [ "User.count", "OidcIdentity.count", "Family.count" ], 1 do
+      post :create_user
+    end
+
+    new_user = User.find_by!(email: new_user_auth["email"])
+    assert_equal "admin", new_user.role
+    assert new_user.admin?
+  end
+
+  test "create_user preserves super admin provider default for new family creator" do
+    session[:pending_oidc_auth] = new_user_auth
+    Rails.configuration.x.auth.stubs(:sso_providers).returns([
+      { name: new_user_auth["provider"], settings: { default_role: "super_admin" } }
+    ])
+
+    assert_difference [ "User.count", "OidcIdentity.count", "Family.count" ], 1 do
+      post :create_user
+    end
+
+    new_user = User.find_by!(email: new_user_auth["email"])
+    assert_equal "super_admin", new_user.role
+    assert new_user.admin?
+  end
+
+  test "create_user uses form params for name when provided" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    assert_difference [ "User.count", "OidcIdentity.count" ], 1 do
+      post :create_user, params: {
+        user: { first_name: "Custom", last_name: "Name" }
+      }
+    end
+
+    assert_redirected_to root_path
+
+    new_user = User.find_by(email: new_user_auth["email"])
+    assert_equal "Custom", new_user.first_name
+    assert_equal "Name", new_user.last_name
+  end
+
+  test "create_user falls back to OIDC data when form params are blank" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    post :create_user, params: {
+      user: { first_name: "", last_name: "" }
+    }
+
+    new_user = User.find_by(email: new_user_auth["email"])
+    assert_equal new_user_auth["first_name"], new_user.first_name
+    assert_equal new_user_auth["last_name"], new_user.last_name
+  end
+
+  test "create_user rolls back user when OIDC identity creation fails" do
+    auth = new_user_auth.merge(
+      "email" => "oidc-rollback@example.com",
+      "uid" => "oidc-rollback-uid"
+    )
+    session[:pending_oidc_auth] = auth
+    OidcIdentity.stubs(:create_from_omniauth).raises(ActiveRecord::RecordNotUnique, "duplicate identity")
+
+    assert_no_difference [ "User.count", "OidcIdentity.count", "Family.count" ] do
+      post :create_user
+    end
+
+    assert_response :unprocessable_entity
+    assert_nil User.find_by(email: auth["email"])
+  end
+
+  test "create_user rolls back onboarding when session creation fails" do
+    session[:pending_oidc_auth] = new_user_auth
+    @controller.stubs(:create_session_for).returns(false)
+
+    assert_no_difference [ "User.count", "OidcIdentity.count", "Family.count" ] do
+      post :create_user
+    end
+
+    assert_response :unprocessable_entity
+    assert_nil User.find_by(email: new_user_auth["email"])
+    assert session[:pending_oidc_auth].present?
+  end
+
+  test "should create session after OIDC registration" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    post :create_user
+
+    # Verify session was created
+    new_user = User.find_by(email: new_user_auth["email"])
+    assert Session.exists?(user_id: new_user.id)
+  end
+
+  test "should reject create_user when no pending auth" do
+    post :create_user
+
+    assert_redirected_to new_session_path
+    assert_equal "No pending OIDC authentication found", flash[:alert]
+  end
+
+  # Security: JIT users should NOT have password_digest set
+  test "JIT user is created without password_digest to prevent chained auth attacks" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    post :create_user
+
+    new_user = User.find_by(email: new_user_auth["email"])
+    assert_not_nil new_user, "User should be created"
+    assert_nil new_user.password_digest, "JIT user should have nil password_digest"
+    assert new_user.sso_only?, "JIT user should be SSO-only"
+  end
+
+  test "JIT user cannot authenticate with local password" do
+    session[:pending_oidc_auth] = new_user_auth
+
+    post :create_user
+
+    new_user = User.find_by(email: new_user_auth["email"])
+
+    # Attempting to authenticate should return nil (no password set)
+    assert_nil User.authenticate_by(
+      email: new_user.email,
+      password: "anypassword"
+    ), "SSO-only user should not authenticate with password"
+  end
+
+  test "create_user via invitation shares existing family accounts when family shares by default" do
+    family = families(:dylan_family)
+    family.update!(default_account_sharing: "shared")
+    family.invitations.create!(email: "invitee@example.com", role: "member", inviter: users(:family_admin))
+
+    session[:pending_oidc_auth] = {
+      "provider" => "openid_connect", "uid" => "invite-uid-1",
+      "email" => "invitee@example.com", "first_name" => "In", "last_name" => "Vitee"
+    }
+
+    post :create_user
+    assert_redirected_to root_path
+
+    invitee = User.find_by(email: "invitee@example.com")
+    assert_not_nil invitee
+    assert_equal family.id, invitee.family_id
+    assert_equal family.accounts.pluck(:id).sort,
+      AccountShare.where(user: invitee).pluck(:account_id).sort
+  end
+
+  test "create_user via invitation shares nothing when family sharing is private" do
+    family = families(:dylan_family)
+    family.update!(default_account_sharing: "private")
+    family.invitations.create!(email: "invitee2@example.com", role: "member", inviter: users(:family_admin))
+
+    session[:pending_oidc_auth] = {
+      "provider" => "openid_connect", "uid" => "invite-uid-2",
+      "email" => "invitee2@example.com", "first_name" => "In", "last_name" => "Vitee"
+    }
+
+    post :create_user
+    assert_redirected_to root_path
+
+    invitee = User.find_by(email: "invitee2@example.com")
+    assert_equal family.id, invitee.family_id
+    assert_equal 0, AccountShare.where(user: invitee).count
+  end
+
+  # A pending_oidc_auth stashed in the session outlives the removal that blocks
+  # its identity, so every action that consumes it has to re-check the block.
+
+  test "create_user refuses a pending auth whose identity was removed" do
+    SsoIdentityBlock.create!(
+      provider: pending_auth["provider"],
+      uid_digest: SsoIdentityBlock.digest(pending_auth["uid"]),
+      identity_label: pending_auth["email"]
+    )
+    session[:pending_oidc_auth] = pending_auth.merge("email" => "blocked-jit@example.com")
+
+    assert_no_difference "User.count" do
+      post :create_user
+    end
+
+    assert_redirected_to new_session_path
+    assert_nil session[:pending_oidc_auth]
+  end
+
+  test "create_link refuses a pending auth whose identity was removed" do
+    SsoIdentityBlock.create!(
+      provider: pending_auth["provider"],
+      uid_digest: SsoIdentityBlock.digest(pending_auth["uid"]),
+      identity_label: pending_auth["email"]
+    )
+    session[:pending_oidc_auth] = pending_auth
+
+    assert_no_difference "OidcIdentity.count" do
+      post :create_link, params: { email: @user.email, password: user_password_test }
+    end
+
+    assert_redirected_to new_session_path
+    assert_nil session[:pending_oidc_auth]
+  end
+
+  test "link and new_user refuse a pending auth whose identity was removed" do
+    SsoIdentityBlock.create!(
+      provider: pending_auth["provider"],
+      uid_digest: SsoIdentityBlock.digest(pending_auth["uid"]),
+      identity_label: pending_auth["email"]
+    )
+
+    session[:pending_oidc_auth] = pending_auth
+    get :link
+    assert_redirected_to new_session_path
+
+    session[:pending_oidc_auth] = pending_auth
+    get :new_user
+    assert_redirected_to new_session_path
+  end
+end

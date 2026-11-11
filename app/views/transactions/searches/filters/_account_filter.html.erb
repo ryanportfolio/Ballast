@@ -1,0 +1,27 @@
+<%# locals: (form:) %>
+<div data-controller="list-filter">
+  <%= render DS::SearchInput.new(
+        variant: :embedded,
+        placeholder: t(".filter_accounts"),
+        aria_label: t(".filter_accounts"),
+        data: {
+          list_filter_target: "input",
+          action: "input->list-filter#filter"
+        }
+      ) %>
+  <div class="my-2" id="list" data-list-filter-target="list">
+    <% Current.user.accessible_accounts.alphabetically.each do |account| %>
+      <div class="filterable-item flex items-center gap-2 p-2" data-filter-name="<%= account.name %>">
+        <%= form.check_box :accounts,
+                           {
+                             multiple: true,
+                             checked: @q[:accounts]&.include?(account.name),
+                             class: "checkbox checkbox--light"
+                           },
+                           account.name,
+                           nil %>
+        <%= form.label :accounts, account.name, value: account.name, class: "text-sm text-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>

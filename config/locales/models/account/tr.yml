@@ -1,0 +1,34 @@
+---
+tr:
+  account_order:
+    balance_asc:
+      label: Bakiye (Düşükten Yükseğe)
+      label_short: Bakiye ↑
+    balance_desc:
+      label: Bakiye (Yüksekten Düşüğe)
+      label_short: Bakiye ↓
+    name_asc:
+      label: Ad (A-Z)
+      label_short: Ad ↑
+    name_desc:
+      label: Ad (Z-A)
+      label_short: Ad ↓
+  activerecord:
+    attributes:
+      account:
+        balance: Bakiye
+        currency: Para Birimi
+        family: "%{moniker}"
+        family_id: "%{moniker}"
+        name: Ad
+        subtype: Alt Tür
+    models:
+      account: Hesap
+      account/credit: Kredi Kartı
+      account/depository: Banka Hesabı
+      account/investment: Yatırım
+      account/loan: Kredi
+      account/other_asset: Diğer Varlık
+      account/other_liability: Diğer Yükümlülük
+      account/property: Gayrimenkul
+      account/vehicle: Araç

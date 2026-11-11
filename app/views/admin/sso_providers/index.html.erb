@@ -1,0 +1,118 @@
+<%= content_for :page_title, t(".page_title") %>
+
+<div class="space-y-4">
+  <p class="text-secondary mb-4">
+    <%= t(".description") %>
+    <% unless FeatureFlags.db_sso_providers? %>
+      <span class="text-warning"><%= t(".restart_required") %></span>
+    <% end %>
+  </p>
+
+  <%= settings_section title: t(".configured_providers") do %>
+    <% if @sso_providers.any? %>
+      <div class="divide-y divide-alpha-black-200 theme-dark:divide-alpha-white-200">
+        <% @sso_providers.each do |provider| %>
+          <div class="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+            <div class="flex items-center gap-3">
+              <% if provider.icon.present? %>
+                <%= icon provider.icon, class: "w-5 h-5 text-secondary" %>
+              <% else %>
+                <%= icon "key", class: "w-5 h-5 text-secondary" %>
+              <% end %>
+              <div>
+                <p class="font-medium text-primary"><%= provider.label %></p>
+                <p class="text-sm text-secondary"><%= provider.strategy.titleize %> · <%= provider.name %></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <% if provider.enabled? %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 theme-dark:bg-green-tint-10 theme-dark:text-green-200">
+                  <%= t(".enabled") %>
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface text-secondary">
+                  <%= t(".disabled") %>
+                </span>
+              <% end %>
+              <%= link_to edit_admin_sso_provider_path(provider), class: "p-1 text-secondary hover:text-primary", title: t(".edit") do %>
+                <%= icon "pencil", class: "w-4 h-4" %>
+              <% end %>
+              <%= button_to toggle_admin_sso_provider_path(provider), method: :patch, class: "p-1 text-secondary hover:text-primary", title: provider.enabled? ? t(".disable") : t(".enable"), form: { data: { turbo_confirm: provider.enabled? ? t("admin.sso_providers.toggle.confirm_disable") : t("admin.sso_providers.toggle.confirm_enable") } } do %>
+                <%= icon provider.enabled? ? "toggle-right" : "toggle-left", class: "w-4 h-4" %>
+              <% end %>
+              <%= button_to admin_sso_provider_path(provider), method: :delete, class: "p-1 text-destructive hover:text-destructive", title: t(".delete"), form: { data: { turbo_confirm: t("admin.sso_providers.destroy.confirm") } } do %>
+                <%= icon "trash-2", class: "w-4 h-4" %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-6">
+        <%= icon "key", class: "w-12 h-12 mx-auto text-secondary mb-3" %>
+        <p class="text-secondary"><%= t(".no_providers_message") %></p>
+      </div>
+    <% end %>
+
+    <div class="pt-4 border-t border-primary">
+      <%= link_to new_admin_sso_provider_path, class: "inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-secondary" do %>
+        <%= icon "plus", class: "w-4 h-4" %>
+        <%= t(".add_provider") %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @legacy_providers.any? %>
+    <%= settings_section title: t("admin.sso_providers.index.legacy_providers_title"), collapsible: true, open: true do %>
+      <div class="mb-4">
+        <%= render DS::Alert.new(message: t("admin.sso_providers.index.legacy_providers_notice"), variant: :warning) %>
+      </div>
+
+      <div class="divide-y divide-alpha-black-200 theme-dark:divide-alpha-white-200">
+        <% @legacy_providers.each do |provider| %>
+          <div class="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+            <div class="flex items-center gap-3">
+              <% provider_icon = provider[:icon].presence || "key" %>
+              <%= icon provider_icon, class: "w-5 h-5 text-secondary" %>
+              <div>
+                <p class="font-medium text-primary"><%= provider[:label].presence || provider[:name] %></p>
+                <p class="text-sm text-secondary">
+                  <%= provider[:strategy].to_s.titleize %> · <%= provider[:name] %>
+                  <% if provider[:issuer].present? %>
+                    · <span class="text-xs"><%= provider[:issuer] %></span>
+                  <% end %>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <%= render DS::Pill.new(label: t("admin.sso_providers.index.env_configured"), tone: :warning, marker: false) %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <%= settings_section title: t(".configuration_mode"), collapsible: true, open: false do %>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="font-medium text-primary"><%= t(".db_backed_providers") %></p>
+          <p class="text-sm text-secondary"><%= t(".db_backed_providers_description") %></p>
+        </div>
+        <% if FeatureFlags.db_sso_providers? %>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+            <%= t(".enabled") %>
+          </span>
+        <% else %>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface text-secondary">
+            <%= t(".disabled") %>
+          </span>
+        <% end %>
+      </div>
+      <p class="text-sm text-secondary">
+        <%= t(".db_backed_providers_help_html") %>
+      </p>
+    </div>
+  <% end %>
+</div>

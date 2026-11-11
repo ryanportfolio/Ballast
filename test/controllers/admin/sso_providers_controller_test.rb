@@ -1,0 +1,123 @@
+require "test_helper"
+
+class Admin::SsoProvidersControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    ensure_tailwind_build
+    sign_in users(:sure_support_staff)
+
+    @provider = SsoProvider.create!(
+      strategy: "google_oauth2",
+      name: "google_oauth2_test",
+      label: "Sign in with Google",
+      enabled: true,
+      client_id: "client-id",
+      client_secret: "existing-secret",
+      settings: { "default_role" => "member" }
+    )
+  end
+
+  test "edit form posts nested settings and optional client secret" do
+    get edit_admin_sso_provider_path(@provider)
+
+    assert_response :success
+    assert_includes response.body, 'name="sso_provider[settings][default_role]"'
+    assert_includes response.body, 'name="sso_provider[settings][scopes]"'
+    assert_includes response.body, 'name="sso_provider[settings][prompt]"'
+    assert_includes response.body, 'name="sso_provider[client_secret]"'
+    assert_no_match(/name="sso_provider\[client_secret\]"[^>]*required/, response.body)
+  end
+
+  test "new page localizes its heading and description" do
+    get new_admin_sso_provider_path(locale: "de")
+
+    assert_response :success
+    assert_select "h1", text: I18n.t("admin.sso_providers.new.title", locale: :de, fallback: false)
+    assert_select "p", text: I18n.t("admin.sso_providers.new.description", locale: :de, fallback: false)
+  end
+
+  test "edit page localizes its heading and description" do
+    get edit_admin_sso_provider_path(@provider, locale: "de")
+
+    assert_response :success
+    assert_select "h1", text: I18n.t("admin.sso_providers.edit.title", locale: :de, fallback: false)
+    assert_select "p", text: I18n.t("admin.sso_providers.edit.description", locale: :de, fallback: false, label: @provider.label)
+  end
+
+  # The default trail ends on the controller's name, which is never a link, so
+  # the form pages had no way back to the providers list.
+  test "the new page links its SSO providers crumb back to the list" do
+    get new_admin_sso_provider_path
+
+    assert_response :success
+    assert_form_trail I18n.t("admin.sso_providers.new.title")
+  end
+
+  test "the edit page links its SSO providers crumb back to the list" do
+    get edit_admin_sso_provider_path(@provider)
+
+    assert_response :success
+    assert_form_trail I18n.t("admin.sso_providers.edit.title")
+  end
+
+  test "a rejected create keeps the trail back to the list" do
+    assert_no_difference "SsoProvider.count" do
+      post admin_sso_providers_path, params: { sso_provider: { strategy: "openid_connect", name: "", label: "" } }
+    end
+
+    assert_response :unprocessable_entity
+    assert_form_trail I18n.t("admin.sso_providers.new.title")
+  end
+
+  test "a rejected update keeps the trail back to the list" do
+    patch admin_sso_provider_path(@provider), params: { sso_provider: { name: "" } }
+
+    assert_response :unprocessable_entity
+    assert_form_trail I18n.t("admin.sso_providers.edit.title")
+  end
+
+  test "the providers list itself stays the unlinked current crumb" do
+    get admin_sso_providers_path
+
+    assert_response :success
+    assert_select "[data-breadcrumbs] a[href=?]", admin_sso_providers_path, count: 0
+    assert_select "[data-breadcrumbs] > span:last-child", text: I18n.t("breadcrumbs.sso_providers")
+  end
+
+  test "update persists nested default role setting" do
+    patch admin_sso_provider_path(@provider), params: {
+      sso_provider: valid_update_params(settings: { default_role: "guest" })
+    }
+
+    assert_redirected_to admin_sso_providers_path
+    assert_equal "guest", @provider.reload.settings["default_role"]
+  end
+
+  test "update preserves existing client secret when blank" do
+    patch admin_sso_provider_path(@provider), params: {
+      sso_provider: valid_update_params(client_secret: "", label: "Updated Google")
+    }
+
+    assert_redirected_to admin_sso_providers_path
+    @provider.reload
+    assert_equal "Updated Google", @provider.label
+    assert_equal "existing-secret", @provider.client_secret
+  end
+
+  private
+    def assert_form_trail(title)
+      assert_select "[data-breadcrumbs] a[href=?]", admin_sso_providers_path, text: I18n.t("breadcrumbs.sso_providers")
+      assert_select "[data-breadcrumbs] > span:last-child", text: title
+    end
+
+    def valid_update_params(overrides = {})
+      {
+        strategy: @provider.strategy,
+        name: @provider.name,
+        label: @provider.label,
+        enabled: "1",
+        client_id: @provider.client_id,
+        client_secret: @provider.client_secret,
+        settings: @provider.settings
+      }.deep_merge(overrides)
+    end
+end

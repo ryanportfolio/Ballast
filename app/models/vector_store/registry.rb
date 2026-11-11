@@ -1,0 +1,95 @@
+class VectorStore::Registry
+  ADAPTERS = {
+    openai: "VectorStore::Openai",
+    pgvector: "VectorStore::Pgvector",
+    qdrant: "VectorStore::Qdrant"
+  }.freeze
+
+  class << self
+    # Returns the configured adapter instance.
+    # Reads from VECTOR_STORE_PROVIDER env var; without an explicit override,
+    # Anthropic installs (Setting.llm_provider == "anthropic") default to
+    # :pgvector, and anything else falls back to :openai when OpenAI
+    # credentials are present.
+    def adapter
+      name = adapter_name
+      return nil unless name
+
+      build_adapter(name)
+    end
+
+    def configured?
+      adapter.present?
+    end
+
+    def adapter_name
+      explicit = ENV["VECTOR_STORE_PROVIDER"].presence
+      return explicit.to_sym if explicit && ADAPTERS.key?(explicit.to_sym)
+
+      # Default routing:
+      #   - When the configured LLM provider is Anthropic (which has no hosted
+      #     vector store), fall back to the local pgvector adapter. The
+      #     Embeddable concern still pulls embeddings from EMBEDDING_URI_BASE /
+      #     OPENAI_ACCESS_TOKEN — Anthropic users typically point this at
+      #     Voyage AI, a local Ollama instance, or OpenAI embeddings.
+      #   - Otherwise, use OpenAI when credentials are available.
+      return :pgvector if Setting.llm_provider == "anthropic"
+      :openai if openai_access_token.present?
+    end
+
+    # True when pgvector is the effective vector store — whether set explicitly
+    # via VECTOR_STORE_PROVIDER or selected by the Anthropic default above.
+    # Single source of truth shared with the migration that provisions
+    # `vector_store_chunks`, so the table is created exactly when pgvector is in
+    # use (an Anthropic-default install would otherwise skip it and fail on the
+    # missing table).
+    def pgvector_effective?
+      adapter_name == :pgvector
+    end
+
+    private
+
+      def build_adapter(name)
+        klass = ADAPTERS[name]&.safe_constantize
+        raise VectorStore::ConfigurationError, "Unknown vector store adapter: #{name}" unless klass
+
+        case name
+        when :openai   then build_openai
+        when :pgvector then build_pgvector
+        when :qdrant   then build_qdrant
+        else raise VectorStore::ConfigurationError, "No builder defined for adapter: #{name}"
+        end
+      end
+
+      def build_openai
+        token = openai_access_token
+        return nil unless token.present?
+
+        VectorStore::Openai.new(
+          access_token: token,
+          uri_base: ENV["OPENAI_URI_BASE"].presence || Setting.openai_uri_base
+        )
+      end
+
+      def build_pgvector
+        # Gate on availability (extension present, or table already created)
+        # so an Anthropic-default install on a Postgres without pgvector
+        # degrades to the assistant's "provider_not_configured" message
+        # instead of raising raw PG errors mid-chat.
+        return nil unless VectorStore::Pgvector.available?
+
+        VectorStore::Pgvector.new
+      end
+
+      def build_qdrant
+        url  = ENV.fetch("QDRANT_URL", "http://localhost:6333")
+        api_key = ENV["QDRANT_API_KEY"].presence
+
+        VectorStore::Qdrant.new(url: url, api_key: api_key)
+      end
+
+      def openai_access_token
+        ENV["OPENAI_ACCESS_TOKEN"].presence || Setting.openai_access_token
+      end
+  end
+end

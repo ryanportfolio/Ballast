@@ -1,0 +1,53 @@
+<%= content_for :page_title, t(".create_new_api_key") %>
+
+<%= settings_section title: nil, subtitle: t(".subtitle") do %>
+  <%= styled_form_with model: @api_key, url: settings_api_keys_path, class: "space-y-4" do |form| %>
+    <%= form.text_field :name,
+        placeholder: t(".name_placeholder"),
+        label: t(".name_label"),
+        help_text: t(".name_help_text") %>
+
+    <div>
+      <%= form.label :scopes, t(".permissions_label"), class: "block text-sm font-medium text-primary mb-2" %>
+      <p class="text-sm text-secondary mb-3"><%= t(".permissions_help") %></p>
+
+      <div class="space-y-2">
+        <% [
+          ["read", t(".scope_read_only"), t(".scope_read_only_description")],
+          ["read_write", t(".scope_read_write"), t(".scope_read_write_description")]
+        ].each do |value, label, description| %>
+          <div class="bg-surface-inset rounded-lg p-3 border border-primary">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <%= radio_button_tag "api_key[scopes]", value, (@api_key&.scopes || []).include?(value),
+                  class: "mt-1" %>
+              <div class="flex-1">
+                <div class="font-medium text-primary"><%= label %></div>
+                <div class="text-sm text-secondary mt-1"><%= description %></div>
+              </div>
+            </label>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <%= render DS::Alert.new(title: t(".security_warning_title"), variant: :warning) do %>
+      <p>
+        <%= t(".security_warning_body") %>
+      </p>
+    <% end %>
+
+    <div class="flex justify-end gap-3 pt-4 border-t border-primary">
+      <%= render DS::Link.new(
+        text: t(".cancel"),
+        href: settings_api_keys_path,
+        variant: "ghost"
+      ) %>
+
+      <%= render DS::Button.new(
+        text: t(".save_api_key"),
+        variant: "primary",
+        type: "submit"
+      ) %>
+    </div>
+  <% end %>
+<% end %>

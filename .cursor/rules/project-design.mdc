@@ -1,0 +1,7 @@
+---
+description: This rule explains the system architecture and data flow of the Rails app
+globs: *
+alwaysApply: true
+---
+
+@docs/llm-guides/architecture.md

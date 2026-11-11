@@ -1,0 +1,428 @@
+require "test_helper"
+
+class TransferTest < ActiveSupport::TestCase
+  include EntriesTestHelper
+
+  setup do
+    @outflow = transactions(:transfer_out)
+    @inflow = transactions(:transfer_in)
+  end
+
+  test "transfer destroyed if either transaction is destroyed" do
+    assert_difference [ "Transfer.count", "Transaction.count", "Entry.count" ], -1 do
+      @outflow.entry.destroy
+    end
+  end
+
+  test "deleting one leg gives the other leg back the standard kind" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:credit_card))
+    transfer.confirm!
+    outflow = transfer.outflow_transaction
+    assert_equal "cc_payment", outflow.reload.kind
+
+    assert_difference "Transfer.count", -1 do
+      transfer.inflow_transaction.entry.destroy!
+    end
+
+    assert_equal "standard", outflow.reload.kind
+  end
+
+  test "deleting a leg of a pending transfer leaves the other leg's kind alone" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:credit_card))
+    transfer.inflow_transaction.update!(kind: "one_time")
+
+    transfer.outflow_transaction.entry.destroy!
+
+    assert_equal "one_time", transfer.inflow_transaction.reload.kind
+  end
+
+  test "destroy resets the transfer kinds of a confirmed transfer, like destroy!" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:credit_card))
+    transfer.confirm!
+
+    transfer.destroy
+
+    assert_equal "standard", transfer.outflow_transaction.reload.kind
+    assert_equal "standard", transfer.inflow_transaction.reload.kind
+  end
+
+  test "destroy! clears the idempotency key so a retried request can create a new transfer" do
+    idempotency_key = SecureRandom.uuid
+
+    transfer = Transfer::Creator.new(
+      family: families(:dylan_family),
+      source_account_id: accounts(:depository).id,
+      destination_account_id: accounts(:credit_card).id,
+      date: Date.current,
+      amount: 100,
+      idempotency_key: idempotency_key
+    ).create
+
+    transfer.destroy!
+
+    assert_nil transfer.outflow_transaction.entry.reload.idempotency_key
+    assert_nil transfer.inflow_transaction.entry.reload.idempotency_key
+
+    # A retry of the original create request (e.g. the user resubmits after
+    # rejecting/undoing the first transfer) must not find a stale entry with
+    # this key and raise RecordNotUnique - it should create a fresh transfer.
+    assert_difference "Transfer.count", 1 do
+      Transfer::Creator.new(
+        family: families(:dylan_family),
+        source_account_id: accounts(:depository).id,
+        destination_account_id: accounts(:credit_card).id,
+        date: Date.current,
+        amount: 100,
+        idempotency_key: idempotency_key
+      ).create
+    end
+  end
+
+  test "transfer has different accounts, opposing amounts, and within 4 days of each other" do
+    outflow_entry = create_transaction(date: 1.day.ago.to_date, account: accounts(:depository), amount: 500)
+    inflow_entry = create_transaction(date: Date.current, account: accounts(:credit_card), amount: -500)
+
+    assert_difference -> { Transfer.count } => 1 do
+      Transfer.create!(
+        inflow_transaction: inflow_entry.transaction,
+        outflow_transaction: outflow_entry.transaction,
+      )
+    end
+  end
+
+  test "transfer cannot have 2 transactions from the same account" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500)
+    inflow_entry = create_transaction(date: 1.day.ago.to_date, account: accounts(:depository), amount: -500)
+
+    transfer = Transfer.new(
+      inflow_transaction: inflow_entry.transaction,
+      outflow_transaction: outflow_entry.transaction,
+    )
+
+    assert_no_difference -> { Transfer.count } do
+      transfer.save
+    end
+
+    assert_equal "Must be from different accounts", transfer.errors.full_messages.first
+  end
+
+  test "Transfer transactions must have opposite amounts" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500)
+    inflow_entry = create_transaction(date: Date.current, account: accounts(:credit_card), amount: -400)
+
+    transfer = Transfer.new(
+      inflow_transaction: inflow_entry.transaction,
+      outflow_transaction: outflow_entry.transaction,
+    )
+
+    assert_no_difference -> { Transfer.count } do
+      transfer.save
+    end
+
+    assert_equal "Must have opposite amounts", transfer.errors.full_messages.first
+  end
+
+  test "transfer dates must be within 4 days of each other" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500)
+    inflow_entry = create_transaction(date: 5.days.ago.to_date, account: accounts(:credit_card), amount: -500)
+
+    transfer = Transfer.new(
+      inflow_transaction: inflow_entry.transaction,
+      outflow_transaction: outflow_entry.transaction,
+    )
+
+    assert_no_difference -> { Transfer.count } do
+      transfer.save
+    end
+
+    assert_equal "Must be within 4 days", transfer.errors.full_messages.first
+  end
+
+  test "transfer must be from the same family" do
+    family1 = families(:empty)
+    family2 = families(:dylan_family)
+
+    family1_account = family1.accounts.create!(name: "Family 1 Account", balance: 5000, currency: "USD", accountable: Depository.new)
+    family2_account = family2.accounts.create!(name: "Family 2 Account", balance: 5000, currency: "USD", accountable: Depository.new)
+
+    outflow_txn = create_transaction(date: Date.current, account: family1_account, amount: 500)
+    inflow_txn = create_transaction(date: Date.current, account: family2_account, amount: -500)
+
+    transfer = Transfer.new(
+      inflow_transaction: inflow_txn.transaction,
+      outflow_transaction: outflow_txn.transaction,
+    )
+
+    assert transfer.invalid?
+    assert_equal "Must be from same family", transfer.errors.full_messages.first
+  end
+
+  test "transaction can only belong to one transfer" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500)
+    inflow_entry1 = create_transaction(date: Date.current, account: accounts(:credit_card), amount: -500)
+    inflow_entry2 = create_transaction(date: Date.current, account: accounts(:credit_card), amount: -500)
+
+    Transfer.create!(inflow_transaction: inflow_entry1.transaction, outflow_transaction: outflow_entry.transaction)
+
+    assert_raises ActiveRecord::RecordInvalid do
+      Transfer.create!(inflow_transaction: inflow_entry2.transaction, outflow_transaction: outflow_entry.transaction)
+    end
+  end
+
+  test "confirm! marks both legs with the destination account's transfer kinds" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:credit_card))
+
+    transfer.confirm!
+
+    assert transfer.reload.confirmed?
+    assert_equal "cc_payment", transfer.outflow_transaction.reload.kind
+    assert_equal "funds_movement", transfer.inflow_transaction.reload.kind
+  end
+
+  test "confirm! assigns the investment contributions category to an uncategorized outflow" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:investment))
+
+    transfer.confirm!
+
+    outflow = transfer.outflow_transaction.reload
+    assert_equal "investment_contribution", outflow.kind
+    assert_equal families(:dylan_family).investment_contributions_category, outflow.category
+  end
+
+  test "confirm! keeps an outflow category the user already set" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:investment))
+    transfer.outflow_transaction.update!(category: categories(:income))
+
+    transfer.confirm!
+
+    assert_equal categories(:income), transfer.outflow_transaction.reload.category
+  end
+
+  test "reject! leaves the kind of a pending transfer's transactions alone" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:credit_card))
+    transfer.outflow_transaction.update!(kind: "one_time")
+
+    transfer.reject!
+
+    assert_equal "one_time", transfer.outflow_transaction.reload.kind
+    assert_equal "standard", transfer.inflow_transaction.reload.kind
+  end
+
+  test "reject! keeps a transfer kind that predates a pending match" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:credit_card))
+    transfer.outflow_transaction.update!(kind: "funds_movement")
+
+    transfer.reject!
+
+    assert_equal "funds_movement", transfer.outflow_transaction.reload.kind
+  end
+
+  test "reject! resets the transfer kinds of a confirmed transfer" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:credit_card))
+    transfer.confirm!
+
+    transfer.reject!
+
+    assert_equal "standard", transfer.outflow_transaction.reload.kind
+    assert_equal "standard", transfer.inflow_transaction.reload.kind
+  end
+
+  test "update_investment_contribution! turns a contribution into a plain transfer and back" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:investment))
+    transfer.confirm!
+    assert transfer.investment_contribution?
+
+    assert transfer.update_investment_contribution!(false)
+
+    outflow = transfer.outflow_transaction.reload
+    assert_equal "funds_movement", outflow.kind
+    assert_nil outflow.category
+    assert outflow.locked?(:kind)
+    assert_not transfer.investment_contribution?
+    assert_not transfer.categorizable?
+
+    assert transfer.update_investment_contribution!(true)
+
+    outflow.reload
+    assert_equal "investment_contribution", outflow.kind
+    assert_equal families(:dylan_family).investment_contributions_category, outflow.category
+    assert transfer.investment_contribution?
+    assert transfer.categorizable?
+  end
+
+  test "update_investment_contribution! keeps a category the user chose" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:investment))
+    transfer.outflow_transaction.update!(category: categories(:food_and_drink))
+    transfer.confirm!
+
+    transfer.update_investment_contribution!(false)
+
+    assert_equal categories(:food_and_drink), transfer.outflow_transaction.reload.category
+  end
+
+  test "update_investment_contribution! leaves transfers that cannot be a contribution alone" do
+    payment = create_pending_transfer(from: accounts(:depository), to: accounts(:credit_card))
+    payment.confirm!
+    pending = create_pending_transfer(from: accounts(:depository), to: accounts(:investment))
+
+    assert_not payment.update_investment_contribution!(false)
+    assert_not pending.update_investment_contribution!(false)
+
+    assert_equal "cc_payment", payment.outflow_transaction.reload.kind
+    assert_not payment.outflow_transaction.locked?(:kind)
+    assert_equal "standard", pending.outflow_transaction.reload.kind
+  end
+
+  test "kind_for_leg keeps a plain transfer the user chose over a contribution" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:investment))
+    transfer.confirm!
+    transfer.update_investment_contribution!(false)
+
+    assert_equal "funds_movement", transfer.reload.kind_for_leg(transfer.outflow_transaction)
+    assert_equal "funds_movement", transfer.kind_for_leg(transfer.inflow_transaction)
+  end
+
+  test "reject! drops the contribution choice with the transfer" do
+    transfer = create_pending_transfer(from: accounts(:depository), to: accounts(:investment))
+    transfer.confirm!
+    transfer.update_investment_contribution!(false)
+
+    transfer.reject!
+
+    outflow = transfer.outflow_transaction.reload
+    assert_equal "standard", outflow.kind
+    assert_not outflow.locked?(:kind)
+  end
+
+  test "kind_for_account returns investment_contribution for investment accounts" do
+    assert_equal "investment_contribution", Transfer.kind_for_account(accounts(:investment))
+  end
+
+  test "kind_for_account returns investment_contribution for crypto accounts" do
+    assert_equal "investment_contribution", Transfer.kind_for_account(accounts(:crypto))
+  end
+
+  test "kind_for_account returns loan_payment for loan accounts" do
+    assert_equal "loan_payment", Transfer.kind_for_account(accounts(:loan))
+  end
+
+  test "kind_for_account returns cc_payment for credit card accounts" do
+    assert_equal "cc_payment", Transfer.kind_for_account(accounts(:credit_card))
+  end
+
+  test "kind_for_account returns funds_movement for depository accounts" do
+    assert_equal "funds_movement", Transfer.kind_for_account(accounts(:depository))
+  end
+
+  test "kind_for_account returns funds_movement for investment-to-investment transfers" do
+    assert_equal "funds_movement", Transfer.kind_for_account(accounts(:crypto), from_account: accounts(:investment))
+    assert_equal "funds_movement", Transfer.kind_for_account(accounts(:investment), from_account: accounts(:crypto))
+  end
+
+  test "kind_for_account still returns investment_contribution when the source isn't an investment account" do
+    assert_equal "investment_contribution", Transfer.kind_for_account(accounts(:investment), from_account: accounts(:depository))
+  end
+
+  test "categorizable? is true for loan payment transfers" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500, kind: "loan_payment")
+    inflow_entry = create_transaction(date: Date.current, account: accounts(:loan), amount: -500, kind: "loan_payment")
+
+    transfer = Transfer.create!(inflow_transaction: inflow_entry.transaction, outflow_transaction: outflow_entry.transaction)
+
+    assert transfer.categorizable?
+  end
+
+  test "categorizable? is true for investment contribution transfers" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500, kind: "investment_contribution")
+    inflow_entry = create_transaction(date: Date.current, account: accounts(:investment), amount: -500, kind: "investment_contribution")
+
+    transfer = Transfer.create!(inflow_transaction: inflow_entry.transaction, outflow_transaction: outflow_entry.transaction)
+
+    assert transfer.categorizable?
+  end
+
+  test "categorizable? is false for regular funds movement transfers" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500, kind: "funds_movement")
+    inflow_entry = create_transaction(date: Date.current, account: accounts(:connected), amount: -500, kind: "funds_movement")
+
+    transfer = Transfer.create!(inflow_transaction: inflow_entry.transaction, outflow_transaction: outflow_entry.transaction)
+
+    refute transfer.categorizable?
+  end
+
+  test "categorizable? is false for credit card payment transfers" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500, kind: "cc_payment")
+    inflow_entry = create_transaction(date: Date.current, account: accounts(:credit_card), amount: -500, kind: "cc_payment")
+
+    transfer = Transfer.create!(inflow_transaction: inflow_entry.transaction, outflow_transaction: outflow_entry.transaction)
+
+    refute transfer.categorizable?
+  end
+
+  test "categorizable? bases on destination account even if the outflow's kind is stale" do
+    # Account::ProviderImportAdapter can reassign an already-matched leg's
+    # kind on a later sync without touching its Transfer. Simulate a stale
+    # "funds_movement" kind left on the outflow of an investment_contribution
+    # transfer -- categorizable? must still key off to_account, not the kind.
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500, kind: "investment_contribution")
+    inflow_entry = create_transaction(date: Date.current, account: accounts(:investment), amount: -500, kind: "investment_contribution")
+
+    transfer = Transfer.create!(inflow_transaction: inflow_entry.transaction, outflow_transaction: outflow_entry.transaction)
+    outflow_entry.transaction.update_column(:kind, "funds_movement")
+
+    assert transfer.reload.categorizable?
+  end
+
+  test "categorizable? is false without a destination account" do
+    transfer = transfers(:one)
+    transfer.stubs(:to_account).returns(nil)
+
+    assert_not transfer.categorizable?
+  end
+
+  test "categorizable? matches how Transfer::Creator classifies investment-to-investment transfers" do
+    outflow_entry = create_transaction(date: Date.current, account: accounts(:investment), amount: 500, kind: "funds_movement")
+    inflow_entry = create_transaction(date: Date.current, account: accounts(:crypto), amount: -500, kind: "funds_movement")
+
+    transfer = Transfer.create!(inflow_transaction: inflow_entry.transaction, outflow_transaction: outflow_entry.transaction)
+
+    refute transfer.categorizable?
+  end
+
+  test "has_source_fee? returns true when source fee present" do
+    transfer = transfers(:one)
+    entry = accounts(:depository).entries.create!(name: "Fee", date: Date.current, amount: 5, currency: "USD", entryable: Transaction.new(kind: "standard"))
+    transfer.fee_transactions << entry.entryable
+    assert transfer.has_source_fee?
+    assert transfer.has_fees?
+  end
+
+  test "has_destination_fee? returns true when destination fee present" do
+    transfer = transfers(:one)
+    entry = accounts(:credit_card).entries.create!(name: "Fee", date: Date.current, amount: 5, currency: "USD", entryable: Transaction.new(kind: "standard"))
+    transfer.fee_transactions << entry.entryable
+    assert transfer.has_destination_fee?
+    assert transfer.has_fees?
+  end
+
+  test "has_fees? returns false when no fees" do
+    transfer = transfers(:one)
+    refute transfer.has_fees?
+  end
+
+  test "total_fee sums source and destination fees" do
+    transfer = transfers(:one)
+    entry1 = accounts(:depository).entries.create!(name: "Fee", date: Date.current, amount: 3, currency: "USD", entryable: Transaction.new(kind: "standard"))
+    entry2 = accounts(:credit_card).entries.create!(name: "Fee", date: Date.current, amount: 2, currency: "USD", entryable: Transaction.new(kind: "standard"))
+    transfer.fee_transactions << entry1.entryable << entry2.entryable
+    assert_equal 5, transfer.total_fee
+  end
+
+  private
+    def create_pending_transfer(from:, to:)
+      outflow_entry = create_transaction(date: Date.current, account: from, amount: 500)
+      inflow_entry = create_transaction(date: Date.current, account: to, amount: -500)
+
+      Transfer.create!(inflow_transaction: inflow_entry.transaction, outflow_transaction: outflow_entry.transaction)
+    end
+end

@@ -1,0 +1,156 @@
+require "test_helper"
+
+class Assistant::ResponderTest < ActiveSupport::TestCase
+  include ProviderTestHelper
+
+  class EchoFunction < Assistant::Function
+    def self.name = "echo"
+    def self.description = "Echoes the received arguments"
+    def call(params = {}) = params
+  end
+
+  setup do
+    @chat = chats(:two)
+    @message = @chat.messages.create!(
+      type: "UserMessage",
+      content: "What is my net worth?",
+      ai_model: "gpt-4.1"
+    )
+    @llm = mock
+    @llm.stubs(:supports_responses_endpoint?).returns(true)
+    @responder = Assistant::Responder.new(
+      message: @message,
+      instructions: "instructions",
+      function_tool_caller: Assistant::FunctionToolCaller.new([ EchoFunction.new(nil) ]),
+      llm: @llm
+    )
+  end
+
+  test "an actual provider attempt captures daily use even when the provider fails" do
+    Usage.expects(:capture).with("ai_assistant_served_daily").once
+    @llm.expects(:chat_response).raises(IOError)
+    assert_raises(IOError) { @responder.respond }
+  end
+
+  test "group_by_round splits consecutive results by round and keeps untagged results together" do
+    a = { call_id: "a", round: 1 }
+    b = { call_id: "b", round: 2 }
+    c = { call_id: "c", round: 2 }
+
+    assert_equal [ [ a ], [ b, c ] ], Assistant::Responder.group_by_round([ a, b, c ])
+    assert_equal [ [ { call_id: "x" }, { call_id: "y" } ] ],
+                 Assistant::Responder.group_by_round([ { call_id: "x" }, { call_id: "y" } ])
+    assert_equal [], Assistant::Responder.group_by_round([])
+  end
+
+  test "default iteration cap is eight rounds" do
+    assert_equal 8, Assistant::Responder::DEFAULT_MAX_TOOL_CALL_ITERATIONS
+  end
+
+  test "streamed chunks that are only whitespace are emitted so the spaces before numbers survive" do
+    reply = Provider::LlmConcept::ChatResponse.new(
+      id: "1", model: "gpt-4.1",
+      messages: [ Provider::LlmConcept::ChatMessage.new(id: "1", output_text: "as of 10-22-2026") ],
+      function_requests: []
+    )
+
+    @llm.stubs(:chat_response).with do |_prompt, **kwargs|
+      [ "as", " of", " ", "10", "-", "22", "-", "202", "6" ].each do |text|
+        kwargs[:streamer].call(Provider::LlmConcept::ChatStreamChunk.new(type: "output_text", data: text, usage: nil))
+      end
+      true
+    end.returns(provider_success_response(reply))
+
+    streamed = []
+    @responder.on(:output_text) { |text| streamed << text }
+    @responder.respond
+
+    assert_equal "as of 10-22-2026", streamed.join
+  end
+
+  test "leading whitespace-only chunks are held back and emitted with the first non-blank chunk" do
+    reply = Provider::LlmConcept::ChatResponse.new(
+      id: "1", model: "gpt-4.1",
+      messages: [ Provider::LlmConcept::ChatMessage.new(id: "1", output_text: "\n Hello there") ],
+      function_requests: []
+    )
+
+    @llm.stubs(:chat_response).with do |_prompt, **kwargs|
+      [ "\n", " ", "Hello", " ", "there" ].each do |text|
+        kwargs[:streamer].call(Provider::LlmConcept::ChatStreamChunk.new(type: "output_text", data: text, usage: nil))
+      end
+      true
+    end.returns(provider_success_response(reply))
+
+    streamed = []
+    @responder.on(:output_text) { |text| streamed << text }
+    @responder.respond
+
+    assert_equal "\n Hello", streamed.first
+    assert_equal "\n Hello there", streamed.join
+  end
+
+  test "final round requests forbid tool calls via tool_choice while keeping tool definitions" do
+    function_request = Provider::LlmConcept::ChatFunctionRequest.new(
+      id: "1", call_id: "1", function_name: "echo", function_args: "{}"
+    )
+    tool_response = Provider::LlmConcept::ChatResponse.new(
+      id: "1", model: "gpt-4.1", messages: [], function_requests: [ function_request ]
+    )
+    text_response = Provider::LlmConcept::ChatResponse.new(
+      id: "2", model: "gpt-4.1",
+      messages: [ Provider::LlmConcept::ChatMessage.new(id: "2", output_text: "Here is what I found") ],
+      function_requests: []
+    )
+
+    functions_seen = []
+    tool_choices_seen = []
+
+    @llm.stubs(:chat_response).with do |_prompt, **kwargs|
+      functions_seen << kwargs[:functions]
+      tool_choices_seen << kwargs[:tool_choice]
+      true
+    end.returns(
+      provider_success_response(tool_response),
+      provider_success_response(tool_response),
+      provider_success_response(text_response)
+    )
+
+    with_iteration_cap(2) do
+      @responder.respond
+    end
+
+    # Every request carries the real tool definitions — Anthropic rejects
+    # messages containing tool blocks when no tools are defined — and only the
+    # request after the final permitted round forbids further calls.
+    assert_operator functions_seen.size, :>=, 2
+    assert functions_seen.last.present?
+    assert_equal functions_seen.first, functions_seen.last
+    assert_equal :none, tool_choices_seen.last
+    assert tool_choices_seen[0..-2].all?(&:nil?)
+  end
+
+  test "a model that never stops calling tools hits the cap and raises" do
+    function_request = Provider::LlmConcept::ChatFunctionRequest.new(
+      id: "1", call_id: "1", function_name: "echo", function_args: "{}"
+    )
+    tool_response = Provider::LlmConcept::ChatResponse.new(
+      id: "1", model: "gpt-4.1", messages: [], function_requests: [ function_request ]
+    )
+
+    @llm.stubs(:chat_response).returns(provider_success_response(tool_response))
+
+    with_iteration_cap(2) do
+      assert_raises(Assistant::Responder::ToolCallLimitError) { @responder.respond }
+    end
+  end
+
+  private
+    def with_iteration_cap(value)
+      previous = ENV["ASSISTANT_MAX_TOOL_CALL_ITERATIONS"]
+      ENV["ASSISTANT_MAX_TOOL_CALL_ITERATIONS"] = value.to_s
+      yield
+    ensure
+      ENV["ASSISTANT_MAX_TOOL_CALL_ITERATIONS"] = previous
+    end
+end

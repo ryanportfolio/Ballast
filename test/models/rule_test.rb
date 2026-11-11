@@ -1,0 +1,593 @@
+require "test_helper"
+
+class RuleTest < ActiveSupport::TestCase
+  include EntriesTestHelper
+
+  setup do
+    @family = families(:empty)
+    @account = @family.accounts.create!(name: "Rule test", balance: 1000, currency: "USD", accountable: Depository.new)
+    @whole_foods_merchant = @family.merchants.create!(name: "Whole Foods", type: "FamilyMerchant")
+    @groceries_category = @family.categories.create!(name: "Groceries")
+  end
+
+  test "rejects a null byte in the rule name" do
+    rule = @family.rules.build(name: "bad\0name", resource_type: "transaction")
+    rule.actions.build(action_type: "exclude_transaction")
+
+    assert_not rule.valid?
+    assert rule.errors.of_kind?(:name, :invalid)
+
+    rule.name = " \0 "
+    assert_not rule.valid?
+    assert rule.errors.of_kind?(:name, :invalid)
+
+    rule.name = "\0"
+    assert_not rule.valid?
+    assert rule.errors.of_kind?(:name, :invalid)
+  end
+
+  test "rejects invalid text encoding in rule fields" do
+    invalid_text = "bad\xFF".dup.force_encoding("UTF-8")
+    rule = @family.rules.build(name: invalid_text, resource_type: "transaction")
+    rule.actions.build(action_type: "exclude_transaction")
+
+    assert_not rule.valid?
+    assert rule.errors.of_kind?(:name, :invalid)
+
+    rule.name = "Valid name"
+    rule.resource_type = invalid_text
+    assert_not rule.valid?
+    assert rule.errors.of_kind?(:resource_type, :invalid)
+  end
+
+  test "rejects null bytes and invalid encoding in condition and action metadata" do
+    invalid_text = "bad\xFF".dup.force_encoding("UTF-8")
+    rule = @family.rules.build(resource_type: "transaction")
+    condition = rule.conditions.build(condition_type: "transaction_name", operator: "like\0", value: "coffee")
+    action = rule.actions.build(action_type: "exclude_transaction\0")
+
+    assert_not rule.valid?
+    assert condition.errors.of_kind?(:operator, :invalid)
+    assert action.errors.of_kind?(:action_type, :invalid)
+
+    condition.operator = "like"
+    condition.value = invalid_text
+    action.action_type = "set_transaction_name"
+    action.value = invalid_text
+
+    assert_not rule.valid?
+    assert condition.errors.of_kind?(:value, :invalid)
+    assert action.errors.of_kind?(:value, :invalid)
+
+    condition.condition_type = invalid_text
+    assert_not rule.valid?
+    assert condition.errors.of_kind?(:condition_type, :invalid)
+  end
+
+  test "rejects invalid encoding in a multi-value action" do
+    invalid_text = "bad\xFF".dup.force_encoding("UTF-8")
+    rule = @family.rules.build(resource_type: "transaction")
+    action = rule.actions.build(action_type: "set_transaction_tags", value: [ invalid_text ])
+
+    assert_not rule.valid?
+    assert action.errors.of_kind?(:value, :invalid)
+  end
+
+  test "rejects a null byte in a nested condition value" do
+    rule = @family.rules.build(resource_type: "transaction")
+    compound = rule.conditions.build(condition_type: "compound", operator: "and")
+    condition = compound.sub_conditions.build(condition_type: "transaction_name", operator: "like", value: "bad\0value")
+    rule.actions.build(action_type: "exclude_transaction")
+
+    assert_not rule.valid?
+    assert condition.errors.of_kind?(:value, :invalid)
+  end
+
+  test "rejects a null byte in an action value" do
+    rule = @family.rules.build(resource_type: "transaction")
+    action = rule.actions.build(action_type: "set_transaction_name", value: "bad\0value")
+
+    assert_not rule.valid?
+    assert action.errors.of_kind?(:value, :invalid)
+  end
+
+  test "allows other whitespace and Unicode in rule text" do
+    rule = @family.rules.build(name: "咖啡\n提醒", resource_type: "transaction")
+    rule.conditions.build(condition_type: "transaction_name", operator: "like", value: "café\tshop")
+    rule.actions.build(action_type: "set_transaction_name", value: "Tea\nshop")
+
+    assert rule.valid?
+  end
+
+  test "create_from_grouping returns nil for a null byte" do
+    assert_no_difference "Rule.count" do
+      assert_nil Rule.create_from_grouping(@family, "bad\0name", @groceries_category)
+    end
+  end
+
+  test "rejects an unknown action type" do
+    rule = @family.rules.build(resource_type: "transaction")
+    action = rule.actions.build(action_type: "garbage")
+
+    assert_not rule.valid?
+    assert action.errors.of_kind?(:action_type, :inclusion)
+  end
+
+  test "accepts every action executor as an action type" do
+    keys = Dir[Rails.root.join("app/models/rule/action_executor/*.rb")].map { |path| File.basename(path, ".rb") }
+    assert_includes keys, "auto_categorize"
+
+    keys.each do |key|
+      rule = @family.rules.build(resource_type: "transaction")
+      action = rule.actions.build(action_type: key)
+
+      # A split action is only valid with a split configuration in `value`;
+      # its action_type is still accepted.
+      if key == "split_transaction"
+        rule.valid?
+      else
+        assert rule.valid?, "#{key}: #{rule.errors.full_messages.to_sentence}"
+      end
+      assert_empty action.errors[:action_type], key
+    end
+  end
+
+  test "rejects an unknown resource type without raising or flagging its actions" do
+    rule = @family.rules.build(resource_type: "account")
+    action = rule.actions.build(action_type: "exclude_transaction")
+
+    assert_nothing_raised { assert_not rule.valid? }
+    assert rule.errors.of_kind?(:resource_type, :inclusion)
+    assert_empty action.errors[:action_type]
+
+    rule.resource_type = "transaction"
+    assert rule.valid?
+  end
+
+  test "keeps reporting a null byte in a type as invalid text" do
+    rule = @family.rules.build(resource_type: "transaction\0")
+    action = rule.actions.build(action_type: "exclude_transaction\0")
+
+    assert_not rule.valid?
+    assert rule.errors.of_kind?(:resource_type, :invalid)
+    assert action.errors.of_kind?(:action_type, :invalid)
+    assert_not rule.errors.of_kind?(:resource_type, :inclusion)
+    assert_not action.errors.of_kind?(:action_type, :inclusion)
+  end
+
+  test "an untouched saved action with an unknown type does not block an unrelated edit" do
+    rule = @family.rules.create!(resource_type: "transaction", actions_attributes: [ { action_type: "exclude_transaction" } ])
+    rule.actions.first.update_column(:action_type, "retired_action")
+
+    rule = Rule.find(rule.id)
+    assert rule.update(name: "Renamed"), rule.errors.full_messages.to_sentence
+    assert_equal "Renamed", rule.reload.name
+  end
+
+  test "basic rule" do
+    transaction_entry = create_transaction(date: Date.current, account: @account, merchant: @whole_foods_merchant)
+
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [ Rule::Condition.new(condition_type: "transaction_merchant", operator: "=", value: @whole_foods_merchant.id) ],
+      actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @groceries_category.id) ]
+    )
+
+    rule.apply
+
+    transaction_entry.reload
+
+    assert_equal @groceries_category, transaction_entry.transaction.category
+  end
+
+  test "split_transaction rule end to end" do
+    transaction_entry = create_transaction(
+      date: Date.current,
+      amount: 100,
+      account: @account,
+      name: "Netflix+Hulu Bundle"
+    )
+
+    hulu_category = @family.categories.create!(name: "Streaming")
+
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [
+        Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "Netflix+Hulu Bundle"),
+        Rule::Condition.new(condition_type: "transaction_amount", operator: "=", value: 100)
+      ],
+      actions: [
+        Rule::Action.new(
+          action_type: "split_transaction",
+          value: {
+            splits: [
+              { type: "fixed", name: "Netflix", share: "70", category_id: @groceries_category.id },
+              { type: "fixed", name: "Hulu", share: "30", category_id: hulu_category.id }
+            ]
+          }.to_json
+        )
+      ]
+    )
+
+    rule.apply
+
+    transaction_entry.reload
+    assert transaction_entry.split_parent?
+    assert_equal [ 30, 70 ], transaction_entry.child_entries.order(:amount).pluck(:amount).map(&:to_i)
+  end
+
+  test "a split rule cannot have other actions" do
+    split = { splits: [ { type: "percentage", name: "A", share: "50" }, { type: "percentage", name: "B", share: "50" } ] }
+
+    rule = @family.rules.build(
+      resource_type: "transaction",
+      conditions: [ Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "Bundle") ],
+      actions: [
+        Rule::Action.new(action_type: "split_transaction", value: split.to_json),
+        Rule::Action.new(action_type: "set_transaction_category", value: @groceries_category.id)
+      ]
+    )
+
+    assert_not rule.valid?
+    assert_includes rule.errors[:base], I18n.t("activerecord.errors.models.rule.split_not_alone")
+  end
+
+  test "compound rule" do
+    transaction_entry1 = create_transaction(date: Date.current, amount: 50, account: @account, merchant: @whole_foods_merchant)
+    transaction_entry2 = create_transaction(date: Date.current, amount: 100, account: @account, merchant: @whole_foods_merchant)
+
+    # Assign "Groceries" to transactions with a merchant of "Whole Foods" and an amount greater than $60
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [
+        Rule::Condition.new(condition_type: "compound", operator: "and", sub_conditions: [
+          Rule::Condition.new(condition_type: "transaction_merchant", operator: "=", value: @whole_foods_merchant.id),
+          Rule::Condition.new(condition_type: "transaction_amount", operator: ">", value: 60)
+        ])
+      ],
+      actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @groceries_category.id) ]
+    )
+
+    rule.apply
+
+    transaction_entry1.reload
+    transaction_entry2.reload
+
+    assert_nil transaction_entry1.transaction.category
+    assert_equal @groceries_category, transaction_entry2.transaction.category
+  end
+
+  test "exclude transaction rule" do
+    transaction_entry = create_transaction(date: Date.current, account: @account, merchant: @whole_foods_merchant)
+
+    assert_not transaction_entry.excluded, "Transaction should not be excluded initially"
+
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [ Rule::Condition.new(condition_type: "transaction_merchant", operator: "=", value: @whole_foods_merchant.id) ],
+      actions: [ Rule::Action.new(action_type: "exclude_transaction") ]
+    )
+
+    rule.apply
+
+    transaction_entry.reload
+
+    assert transaction_entry.excluded, "Transaction should be excluded after rule applies"
+  end
+
+  test "exclude transaction rule respects attribute locks" do
+    transaction_entry = create_transaction(date: Date.current, account: @account, merchant: @whole_foods_merchant)
+    transaction_entry.lock_attr!(:excluded)
+
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [ Rule::Condition.new(condition_type: "transaction_merchant", operator: "=", value: @whole_foods_merchant.id) ],
+      actions: [ Rule::Action.new(action_type: "exclude_transaction") ]
+    )
+
+    rule.apply
+
+    transaction_entry.reload
+
+    assert_not transaction_entry.excluded, "Transaction should not be excluded when attribute is locked"
+  end
+
+  test "transaction name rules normalize whitespace in comparisons" do
+    transaction_entry = create_transaction(
+      date: Date.current,
+      account: @account,
+      name: "Company  -   Mobile",
+      amount: 80
+    )
+
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [ Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "Company - Mobile") ],
+      actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @groceries_category.id) ]
+    )
+
+    assert_equal 1, rule.affected_resource_count
+
+    rule.apply
+    transaction_entry.reload
+
+    assert_equal @groceries_category, transaction_entry.transaction.category
+  end
+
+  # Artificial limitation put in place to prevent users from creating overly complex rules
+  # Rules should be shallow and wide
+  test "no nested compound conditions" do
+    rule = Rule.new(
+      family: @family,
+      resource_type: "transaction",
+      actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @groceries_category.id) ],
+      conditions: [
+        Rule::Condition.new(condition_type: "compound", operator: "and", sub_conditions: [
+          Rule::Condition.new(condition_type: "compound", operator: "and", sub_conditions: [
+            Rule::Condition.new(condition_type: "transaction_name", operator: "=", value: "Starbucks")
+          ])
+        ])
+      ]
+    )
+
+    assert_not rule.valid?
+    assert_equal [ "Compound conditions cannot be nested" ], rule.errors.full_messages
+  end
+
+  test "displayed_condition falls back to next valid condition when first compound condition is empty" do
+    rule = Rule.new(
+      family: @family,
+      resource_type: "transaction",
+      actions: [ Rule::Action.new(action_type: "exclude_transaction") ],
+      conditions: [
+        Rule::Condition.new(condition_type: "compound", operator: "and"),
+        Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "starbucks")
+      ]
+    )
+
+    displayed_condition = rule.displayed_condition
+
+    assert_not_nil displayed_condition
+    assert_equal "transaction_name", displayed_condition.condition_type
+    assert_equal "like", displayed_condition.operator
+    assert_equal "starbucks", displayed_condition.value
+  end
+
+  test "additional_displayable_conditions_count ignores empty compound conditions" do
+    rule = Rule.new(
+      family: @family,
+      resource_type: "transaction",
+      actions: [ Rule::Action.new(action_type: "exclude_transaction") ],
+      conditions: [
+        Rule::Condition.new(condition_type: "compound", operator: "and"),
+        Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "first"),
+        Rule::Condition.new(condition_type: "transaction_amount", operator: ">", value: 100)
+      ]
+    )
+
+    assert_equal 1, rule.additional_displayable_conditions_count
+  end
+
+  test "rule matching on transaction details" do
+    # Create PayPal transaction with underlying merchant in details
+    paypal_entry = create_transaction(
+      date: Date.current,
+      account: @account,
+      name: "PayPal",
+      amount: 50
+    )
+    paypal_entry.transaction.update!(
+      extra: {
+        "simplefin" => {
+          "payee" => "Whole Foods via PayPal",
+          "description" => "Grocery shopping"
+        }
+      }
+    )
+
+    # Create another PayPal transaction with different underlying merchant
+    paypal_entry2 = create_transaction(
+      date: Date.current,
+      account: @account,
+      name: "PayPal",
+      amount: 100
+    )
+    paypal_entry2.transaction.update!(
+      extra: {
+        "simplefin" => {
+          "payee" => "Amazon via PayPal"
+        }
+      }
+    )
+
+    # Rule to categorize PayPal transactions containing "Whole Foods" in details
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [ Rule::Condition.new(condition_type: "transaction_details", operator: "like", value: "Whole Foods") ],
+      actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @groceries_category.id) ]
+    )
+
+    rule.apply
+
+    paypal_entry.reload
+    paypal_entry2.reload
+
+    assert_equal @groceries_category, paypal_entry.transaction.category, "PayPal transaction with 'Whole Foods' in details should be categorized"
+    assert_nil paypal_entry2.transaction.category, "PayPal transaction without 'Whole Foods' in details should not be categorized"
+  end
+
+  test "rule matching on transaction notes" do
+    # Create transaction with notes
+    transaction_entry = create_transaction(
+      date: Date.current,
+      account: @account,
+      name: "Expense",
+      amount: 50
+    )
+    transaction_entry.update!(notes: "Business lunch with client")
+
+    # Create another transaction without relevant notes
+    transaction_entry2 = create_transaction(
+      date: Date.current,
+      account: @account,
+      name: "Expense",
+      amount: 100
+    )
+    transaction_entry2.update!(notes: "Personal expense")
+
+    # Rule to categorize transactions with "business" in notes
+    business_category = @family.categories.create!(name: "Business")
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [ Rule::Condition.new(condition_type: "transaction_notes", operator: "like", value: "business") ],
+      actions: [ Rule::Action.new(action_type: "set_transaction_category", value: business_category.id) ]
+    )
+
+    rule.apply
+
+    transaction_entry.reload
+    transaction_entry2.reload
+
+    assert_equal business_category, transaction_entry.transaction.category, "Transaction with 'business' in notes should be categorized"
+    assert_nil transaction_entry2.transaction.category, "Transaction without 'business' in notes should not be categorized"
+  end
+
+  test "total_affected_resource_count deduplicates overlapping rules" do
+    # Create transactions
+    transaction_entry1 = create_transaction(date: Date.current, account: @account, name: "Whole Foods", amount: 50)
+    transaction_entry2 = create_transaction(date: Date.current, account: @account, name: "Whole Foods", amount: 100)
+    transaction_entry3 = create_transaction(date: Date.current, account: @account, name: "Target", amount: 75)
+
+    # Rule 1: Match transactions with name "Whole Foods" (matches txn 1 and 2)
+    rule1 = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [ Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "Whole Foods") ],
+      actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @groceries_category.id) ]
+    )
+
+    # Rule 2: Match transactions with amount > 60 (matches txn 2 and 3)
+    rule2 = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [ Rule::Condition.new(condition_type: "transaction_amount", operator: ">", value: 60) ],
+      actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @groceries_category.id) ]
+    )
+
+    # Rule 1 affects 2 transactions, Rule 2 affects 2 transactions
+    # But transaction_entry2 is matched by both, so total unique should be 3
+    assert_equal 2, rule1.affected_resource_count
+    assert_equal 2, rule2.affected_resource_count
+    assert_equal 3, Rule.total_affected_resource_count([ rule1, rule2 ])
+  end
+
+  test "total_affected_resource_count returns zero for empty rules" do
+    assert_equal 0, Rule.total_affected_resource_count([])
+  end
+
+  test "rule matching on transaction account" do
+    # Create a second account
+    other_account = @family.accounts.create!(
+      name: "Other account",
+      balance: 500,
+      currency: "USD",
+      accountable: Depository.new
+    )
+
+    # Transaction on the target account
+    transaction_entry1 = create_transaction(
+      date: Date.current,
+      account: @account,
+      amount: 50
+    )
+
+    # Transaction on another account
+    transaction_entry2 = create_transaction(
+      date: Date.current,
+      account: other_account,
+      amount: 75
+    )
+
+    rule = Rule.create!(
+      family: @family,
+      resource_type: "transaction",
+      effective_date: 1.day.ago.to_date,
+      conditions: [
+        Rule::Condition.new(
+          condition_type: "transaction_account",
+          operator: "=",
+          value: @account.id
+        )
+      ],
+      actions: [
+        Rule::Action.new(
+          action_type: "set_transaction_category",
+          value: @groceries_category.id
+        )
+      ]
+    )
+
+    rule.apply
+
+    transaction_entry1.reload
+    transaction_entry2.reload
+
+    assert_equal @groceries_category, transaction_entry1.transaction.category,
+      "Transaction on selected account should be categorized"
+
+    assert_nil transaction_entry2.transaction.category,
+      "Transaction on other account should not be categorized"
+  end
+
+  test "new rules are added at the end of the run order" do
+    first = create_exclude_rule
+    second = create_exclude_rule
+
+    assert_equal first.position + 1, second.position
+    assert_equal [ first, second ], @family.rules.ordered.to_a
+  end
+
+  test "update_positions! sets the order of all rules of the family" do
+    first = create_exclude_rule
+    second = create_exclude_rule
+
+    Rule.update_positions!(@family, [ second.id, first.id ])
+
+    assert_equal [ second, first ], @family.rules.ordered.to_a
+  end
+
+  test "update_positions! rejects foreign and incomplete id lists" do
+    first = create_exclude_rule
+    second = create_exclude_rule
+    foreign = rules(:one)
+
+    assert_raises(ArgumentError) { Rule.update_positions!(@family, [ first.id, second.id, foreign.id ]) }
+    assert_raises(ArgumentError) { Rule.update_positions!(@family, [ first.id ]) }
+    assert_raises(ArgumentError) { Rule.update_positions!(@family, [ first.id, first.id ]) }
+    assert_equal 1, foreign.reload.position
+    assert_equal [ first, second ], @family.rules.ordered.to_a
+  end
+
+  private
+    def create_exclude_rule
+      @family.rules.create!(resource_type: "transaction", actions: [ Rule::Action.new(action_type: "exclude_transaction") ])
+    end
+end

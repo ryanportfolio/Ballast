@@ -1,0 +1,40 @@
+<%= render "layouts/shared/htmldoc" do %>
+  <div class="flex flex-col h-full overflow-y-auto">
+    <div class="flex flex-col min-h-full px-6 py-12 bg-surface">
+      <div class="grow flex flex-col justify-center">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md">
+          <div class="flex justify-center mt-2 md:mb-6">
+            <%= image_tag "logomark.svg", class: "w-16 mb-6" %>
+          </div>
+          <div class="space-y-2">
+            <% if controller_name.in?(%w[sessions registrations]) && action_name.in?(%w[new create]) %>
+              <%# Determine the active tab from the controller, not current_page?:
+                  a failed POST re-renders :new from #create, where the request
+                  path is the form target (not /sessions/new), so current_page?
+                  would mis-highlight the switch. %>
+              <% on_sign_in = controller_name == "sessions" %>
+              <div class="space-y-3 w-full my-4">
+                <div class="bg-surface-inset rounded-lg p-1 flex">
+                  <%= link_to new_session_path,
+      class: "w-1/2 px-2 py-1 rounded-md text-sm text-center font-medium #{on_sign_in ? 'bg-surface shadow-sm text-primary' : 'text-secondary'}" do %>
+                    <%= t("layouts.auth.sign_in") %>
+                  <% end %>
+                  <%= link_to new_registration_path,
+      class: "w-1/2 px-2 py-1 rounded-md text-sm text-center font-medium #{!on_sign_in ? 'bg-surface shadow-sm text-primary' : 'text-secondary'}" do %>
+                    <%= t("layouts.auth.sign_up") %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="mt-0 md:mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
+          <%= yield %>
+        </div>
+      </div>
+
+      <%= render "layouts/shared/footer" %>
+    </div>
+  </div>
+<% end %>

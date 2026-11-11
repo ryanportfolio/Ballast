@@ -1,0 +1,7 @@
+---
+description: 
+globs: app/views/**,app/javascript/**,app/components/**/*.js
+alwaysApply: false
+---
+
+@docs/llm-guides/ui.md

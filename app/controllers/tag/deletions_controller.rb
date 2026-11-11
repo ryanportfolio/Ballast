@@ -1,0 +1,25 @@
+class Tag::DeletionsController < ApplicationController
+  before_action :require_non_guest!
+  before_action :set_tag
+  before_action :set_replacement_tag, only: :create
+
+  def new
+  end
+
+  def create
+    @tag.replace_and_destroy! @replacement_tag
+    redirect_back_or_to tags_path, notice: t(".deleted")
+  end
+
+  private
+
+    def set_tag
+      @tag = Current.family.tags.find(params[:tag_id])
+    end
+
+    def set_replacement_tag
+      if params[:replacement_tag_id].present?
+        @replacement_tag = Current.family.tags.find(params[:replacement_tag_id])
+      end
+    end
+end

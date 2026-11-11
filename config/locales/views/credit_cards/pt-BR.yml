@@ -1,0 +1,17 @@
+---
+pt-BR:
+  credit_cards:
+    edit:
+      edit: Editar %{account}
+    form:
+      annual_fee: Taxa anual
+      annual_fee_placeholder: '99'
+      apr: TAE
+      apr_placeholder: '15,99'
+      available_credit: Crédito disponível
+      available_credit_placeholder: '10000'
+      expiration_date: Data de expiração
+      minimum_payment: Pagamento mínimo
+      minimum_payment_placeholder: '100'
+    new:
+      title: Inserir detalhes do cartão de crédito

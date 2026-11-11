@@ -1,0 +1,11 @@
+---
+tr:
+  passwords:
+    disabled: "Sure üzerinden şifre değiştirme devre dışı bırakılmıştır. Lütfen şifrenizi kimlik sağlayıcınız üzerinden yönetin."
+    edit:
+      password: Yeni Şifre
+      password_challenge: Mevcut Şifre
+      submit: Şifreyi Sıfırla
+      title: Şifreyi Güncelle
+    update:
+      success: Şifreniz sıfırlandı.

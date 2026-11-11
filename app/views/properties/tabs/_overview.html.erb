@@ -1,0 +1,70 @@
+<%# locals: (account:) %>
+
+<div class="grid grid-cols-3 gap-2">
+  <%= summary_card title: t(".market_value") do %>
+    <%= format_money(account.balance_money) %>
+  <% end %>
+
+  <%= summary_card title: t(".purchase_price") do %>
+    <%= account.property.purchase_price ? format_money(account.property.purchase_price) : t(".unknown") %>
+  <% end %>
+
+  <%= summary_card title: t(".trend") do %>
+    <div class="flex items-center gap-1" style="color: <%= account.property.trend.color %>">
+      <p class="text-xl font-medium">
+        <%= account.property.trend.value %>
+      </p>
+
+      <p>(<%= account.property.trend.percent %>%)</p>
+    </div>
+  <% end %>
+
+  <%= summary_card title: t(".year_built") do %>
+    <%= account.property.year_built || t(".unknown") %>
+  <% end %>
+
+  <%= summary_card title: t(".living_area") do %>
+    <%= account.property.area || t(".unknown") %>
+  <% end %>
+</div>
+
+<% if account.property.avm_provider.present? %>
+  <div class="flex flex-col items-center gap-2 pt-8">
+    <% if account.property.avm_last_synced_on.present? %>
+      <p class="text-sm text-secondary">
+        <%= t(".valuation_source",
+              provider: t("properties.avm_providers.#{account.property.avm_provider}"),
+              date: l(account.property.avm_last_synced_on, format: :long)) %>
+      </p>
+    <% end %>
+    <%= render DS::Button.new(
+      text: t(".refresh_valuation"),
+      href: refresh_valuation_property_path(account),
+      variant: "outline",
+      icon: "refresh-cw",
+      data: { turbo_frame: "_top" }
+    ) %>
+  </div>
+<% elsif (linkable_providers = account.property.linkable_avm_providers).any? %>
+  <div class="flex flex-col items-center gap-2 pt-8">
+    <p class="text-sm text-secondary"><%= t(".link_valuation_description") %></p>
+    <% linkable_providers.each do |provider_key| %>
+      <%= render DS::Button.new(
+        text: t(".link_valuation", provider: t("properties.avm_providers.#{provider_key}")),
+        href: link_valuation_property_path(account, avm_provider: provider_key),
+        variant: "outline",
+        icon: "link",
+        data: { turbo_frame: "_top" }
+      ) %>
+    <% end %>
+  </div>
+<% end %>
+
+<div class="flex justify-center py-8">
+  <%= render DS::Link.new(
+    text: t(".edit_account_details"),
+    href: edit_property_path(account),
+    variant: "ghost",
+    frame: :modal
+  ) %>
+</div>

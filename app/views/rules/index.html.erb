@@ -1,0 +1,194 @@
+<%= content_for :page_title, t(".page_title") %>
+<%= content_for :page_actions do %>
+  <% unless Current.user&.guest? %>
+    <% if @rules.any? %>
+      <%= render DS::Menu.new do |menu| %>
+        <% menu.with_item(
+          variant: "button",
+          text: t("rules.clear_ai_cache.button"),
+          href: clear_ai_cache_rules_path,
+          icon: "refresh-cw",
+          method: :post,
+          confirm: CustomConfirm.new(
+            title: t("rules.clear_ai_cache.confirm_title"),
+            body: t("rules.clear_ai_cache.confirm_body"),
+            btn_text: t("rules.clear_ai_cache.confirm_button")
+          )) %>
+        <% menu.with_item(
+          variant: "button",
+          text: t(".delete_all_rules"),
+          href: destroy_all_rules_path,
+          icon: "trash-2",
+          method: :delete,
+          confirm: CustomConfirm.for_resource_deletion("all rules", high_severity: true)) %>
+      <% end %>
+      <%= render DS::Link.new(
+        text: t("rules.apply_all.button"),
+        variant: "secondary",
+        href: confirm_all_rules_path,
+        icon: "play",
+        frame: :modal
+      ) %>
+    <% end %>
+    <%= render DS::Link.new(
+      text: t(".new_rule"),
+      variant: "primary",
+      href: new_rule_path(resource_type: "transaction"),
+      icon: "plus",
+      frame: :modal
+    ) %>
+  <% end %>
+<% end %>
+
+<% if self_hosted? %>
+  <div class="flex items-center gap-2 mb-2 py-4">
+    <%= icon("circle-alert", size: "sm") %>
+    <p class="text-sm text-secondary">
+      <%= t(".ai_cost_warning") %>
+    </p>
+  </div>
+<% end %>
+<div class="bg-container rounded-xl shadow-border-xs p-4">
+  <% if @rules.any? %>
+    <div class="bg-container-inset rounded-xl">
+      <div class="flex justify-between px-4 py-2 text-xs uppercase">
+        <div class="flex items-center gap-1.5 font-medium text-secondary">
+          <p><%= t(".rules_heading") %></p>
+          <span class="text-subdued">&middot;</span>
+          <p><%= @rules.count %></p>
+        </div>
+      </div>
+      <p class="px-4 pb-2 text-sm text-secondary"><%= t(".order_hint") %></p>
+      <div class="p-1">
+        <div class="flex flex-col bg-container rounded-lg shadow-border-xs divide-y divide-subdued"
+             data-controller="sortable-list"
+             data-sortable-list-url-value="<%= reorder_rules_path %>"
+             data-sortable-list-param-value="rule_ids"
+             data-action="dragover->sortable-list#dragOver drop->sortable-list#drop"
+             role="list"
+             aria-label="<%= t(".rules_heading") %>">
+          <% @rules.each do |rule| %>
+            <div class="flex items-center"
+                 data-sortable-list-target="item"
+                 data-sortable-list-id="<%= rule.id %>"
+                 draggable="true"
+                 role="listitem"
+                 aria-grabbed="false"
+                 data-action="dragstart->sortable-list#dragStart dragend->sortable-list#dragEnd">
+              <%= render DS::Button.new(
+                variant: :icon,
+                icon: "grip-vertical",
+                size: :sm,
+                class: "ml-2 shrink-0 cursor-grab active:cursor-grabbing",
+                aria_label: t(".reorder_rule", name: rule.name.presence || rule.primary_condition_title),
+                data: { action: "touchstart->sortable-list#touchStart touchmove->sortable-list#touchMove touchend->sortable-list#touchEnd touchcancel->sortable-list#touchCancel contextmenu->sortable-list#suppressContextMenu keydown->sortable-list#handleKeyDown" }
+              ) %>
+              <div class="grow min-w-0">
+                <%= render "rule", rule: rule %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="flex justify-center items-center py-20">
+      <div class="text-center flex flex-col items-center max-w-[500px]">
+        <p class="text-sm text-primary font-medium mb-1"><%= t(".no_rules_title") %></p>
+        <p class="text-sm text-secondary mb-4"><%= t(".no_rules_description") %></p>
+        <% unless Current.user&.guest? %>
+          <div class="flex items-center gap-2">
+            <%= render DS::Link.new(
+              text: t(".new_rule"),
+              variant: "primary",
+              href: new_rule_path(resource_type: "transaction"),
+              icon: "plus",
+              frame: :modal
+            ) %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<!-- Recent Runs Section -->
+<% if @recent_runs.any? %>
+  <div class="mt-6 bg-container rounded-xl shadow-border-xs p-4">
+    <div class="mb-4">
+      <h2 class="text-primary text-lg font-medium mb-1"><%= t("rules.recent_runs.title") %></h2>
+      <p class="text-sm text-secondary"><%= t("rules.recent_runs.description") %></p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-surface border-b border-primary">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">
+              <%= t("rules.recent_runs.columns.date_time") %>
+            </th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-secondary uppercase tracking-wider">
+              <%= t("rules.recent_runs.columns.execution_type") %>
+            </th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-secondary uppercase tracking-wider">
+              <%= t("rules.recent_runs.columns.status") %>
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">
+              <%= t("rules.recent_runs.columns.rule_name") %>
+            </th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-secondary uppercase tracking-wider">
+              <div class="flex flex-col leading-tight">
+                <div><%= t("rules.recent_runs.columns.transactions_counts.queued") %></div>
+                <div><%= t("rules.recent_runs.columns.transactions_counts.processed") %></div>
+                <div><%= t("rules.recent_runs.columns.transactions_counts.modified") %></div>
+                <div><%= t("rules.recent_runs.columns.transactions_counts.blocked", default: "Blocked") %></div>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-alpha-black-200 theme-dark:divide-alpha-white-200">
+          <% @recent_runs.each do |run| %>
+            <tr class="<%= "bg-red-tint-5 theme-dark:bg-red-tint-10" if run.failed? %>">
+              <td class="px-4 py-3 text-sm text-primary whitespace-nowrap">
+                <%= run.executed_at.strftime("%b %d, %Y %I:%M %p") %>
+              </td>
+              <td class="px-4 py-3 text-sm text-primary text-center">
+                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium <%= run.execution_type == "manual" ? "bg-blue-50 text-blue-700 theme-dark:bg-blue-950/30 theme-dark:text-blue-400" : "bg-purple-50 text-purple-700 theme-dark:bg-purple-950/30 theme-dark:text-purple-400" %>">
+                  <%= t("rules.recent_runs.execution_types.#{run.execution_type}") %>
+                </span>
+              </td>
+              <td class="px-4 py-3 text-sm text-center">
+                <div class="flex items-center justify-center gap-2">
+                  <% if run.pending? %>
+                    <%= render DS::Pill.new(label: t("rules.recent_runs.statuses.#{run.status}"), tone: :warning, marker: false) %>
+                  <% elsif run.success? %>
+                    <%= render DS::Pill.new(label: t("rules.recent_runs.statuses.#{run.status}"), tone: :success, marker: false) %>
+                  <% else %>
+                    <%= render DS::Pill.new(label: t("rules.recent_runs.statuses.#{run.status}"), tone: :error, marker: false) %>
+                  <% end %>
+                  <% if run.failed? && run.error_message.present? %>
+                    <div data-controller="tooltip" data-tooltip-content-value="<%= run.error_message %>">
+                      <%= icon("info", size: "sm", color: "destructive") %>
+                    </div>
+                  <% end %>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-sm text-primary">
+                <%= run.rule_name.presence || run.rule&.name.presence || t("rules.recent_runs.unnamed_rule") %>
+              </td>
+              <td class="px-4 py-3 text-sm text-primary text-center tabular-nums">
+                <%= "#{number_with_delimiter(run.transactions_queued)} / #{number_with_delimiter(run.transactions_processed)} / #{number_with_delimiter(run.transactions_modified)} / #{number_with_delimiter(run.transactions_blocked)}" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if @pagy.pages > 1 %>
+      <div class="mt-4">
+        <%= render "shared/pagination", pagy: @pagy %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

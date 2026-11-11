@@ -1,0 +1,11 @@
+---
+it:
+  passwords:
+    disabled: "La modifica della password tramite Sure è disabilitata. Gestisci la password tramite il tuo provider di identità."
+    edit:
+      password: Nuova password
+      password_challenge: Password attuale
+      submit: Reimposta password
+      title: Aggiorna password
+    update:
+      success: La tua password è stata reimpostata.

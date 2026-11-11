@@ -1,0 +1,17 @@
+<%# locals: (account:) %>
+<%
+  treatment = account.tax_treatment
+  tone = case treatment
+         when :tax_exempt     then :green
+         when :tax_deferred   then :indigo  # was raw blue-500/10 → maps to closest DS tone
+         when :tax_advantaged then :violet  # was raw purple-500/10 → maps to closest DS tone
+         else                      :neutral
+         end
+%>
+<%= render DS::Pill.new(
+  label: account.tax_treatment_label,
+  tone: tone,
+  marker: false,
+  show_dot: false,
+  title: t("accounts.tax_treatment_descriptions.#{treatment}")
+) %>

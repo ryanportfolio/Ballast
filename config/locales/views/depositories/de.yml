@@ -1,0 +1,26 @@
+---
+de:
+  depositories:
+    edit:
+      edit: "%{account} bearbeiten"
+    form:
+      none: Keine
+      subtype_prompt: Kontotyp auswählen
+    new:
+      title: Kontostand eingeben
+    subtypes:
+      cd:
+        long: Festgeldkonto
+        short: Festgeld
+      checking:
+        long: Girokonto
+        short: Giro
+      hsa:
+        long: Health Savings Account
+        short: HSA
+      money_market:
+        long: Geldmarktkonto
+        short: Geldmarkt
+      savings:
+        long: Sparkonto
+        short: Spar

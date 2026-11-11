@@ -1,0 +1,7 @@
+---
+description: API endpoint consistency — checklist to run after every API endpoint commit (Minitest behavior, rswag docs-only, API key auth).
+globs: app/controllers/api/v1/**/*.rb, spec/requests/api/v1/**/*.rb, test/controllers/api/v1/**/*.rb
+alwaysApply: false
+---
+
+@docs/llm-guides/api-endpoint-consistency.md

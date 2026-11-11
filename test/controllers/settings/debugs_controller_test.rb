@@ -1,0 +1,107 @@
+require "test_helper"
+
+class Settings::DebugsControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    ensure_tailwind_build
+
+    @entry = DebugLogEntry.create!(
+      category: "security_price_fetch",
+      level: "warn",
+      message: "Could not fetch prices",
+      source: "Security::Price::Importer",
+      provider_key: "twelve_data",
+      family: families(:dylan_family),
+      account: accounts(:depository),
+      user: users(:family_admin),
+      metadata: { ticker: "AAPL" }
+    )
+  end
+
+  test "super admins can view debug log" do
+    sign_in users(:sure_support_staff)
+
+    get settings_debug_url
+
+    assert_response :success
+    assert_match "Debug event log", response.body
+    assert_match @entry.message, response.body
+  end
+
+  test "the log table can be expanded into a larger dialog" do
+    sign_in users(:sure_support_staff)
+
+    get settings_debug_url
+
+    assert_response :success
+    assert_select "[data-controller=expandable]", 1
+    assert_select "button[data-action=?]", "click->expandable#open", count: 1
+
+    # The expanded copy is the same table, so both render every entry.
+    assert_select "table tbody tr", 2
+    assert_select "dialog[data-expandable-target=dialog] table tbody tr", 1
+  end
+
+  test "no expand trigger is rendered when there are no entries" do
+    sign_in users(:sure_support_staff)
+    DebugLogEntry.delete_all
+
+    get settings_debug_url
+
+    assert_response :success
+    assert_select "button[data-action=?]", "click->expandable#open", count: 0
+    assert_select "dialog[data-expandable-target=dialog]", 0
+  end
+
+  test "non super admins are redirected" do
+    sign_in users(:family_admin)
+
+    get settings_debug_url
+
+    assert_redirected_to root_url
+  end
+
+  test "filters by provider key" do
+    sign_in users(:sure_support_staff)
+
+    DebugLogEntry.create!(
+      category: "security_price_fetch",
+      level: "warn",
+      message: "Should be filtered out",
+      source: "Security::Price::Importer",
+      provider_key: "finnhub",
+      family: families(:dylan_family),
+      account: accounts(:depository),
+      user: users(:family_admin),
+      metadata: { ticker: "MSFT" }
+    )
+
+    get settings_debug_url, params: { provider_key: "twelve_data" }
+
+    assert_response :success
+    assert_match @entry.message, response.body
+    refute_match "Should be filtered out", response.body
+  end
+
+  test "ignores invalid uuid filters" do
+    sign_in users(:sure_support_staff)
+
+    get settings_debug_url, params: { family_id: "not-a-uuid" }
+
+    assert_response :success
+    assert_match @entry.message, response.body
+  end
+
+  test "FinanceKit diagnostics are visible and filterable by provider and family" do
+    sign_in users(:sure_support_staff)
+    DebugLogEntry.capture(category: "provider_sync", level: "error", message: "FinanceKit import requires repair",
+      source: "Financekit::Processor", provider_key: "financekit", family: families(:dylan_family),
+      metadata: { event: "import_failed", error_code: "predecessor_conflict" })
+
+    get settings_debug_url, params: { provider_key: "financekit", family_id: families(:dylan_family).id }
+
+    assert_response :success
+    assert_includes response.body, "FinanceKit import requires repair"
+    assert_includes response.body, "predecessor_conflict"
+    refute_includes response.body, @entry.message
+  end
+end

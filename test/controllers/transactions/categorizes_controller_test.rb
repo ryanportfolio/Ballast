@@ -1,0 +1,410 @@
+require "test_helper"
+
+class Transactions::CategorizesControllerTest < ActionDispatch::IntegrationTest
+  include EntriesTestHelper
+
+  setup do
+    sign_in @user = users(:family_admin)
+    @family = @user.family
+    @account = accounts(:depository)
+    @category = categories(:food_and_drink)
+    # Clear entries for isolation
+    @family.accounts.each { |a| a.entries.delete_all }
+  end
+
+  # GET /transactions/categorize
+
+  test "show redirects with notice when nothing to categorize" do
+    get transactions_categorize_url
+    assert_redirected_to transactions_url
+    assert_match "categorized", flash[:notice]
+  end
+
+  test "show renders wizard when uncategorized transactions exist" do
+    create_transaction(account: @account, name: "Starbucks")
+    get transactions_categorize_url
+    assert_response :success
+  end
+
+  test "show groups subcategories immediately after their parent in the category select" do
+    create_transaction(account: @account, name: "Starbucks")
+    get transactions_categorize_url
+
+    assert_response :success
+
+    doc = Nokogiri::HTML::Document.parse(response.body)
+    option_values = doc.css("select[name='category_id'] option").map { |node| node["value"] }
+
+    parent_index = option_values.index(categories(:food_and_drink).id)
+    child_index = option_values.index(categories(:subcategory).id)
+
+    assert_not_nil parent_index
+    assert_not_nil child_index
+    assert_equal parent_index + 1, child_index
+  end
+
+  test "show groups subcategories immediately after their parent in the category pills" do
+    create_transaction(account: @account, name: "Starbucks")
+    get transactions_categorize_url
+
+    assert_response :success
+
+    doc = Nokogiri::HTML::Document.parse(response.body)
+    pill_values = doc.css("button[name='category_id']").map { |node| node["value"] }
+
+    parent_index = pill_values.index(categories(:food_and_drink).id)
+    child_index = pill_values.index(categories(:subcategory).id)
+
+    assert_not_nil parent_index
+    assert_not_nil child_index
+    assert_equal parent_index + 1, child_index
+
+    child_pill = doc.css("button[name='category_id'][value='#{categories(:subcategory).id}']").first
+    assert_includes child_pill.text, categories(:subcategory).display_name_with_parent
+  end
+
+  test "show renders full dates so multi-year lists are unambiguous" do
+    create_transaction(account: @account, name: "Starbucks", date: Date.new(2024, 7, 8))
+
+    get transactions_categorize_url
+
+    assert_response :success
+    # format_date uses the family's date_format preference, every variant of
+    # which includes the year; the previous :short format ("%b %d") did not,
+    # making rows ambiguous when the uncategorized list spans years.
+    expected = Date.new(2024, 7, 8).strftime(@family.date_format)
+    assert_match expected, response.body
+  end
+
+  test "show renders the first group at position 0" do
+    2.times { create_transaction(account: @account, name: "Netflix") }
+    3.times { create_transaction(account: @account, name: "Starbucks") }
+
+    get transactions_categorize_url(position: 0)
+
+    assert_response :success
+    assert_select "h2", text: "Starbucks"
+  end
+
+  test "show at position 1 skips first group" do
+    3.times { create_transaction(account: @account, name: "Starbucks") }
+    2.times { create_transaction(account: @account, name: "Netflix") }
+
+    get transactions_categorize_url(position: 1)
+
+    assert_response :success
+    assert_select "h2", text: "Netflix"
+  end
+
+  test "show redirects when position exceeds available groups" do
+    create_transaction(account: @account, name: "Starbucks")
+
+    get transactions_categorize_url(position: 99)
+
+    assert_redirected_to transactions_url
+  end
+
+  test "requires authentication" do
+    sign_out
+    get transactions_categorize_url
+    assert_redirected_to new_session_url
+  end
+
+  # Account sharing authorization
+
+  test "show only groups entries from accounts accessible to the user" do
+    accessible_account = accounts(:depository)       # shared with family_member (full_control)
+    inaccessible_account = accounts(:investment)     # not shared with family_member
+
+    create_transaction(account: accessible_account, name: "Starbucks")
+    create_transaction(account: inaccessible_account, name: "Starbucks")
+
+    sign_in users(:family_member)
+    get transactions_categorize_url(position: 0)
+
+    assert_response :success
+    # Only 1 entry should appear in the group — the inaccessible account's entry is hidden
+    assert_select "input[name='entry_ids[]']", count: 1
+  end
+
+  test "create does not categorize entries from inaccessible accounts" do
+    inaccessible_account = accounts(:investment)     # not shared with family_member
+    entry = create_transaction(account: inaccessible_account, name: "Starbucks")
+
+    sign_in users(:family_member)
+    post transactions_categorize_url,
+      params: {
+        position: 0,
+        grouping_key: "Starbucks",
+        entry_ids: [ entry.id ],
+        all_entry_ids: [ entry.id ],
+        category_id: @category.id
+      },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_nil entry.transaction.reload.category
+  end
+
+  test "assign_entry does not categorize an entry from an inaccessible account" do
+    inaccessible_account = accounts(:investment)     # not shared with family_member
+    entry = create_transaction(account: inaccessible_account, name: "Starbucks")
+
+    sign_in users(:family_member)
+    patch assign_entry_transactions_categorize_url, params: {
+      entry_id: entry.id,
+      category_id: @category.id,
+      position: 0,
+      all_entry_ids: [ entry.id ]
+    }
+
+    assert_response :not_found
+    assert_nil entry.transaction.reload.category
+  end
+
+  test "create does not categorize entries from read-only shared accounts" do
+    read_only_account = accounts(:credit_card) # shared read_only with family_member
+    entry = create_transaction(account: read_only_account, name: "Starbucks")
+
+    sign_in users(:family_member)
+    post transactions_categorize_url,
+      params: {
+        position: 0,
+        grouping_key: "Starbucks",
+        entry_ids: [ entry.id ],
+        all_entry_ids: [ entry.id ],
+        category_id: @category.id
+      },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_nil entry.transaction.reload.category
+  end
+
+  test "create does not create a rule when no entry could be categorized" do
+    read_only_account = accounts(:credit_card) # shared read_only with family_member
+    entry = create_transaction(account: read_only_account, name: "Starbucks")
+
+    sign_in users(:family_member)
+    assert_no_difference "Rule.count" do
+      post transactions_categorize_url,
+        params: {
+          position: 0,
+          grouping_key: "Starbucks",
+          entry_ids: [ entry.id ],
+          all_entry_ids: [ entry.id ],
+          category_id: @category.id,
+          create_rule: "1"
+        },
+        headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    end
+  end
+
+  test "create categorizes entries from read_write shared accounts" do
+    read_write_account = accounts(:credit_card)
+    read_write_account.account_shares.find_by!(user: users(:family_member)).update!(permission: "read_write")
+    entry = create_transaction(account: read_write_account, name: "Starbucks")
+
+    sign_in users(:family_member)
+    post transactions_categorize_url,
+      params: {
+        position: 0,
+        grouping_key: "Starbucks",
+        entry_ids: [ entry.id ],
+        all_entry_ids: [ entry.id ],
+        category_id: @category.id
+      },
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_equal @category, entry.transaction.reload.category
+  end
+
+  test "assign_entry does not categorize an entry from a read-only shared account" do
+    read_only_account = accounts(:credit_card) # shared read_only with family_member
+    entry = create_transaction(account: read_only_account, name: "Starbucks")
+
+    sign_in users(:family_member)
+    patch assign_entry_transactions_categorize_url, params: {
+      entry_id: entry.id,
+      category_id: @category.id,
+      position: 0,
+      all_entry_ids: [ entry.id ]
+    }
+
+    assert_response :not_found
+    assert_nil entry.transaction.reload.category
+  end
+
+  test "show and preview_rule skip entries from read-only shared accounts" do
+    read_only_account = accounts(:credit_card) # shared read_only with family_member
+    entry = create_transaction(account: read_only_account, name: "ReadOnlyShop")
+
+    sign_in users(:family_member)
+
+    get transactions_categorize_url
+    assert_not_includes response.body, entry.id
+
+    get preview_rule_transactions_categorize_url(filter: "ReadOnlyShop"),
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_response :success
+    assert_not_includes response.body, entry.id
+  end
+
+  # GET /transactions/categorize/preview_rule
+
+  test "preview_rule returns matching entries for a filter" do
+    create_transaction(account: @account, name: "Amazon Prime")
+    create_transaction(account: @account, name: "Amazon Music")
+    create_transaction(account: @account, name: "Starbucks")
+
+    get preview_rule_transactions_categorize_url(filter: "Amazon"),
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :success
+    assert_includes response.body, "Amazon Prime"
+    assert_includes response.body, "Amazon Music"
+    assert_not_includes response.body, "Starbucks"
+  end
+
+  test "preview_rule returns empty list for blank filter" do
+    create_transaction(account: @account, name: "Amazon")
+
+    get preview_rule_transactions_categorize_url(filter: ""),
+      headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    assert_response :success
+    assert_not_includes response.body, "Amazon"
+  end
+
+  test "preview_rule requires authentication" do
+    sign_out
+    get preview_rule_transactions_categorize_url(filter: "Amazon")
+    assert_redirected_to new_session_url
+  end
+
+  private
+
+    def sign_out
+      # Deleting sessions through the controller de-authenticates the request the
+      # moment our own session dies, so every later delete in the loop is a
+      # silent no-op and whichever sessions sort after it survive. The order is
+      # unspecified, which made every suite that signs out this way flaky.
+      # Teardown hygiene is not the behavior under test, so destroy directly.
+      @user.sessions.destroy_all
+    end
+
+    # POST /transactions/categorize
+
+    test "create categorizes selected entries and returns redirect stream when all assigned" do
+      entry = create_transaction(account: @account, name: "Starbucks")
+
+      post transactions_categorize_url,
+        params: {
+          position: 0,
+          grouping_key: "Starbucks",
+          entry_ids: [ entry.id ],
+          all_entry_ids: [ entry.id ],
+          category_id: @category.id
+        },
+        headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      assert_response :success
+      assert_equal @category, entry.transaction.reload.category
+      assert_includes response.body, "action=\"redirect\""
+    end
+
+    test "create removes assigned rows and replaces remaining when partial assignment" do
+      entry1 = create_transaction(account: @account, name: "Starbucks")
+      entry2 = create_transaction(account: @account, name: "Starbucks")
+
+      post transactions_categorize_url,
+        params: {
+          position: 0,
+          grouping_key: "Starbucks",
+          entry_ids: [ entry1.id ],
+          all_entry_ids: [ entry1.id, entry2.id ],
+          category_id: @category.id
+        },
+        headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+      assert_response :success
+      assert_equal @category, entry1.transaction.reload.category
+      assert_nil entry2.transaction.reload.category
+      # Remove stream for categorized entry
+      assert_includes response.body, "categorize_entry_#{entry1.id}"
+      # Replace stream for remaining entry (re-checked)
+      assert_includes response.body, "categorize_entry_#{entry2.id}"
+      # No redirect stream — still in the group
+      assert_not_includes response.body, "action=\"redirect\""
+    end
+
+    test "create with create_rule param creates rule with name and type conditions" do
+      entry = create_transaction(account: @account, name: "Netflix", amount: 15)
+
+      assert_difference "@family.rules.count", 1 do
+        post transactions_categorize_url,
+          params: {
+            position: 0,
+            grouping_key: "Netflix",
+            transaction_type: "expense",
+            entry_ids: [ entry.id ],
+            all_entry_ids: [ entry.id ],
+            category_id: @category.id,
+            create_rule: "1"
+          },
+          headers: { "Accept" => "text/vnd.turbo-stream.html" }
+      end
+
+      rule = @family.rules.find_by(name: "Netflix")
+      assert_not_nil rule
+      assert rule.active
+      assert rule.conditions.any? { |c| c.condition_type == "transaction_name" && c.value == "Netflix" }
+      assert rule.conditions.any? { |c| c.condition_type == "transaction_type" && c.value == "expense" }
+    end
+
+    test "create falls back to html redirect without turbo stream header" do
+      entry = create_transaction(account: @account, name: "Starbucks")
+
+      post transactions_categorize_url, params: {
+        position: 0,
+        grouping_key: "Starbucks",
+        entry_ids: [ entry.id ],
+        all_entry_ids: [ entry.id ],
+        category_id: @category.id
+      }
+
+      assert_redirected_to transactions_categorize_url(position: 0)
+      assert flash[:notice].present?
+    end
+
+    # PATCH /transactions/categorize/assign_entry
+
+    test "assign_entry categorizes single entry and returns remove stream" do
+      entry = create_transaction(account: @account, name: "Starbucks")
+      other = create_transaction(account: @account, name: "Starbucks")
+
+      patch assign_entry_transactions_categorize_url, params: {
+        entry_id: entry.id,
+        category_id: @category.id,
+        position: 0,
+        all_entry_ids: [ entry.id, other.id ]
+      }
+
+      assert_response :success
+      assert_equal @category, entry.transaction.reload.category
+      assert_includes response.body, "categorize_entry_#{entry.id}"
+      assert_not_includes response.body, "action=\"redirect\""
+    end
+
+    test "assign_entry returns redirect stream when last entry in group" do
+      entry = create_transaction(account: @account, name: "Starbucks")
+
+      patch assign_entry_transactions_categorize_url, params: {
+        entry_id: entry.id,
+        category_id: @category.id,
+        position: 0,
+        all_entry_ids: [ entry.id ]
+      }
+
+      assert_response :success
+      assert_includes response.body, "action=\"redirect\""
+    end
+end

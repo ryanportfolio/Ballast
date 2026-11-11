@@ -1,0 +1,125 @@
+class OidcIdentity < ApplicationRecord
+  belongs_to :user
+
+  validates :provider, presence: true
+  validates :uid, presence: true, uniqueness: { scope: :provider }
+  validates :user_id, presence: true
+
+  # Update the last authenticated timestamp
+  def record_authentication!
+    update!(last_authenticated_at: Time.current)
+  end
+
+  # Sync user attributes from IdP on each login
+  # Updates stored identity info and syncs name to user (not email - that's identity)
+  def sync_user_attributes!(auth)
+    # Extract groups from claims (various common claim names)
+    groups = extract_groups(auth)
+
+    # Update stored identity info with latest from IdP
+    update!(info: {
+      email: auth.info&.email,
+      name: auth.info&.name,
+      first_name: auth.info&.first_name,
+      last_name: auth.info&.last_name,
+      groups: groups
+    })
+
+    # Sync name to user only when Sure has nothing on file (first link, or an
+    # admin blanked the field). Edits made inside Sure must survive subsequent
+    # SSO logins — previously the IdP value won unconditionally and clobbered
+    # any manually-edited name on every login (#1103).
+    user.update!(
+      first_name: user.first_name.presence || auth.info&.first_name.presence,
+      last_name: user.last_name.presence || auth.info&.last_name.presence
+    )
+
+    # Apply role mapping based on group membership
+    apply_role_mapping!(groups)
+  end
+
+  # Extract groups from various common IdP claim formats
+  def extract_groups(auth)
+    # Try various common group claim locations
+    groups = auth.extra&.raw_info&.groups ||
+             auth.extra&.raw_info&.[]("groups") ||
+             auth.extra&.raw_info&.[]("Group") ||
+             auth.info&.groups ||
+             auth.extra&.raw_info&.[]("http://schemas.microsoft.com/ws/2008/06/identity/claims/groups") ||
+             auth.extra&.raw_info&.[]("cognito:groups") ||
+             []
+
+    # Normalize to array of strings
+    Array(groups).map(&:to_s)
+  end
+
+  # Apply role mapping based on IdP group membership
+  def apply_role_mapping!(groups)
+    config = provider_config
+    return unless config.present?
+
+    role_mapping = config.dig(:settings, :role_mapping) || config.dig(:settings, "role_mapping")
+    return unless role_mapping.present?
+
+    # Check roles in order of precedence (highest to lowest)
+    %w[super_admin admin member guest].each do |role|
+      mapped_groups = role_mapping[role] || role_mapping[role.to_sym] || []
+      mapped_groups = Array(mapped_groups)
+
+      # Check if user is in any of the mapped groups
+      if mapped_groups.include?("*") || (mapped_groups & groups).any?
+        # Only update if different to avoid unnecessary writes
+        user.update!(role: role) unless user.role == role
+        Rails.logger.info("[SSO] Applied role mapping: user_id=#{user.id} role=#{role} groups=#{groups}")
+        return
+      end
+    end
+  end
+
+  # Extract and store relevant info from OmniAuth auth hash
+  def self.create_from_omniauth(auth, user)
+    SsoIdentityBlock.with_identity_lock(provider: auth.provider, uid: auth.uid) do
+      if SsoIdentityBlock.blocked?(provider: auth.provider, uid: auth.uid)
+        raise SsoIdentityBlock::BlockedIdentity
+      end
+
+      # Extract issuer from OIDC auth response if available
+      issuer = auth.extra&.raw_info&.iss || auth.extra&.raw_info&.[]("iss")
+
+      create!(
+        user: user,
+        provider: auth.provider,
+        uid: auth.uid,
+        issuer: issuer,
+        info: {
+          email: auth.info&.email,
+          name: auth.info&.name,
+          first_name: auth.info&.first_name,
+          last_name: auth.info&.last_name
+        },
+        last_authenticated_at: Time.current
+      )
+    end
+  end
+
+  # Find the configured provider for this identity
+  def provider_config
+    AuthConfig.sso_providers&.find do |p|
+      p_name = p[:name] || p["name"]
+      p_id = p[:id] || p["id"]
+      p_name == provider || p_id == provider
+    end
+  end
+
+  # Validate that the stored issuer matches the configured provider's issuer
+  # Returns true if valid, false if mismatch (security concern)
+  def issuer_matches_config?
+    return true if issuer.blank? # Backward compatibility for old records
+
+    config = provider_config
+    config_issuer = config&.dig(:issuer) || config&.dig("issuer")
+    return true if config_issuer.blank? # No config to validate against
+
+    issuer == config_issuer
+  end
+end

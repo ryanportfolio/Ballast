@@ -1,0 +1,12 @@
+---
+ro:
+  category:
+    dropdowns:
+      row:
+        delete: Șterge categoria
+        edit: Editează categoria
+      show:
+        clear: Golește categoria
+        no_categories: Nu s-au găsit categorii
+        recent: Recente
+        search_placeholder: Caută

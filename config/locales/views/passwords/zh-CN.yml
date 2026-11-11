@@ -1,0 +1,11 @@
+---
+zh-CN:
+  passwords:
+    disabled: "Sure 密码修改已禁用。请通过身份提供商管理密码。"
+    edit:
+      password: 新密码
+      password_challenge: 当前密码
+      submit: 重置密码
+      title: 更新密码
+    update:
+      success: 您的密码已重置。

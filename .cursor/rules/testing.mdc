@@ -1,0 +1,7 @@
+---
+description: 
+globs: test/**
+alwaysApply: false
+---
+
+@docs/llm-guides/testing.md

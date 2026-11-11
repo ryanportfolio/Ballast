@@ -1,0 +1,181 @@
+require "test_helper"
+require "socket"
+
+class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
+  DEFAULT_VIEWPORT_WIDTH = 1400
+  DEFAULT_VIEWPORT_HEIGHT = 1400
+
+  setup do
+    Capybara.default_max_wait_time = 5
+
+    if ENV["SELENIUM_REMOTE_URL"].present?
+      server_port = ENV.fetch("CAPYBARA_SERVER_PORT", 30_000 + (Process.pid % 1000)).to_i
+      app_host = ENV["CAPYBARA_APP_HOST"].presence || IPSocket.getaddress(Socket.gethostname)
+
+      Capybara.server_host = "0.0.0.0"
+      Capybara.server_port = server_port
+      Capybara.always_include_port = true
+      Capybara.app_host = "http://#{app_host}:#{server_port}"
+    end
+
+    reset_viewport
+  end
+
+  if ENV["SELENIUM_REMOTE_URL"].present?
+    Capybara.register_driver :selenium_remote_chrome do |app|
+      options = Selenium::WebDriver::Chrome::Options.new
+      options.add_argument("--window-size=1400,1400")
+
+      Capybara::Selenium::Driver.new(
+        app,
+        browser: :remote,
+        url: ENV["SELENIUM_REMOTE_URL"],
+        capabilities: options
+      )
+    end
+
+    driven_by :selenium_remote_chrome, screen_size: [ 1400, 1400 ]
+  else
+    requested_browser = ENV["E2E_BROWSER"].presence&.to_sym
+    local_browser = case requested_browser
+    when :headless_chrome then :chrome
+    when :headless_firefox then :firefox
+    else requested_browser || :chrome
+    end
+
+    headless = ENV["CI"].present? || requested_browser.in?([ :headless_chrome, :headless_firefox ]) || ENV["DISPLAY"].blank?
+
+    Capybara.register_driver :selenium_local_chrome do |app|
+      options = case local_browser
+      when :firefox
+        Selenium::WebDriver::Firefox::Options.new.tap do |firefox_options|
+          firefox_options.add_argument("--width=1400")
+          firefox_options.add_argument("--height=1400")
+          firefox_options.add_argument("-headless") if headless
+        end
+      else
+        Selenium::WebDriver::Chrome::Options.new.tap do |chrome_options|
+          chrome_options.add_argument("--window-size=1400,1400")
+          chrome_options.add_argument("--headless=new") if headless
+          chrome_options.add_argument("--no-sandbox")
+          chrome_options.add_argument("--disable-dev-shm-usage")
+        end
+      end
+
+      Capybara::Selenium::Driver.new(
+        app,
+        browser: local_browser,
+        options: options
+      )
+    end
+
+    driven_by :selenium_local_chrome, screen_size: [ 1400, 1400 ]
+  end
+
+  def teardown
+    reset_viewport
+    super
+  end
+
+  private
+
+    def reset_viewport
+      page.current_window.resize_to(DEFAULT_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT) if page&.current_window
+    end
+
+    def sign_in(user)
+      visit new_session_path
+      within %(form[action='#{sessions_path}']) do
+        # Look fields up by type rather than label text: the labels are
+        # translated, so a browser negotiating a non-English locale would
+        # otherwise break every system test's login.
+        find("input[type='email']").set(user.email)
+        find("input[type='password']").set(user_password_test)
+        find("[type='submit']").click
+      end
+
+      # Trigger Capybara's wait mechanism to avoid timing issues with logins.
+      # The greeting around it is translated; the user's own name is not.
+      find("h1", text: user.first_name)
+    end
+
+    # Drags horizontally across the full width of `element`. Driven off the
+    # element's own rendered width rather than fixed offsets — chart widths vary
+    # with viewport and font metrics (they differ between local and CI headless
+    # Chrome), and a start point outside the element never begins the gesture.
+    def drag_across(element)
+      inset = 20
+      width = element.native.rect.width
+
+      page.driver.browser.action
+        .move_to(element.native, -(width / 2 - inset).round, 0)
+        .click_and_hold
+        .move_by((width - (2 * inset)).round, 0)
+        .release
+        .perform
+    end
+
+    # Lets a dashboard or reports test wait for the section order PATCH: once
+    # it answers, <html> carries data-order-saved with the response status.
+    # data-order-requests counts the PATCHes as soon as they are sent.
+    # Waits for the sortable-list controller to connect first, so keys sent
+    # next are handled.
+    def record_saved_section_order
+      page.document.synchronize do
+        connected = page.evaluate_script(<<~JS)
+          (() => {
+            const list = document.querySelector("[data-controller~='sortable-list']");
+            return !!list && !!window.Stimulus.getControllerForElementAndIdentifier(list, "sortable-list");
+          })()
+        JS
+        raise Capybara::ExpectationNotMet, "sortable-list is not connected" unless connected
+      end
+
+      page.execute_script(<<~JS)
+        const originalFetch = window.fetch;
+        window.fetch = (url, init) => {
+          if (typeof init?.body !== "string" || !init.body.includes("section_order")) {
+            return originalFetch(url, init);
+          }
+          const { dataset } = document.documentElement;
+          dataset.orderRequests = Number(dataset.orderRequests || 0) + 1;
+          return originalFetch(url, init).then((response) => {
+            dataset.orderSaved = response.status;
+            return response;
+          });
+        };
+      JS
+    end
+
+    def login_as(user)
+      sign_in(user)
+    end
+
+    def sign_out
+      find("#user-menu").click
+      click_button "Logout"
+
+      # Trigger Capybara's wait mechanism to avoid timing issues with logout
+      find("a", text: "Sign in")
+    end
+
+    def within_testid(testid)
+      within "[data-testid='#{testid}']" do
+        yield
+      end
+    end
+
+    # Interact with DS::Select custom dropdown components.
+    # DS::Select renders as a button + listbox — not a native <select> — so
+    # Capybara's built-in `select(value, from:)` does not work with it.
+    def select_ds(label_text, record)
+      field_label = find("label", exact_text: label_text)
+      container = field_label.ancestor("div.relative")
+      container.find("button").click
+      if container.has_selector?("input[type='search']", visible: true)
+        container.find("input[type='search']", visible: true).set(record.name)
+      end
+      listbox = container.find("[role='listbox']", visible: true)
+      listbox.find("[role='option'][data-value='#{record.id}']", visible: true).click
+    end
+end

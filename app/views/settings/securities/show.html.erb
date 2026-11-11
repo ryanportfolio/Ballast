@@ -1,0 +1,203 @@
+<%= content_for :page_title, t(".page_title") %>
+
+<% if @encryption_unconfigured %>
+  <div class="mb-4">
+    <%= render DS::Alert.new(variant: :warning, title: t(".encryption_warning.title")) do %>
+      <p><%= t(".encryption_warning.intro") %></p>
+      <ul class="list-disc pl-5">
+        <% t(".encryption_warning.keys").each do |key| %>
+          <li><%= key %></li>
+        <% end %>
+      </ul>
+      <p><%= t(".encryption_warning.generate") %></p>
+      <%= render "settings/encryption_migration_guide" %>
+    <% end %>
+  </div>
+<% end %>
+
+<%= settings_section title: t(".mfa_title"), subtitle: t(".mfa_description") do %>
+  <div class="space-y-4">
+    <div class="p-3 shadow-border-xs bg-container rounded-lg md:flex md:justify-between md:items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-surface-inset flex justify-center items-center">
+          <%= icon "shield-check" %>
+        </div>
+
+        <div class="text-sm space-y-1">
+          <% if Current.user.otp_required? %>
+            <p class="text-primary"><%= t(".mfa_enabled_status_html") %></p>
+            <p class="text-secondary"><%= t(".mfa_enabled_description") %></p>
+          <% else %>
+            <p class="text-primary"><%= t(".mfa_disabled_status_html") %></p>
+            <p class="text-secondary"><%= t(".mfa_disabled_description") %></p>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="mt-4 md:mt-0">
+        <% if !Current.user.has_local_password? %>
+          <%# No local password to confirm with, so there is no form to show. %>
+          <p class="text-sm text-subdued"><%= t(".mfa_sso_only") %></p>
+        <% elsif Current.user.otp_required? %>
+          <%# Turning MFA off asks for the password, so the confirm dialog is
+              replaced by a form that can carry it. %>
+          <%= render DS::Disclosure.new(variant: :inline, open: flash[:alert].present?) do |disclosure| %>
+            <% disclosure.with_summary_content do %>
+              <span class="text-sm font-medium text-destructive"><%= t(".disable_mfa") %></span>
+            <% end %>
+            <%= styled_form_with url: disable_mfa_path, method: :delete, class: "mt-3 space-y-3", data: { turbo: false } do |f| %>
+              <%= f.password_field :password,
+                required: true,
+                autocomplete: "current-password",
+                label: t(".disable_mfa_password_label"),
+                placeholder: t(".disable_mfa_password_placeholder") %>
+              <%= f.submit t(".disable_mfa") %>
+            <% end %>
+          <% end %>
+        <% else %>
+          <%= render DS::Link.new(
+            text: t(".enable_mfa"),
+            variant: "primary",
+            href: new_mfa_path
+          ) %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<% if Current.user.otp_required? %>
+  <%= settings_section title: t(".webauthn_title"), subtitle: t(".webauthn_description") do %>
+    <div class="space-y-4">
+      <% if @webauthn_credentials.any? %>
+        <div class="space-y-2">
+          <% @webauthn_credentials.each do |credential| %>
+            <div class="flex items-center justify-between bg-container p-4 shadow-border-xs rounded-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 shrink-0 bg-surface rounded-full flex items-center justify-center">
+                  <%= icon "fingerprint", class: "w-5 h-5 text-secondary" %>
+                </div>
+                <div>
+                  <p class="font-medium text-primary"><%= credential.nickname %></p>
+                  <p class="text-sm text-secondary">
+                    <%= t(".webauthn_added", date: l(credential.created_at.to_date)) %>
+                    <% if credential.last_used_at.present? %>
+                      <span><%= t(".webauthn_last_used", time_ago: time_ago_in_words(credential.last_used_at)) %></span>
+                    <% end %>
+                  </p>
+                </div>
+              </div>
+
+              <%= render DS::Button.new(
+                text: t(".webauthn_remove"),
+                variant: "outline_destructive",
+                size: "sm",
+                href: settings_webauthn_credential_path(credential),
+                method: :delete,
+                confirm: CustomConfirm.new(
+                  title: t(".webauthn_remove_confirm"),
+                  body: t(".webauthn_remove_confirm_body"),
+                  btn_text: t(".webauthn_remove"),
+                  destructive: true
+                )
+              ) %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="bg-surface-inset rounded-lg p-4">
+          <p class="text-sm text-secondary"><%= t(".webauthn_empty") %></p>
+        </div>
+      <% end %>
+
+      <%= styled_form_with scope: :webauthn_credential,
+                           url: settings_webauthn_credentials_path,
+                           method: :post,
+                           class: "space-y-3",
+                           data: {
+                             controller: "webauthn-registration",
+                             action: "submit->webauthn-registration#register",
+                             webauthn_registration_options_url_value: options_settings_webauthn_credentials_path,
+                             webauthn_registration_create_url_value: settings_webauthn_credentials_path,
+                             webauthn_registration_unsupported_message_value: t(".webauthn_unsupported"),
+                             webauthn_registration_error_fallback_value: t("webauthn_credentials.failure")
+                           } do |form| %>
+        <%= form.text_field :nickname,
+                            placeholder: t(".webauthn_name_placeholder"),
+                            label: t(".webauthn_name_label"),
+                            data: { webauthn_registration_target: "nickname" } %>
+
+        <%= form.text_field :code,
+                            required: true,
+                            autocomplete: "one-time-code",
+                            label: t(".webauthn_code_label"),
+                            placeholder: t(".webauthn_code_placeholder"),
+                            data: { webauthn_registration_target: "code" } %>
+
+        <p class="text-sm text-destructive" role="alert" aria-live="assertive" aria-atomic="true" aria-hidden="true" hidden data-webauthn-registration-target="error"></p>
+
+        <div>
+          <%= render DS::Button.new(
+            text: t(".webauthn_add"),
+            variant: "secondary",
+            icon: "fingerprint",
+            type: "submit"
+          ) %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
+
+<% if @oidc_identities.any? || AuthConfig.sso_providers.any? %>
+  <%= settings_section title: t(".sso_title"), subtitle: t(".sso_subtitle") do %>
+    <% if @oidc_identities.any? %>
+      <div class="space-y-2">
+        <% @oidc_identities.each do |identity| %>
+          <div class="flex items-center justify-between bg-container p-4 shadow-border-xs rounded-lg">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 shrink-0 bg-surface rounded-full flex items-center justify-center">
+                <% icon_name = identity.provider_config&.dig(:icon).presence || "key" %>
+                <%= icon icon_name, class: "w-5 h-5 text-secondary" %>
+              </div>
+              <div>
+                <p class="font-medium text-primary"><%= identity.provider_config&.dig(:label) || identity.provider.titleize %></p>
+                <p class="text-sm text-secondary"><%= identity.info&.dig("email") || t(".sso_no_email") %></p>
+                <p class="text-xs text-secondary">
+                  <%= t(".sso_last_used") %>:
+                  <%= identity.last_authenticated_at&.to_fs(:short) || t(".sso_never") %>
+                </p>
+              </div>
+            </div>
+            <% if @oidc_identities.count > 1 || Current.user.password_digest.present? %>
+              <%= render DS::Button.new(
+                text: t(".sso_disconnect"),
+                variant: "outline",
+                size: "sm",
+                href: settings_sso_identity_path(identity),
+                method: :delete,
+                confirm: CustomConfirm.new(
+                  title: t(".sso_confirm_title"),
+                  body: t(".sso_confirm_body", provider: identity.provider_config&.dig(:label) || identity.provider.titleize),
+                  btn_text: t(".sso_confirm_button"),
+                  destructive: true
+                )
+              ) %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <% if @oidc_identities.count == 1 && Current.user.password_digest.blank? %>
+        <div class="mt-4">
+          <%= render DS::Alert.new(message: t(".sso_warning_message"), variant: :warning) %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-6">
+        <%= icon "link", class: "w-12 h-12 mx-auto text-secondary mb-3" %>
+        <p class="text-secondary"><%= t(".sso_no_identities") %></p>
+        <p class="text-sm text-secondary mt-2"><%= t(".sso_connect_hint") %></p>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>

@@ -1,0 +1,11 @@
+---
+fr:
+  passwords:
+    disabled: "La modification du mot de passe via Sure est désactivée. Veuillez gérer votre mot de passe via votre fournisseur d'identité."
+    edit:
+      password: Nouveau mot de passe
+      password_challenge: Mot de passe actuel
+      submit: Réinitialiser le mot de passe
+      title: Mettre à jour le mot de passe
+    update:
+      success: Votre mot de passe a été réinitialisé.

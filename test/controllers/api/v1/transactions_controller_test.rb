@@ -1,0 +1,1175 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+class Api::V1::TransactionsControllerTest < ActionDispatch::IntegrationTest
+  include EntriesTestHelper
+
+  setup do
+    @user = users(:family_admin)
+    @family = @user.family
+    @account = @family.accounts.first
+    @transaction = @family.transactions.first
+
+    # Destroy existing active API keys to avoid validation errors
+    @user.api_keys.active.destroy_all
+
+    # Create fresh API keys instead of using fixtures to avoid parallel test conflicts (rate limiting in test)
+    @api_key = ApiKey.create!(
+      user: @user,
+      name: "Test Read-Write Key",
+      scopes: [ "read_write" ],
+      display_key: "test_rw_#{SecureRandom.hex(8)}"
+    )
+
+    @read_only_api_key = ApiKey.create!(
+      user: @user,
+      name: "Test Read-Only Key",
+      scopes: [ "read" ],
+      display_key: "test_ro_#{SecureRandom.hex(8)}",
+      source: "mobile"  # Use different source to allow multiple keys
+    )
+
+    # Clear any existing rate limit data
+    Redis.new.del("api_rate_limit:#{@api_key.id}")
+    Redis.new.del("api_rate_limit:#{@read_only_api_key.id}")
+  end
+
+  # INDEX action tests
+  test "should get index with valid API key" do
+    get api_v1_transactions_url, headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    assert response_data.key?("transactions")
+    assert response_data.key?("pagination")
+
+    # Agent-friendly numeric fields (validate type + sign invariants)
+    first = response_data["transactions"].first
+    assert_amount_cents_fields(first)
+    assert response_data["pagination"].key?("page")
+    assert response_data["pagination"].key?("per_page")
+    assert response_data["pagination"].key?("total_count")
+    assert response_data["pagination"].key?("total_pages")
+  end
+
+  test "index avoids per-transaction transfer queries" do
+    from_account = @family.accounts.first
+    to_account = @family.accounts.second || @family.accounts.create!(
+      name: "Second Account",
+      balance: 0,
+      currency: @family.currency,
+      accountable: Depository.new
+    )
+
+    create_transfer(from_account: from_account, to_account: to_account, amount: 10)
+    baseline_queries = count_db_queries do
+      get api_v1_transactions_url, params: { per_page: 200 }, headers: api_headers(@api_key)
+      assert_response :success
+    end
+
+    5.times { create_transfer(from_account: from_account, to_account: to_account, amount: 10) }
+    expanded_queries = count_db_queries do
+      get api_v1_transactions_url, params: { per_page: 200 }, headers: api_headers(@api_key)
+      assert_response :success
+    end
+
+    assert_equal baseline_queries, expanded_queries
+  end
+
+  test "should get index with read-only API key" do
+    get api_v1_transactions_url, headers: api_headers(@read_only_api_key)
+    assert_response :success
+  end
+
+  test "should filter transactions by account_id" do
+    get api_v1_transactions_url, params: { account_id: @account.id }, headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    response_data["transactions"].each do |transaction|
+      assert_equal @account.id, transaction["account"]["id"]
+    end
+  end
+
+  test "should include disabled account transactions in index history" do
+    disabled_transaction = create_disabled_account_transaction(name: "Closed Account Grocery")
+
+    get api_v1_transactions_url, headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    transaction_ids = response_data["transactions"].map { |transaction| transaction["id"] }
+    assert_includes transaction_ids, disabled_transaction.id
+  end
+
+  test "should exclude pending deletion account transactions from index history" do
+    pending_deletion_transaction = create_account_transaction(
+      status: "pending_deletion",
+      name: "Pending Delete Account Grocery"
+    )
+
+    get api_v1_transactions_url, headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    transaction_ids = response_data["transactions"].map { |transaction| transaction["id"] }
+    assert_not_includes transaction_ids, pending_deletion_transaction.id
+  end
+
+  test "should filter disabled account transactions by account_id" do
+    disabled_transaction = create_disabled_account_transaction(name: "Closed Account Filter")
+    disabled_account = disabled_transaction.entry.account
+
+    get api_v1_transactions_url,
+        params: { account_id: disabled_account.id },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    assert_equal [ disabled_transaction.id ], response_data["transactions"].map { |transaction| transaction["id"] }
+  end
+
+  test "should filter transactions by date range" do
+    start_date = 1.month.ago.to_date
+    end_date = Date.current
+
+    get api_v1_transactions_url,
+        params: { start_date: start_date, end_date: end_date },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    response_data["transactions"].each do |transaction|
+      transaction_date = Date.parse(transaction["date"])
+      assert transaction_date >= start_date
+      assert transaction_date <= end_date
+    end
+  end
+
+  test "should filter transactions by tag_ids without error" do
+    tag_one = tags(:one)
+    tag_two = tags(:two)
+    tagged_entry = @account.entries.create!(
+      name: "Tagged Transaction",
+      amount: 12.34,
+      currency: "USD",
+      date: Date.current,
+      entryable: Transaction.new(tags: [ tag_one, tag_two ])
+    )
+
+    untagged_entry = @account.entries.create!(
+      name: "Untagged Transaction",
+      amount: 12.34,
+      currency: "USD",
+      date: Date.current,
+      entryable: Transaction.new
+    )
+
+    get api_v1_transactions_url,
+        params: { tag_ids: [ tag_one.id, tag_two.id ], per_page: 200 },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    transaction_ids = response_data["transactions"].map { |t| t["id"] }
+    assert_equal 1, transaction_ids.count(tagged_entry.transaction.id)
+    assert_includes transaction_ids, tagged_entry.transaction.id
+    assert_not_includes transaction_ids, untagged_entry.transaction.id
+  end
+
+  test "should filter disabled account transactions by date range" do
+    disabled_transaction = create_disabled_account_transaction(
+      name: "Closed Account Date Range",
+      date: Date.current - 3.days
+    )
+
+    get api_v1_transactions_url,
+        params: { start_date: Date.current - 4.days, end_date: Date.current - 2.days },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    transaction_ids = response_data["transactions"].map { |transaction| transaction["id"] }
+    assert_includes transaction_ids, disabled_transaction.id
+  end
+
+  test "should search transactions" do
+    # Create a transaction with a specific name for testing
+    entry = @account.entries.create!(
+      name: "Test Coffee Purchase",
+      amount: 5.50,
+      currency: "USD",
+      date: Date.current,
+      entryable: Transaction.new
+    )
+
+    get api_v1_transactions_url,
+        params: { search: "Coffee" },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    found_transaction = response_data["transactions"].find { |t| t["id"] == entry.transaction.id }
+    assert_not_nil found_transaction, "Should find the coffee transaction"
+  end
+
+  test "should search disabled account transactions" do
+    disabled_transaction = create_disabled_account_transaction(name: "Closed Account Coffee")
+
+    get api_v1_transactions_url,
+        params: { search: "Closed Account Coffee" },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    found_transaction = response_data["transactions"].find { |transaction| transaction["id"] == disabled_transaction.id }
+    assert_not_nil found_transaction, "Should find disabled account transactions in global history search"
+  end
+
+  test "should paginate transactions" do
+    get api_v1_transactions_url,
+        params: { page: 1, per_page: 5 },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    assert response_data["transactions"].size <= 5
+    assert_equal 1, response_data["pagination"]["page"]
+    assert_equal 5, response_data["pagination"]["per_page"]
+  end
+
+  test "should reject index request without API key" do
+    get api_v1_transactions_url
+    assert_response :unauthorized
+  end
+
+  test "should reject index request with invalid API key" do
+    get api_v1_transactions_url, headers: { "X-Api-Key" => "invalid-key" }
+    assert_response :unauthorized
+  end
+
+  # SHOW action tests
+  test "should show transaction with valid API key" do
+    get api_v1_transaction_url(@transaction), headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    assert_equal @transaction.id, response_data["id"]
+    assert_equal @transaction.entry.id, response_data["entry_id"]
+    assert response_data.key?("name")
+    assert response_data.key?("amount")
+    assert_amount_cents_fields(response_data)
+    assert response_data.key?("date")
+    assert response_data.key?("account")
+  end
+
+  test "should show transaction with read-only API key" do
+    get api_v1_transaction_url(@transaction), headers: api_headers(@read_only_api_key)
+    assert_response :success
+  end
+
+  test "should show disabled account transaction" do
+    disabled_transaction = create_disabled_account_transaction(name: "Closed Account Show")
+
+    get api_v1_transaction_url(disabled_transaction), headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    assert_equal disabled_transaction.id, response_data["id"]
+    assert_equal disabled_transaction.entry.account_id, response_data["account"]["id"]
+  end
+
+  test "should return 404 for valid missing transaction id" do
+    get api_v1_transaction_url(SecureRandom.uuid), headers: api_headers(@api_key)
+    assert_response :not_found
+
+    response_data = JSON.parse(response.body)
+    assert_equal "not_found", response_data["error"]
+    assert_equal "Transaction not found", response_data["message"]
+  end
+
+  test "should return 404 for malformed id" do
+    get api_v1_transaction_url(999999), headers: api_headers(@api_key)
+    assert_response :not_found
+
+    response_data = JSON.parse(response.body)
+    assert_equal "not_found", response_data["error"]
+    assert_equal "Transaction not found", response_data["message"]
+  end
+
+  test "should reject show request without API key" do
+    get api_v1_transaction_url(@transaction)
+    assert_response :unauthorized
+  end
+
+  # CREATE action tests
+  test "should create transaction with valid parameters" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Test Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense"
+      }
+    }
+
+    assert_difference("@account.entries.count", 1) do
+      post api_v1_transactions_url,
+           params: transaction_params,
+           headers: api_headers(@api_key)
+    end
+
+    assert_response :created
+    response_data = JSON.parse(response.body)
+    assert_equal "Test Transaction", response_data["name"]
+    assert_equal @account.id, response_data["account"]["id"]
+  end
+
+  test "should create transaction with external idempotency key" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Imported Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense",
+        external_id: "import-txn-1",
+        source: "external_import"
+      }
+    }
+
+    assert_difference("@account.entries.count", 1) do
+      post api_v1_transactions_url,
+           params: transaction_params,
+           headers: api_headers(@api_key)
+    end
+
+    assert_response :created
+    response_data = JSON.parse(response.body)
+    assert_equal "import-txn-1", response_data["external_id"]
+    assert_equal "external_import", response_data["source"]
+
+    entry = @account.entries.find_by!(external_id: "import-txn-1", source: "external_import")
+    assert_equal response_data["id"], entry.transaction.id
+  end
+
+  test "should create transaction protected from provider sync when user_modified is true" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Imported Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense",
+        user_modified: true
+      }
+    }
+
+    assert_difference("@account.entries.count", 1) do
+      post api_v1_transactions_url,
+           params: transaction_params,
+           headers: api_headers(@api_key)
+    end
+
+    assert_response :created
+    response_data = JSON.parse(response.body)
+    assert_equal true, response_data["user_modified"]
+
+    entry = Transaction.find(response_data["id"]).entry
+    assert entry.user_modified?
+    assert entry.protected_from_sync?
+  end
+
+  test "should not mark transaction user_modified by default" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Imported Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense"
+      }
+    }
+
+    post api_v1_transactions_url, params: transaction_params, headers: api_headers(@api_key)
+
+    assert_response :created
+    response_data = JSON.parse(response.body)
+    assert_equal false, response_data["user_modified"]
+  end
+
+  test "should use default source when external_id provided without source" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Imported Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense",
+        external_id: "default-source-test"
+      }
+    }
+
+    assert_difference("@account.entries.count", 1) do
+      post api_v1_transactions_url,
+           params: transaction_params,
+           headers: api_headers(@api_key)
+    end
+
+    assert_response :created
+    response_data = JSON.parse(response.body)
+    entry = @account.entries.find_by!(external_id: "default-source-test")
+    assert_equal "api", entry.source
+    assert_equal "api", response_data["source"]
+
+    assert_no_difference("@account.entries.count") do
+      post api_v1_transactions_url,
+           params: transaction_params.deep_merge(transaction: { name: "Changed Name" }),
+           headers: api_headers(@api_key)
+    end
+
+    assert_response :ok
+  end
+
+  test "should reject source without external idempotency key" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Imported Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense",
+        source: "external_import"
+      }
+    }
+
+    assert_no_difference("@account.entries.count") do
+      post api_v1_transactions_url,
+           params: transaction_params,
+           headers: api_headers(@api_key)
+    end
+
+    assert_response :unprocessable_entity
+    response_data = JSON.parse(response.body)
+    assert_equal "validation_failed", response_data["error"]
+    assert_equal "Source requires external_id", response_data["message"]
+    assert_equal [ "Source requires external_id" ], response_data["errors"]
+  end
+
+  test "should return existing transaction for duplicate external idempotency key" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Imported Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense",
+        external_id: "import-txn-2",
+        source: "external_import"
+      }
+    }
+
+    post api_v1_transactions_url,
+         params: transaction_params,
+         headers: api_headers(@api_key)
+    assert_response :created
+    created_data = JSON.parse(response.body)
+
+    assert_no_difference("@account.entries.count") do
+      post api_v1_transactions_url,
+           params: transaction_params.deep_merge(transaction: { name: "Changed Name" }),
+           headers: api_headers(@api_key)
+    end
+
+    assert_response :ok
+    response_data = JSON.parse(response.body)
+    assert_equal created_data["id"], response_data["id"]
+    assert_equal "Imported Transaction", response_data["name"]
+  end
+
+  test "should scope external idempotency keys to account" do
+    other_account = @family.accounts.create!(
+      name: "Other API Account",
+      accountable: Depository.new,
+      balance: 0,
+      currency: "USD"
+    )
+    transaction_params = {
+      transaction: {
+        name: "Imported Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense",
+        external_id: "shared-import-txn",
+        source: "external_import"
+      }
+    }
+
+    assert_difference("Entry.count", 2) do
+      post api_v1_transactions_url,
+           params: transaction_params.deep_merge(transaction: { account_id: @account.id }),
+           headers: api_headers(@api_key)
+      assert_response :created
+
+      post api_v1_transactions_url,
+           params: transaction_params.deep_merge(transaction: { account_id: other_account.id }),
+           headers: api_headers(@api_key)
+      assert_response :created
+    end
+  end
+
+  test "should scope external idempotency keys to source" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Imported Transaction",
+        amount: 25.00,
+        date: Date.current,
+        currency: "USD",
+        nature: "expense",
+        external_id: "shared-source-txn",
+        source: "external_import"
+      }
+    }
+
+    assert_difference("Entry.count", 2) do
+      post api_v1_transactions_url,
+           params: transaction_params,
+           headers: api_headers(@api_key)
+      assert_response :created
+
+      post api_v1_transactions_url,
+           params: transaction_params.deep_merge(transaction: { source: "other_import" }),
+           headers: api_headers(@api_key)
+      assert_response :created
+    end
+
+    @account.entries.find_by!(external_id: "shared-source-txn", source: "external_import")
+    @account.entries.find_by!(external_id: "shared-source-txn", source: "other_import")
+  end
+
+  test "should reject external idempotency key collision with non-transaction entry" do
+    @account.entries.create!(
+      name: "Existing valuation",
+      amount: 100,
+      currency: "USD",
+      date: Date.current,
+      external_id: "import-non-transaction",
+      source: "external_import",
+      entryable: Valuation.new
+    )
+
+    post api_v1_transactions_url,
+         params: {
+           transaction: {
+             account_id: @account.id,
+             name: "Imported Transaction",
+             amount: 25.00,
+             date: Date.current - 1.day,
+             currency: "USD",
+             nature: "expense",
+             external_id: "import-non-transaction",
+             source: "external_import"
+           }
+         },
+         headers: api_headers(@api_key)
+
+    assert_response :unprocessable_entity
+    response_data = JSON.parse(response.body)
+    assert_equal "validation_failed", response_data["error"]
+  end
+
+  test "should reject create with read-only API key" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Test Transaction",
+        amount: 25.00,
+        date: Date.current
+      }
+    }
+
+    post api_v1_transactions_url,
+         params: transaction_params,
+         headers: api_headers(@read_only_api_key)
+    assert_response :forbidden
+  end
+
+  test "should reject create with invalid parameters" do
+    transaction_params = {
+      transaction: {
+        # Missing required fields
+        name: "Test Transaction"
+      }
+    }
+
+    post api_v1_transactions_url,
+         params: transaction_params,
+         headers: api_headers(@api_key)
+    assert_response :unprocessable_entity
+  end
+
+  test "should reject invalid date on create" do
+    transaction_params = {
+      transaction: {
+        account_id: @account.id,
+        name: "Invalid Date Transaction",
+        amount: 25.00,
+        date: "not-a-date",
+        currency: "USD",
+        nature: "expense"
+      }
+    }
+
+    assert_no_difference("@account.entries.count") do
+      post api_v1_transactions_url,
+           params: transaction_params,
+           headers: api_headers(@api_key)
+    end
+
+    assert_response :unprocessable_entity
+    response_data = JSON.parse(response.body)
+    assert_equal "validation_failed", response_data["error"]
+    assert_equal "Transaction could not be created", response_data["message"]
+    assert response_data["errors"].any? { |error| error.match?(/Date/) }
+  end
+
+  test "should reject create without API key" do
+    post api_v1_transactions_url, params: { transaction: { name: "Test" } }
+    assert_response :unauthorized
+  end
+
+  # UPDATE action tests
+  test "should update transaction with valid parameters" do
+    update_params = {
+      transaction: {
+        name: "Updated Transaction Name",
+        amount: 30.00
+      }
+    }
+
+    put api_v1_transaction_url(@transaction),
+        params: update_params,
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    assert_equal "Updated Transaction Name", response_data["name"]
+  end
+
+  test "should not sync the account when only notes change" do
+    assert_no_enqueued_jobs only: SyncJob do
+      put api_v1_transaction_url(@transaction),
+          params: { transaction: { notes: "Just a note" } },
+          headers: api_headers(@api_key)
+    end
+    assert_response :success
+  end
+
+  test "should sync the account when the amount changes" do
+    assert_enqueued_with(job: SyncJob) do
+      put api_v1_transaction_url(@transaction),
+          params: { transaction: { amount: 42.00 } },
+          headers: api_headers(@api_key)
+    end
+    assert_response :success
+  end
+
+  test "should sync the account when notes and amount change together" do
+    assert_enqueued_with(job: SyncJob) do
+      put api_v1_transaction_url(@transaction),
+          params: { transaction: { notes: "Just a note", amount: 42.00 } },
+          headers: api_headers(@api_key)
+    end
+    assert_response :success
+  end
+
+  test "should protect transaction from provider sync when updated with user_modified true" do
+    update_params = {
+      transaction: {
+        name: "Client-owned Name",
+        user_modified: true
+      }
+    }
+
+    put api_v1_transaction_url(@transaction),
+        params: update_params,
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    assert_equal "Client-owned Name", response_data["name"]
+    assert_equal true, response_data["user_modified"]
+
+    entry = @transaction.entry.reload
+    assert entry.user_modified?
+    assert entry.protected_from_sync?
+  end
+
+  test "date changed via API survives the next provider sync without user_modified" do
+    entry = Account::ProviderImportAdapter.new(@account).import_transaction(
+      external_id: "plaid_api_date_edit",
+      amount: 42.00,
+      currency: "USD",
+      date: Date.current - 5.days,
+      name: "Card payment",
+      source: "plaid"
+    )
+
+    put api_v1_transaction_url(entry.transaction),
+        params: { transaction: { date: (Date.current - 2.days).to_s } },
+        headers: api_headers(@api_key)
+    assert_response :success
+    assert_not entry.reload.user_modified?
+
+    Account::ProviderImportAdapter.new(@account).import_transaction(
+      external_id: "plaid_api_date_edit",
+      amount: 42.00,
+      currency: "USD",
+      date: Date.current - 5.days,
+      name: "Card payment",
+      source: "plaid"
+    )
+
+    assert_equal Date.current - 2.days, entry.reload.date
+  end
+
+  test "should not change user_modified on update by default" do
+    put api_v1_transaction_url(@transaction),
+        params: { transaction: { name: "Updated Name Only" } },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    assert_equal false, JSON.parse(response.body)["user_modified"]
+    assert_not @transaction.entry.reload.user_modified?
+  end
+
+  test "should reject update with read-only API key" do
+    update_params = {
+      transaction: {
+        name: "Updated Transaction Name"
+      }
+    }
+
+    put api_v1_transaction_url(@transaction),
+        params: update_params,
+        headers: api_headers(@read_only_api_key)
+    assert_response :forbidden
+  end
+
+  test "should reject update for non-existent transaction" do
+    put api_v1_transaction_url(999999),
+        params: { transaction: { name: "Test" } },
+        headers: api_headers(@api_key)
+    assert_response :not_found
+  end
+
+  test "should reject update without API key" do
+    put api_v1_transaction_url(@transaction), params: { transaction: { name: "Test" } }
+    assert_response :unauthorized
+  end
+
+  test "should preserve tags when tag_ids not provided in update" do
+    # Set up transaction with existing tags
+    original_tags = [ Tag.first, Tag.second ]
+    @transaction.tags = original_tags
+    @transaction.save!
+
+    # Update only the name, without providing tag_ids
+    update_params = {
+      transaction: {
+        name: "Updated Name Only"
+      }
+    }
+
+    put api_v1_transaction_url(@transaction),
+        params: update_params,
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    @transaction.reload
+    assert_equal "Updated Name Only", @transaction.entry.name
+    # Tags should be preserved since tag_ids was not in the request
+    assert_equal original_tags.map(&:id).sort, @transaction.tag_ids.sort
+  end
+
+  test "should clear tags when empty tag_ids explicitly provided in update" do
+    # Set up transaction with existing tags
+    @transaction.tags = [ Tag.first, Tag.second ]
+    @transaction.save!
+
+    # Explicitly provide empty tag_ids to clear tags
+    update_params = {
+      transaction: {
+        name: "Updated Name",
+        tag_ids: []
+      }
+    }
+
+    put api_v1_transaction_url(@transaction),
+        params: update_params,
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    @transaction.reload
+    # Tags should be cleared since tag_ids was explicitly provided as empty
+    assert_empty @transaction.tags
+  end
+
+  test "should update tags when tag_ids explicitly provided in update" do
+    # Set up transaction with one tag
+    @transaction.tags = [ Tag.first ]
+    @transaction.save!
+
+    new_tags = [ Tag.second ]
+
+    update_params = {
+      transaction: {
+        tag_ids: new_tags.map(&:id)
+      }
+    }
+
+    put api_v1_transaction_url(@transaction),
+        params: update_params,
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    @transaction.reload
+    assert_equal new_tags.map(&:id), @transaction.tag_ids
+  end
+
+  # DESTROY action tests
+  test "should destroy transaction" do
+  entry_to_delete = @account.entries.create!(
+    name: "Transaction to Delete",
+    amount: 10.00,
+    currency: "USD",
+    date: Date.current,
+    entryable: Transaction.new
+  )
+  transaction_to_delete = entry_to_delete.transaction
+
+  assert_difference("@account.entries.count", -1) do
+    delete api_v1_transaction_url(transaction_to_delete), headers: api_headers(@api_key)
+  end
+
+  assert_response :success
+  response_data = JSON.parse(response.body)
+  assert response_data.key?("message")
+end
+
+  test "should reject destroy with read-only API key" do
+    delete api_v1_transaction_url(@transaction), headers: api_headers(@read_only_api_key)
+    assert_response :forbidden
+  end
+
+  test "should reject destroy for non-existent transaction" do
+    delete api_v1_transaction_url(999999), headers: api_headers(@api_key)
+    assert_response :not_found
+  end
+
+  test "should reject destroy without API key" do
+    delete api_v1_transaction_url(@transaction)
+    assert_response :unauthorized
+  end
+
+  # JSON structure tests
+  test "transaction JSON should have expected structure" do
+    get api_v1_transaction_url(@transaction), headers: api_headers(@api_key)
+    assert_response :success
+
+    transaction_data = JSON.parse(response.body)
+
+    # Basic fields
+    assert transaction_data.key?("id")
+    assert transaction_data.key?("date")
+    assert transaction_data.key?("amount")
+    assert transaction_data.key?("currency")
+    assert transaction_data.key?("name")
+    assert transaction_data.key?("classification")
+    assert transaction_data.key?("created_at")
+    assert transaction_data.key?("updated_at")
+
+    # Account information
+    assert transaction_data.key?("account")
+    assert transaction_data["account"].key?("id")
+    assert transaction_data["account"].key?("name")
+    assert transaction_data["account"].key?("account_type")
+
+    # Optional fields should be present (even if nil)
+    assert transaction_data.key?("category")
+    assert transaction_data.key?("merchant")
+    assert transaction_data.key?("tags")
+    assert transaction_data.key?("transfer")
+    assert transaction_data.key?("notes")
+  end
+
+  test "transactions with transfers should include transfer information" do
+    transfer = create_transfer_between_accounts
+
+    get api_v1_transaction_url(transfer.inflow_transaction), headers: api_headers(@api_key)
+    assert_response :success
+
+    transaction_data = JSON.parse(response.body)
+    assert_not_nil transaction_data["transfer"]
+    assert transaction_data["transfer"].key?("id")
+    assert transaction_data["transfer"].key?("amount")
+    assert transaction_data["transfer"].key?("currency")
+    assert transaction_data["transfer"].key?("other_account")
+  end
+
+  test "index renders transfer rows without per-transfer transaction lookups" do
+    transfer = create_transfer_between_accounts
+
+    queries = capture_sql_queries do
+      get api_v1_transactions_url,
+          params: { per_page: 100 },
+          headers: api_headers(@api_key)
+    end
+
+    assert_response :success
+
+    response_data = JSON.parse(response.body)
+    transfer_transaction_ids = [ transfer.inflow_transaction_id, transfer.outflow_transaction_id ]
+    transfer_rows = response_data["transactions"].select { |transaction| transfer_transaction_ids.include?(transaction["id"]) }
+
+    assert_equal 2, transfer_rows.size
+    assert transfer_rows.all? { |transaction| transaction["transfer"].present? }
+    assert_empty queries.grep(/SELECT "transactions"\.\* FROM "transactions" WHERE "transactions"\."id" =/)
+    assert_empty queries.grep(/SELECT "entries"\.\* FROM "entries" WHERE "entries"\."id" =/)
+    assert_empty queries.grep(/SELECT "accounts"\.\* FROM "accounts" WHERE "accounts"\."id" =/)
+  end
+
+  test "transaction JSON exposes the exact stored amount alongside the rounded ones" do
+    entry = create_transaction(account: @account, amount: 12.3456, name: "Four decimals")
+
+    get api_v1_transaction_url(entry.transaction), headers: api_headers(@api_key)
+    assert_response :success
+
+    data = JSON.parse(response.body)
+    assert_equal "12.3456", data["amount_decimal"]
+    assert_equal 1235, data["amount_cents"], "amount_cents stays display-rounded"
+    assert_amount_cents_fields(data)
+  end
+
+  test "amount_decimal keeps the stored sign and ignores the request locale" do
+    entry = create_transaction(account: @account, amount: -1234.5, name: "Refund")
+
+    get api_v1_transaction_url(entry.transaction),
+        headers: api_headers(@api_key).merge("Accept-Language" => "de")
+    assert_response :success
+
+    assert_equal "-1234.5", JSON.parse(response.body)["amount_decimal"]
+  end
+
+  test "transaction JSON exposes kind" do
+    entry = create_transaction(account: @account, amount: -250, name: "Loan payment", kind: "loan_payment")
+
+    get api_v1_transaction_url(entry.transaction), headers: api_headers(@api_key)
+    assert_response :success
+
+    data = JSON.parse(response.body)
+    assert_equal "loan_payment", data["kind"]
+    assert_equal "income", data["classification"], "classification still follows the amount sign; kind lets a client tell"
+  end
+
+  test "an ordinary transaction is neither a split parent nor excluded" do
+    entry = create_transaction(account: @account, amount: 40, name: "Plain")
+
+    get api_v1_transaction_url(entry.transaction), headers: api_headers(@api_key)
+    assert_response :success
+
+    data = JSON.parse(response.body)
+    assert_equal "standard", data["kind"]
+    assert_equal false, data["split_parent"]
+    assert_equal false, data["excluded"]
+  end
+
+  test "index marks split parents and their children" do
+    parent = create_transaction(account: @account, amount: 100, name: "Split parent", date: 3.days.ago.to_date)
+    parent.split!([
+      { name: "Kept", amount: 60, category_id: nil },
+      { name: "Left out", amount: 40, category_id: nil, excluded: true }
+    ])
+
+    get api_v1_transactions_url,
+        params: { account_id: @account.id, start_date: 3.days.ago.to_date, end_date: 3.days.ago.to_date, per_page: 100 },
+        headers: api_headers(@api_key)
+    assert_response :success
+
+    rows = JSON.parse(response.body)["transactions"].index_by { |row| row["name"] }
+    assert_equal true, rows["Split parent"]["split_parent"]
+    assert_equal true, rows["Split parent"]["excluded"]
+    assert_equal false, rows["Kept"]["split_parent"]
+    assert_equal false, rows["Kept"]["excluded"]
+    assert_equal false, rows["Left out"]["split_parent"]
+    assert_equal true, rows["Left out"]["excluded"]
+
+    # show renders the same partial without the batched ids and must still report it
+    get api_v1_transaction_url(parent.transaction), headers: api_headers(@api_key)
+    assert_response :success
+    assert_equal true, JSON.parse(response.body)["split_parent"]
+  end
+
+  test "index works out split_parent without a query per row" do
+    split_parent = lambda do |name|
+      create_transaction(account: @account, amount: 10, name: name).split!([
+        { name: "#{name} a", amount: 4, category_id: nil },
+        { name: "#{name} b", amount: 6, category_id: nil }
+      ])
+    end
+
+    split_parent.call("Baseline")
+    baseline_queries = count_db_queries do
+      get api_v1_transactions_url, params: { per_page: 100 }, headers: api_headers(@api_key)
+      assert_response :success
+    end
+
+    3.times { |i| split_parent.call("More #{i}") }
+    expanded_queries = count_db_queries do
+      get api_v1_transactions_url, params: { per_page: 100 }, headers: api_headers(@api_key)
+      assert_response :success
+    end
+
+    assert_equal baseline_queries, expanded_queries
+  end
+
+  test "index works out split_parent without loading the split children" do
+    create_transaction(account: @account, amount: 10, name: "Big split").split!(
+      [ { name: "Part a", amount: 4, category_id: nil }, { name: "Part b", amount: 6, category_id: nil } ]
+    )
+
+    queries = capture_sql_queries do
+      get api_v1_transactions_url, params: { per_page: 100 }, headers: api_headers(@api_key)
+    end
+    assert_response :success
+
+    assert_empty queries.grep(/SELECT "entries"\.\* FROM "entries" WHERE "entries"\."parent_entry_id"/),
+                 "split children should not be loaded just to compute split_parent"
+  end
+
+  test "excluded is false, not null, when the stored flag is null" do
+    entry = create_transaction(account: @account, amount: 20, name: "Null exclusion")
+    entry.update_column(:excluded, nil)
+
+    get api_v1_transaction_url(entry.transaction), headers: api_headers(@api_key)
+    assert_response :success
+    assert_equal false, JSON.parse(response.body)["excluded"]
+
+    get api_v1_transactions_url, params: { per_page: 100 }, headers: api_headers(@api_key)
+    assert_response :success
+    row = JSON.parse(response.body)["transactions"].find { |t| t["id"] == entry.transaction.id }
+    assert_equal false, row["excluded"]
+  end
+
+  private
+
+    def api_headers(api_key)
+      { "X-Api-Key" => api_key.display_key }
+    end
+
+    def count_db_queries(&block)
+      queries = 0
+      callback = lambda do |_name, _started, _finished, _unique_id, payload|
+        return if payload[:cached]
+        return if payload[:name].in?(%w[SCHEMA TRANSACTION])
+
+        queries += 1
+      end
+
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record", &block)
+      queries
+    end
+
+    def create_transfer_between_accounts
+      from_account = @family.accounts.create!(
+        name: "Transfer From Account",
+        balance: 1000,
+        currency: "USD",
+        accountable: Depository.new
+      )
+
+      to_account = @family.accounts.create!(
+        name: "Transfer To Account",
+        balance: 0,
+        currency: "USD",
+        accountable: Depository.new
+      )
+
+      Transfer::Creator.new(
+        family: @family,
+        source_account_id: from_account.id,
+        destination_account_id: to_account.id,
+        date: Date.current,
+        amount: 100
+      ).create
+    end
+
+    def capture_sql_queries
+      queries = []
+      callback = lambda do |_name, _started, _finished, _unique_id, payload|
+        next if payload[:cached]
+        next if %w[SCHEMA TRANSACTION].include?(payload[:name])
+
+        queries << payload[:sql].squish
+      end
+
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+        yield
+      end
+
+      queries
+    end
+
+    # Validates agent-friendly numeric fields: type, sign invariants
+    def assert_amount_cents_fields(txn_json)
+      assert txn_json.key?("amount_cents"), "Expected amount_cents field"
+      assert txn_json.key?("signed_amount_cents"), "Expected signed_amount_cents field"
+      assert_kind_of Integer, txn_json["amount_cents"]
+      assert_kind_of Integer, txn_json["signed_amount_cents"]
+      assert_operator txn_json["amount_cents"], :>=, 0, "amount_cents must be non-negative"
+      assert_equal txn_json["amount_cents"].abs, txn_json["signed_amount_cents"].abs,
+                   "Absolute values of amount_cents and signed_amount_cents must match"
+      if txn_json["classification"] == "income"
+        assert_operator txn_json["signed_amount_cents"], :>=, 0,
+                        "income transactions should have non-negative signed_amount_cents"
+      else
+        assert_operator txn_json["signed_amount_cents"], :<=, 0,
+                        "non-income transactions should have non-positive signed_amount_cents"
+      end
+    end
+
+    def create_disabled_account_transaction(name:, date: Date.current)
+      create_account_transaction(status: "disabled", name: name, date: date)
+    end
+
+    def create_account_transaction(status:, name:, date: Date.current)
+      account = @family.accounts.create!(
+        name: "#{status.titleize} Checking #{SecureRandom.hex(4)}",
+        balance: 0,
+        currency: "USD",
+        status: status,
+        accountable: Depository.new
+      )
+
+      entry = account.entries.create!(
+        name: name,
+        amount: 12.34,
+        currency: "USD",
+        date: date,
+        entryable: Transaction.new
+      )
+
+      entry.transaction
+    end
+end

@@ -1,0 +1,1469 @@
+require "test_helper"
+
+class QifImportTest < ActiveSupport::TestCase
+  # ── QifParser unit tests ────────────────────────────────────────────────────
+
+  SAMPLE_QIF = <<~QIF
+    !Type:Tag
+    NTRIP2025
+    ^
+    NVACATION2023
+    DSummer Vacation 2023
+    ^
+    !Type:Cat
+    NFood & Dining
+    DFood and dining expenses
+    E
+    ^
+    NFood & Dining:Restaurants
+    DRestaurants
+    E
+    ^
+    NSalary
+    DSalary Income
+    I
+    ^
+    !Type:CCard
+    D6/ 4'20
+    U-99.00
+    T-99.00
+    C*
+    NTXFR
+    PMerchant A
+    LFees & Charges
+    ^
+    D3/29'21
+    U-28,500.00
+    T-28,500.00
+    PTransfer Out
+    L[Savings Account]
+    ^
+    D10/ 1'20
+    U500.00
+    T500.00
+    PPayment Received
+    LFood & Dining/TRIP2025
+    ^
+  QIF
+
+  QIF_WITH_HIERARCHICAL_CATEGORIES = <<~QIF
+    !Type:Bank
+    D1/ 1'24
+    U-150.00
+    T-150.00
+    PHardware Store
+    LHome:Home Improvement
+    ^
+    D2/ 1'24
+    U-50.00
+    T-50.00
+    PGrocery Store
+    LFood:Groceries
+    ^
+  QIF
+
+  # A QIF file that includes an Opening Balance entry as the first transaction.
+  # This mirrors how Quicken exports bank accounts.
+  QIF_WITH_OPENING_BALANCE = <<~QIF
+    !Type:Bank
+    D1/ 1'20
+    U500.00
+    T500.00
+    POpening Balance
+    L[Checking Account]
+    ^
+    D3/ 1'20
+    U100.00
+    T100.00
+    PFirst Deposit
+    ^
+    D4/ 1'20
+    U-25.00
+    T-25.00
+    PCoffee Shop
+    ^
+  QIF
+
+  # A minimal investment QIF with two securities, trades, a dividend, and a cash transfer.
+  SAMPLE_INVST_QIF = <<~QIF
+    !Type:Security
+    NACME
+    SACME
+    TStock
+    ^
+    !Type:Security
+    NCORP
+    SCORP
+    TStock
+    ^
+    !Type:Invst
+    D1/17'22
+    NDiv
+    YACME
+    U190.75
+    T190.75
+    ^
+    D1/17'22
+    NBuy
+    YACME
+    I66.10
+    Q2
+    U132.20
+    T132.20
+    ^
+    D1/ 7'22
+    NXIn
+    PMonthly Deposit
+    U8000.00
+    T8000.00
+    ^
+    D2/ 1'22
+    NSell
+    YCORP
+    I45.00
+    Q3
+    U135.00
+    T135.00
+    ^
+  QIF
+
+  # A QIF file that includes split transactions (S/$ fields) with an L field category.
+  QIF_WITH_SPLITS = <<~QIF
+    !Type:Cat
+    NFood & Dining
+    E
+    ^
+    NHousehold
+    E
+    ^
+    NUtilities
+    E
+    ^
+    !Type:Bank
+    D1/ 1'24
+    U-150.00
+    T-150.00
+    PGrocery & Hardware Store
+    LFood & Dining
+    SFood & Dining
+    $-100.00
+    EGroceries
+    SHousehold
+    $-50.00
+    ESupplies
+    ^
+    D1/ 2'24
+    U-75.00
+    T-75.00
+    PElectric Company
+    LUtilities
+    ^
+  QIF
+
+  # A QIF file where Quicken uses --Split-- as the L field for split transactions.
+  QIF_WITH_SPLIT_PLACEHOLDER = <<~QIF
+    !Type:Bank
+    D1/ 1'24
+    U-100.00
+    T-100.00
+    PWalmart
+    L--Split--
+    SClothing
+    $-25.00
+    SFood
+    $-25.00
+    SHome Improvement
+    $-50.00
+    ^
+    D1/ 2'24
+    U-30.00
+    T-30.00
+    PCoffee Shop
+    LFood & Dining
+    ^
+  QIF
+
+  QIF_WITH_ACCOUNTS = <<~QIF
+    !Account
+    NQIF Checking
+    TBank
+    ^
+    !Type:Bank
+    D1/ 1'24
+    U-25.00
+    T-25.00
+    PCoffee Shop
+    ^
+    !Account
+    NQIF Visa
+    TCCard
+    ^
+    !Type:CCard
+    D1/ 2'24
+    U-50.00
+    T-50.00
+    PGrocery Store
+    ^
+  QIF
+
+  QIF_WITH_MIXED_ACCOUNT_TYPES = <<~QIF
+    !Account
+    NQIF Checking
+    TBank
+    ^
+    !Type:Bank
+    D1/ 1'24
+    U-25.00
+    T-25.00
+    PCoffee Shop
+    ^
+    !Type:Security
+    NACME
+    SACME
+    TStock
+    ^
+    !Account
+    NQIF Brokerage
+    TInvst
+    ^
+    !Type:Invst
+    D1/ 2'24
+    NBuy
+    YACME
+    I66.10
+    Q2
+    U132.20
+    T132.20
+    ^
+  QIF
+
+  QIF_WITH_BALANCE_ONLY_ACCOUNT = <<~QIF
+    !Account
+    NBalance Only
+    TBank
+    ^
+    !Type:Bank
+    D1/ 1'24
+    U500.00
+    T500.00
+    POpening Balance
+    ^
+    !Account
+    NQIF Checking
+    TBank
+    ^
+    !Type:Bank
+    D1/ 2'24
+    U-25.00
+    T-25.00
+    PCoffee Shop
+    ^
+  QIF
+
+  QIF_WITH_SPLIT_TAGS = <<~QIF
+    !Type:Bank
+    D1/ 1'24
+    U-100.00
+    T-100.00
+    PTagged Split Store
+    L--Split--
+    SFood/TRIP2025
+    $-60.00
+    EGroceries
+    STravel/KEEP
+    $-40.00
+    ETrain
+    ^
+  QIF
+
+  QIF_WITH_ROUNDING_SPLIT_MISMATCH = <<~QIF
+    !Type:Bank
+    D1/ 1'24
+    U-100.00
+    T-100.00
+    PRounded Split Store
+    L--Split--
+    SFood
+    $-60.00
+    SHousehold
+    $-39.99
+    ^
+    D1/ 2'24
+    U-20.00
+    T-20.00
+    PCoffee Shop
+    ^
+  QIF
+
+  # ── QifParser: valid? ───────────────────────────────────────────────────────
+
+  test "valid? returns true for QIF content" do
+    assert QifParser.valid?(SAMPLE_QIF)
+  end
+
+  test "valid? returns false for non-QIF content" do
+    refute QifParser.valid?("<OFX><STMTTRN></STMTTRN></OFX>")
+    refute QifParser.valid?("date,amount,name\n2024-01-01,100,Coffee")
+    refute QifParser.valid?(nil)
+    refute QifParser.valid?("")
+  end
+
+  # ── QifParser: account_type ─────────────────────────────────────────────────
+
+  test "account_type extracts transaction section type" do
+    assert_equal "CCard", QifParser.account_type(SAMPLE_QIF)
+  end
+
+  test "account_type ignores Tag and Cat sections" do
+    qif = "!Type:Tag\nNMyTag\n^\n!Type:Cat\nNMyCat\n^\n!Type:Bank\nD1/1'24\nT100.00\nPTest\n^\n"
+    assert_equal "Bank", QifParser.account_type(qif)
+  end
+
+  test "parse_accounts extracts QIF account metadata" do
+    accounts = QifParser.parse_accounts(QIF_WITH_ACCOUNTS)
+
+    assert_equal [ "QIF Checking", "QIF Visa" ], accounts.map(&:name)
+    assert_equal [ "Bank", "CCard" ], accounts.map(&:account_type)
+  end
+
+  # ── QifParser: parse (transactions) ─────────────────────────────────────────
+
+  test "parse returns correct number of transactions" do
+    assert_equal 3, QifParser.parse(SAMPLE_QIF).length
+  end
+
+  test "parse extracts dates correctly" do
+    transactions = QifParser.parse(SAMPLE_QIF)
+    assert_equal "2020-06-04", transactions[0].date
+    assert_equal "2021-03-29", transactions[1].date
+    assert_equal "2020-10-01", transactions[2].date
+  end
+
+  test "parse extracts negative amount with commas" do
+    assert_equal "-28500.00", QifParser.parse(SAMPLE_QIF)[1].amount
+  end
+
+  test "parse extracts simple negative amount" do
+    assert_equal "-99.00", QifParser.parse(SAMPLE_QIF)[0].amount
+  end
+
+  test "parse extracts payee" do
+    transactions = QifParser.parse(SAMPLE_QIF)
+    assert_equal "Merchant A",   transactions[0].payee
+    assert_equal "Transfer Out", transactions[1].payee
+  end
+
+  test "parse extracts category and ignores transfer accounts" do
+    transactions = QifParser.parse(SAMPLE_QIF)
+    assert_equal "Fees & Charges", transactions[0].category
+    assert_equal "",               transactions[1].category  # [Savings Account] = transfer
+    assert_equal "Food & Dining",  transactions[2].category
+  end
+
+  test "parse extracts tags from L field slash suffix" do
+    transactions = QifParser.parse(SAMPLE_QIF)
+    assert_equal [],             transactions[0].tags
+    assert_equal [],             transactions[1].tags
+    assert_equal [ "TRIP2025" ], transactions[2].tags
+  end
+
+  test "parse associates transactions with QIF account metadata" do
+    transactions = QifParser.parse(QIF_WITH_ACCOUNTS)
+
+    assert_equal [ "QIF Checking", "QIF Visa" ], transactions.map(&:account_name)
+    assert_equal [ "Bank", "CCard" ], transactions.map(&:account_type)
+  end
+
+  # ── QifParser: parse_categories ─────────────────────────────────────────────
+
+  test "parse_categories returns all categories" do
+    names = QifParser.parse_categories(SAMPLE_QIF).map(&:name)
+    assert_includes names, "Food & Dining"
+    assert_includes names, "Food & Dining:Restaurants"
+    assert_includes names, "Salary"
+  end
+
+  test "parse_categories marks income vs expense correctly" do
+    categories = QifParser.parse_categories(SAMPLE_QIF)
+    salary = categories.find { |c| c.name == "Salary" }
+    food   = categories.find { |c| c.name == "Food & Dining" }
+    assert salary.income
+    refute food.income
+  end
+
+  # ── QifParser: parse_tags ───────────────────────────────────────────────────
+
+  test "parse_tags returns all tags" do
+    names = QifParser.parse_tags(SAMPLE_QIF).map(&:name)
+    assert_includes names, "TRIP2025"
+    assert_includes names, "VACATION2023"
+  end
+
+  test "parse_tags captures description" do
+    vacation = QifParser.parse_tags(SAMPLE_QIF).find { |t| t.name == "VACATION2023" }
+    assert_equal "Summer Vacation 2023", vacation.description
+  end
+
+  # ── QifParser: encoding ──────────────────────────────────────────────────────
+
+  test "normalize_encoding returns content unchanged when already valid UTF-8" do
+    result = QifParser.normalize_encoding("!Type:CCard\n")
+    assert_equal "!Type:CCard\n", result
+  end
+
+  # ── QifParser: opening balance ───────────────────────────────────────────────
+
+  test "parse skips Opening Balance transaction" do
+    transactions = QifParser.parse(QIF_WITH_OPENING_BALANCE)
+    assert_equal 2, transactions.length
+    refute transactions.any? { |t| t.payee == "Opening Balance" }
+  end
+
+  test "parse_opening_balance returns date and amount" do
+    ob = QifParser.parse_opening_balance(QIF_WITH_OPENING_BALANCE)
+    assert_not_nil ob
+    assert_equal Date.new(2020, 1, 1), ob[:date]
+    assert_equal BigDecimal("500"),    ob[:amount]
+  end
+
+  test "parse_opening_balance returns nil when no Opening Balance entry" do
+    assert_nil QifParser.parse_opening_balance(SAMPLE_QIF)
+  end
+
+  test "parse_opening_balance returns nil for blank content" do
+    assert_nil QifParser.parse_opening_balance(nil)
+    assert_nil QifParser.parse_opening_balance("")
+  end
+
+  # ── QifParser: split transactions ──────────────────────────────────────────
+
+  test "parse flags split transactions" do
+    transactions = QifParser.parse(QIF_WITH_SPLITS)
+    split_txn = transactions.find { |t| t.payee == "Grocery & Hardware Store" }
+    normal_txn = transactions.find { |t| t.payee == "Electric Company" }
+
+    assert split_txn.split, "Expected split transaction to be flagged"
+    refute normal_txn.split, "Expected normal transaction not to be flagged"
+  end
+
+  test "parse preserves ordered split line details" do
+    transactions = QifParser.parse(QIF_WITH_SPLITS)
+    split_txn = transactions.find { |t| t.payee == "Grocery & Hardware Store" }
+
+    assert_equal 2, split_txn.split_lines.length
+    assert_equal "Food & Dining", split_txn.split_lines.first.category
+    assert_equal "-100.00", split_txn.split_lines.first.amount
+    assert_equal "Groceries", split_txn.split_lines.first.memo
+    assert_equal "Household", split_txn.split_lines.second.category
+    assert_equal "-50.00", split_txn.split_lines.second.amount
+    assert_equal "Supplies", split_txn.split_lines.second.memo
+  end
+
+  test "parse returns correct count including split transactions" do
+    transactions = QifParser.parse(QIF_WITH_SPLITS)
+    assert_equal 2, transactions.length
+  end
+
+  test "parse strips --Split-- placeholder from category" do
+    transactions = QifParser.parse(QIF_WITH_SPLIT_PLACEHOLDER)
+    walmart = transactions.find { |t| t.payee == "Walmart" }
+
+    assert walmart.split, "Expected split transaction to be flagged"
+    assert_equal "", walmart.category, "Expected --Split-- to be stripped from category"
+  end
+
+  test "parse preserves normal category alongside --Split-- placeholder" do
+    transactions = QifParser.parse(QIF_WITH_SPLIT_PLACEHOLDER)
+    coffee = transactions.find { |t| t.payee == "Coffee Shop" }
+
+    refute coffee.split
+    assert_equal "Food & Dining", coffee.category
+  end
+
+  # ── QifImport model ─────────────────────────────────────────────────────────
+
+  setup do
+    @family  = families(:dylan_family)
+    @account = accounts(:depository)
+    @import  = QifImport.create!(family: @family, account: @account)
+  end
+
+  test "generates rows from QIF content" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    assert_equal 3, @import.rows.count
+  end
+
+  test "rows_count is updated after generate_rows_from_csv" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    assert_equal 3, @import.reload.rows_count
+  end
+
+  test "generates row with correct date and amount" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    row = @import.rows.find_by(name: "Merchant A")
+    assert_equal "2020-06-04", row.date
+    assert_equal "-99.00",     row.amount
+  end
+
+  test "generates row with category" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    row = @import.rows.find_by(name: "Merchant A")
+    assert_equal "Fees & Charges", row.category
+  end
+
+  test "generates row with tags stored as pipe-separated string" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    row = @import.rows.find_by(name: "Payment Received")
+    assert_equal "TRIP2025", row.tags
+  end
+
+  test "transfer rows have blank category" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    row = @import.rows.find_by(name: "Transfer Out")
+    assert row.category.blank?
+  end
+
+  test "generates rows with QIF account metadata" do
+    @import.update!(account: nil, raw_file_str: QIF_WITH_ACCOUNTS)
+    @import.generate_rows_from_csv
+
+    coffee = @import.rows.find_by!(name: "Coffee Shop")
+    grocery = @import.rows.find_by!(name: "Grocery Store")
+
+    assert_equal "QIF Checking", coffee.account
+    assert_equal "Bank", coffee.resource_type
+    assert_equal "QIF Visa", grocery.account
+    assert_equal "CCard", grocery.resource_type
+  end
+
+  test "generates rows for mixed transaction and investment QIF sections" do
+    @import.update!(account: nil, raw_file_str: QIF_WITH_MIXED_ACCOUNT_TYPES)
+    @import.generate_rows_from_csv
+
+    assert_equal 2, @import.rows.count
+
+    coffee = @import.rows.find_by!(name: "Coffee Shop")
+    buy = @import.rows.find_by!(entity_type: "Buy")
+
+    assert_equal "QIF Checking", coffee.account
+    assert_equal "Bank", coffee.resource_type
+    assert_equal "QIF Brokerage", buy.account
+    assert_equal "Invst", buy.resource_type
+    assert_equal "ACME", buy.ticker
+  end
+
+  test "requires_csv_workflow? is false" do
+    refute @import.requires_csv_workflow?
+  end
+
+  test "qif_account_type returns CCard for credit card QIF" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    assert_equal "CCard", @import.qif_account_type
+  end
+
+  test "row_categories excludes blank categories" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    cats = @import.row_categories
+    assert_includes cats, "Fees & Charges"
+    assert_includes cats, "Food & Dining"
+    refute_includes cats, ""
+  end
+
+  test "row_tags excludes blank tags" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    tags = @import.row_tags
+    assert_includes tags, "TRIP2025"
+    refute_includes tags, ""
+  end
+
+  test "split_categories returns categories from split transactions" do
+    @import.update!(raw_file_str: QIF_WITH_SPLITS)
+    @import.generate_rows_from_csv
+
+    split_cats = @import.split_categories
+    assert_includes split_cats, "Food & Dining"
+    refute_includes split_cats, "Utilities"
+  end
+
+  test "split_categories returns empty when no splits" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    assert_empty @import.split_categories
+  end
+
+  test "has_split_transactions? returns true when splits exist" do
+    @import.update!(raw_file_str: QIF_WITH_SPLITS)
+    assert @import.has_split_transactions?
+  end
+
+  test "has_split_transactions? returns true for --Split-- placeholder" do
+    @import.update!(raw_file_str: QIF_WITH_SPLIT_PLACEHOLDER)
+    assert @import.has_split_transactions?
+  end
+
+  test "has_split_transactions? returns false when no splits" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    refute @import.has_split_transactions?
+  end
+
+  test "split_categories uses split line categories when splits use --Split-- placeholder" do
+    @import.update!(raw_file_str: QIF_WITH_SPLIT_PLACEHOLDER)
+    @import.generate_rows_from_csv
+
+    assert_equal [ "Clothing", "Food", "Home Improvement" ], @import.split_categories
+    assert_includes @import.row_categories, "Clothing"
+    assert_includes @import.row_categories, "Food"
+    assert_includes @import.row_categories, "Home Improvement"
+    refute_includes @import.row_categories, "--Split--"
+  end
+
+  test "import! creates split children from QIF split lines" do
+    @import.update!(raw_file_str: QIF_WITH_SPLITS)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    assert_difference "Entry.count", 4 do
+      @import.import!
+    end
+
+    parent = @account.entries.find_by!(name: "Grocery & Hardware Store")
+    assert parent.excluded?
+    assert parent.split_parent?
+    assert_equal @import, parent.import
+
+    children = parent.child_entries.includes(:entryable).order(:amount)
+    assert_equal 2, children.count
+
+    supplies = children.find { |entry| entry.name == "Supplies" }
+    groceries = children.find { |entry| entry.name == "Groceries" }
+
+    assert_not_nil groceries
+    assert_not_nil supplies
+    assert_in_delta 100, groceries.amount, 0.01
+    assert_equal "Food & Dining", groceries.entryable.category.name
+    assert_equal "Groceries", groceries.notes
+    assert_equal @import, groceries.import
+    assert groceries.import_locked?
+
+    assert_in_delta 50, supplies.amount, 0.01
+    assert_equal "Household", supplies.entryable.category.name
+    assert_equal "Supplies", supplies.notes
+    assert_equal @import, supplies.import
+    assert supplies.import_locked?
+  end
+
+  test "import! creates split children from QIF split lines with detected non-default date format" do
+    qif = <<~QIF
+      !Type:Bank
+      D31/ 1'24
+      U-30.00
+      T-30.00
+      PMarket and tram
+      L--Split--
+      SFood
+      $-10.00
+      STransport
+      $-20.00
+      ^
+    QIF
+
+    @import.update!(raw_file_str: qif)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    assert_equal "%d/%m/%Y", @import.reload.qif_date_format
+
+    @import.import!
+
+    parent = @account.entries.find_by!(name: "Market and tram")
+    assert_equal Date.new(2024, 1, 31), parent.date
+    assert parent.split_parent?
+    assert_equal [ 10, 20 ], parent.child_entries.order(:amount).pluck(:amount).map(&:to_i)
+    assert_equal [ "Food", "Transport" ], parent.child_entries.includes(entryable: :category).map { |entry| entry.entryable.category.name }.sort
+  end
+
+  test "import! preserves deselected split categories and tags" do
+    @import.update!(
+      raw_file_str: QIF_WITH_SPLIT_TAGS,
+      column_mappings: (@import.column_mappings || {}).merge(
+        "qif_selected_categories" => [ "Travel" ],
+        "qif_selected_tags" => [ "KEEP" ]
+      )
+    )
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    @import.import!
+
+    parent = @account.entries.find_by!(name: "Tagged Split Store")
+    groceries = parent.child_entries.includes(entryable: :tags).find_by!(name: "Groceries")
+    train = parent.child_entries.includes(entryable: :tags).find_by!(name: "Train")
+
+    assert_nil groceries.entryable.category
+    assert_empty groceries.entryable.tags
+    assert_equal "Travel", train.entryable.category.name
+    assert_equal [ "KEEP" ], train.entryable.tags.map(&:name)
+  end
+
+  test "import! skips split creation when split line totals do not match parent" do
+    @import.update!(raw_file_str: QIF_WITH_ROUNDING_SPLIT_MISMATCH)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    assert_difference "Transaction.count", 2 do
+      @import.import!
+    end
+
+    rounded_parent = @account.entries.find_by!(name: "Rounded Split Store")
+    coffee = @account.entries.find_by!(name: "Coffee Shop")
+
+    refute rounded_parent.split_parent?
+    refute rounded_parent.excluded?
+    assert_not_nil coffee
+  end
+
+  test "categories_selected? is false before sync_mappings" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    refute @import.categories_selected?
+  end
+
+  test "categories_selected? is true after sync_mappings" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    assert @import.categories_selected?
+  end
+
+  test "publishable? requires account to be present" do
+    import_without_account = QifImport.create!(family: @family)
+    import_without_account.update_columns(raw_file_str: SAMPLE_QIF, rows_count: 1)
+
+    refute import_without_account.publishable?
+  end
+
+  test "publishable? allows QIF account metadata without selected account" do
+    import_without_account = QifImport.create!(family: @family)
+    import_without_account.update!(raw_file_str: QIF_WITH_ACCOUNTS)
+    import_without_account.generate_rows_from_csv
+
+    assert import_without_account.publishable?
+  end
+
+  test "import! creates accounts from QIF metadata and routes transactions" do
+    @import.update!(account: nil, raw_file_str: QIF_WITH_ACCOUNTS)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    assert_difference "Account.count", 2 do
+      @import.import!
+    end
+
+    checking = @family.accounts.find_by!(name: "QIF Checking")
+    visa = @family.accounts.find_by!(name: "QIF Visa")
+
+    assert_equal @import, checking.import
+    assert_equal "Depository", checking.accountable_type
+    assert_equal @import, visa.import
+    assert_equal "CreditCard", visa.accountable_type
+
+    coffee = checking.entries.find_by!(name: "Coffee Shop", entryable_type: "Transaction")
+    grocery = visa.entries.find_by!(name: "Grocery Store", entryable_type: "Transaction")
+
+    assert_in_delta 25, coffee.amount, 0.01
+    assert_in_delta 50, grocery.amount, 0.01
+  end
+
+  test "import! routes mixed transaction and investment sections independently" do
+    @import.update!(account: nil, raw_file_str: QIF_WITH_MIXED_ACCOUNT_TYPES)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    assert_difference "Transaction.count", 1 do
+      assert_difference "Trade.count", 1 do
+        @import.import!
+      end
+    end
+
+    checking = @family.accounts.find_by!(name: "QIF Checking")
+    brokerage = @family.accounts.find_by!(name: "QIF Brokerage")
+
+    assert checking.entries.exists?(name: "Coffee Shop", entryable_type: "Transaction")
+    assert brokerage.entries.exists?(entryable_type: "Trade")
+  end
+
+  # ── Opening balance handling ─────────────────────────────────────────────────
+
+  test "Opening Balance row is not generated as a transaction row" do
+    @import.update!(raw_file_str: QIF_WITH_OPENING_BALANCE)
+    @import.generate_rows_from_csv
+
+    assert_equal 2, @import.rows.count
+    refute @import.rows.exists?(name: "Opening Balance")
+  end
+
+  test "import! sets opening anchor from QIF Opening Balance entry" do
+    @import.update!(raw_file_str: QIF_WITH_OPENING_BALANCE)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+    @import.import!
+
+    manager = Account::OpeningBalanceManager.new(@account)
+    assert manager.has_opening_anchor?
+    assert_equal Date.new(2020, 1, 1), manager.opening_date
+    assert_equal BigDecimal("500"),    manager.opening_balance
+  end
+
+  test "import! creates declared account that only has an opening balance" do
+    @import.update!(account: nil, raw_file_str: QIF_WITH_BALANCE_ONLY_ACCOUNT)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    assert_difference "Account.count", 2 do
+      @import.import!
+    end
+
+    balance_only = @family.accounts.find_by!(name: "Balance Only")
+    manager = Account::OpeningBalanceManager.new(balance_only)
+
+    assert manager.has_opening_anchor?
+    assert_equal Date.new(2024, 1, 1), manager.opening_date
+    assert_equal BigDecimal("500"), manager.opening_balance
+  end
+
+  test "import! moves opening anchor back when transactions predate it" do
+    # Anchor set 2 years ago; SAMPLE_QIF has transactions from 2020 which predate it
+    @account.entries.create!(
+      date:      2.years.ago.to_date,
+      name:      "Opening balance",
+      amount:    0,
+      currency:  @account.currency,
+      entryable: Valuation.new(kind: "opening_anchor")
+    )
+
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+    @import.import!
+
+    manager = Account::OpeningBalanceManager.new(@account.reload)
+    # Day before the earliest SAMPLE_QIF transaction (2020-06-04)
+    assert_equal Date.new(2020, 6, 3), manager.opening_date
+    assert_equal 0, manager.opening_balance
+  end
+
+  test "import! does not move opening anchor when transactions do not predate it" do
+    anchor_date = Date.new(2020, 1, 1) # before the earliest SAMPLE_QIF transaction (2020-06-04)
+    @account.entries.create!(
+      date:      anchor_date,
+      name:      "Opening balance",
+      amount:    0,
+      currency:  @account.currency,
+      entryable: Valuation.new(kind: "opening_anchor")
+    )
+
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+    @import.import!
+
+    assert_equal anchor_date, Account::OpeningBalanceManager.new(@account.reload).opening_date
+  end
+
+  test "import! updates a pre-existing opening anchor from QIF Opening Balance entry" do
+    @account.entries.create!(
+      date:      2.years.ago.to_date,
+      name:      "Opening balance",
+      amount:    0,
+      currency:  @account.currency,
+      entryable: Valuation.new(kind: "opening_anchor")
+    )
+
+    @import.update!(raw_file_str: QIF_WITH_OPENING_BALANCE)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+    @import.import!
+
+    manager = Account::OpeningBalanceManager.new(@account.reload)
+    assert_equal Date.new(2020, 1, 1), manager.opening_date
+    assert_equal BigDecimal("500"),    manager.opening_balance
+  end
+
+  test "will_adjust_opening_anchor? returns true when transactions predate anchor" do
+    @account.entries.create!(
+      date:      2.years.ago.to_date,
+      name:      "Opening balance",
+      amount:    0,
+      currency:  @account.currency,
+      entryable: Valuation.new(kind: "opening_anchor")
+    )
+
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    assert @import.will_adjust_opening_anchor?
+  end
+
+  test "will_adjust_opening_anchor? returns false when QIF has Opening Balance entry" do
+    @account.entries.create!(
+      date:      2.years.ago.to_date,
+      name:      "Opening balance",
+      amount:    0,
+      currency:  @account.currency,
+      entryable: Valuation.new(kind: "opening_anchor")
+    )
+
+    @import.update!(raw_file_str: QIF_WITH_OPENING_BALANCE)
+    @import.generate_rows_from_csv
+
+    refute @import.will_adjust_opening_anchor?
+  end
+
+  test "adjusted_opening_anchor_date is one day before earliest transaction" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    assert_equal Date.new(2020, 6, 3), @import.adjusted_opening_anchor_date
+  end
+
+  # ── Hierarchical category (Parent:Child) ─────────────────────────────────────
+
+  test "generates rows with hierarchical category stored as-is" do
+    @import.update!(raw_file_str: QIF_WITH_HIERARCHICAL_CATEGORIES)
+    @import.generate_rows_from_csv
+
+    row = @import.rows.find_by(name: "Hardware Store")
+    assert_equal "Home:Home Improvement", row.category
+  end
+
+  test "create_mappable! creates parent and child categories for hierarchical key" do
+    @import.update!(raw_file_str: QIF_WITH_HIERARCHICAL_CATEGORIES)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    mapping = @import.mappings.categories.find_by(key: "Home:Home Improvement")
+    mapping.update!(create_when_empty: true)
+    mapping.create_mappable!
+
+    child = @family.categories.find_by(name: "Home Improvement")
+    assert_not_nil child
+    assert_not_nil child.parent
+    assert_equal "Home", child.parent.name
+  end
+
+  test "create_mappable! reuses existing parent category for hierarchical key" do
+    existing_parent = @family.categories.create!(
+      name: "Home", color: "#aabbcc", lucide_icon: "house"
+    )
+
+    @import.update!(raw_file_str: QIF_WITH_HIERARCHICAL_CATEGORIES)
+    @import.generate_rows_from_csv
+    @import.sync_mappings
+
+    mapping = @import.mappings.categories.find_by(key: "Home:Home Improvement")
+    mapping.update!(create_when_empty: true)
+
+    assert_no_difference "@family.categories.where(name: 'Home').count" do
+      mapping.create_mappable!
+    end
+
+    child = @family.categories.find_by(name: "Home Improvement")
+    assert_equal existing_parent.id, child.parent_id
+  end
+
+  test "mappables_by_key pre-matches hierarchical key to existing child category" do
+    parent = @family.categories.create!(
+      name: "Home", color: "#aabbcc", lucide_icon: "house"
+    )
+    child = @family.categories.create!(
+      name: "Home Improvement", color: "#aabbcc", lucide_icon: "house",
+      parent: parent
+    )
+
+    @import.update!(raw_file_str: QIF_WITH_HIERARCHICAL_CATEGORIES)
+    @import.generate_rows_from_csv
+
+    mappables = Import::CategoryMapping.mappables_by_key(@import)
+    assert_equal child, mappables["Home:Home Improvement"]
+  end
+
+  # ── Investment (Invst) QIF: parser ──────────────────────────────────────────
+
+  test "parse_securities returns all securities from investment QIF" do
+    securities = QifParser.parse_securities(SAMPLE_INVST_QIF)
+    assert_equal 2, securities.length
+    tickers = securities.map(&:ticker)
+    assert_includes tickers, "ACME"
+    assert_includes tickers, "CORP"
+  end
+
+  test "parse_securities maps name to ticker and type correctly" do
+    acme = QifParser.parse_securities(SAMPLE_INVST_QIF).find { |s| s.ticker == "ACME" }
+    assert_equal "ACME",  acme.name
+    assert_equal "Stock", acme.security_type
+  end
+
+  test "parse_securities returns empty array for non-investment QIF" do
+    assert_empty QifParser.parse_securities(SAMPLE_QIF)
+  end
+
+  test "parse_investment_transactions returns all investment records" do
+    assert_equal 4, QifParser.parse_investment_transactions(SAMPLE_INVST_QIF).length
+  end
+
+  test "parse_investment_transactions resolves security name to ticker" do
+    buy = QifParser.parse_investment_transactions(SAMPLE_INVST_QIF).find { |t| t.action == "Buy" }
+    assert_equal "ACME", buy.security_ticker
+    assert_equal "ACME", buy.security_name
+  end
+
+  test "parse_investment_transactions extracts price, qty, and amount for trade actions" do
+    buy = QifParser.parse_investment_transactions(SAMPLE_INVST_QIF).find { |t| t.action == "Buy" }
+    assert_equal "66.10",  buy.price
+    assert_equal "2",      buy.qty
+    assert_equal "132.20", buy.amount
+  end
+
+  test "parse_investment_transactions extracts amount and ticker for dividend" do
+    div = QifParser.parse_investment_transactions(SAMPLE_INVST_QIF).find { |t| t.action == "Div" }
+    assert_equal "190.75", div.amount
+    assert_equal "ACME",   div.security_ticker
+  end
+
+  test "parse_investment_transactions extracts payee for cash actions" do
+    xin = QifParser.parse_investment_transactions(SAMPLE_INVST_QIF).find { |t| t.action == "XIn" }
+    assert_equal "Monthly Deposit", xin.payee
+    assert_equal "8000.00",         xin.amount
+  end
+
+  # ── Investment (Invst) QIF: row generation ──────────────────────────────────
+
+  test "qif_account_type returns Invst for investment QIF" do
+    @import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    assert_equal "Invst", @import.qif_account_type
+  end
+
+  test "generates correct number of rows from investment QIF" do
+    @import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    @import.generate_rows_from_csv
+
+    assert_equal 4, @import.rows.count
+  end
+
+  test "generates trade rows with correct entity_type, ticker, qty, and price" do
+    @import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    @import.generate_rows_from_csv
+
+    buy_row = @import.rows.find_by(entity_type: "Buy")
+    assert_not_nil buy_row
+    assert_equal "ACME",   buy_row.ticker
+    assert_equal "2.0",    buy_row.qty
+    assert_equal "66.10",  buy_row.price
+    assert_equal "132.20", buy_row.amount
+  end
+
+  test "generates sell row with negative qty" do
+    @import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    @import.generate_rows_from_csv
+
+    sell_row = @import.rows.find_by(entity_type: "Sell")
+    assert_not_nil sell_row
+    assert_equal "CORP", sell_row.ticker
+    assert_equal "-3.0", sell_row.qty
+  end
+
+  test "generates transaction row for Div with security name in row name" do
+    @import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    @import.generate_rows_from_csv
+
+    div_row = @import.rows.find_by(entity_type: "Div")
+    assert_not_nil div_row
+    assert_equal "Dividend: ACME", div_row.name
+    assert_equal "190.75",         div_row.amount
+  end
+
+  test "generates transaction row for XIn using payee as name" do
+    @import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    @import.generate_rows_from_csv
+
+    xin_row = @import.rows.find_by(entity_type: "XIn")
+    assert_not_nil xin_row
+    assert_equal "Monthly Deposit", xin_row.name
+  end
+
+  # ── Investment (Invst) QIF: import! ─────────────────────────────────────────
+
+  test "import! creates Trade records for buy and sell rows" do
+    import = QifImport.create!(family: @family, account: accounts(:investment))
+    import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    import.generate_rows_from_csv
+    import.sync_mappings
+
+    Security::Resolver.any_instance.stubs(:resolve).returns(securities(:aapl))
+
+    assert_difference "Trade.count", 2 do
+      import.import!
+    end
+  end
+
+  test "import! creates Transaction records for dividend and cash rows" do
+    import = QifImport.create!(family: @family, account: accounts(:investment))
+    import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    import.generate_rows_from_csv
+    import.sync_mappings
+
+    Security::Resolver.any_instance.stubs(:resolve).returns(securities(:aapl))
+
+    assert_difference "Transaction.count", 2 do
+      import.import!
+    end
+  end
+
+  test "import! creates inflow Entry for Div (negative amount)" do
+    import = QifImport.create!(family: @family, account: accounts(:investment))
+    import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    import.generate_rows_from_csv
+    import.sync_mappings
+
+    Security::Resolver.any_instance.stubs(:resolve).returns(securities(:aapl))
+    import.import!
+
+    div_entry = accounts(:investment).entries.find_by(name: "Dividend: ACME")
+    assert_not_nil div_entry
+    assert div_entry.amount.negative?, "Dividend should be an inflow (negative amount)"
+    assert_in_delta(-190.75, div_entry.amount, 0.01)
+  end
+
+  test "import! creates outflow Entry for Buy (positive amount)" do
+    import = QifImport.create!(family: @family, account: accounts(:investment))
+    import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    import.generate_rows_from_csv
+    import.sync_mappings
+
+    Security::Resolver.any_instance.stubs(:resolve).returns(securities(:aapl))
+    import.import!
+
+    buy_entry = accounts(:investment)
+      .entries
+      .joins("INNER JOIN trades ON trades.id = entries.entryable_id AND entries.entryable_type = 'Trade'")
+      .find_by("trades.qty > 0")
+    assert_not_nil buy_entry
+    assert buy_entry.amount.positive?, "Buy trade should be an outflow (positive amount)"
+  end
+
+  test "import! creates inflow Entry for Sell (negative amount)" do
+    import = QifImport.create!(family: @family, account: accounts(:investment))
+    import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    import.generate_rows_from_csv
+    import.sync_mappings
+
+    Security::Resolver.any_instance.stubs(:resolve).returns(securities(:aapl))
+    import.import!
+
+    sell_entry = accounts(:investment)
+      .entries
+      .joins("INNER JOIN trades ON trades.id = entries.entryable_id AND entries.entryable_type = 'Trade'")
+      .find_by("trades.qty < 0")
+    assert_not_nil sell_entry
+    assert sell_entry.amount.negative?, "Sell trade should be an inflow (negative amount)"
+  end
+
+  test "will_adjust_opening_anchor? returns false for investment accounts" do
+    import = QifImport.create!(family: @family, account: accounts(:investment))
+    import.update!(raw_file_str: SAMPLE_INVST_QIF)
+    import.generate_rows_from_csv
+
+    refute import.will_adjust_opening_anchor?
+  end
+
+  # ── QifParser: normalize_qif_date ──────────────────────────────────────────
+
+  test "normalize_qif_date preserves single spaces for month-name dates" do
+    assert_equal "26 Jan 2026", QifParser.send(:normalize_qif_date, "26 Jan 2026")
+  end
+
+  test "normalize_qif_date collapses multiple spaces in month-name dates" do
+    assert_equal "26 Jan 2026", QifParser.send(:normalize_qif_date, "26  Jan  2026")
+  end
+
+  test "normalize_qif_date still strips spaces from numeric dates" do
+    assert_equal "6/4/2020", QifParser.send(:normalize_qif_date, "6/ 4/2020")
+  end
+
+  test "normalize_qif_date expands 2-digit year for month-name dates" do
+    assert_equal "26 Jan 2026", QifParser.send(:normalize_qif_date, "26 Jan 26")
+  end
+
+  test "normalize_qif_date converts apostrophe 2-digit year" do
+    assert_equal "6/4/2020", QifParser.send(:normalize_qif_date, "6/ 4'20")
+  end
+
+  test "normalize_qif_date converts apostrophe 4-digit year" do
+    assert_equal "6/4/2020", QifParser.send(:normalize_qif_date, "6/ 4'2020")
+  end
+
+  test "normalize_qif_date handles dot-separated dates" do
+    assert_equal "04.06.2020", QifParser.send(:normalize_qif_date, "04.06.2020")
+  end
+
+  test "normalize_qif_date handles dot with apostrophe year" do
+    assert_equal "04.06.2020", QifParser.send(:normalize_qif_date, "04.06'20")
+  end
+
+  test "normalize_qif_date handles dash-separated dates" do
+    assert_equal "2020-06-04", QifParser.send(:normalize_qif_date, "2020-06-04")
+  end
+
+  test "normalize_qif_date returns nil for blank input" do
+    assert_nil QifParser.send(:normalize_qif_date, nil)
+    assert_nil QifParser.send(:normalize_qif_date, "")
+  end
+
+  # ── QifParser: parse_qif_date with different formats ───────────────────────
+
+  test "parse_qif_date parses US format (MM/DD/YYYY)" do
+    assert_equal "2020-06-04", QifParser.send(:parse_qif_date, "6/ 4'20", date_format: "%m/%d/%Y")
+  end
+
+  test "parse_qif_date parses European slash format (DD/MM/YYYY)" do
+    # 4/ 6'20 → day=4, month=6 → June 4th
+    assert_equal "2020-06-04", QifParser.send(:parse_qif_date, "4/ 6'20", date_format: "%d/%m/%Y")
+  end
+
+  test "parse_qif_date parses European dot format (DD.MM.YYYY)" do
+    assert_equal "2020-06-04", QifParser.send(:parse_qif_date, "04.06.2020", date_format: "%d.%m.%Y")
+  end
+
+  test "parse_qif_date parses ISO format (YYYY-MM-DD)" do
+    assert_equal "2020-06-04", QifParser.send(:parse_qif_date, "2020-06-04", date_format: "%Y-%m-%d")
+  end
+
+  test "parse_qif_date parses month-name format (DD MMM YYYY)" do
+    assert_equal "2026-01-26", QifParser.send(:parse_qif_date, "26 Jan 2026", date_format: "%d %b %Y")
+  end
+
+  test "parse_qif_date parses month-name format with 2-digit year" do
+    assert_equal "2026-01-26", QifParser.send(:parse_qif_date, "26 Jan 26", date_format: "%d %b %Y")
+  end
+
+  test "parse_qif_date returns nil for invalid date" do
+    assert_nil QifParser.send(:parse_qif_date, "13/32/2020", date_format: "%m/%d/%Y")
+  end
+
+  # ── QifParser: extract_raw_dates ───────────────────────────────────────────
+
+  test "extract_raw_dates returns normalized date strings from D-fields" do
+    dates = QifParser.extract_raw_dates(SAMPLE_QIF)
+    assert_includes dates, "6/4/2020"
+    assert_includes dates, "3/29/2021"
+    assert_includes dates, "10/1/2020"
+  end
+
+  test "extract_raw_dates returns empty for blank content" do
+    assert_empty QifParser.extract_raw_dates(nil)
+    assert_empty QifParser.extract_raw_dates("")
+  end
+
+  # ── QifParser: parse with European date format ─────────────────────────────
+
+  EUROPEAN_QIF = <<~QIF
+    !Type:Bank
+    D04/06/2020
+    U-99.00
+    T-99.00
+    PMerchant A
+    ^
+    D29/03/2021
+    U-50.00
+    T-50.00
+    PMerchant B
+    ^
+  QIF
+
+  test "parse with DD/MM/YYYY format parses dates correctly" do
+    transactions = QifParser.parse(EUROPEAN_QIF, date_format: "%d/%m/%Y")
+    assert_equal "2020-06-04", transactions[0].date
+    assert_equal "2021-03-29", transactions[1].date
+  end
+
+  # ── Import.detect_date_format ──────────────────────────────────────────────
+
+  test "detect_date_format identifies US slash format" do
+    samples = %w[6/4/2020 3/29/2021 10/1/2020]
+    # 3/29 cannot be DD/MM (month 29 invalid), so must be MM/DD
+    assert_equal "%m/%d/%Y", Import.detect_date_format(samples)
+  end
+
+  test "detect_date_format identifies European slash format" do
+    samples = %w[04/06/2020 29/03/2021 01/10/2020]
+    # 29/03 cannot be MM/DD (month 29 invalid), so must be DD/MM
+    assert_equal "%d/%m/%Y", Import.detect_date_format(samples)
+  end
+
+  test "detect_date_format identifies European dot format" do
+    samples = %w[04.06.2020 29.03.2021 01.10.2020]
+    assert_equal "%d.%m.%Y", Import.detect_date_format(samples)
+  end
+
+  test "detect_date_format identifies ISO format" do
+    samples = %w[2020-06-04 2021-03-29 2020-10-01]
+    assert_equal "%Y-%m-%d", Import.detect_date_format(samples)
+  end
+
+  test "detect_date_format identifies month-name DD MMM YYYY format" do
+    samples = [ "26 Jan 2026", "23 Jan 2026", "02 Feb 2026" ]
+    assert_equal "%d %b %Y", Import.detect_date_format(samples)
+  end
+
+  test "detect_date_format returns fallback for blank samples" do
+    assert_equal "%Y-%m-%d", Import.detect_date_format([])
+    assert_equal "%Y-%m-%d", Import.detect_date_format(nil)
+  end
+
+  test "detect_date_format returns fallback when no format matches" do
+    samples = %w[not-a-date garbage]
+    assert_equal "%Y-%m-%d", Import.detect_date_format(samples)
+  end
+
+  # ── QifImport: auto-detection integration ──────────────────────────────────
+
+  test "generate_rows_from_csv auto-detects US date format" do
+    @import.update!(raw_file_str: SAMPLE_QIF)
+    @import.generate_rows_from_csv
+
+    assert_equal "%m/%d/%Y", @import.reload.qif_date_format
+    row = @import.rows.find_by(name: "Merchant A")
+    assert_equal "2020-06-04", row.date
+  end
+
+  EUROPEAN_BANK_QIF = <<~QIF
+    !Type:Bank
+    D13/01/2024
+    U-100.00
+    T-100.00
+    PEuropean Store
+    ^
+    D25/12/2023
+    U-50.00
+    T-50.00
+    PChristmas Shop
+    ^
+  QIF
+
+  test "generate_rows_from_csv auto-detects European DD/MM/YYYY format" do
+    @import.update!(raw_file_str: EUROPEAN_BANK_QIF)
+    @import.generate_rows_from_csv
+
+    assert_equal "%d/%m/%Y", @import.reload.qif_date_format
+    row = @import.rows.find_by(name: "European Store")
+    assert_equal "2024-01-13", row.date
+  end
+
+  test "generate_rows_from_csv respects manually set qif_date_format" do
+    @import.update!(raw_file_str: EUROPEAN_BANK_QIF)
+    @import.qif_date_format = "%d/%m/%Y"
+    @import.save!(validate: false)
+    @import.generate_rows_from_csv
+
+    # Should not re-detect since qif_date_format is already set
+    assert_equal "%d/%m/%Y", @import.reload.qif_date_format
+  end
+
+  # Reproduces #2498: Amex-style QIF with dd mmm yyyy dates previously failed
+  # with "Unable to detect date format" because normalize_qif_date stripped all
+  # spaces (turning "26 Jan 2026" into the unparseable "26Jan2026").
+  AMEX_DDD_MMM_YYYY_QIF = <<~QIF
+    !Type:CCard
+    D26 Jan 2026
+    N20260126
+    T-25.24
+    PAMAZON.COM.CA           WWW.AMAZON.CO
+    M
+    ^
+    D23 Jan 2026
+    N20260123
+    T-10.49
+    PSKIPTHEDISHES           WINNIPEG (BROAD
+    M
+    ^
+  QIF
+
+  test "generate_rows_from_csv auto-detects DD MMM YYYY format" do
+    @import.update!(raw_file_str: AMEX_DDD_MMM_YYYY_QIF)
+    @import.generate_rows_from_csv
+
+    assert_equal "%d %b %Y", @import.reload.qif_date_format
+    row = @import.rows.find_by(name: "AMAZON.COM.CA           WWW.AMAZON.CO")
+    assert_not_nil row
+    assert_equal "2026-01-26", row.date
+    assert_equal "-25.24",     row.amount
+  end
+
+  test "DD MMM YYYY format appears in valid_date_formats_with_preview for Amex QIF" do
+    @import.update!(raw_file_str: AMEX_DDD_MMM_YYYY_QIF)
+    @import.generate_rows_from_csv
+
+    formats = @import.valid_date_formats_with_preview
+    format_strs = formats.map { |f| f[:format] }
+
+    assert_includes format_strs, "%d %b %Y"
+    dd_mmm = formats.find { |f| f[:format] == "%d %b %Y" }
+    assert_equal "2026-01-26", dd_mmm[:preview]
+  end
+
+  # ── QifParser: try_parse_date ───────────────────────────────────────────────
+
+  test "try_parse_date returns ISO date for valid format" do
+    assert_equal "2020-06-04", QifParser.try_parse_date("6/ 4'20", date_format: "%m/%d/%Y")
+  end
+
+  test "try_parse_date returns nil for incompatible format" do
+    assert_nil QifParser.try_parse_date("2020-06-04", date_format: "%d.%m.%Y")
+  end
+
+  # ── QifImport: valid_date_formats_with_preview ──────────────────────────────
+
+  test "valid_date_formats_with_preview excludes formats that cannot parse the file dates" do
+    @import.update!(raw_file_str: EUROPEAN_BANK_QIF)
+    formats = @import.valid_date_formats_with_preview
+
+    format_strs = formats.map { |f| f[:format] }
+
+    # DD/MM/YYYY should be valid (13/01/2024)
+    assert_includes format_strs, "%d/%m/%Y"
+
+    # MM/DD/YYYY should be excluded (month 13 is invalid)
+    assert_not_includes format_strs, "%m/%d/%Y"
+
+    # Each valid format should have a preview date
+    formats.each do |f|
+      assert_not_nil f[:preview], "Expected preview for #{f[:label]}"
+    end
+  end
+
+  test "valid_date_formats_with_preview returns empty array when no raw dates" do
+    @import.update!(raw_file_str: "")
+    formats = @import.valid_date_formats_with_preview
+
+    assert_empty formats
+  end
+end
