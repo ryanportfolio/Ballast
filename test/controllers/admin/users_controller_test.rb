@@ -527,17 +527,6 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     target = users(:family_member)
     target_email = target.email
     target.sessions.create!
-    oauth_app = Doorkeeper::Application.create!(
-      name: "Removal test",
-      redirect_uri: "https://app.example/callback",
-      confidential: false
-    )
-    oauth_token = Doorkeeper::AccessToken.create!(
-      application: oauth_app,
-      resource_owner_id: target.id,
-      scopes: "read_write",
-      use_refresh_token: true
-    )
     assert target.api_keys.exists?
 
     assert_enqueued_with(job: UserPurgeJob, args: [ target ]) do
@@ -549,7 +538,6 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_not target.active?
     assert_empty target.sessions
     assert_empty target.api_keys
-    assert oauth_token.reload.revoked?
   end
 
   test "super admin cannot remove themselves" do

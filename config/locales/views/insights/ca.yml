@@ -1,9 +1,6 @@
 ---
 ca:
   insights:
-    notification:
-      title: Nova observació financera
-      body: Obre Sure per revisar la teva darrera observació generada per IA.
     index:
       title: Observacions
       subtitle: Què passa amb les teves finances, actualitzat cada nit.

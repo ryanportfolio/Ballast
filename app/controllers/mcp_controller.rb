@@ -1,10 +1,7 @@
 class McpController < ApplicationController
-  include OauthBase
-
   PROTOCOL_VERSION = "2025-06-18"
   SUPPORTED_PROTOCOL_VERSIONS = [ "2025-03-26", PROTOCOL_VERSION ].freeze
   MCP_SESSION_TTL = 1.day
-  REQUIRED_SCOPE = "read_write"
 
   # Skip session-based auth and CSRF — this is a token-authenticated API
   skip_authentication
@@ -126,22 +123,9 @@ class McpController < ApplicationController
       auth_header = request.authorization.to_s
       token = auth_header[/\ABearer\s+(.+)\z/i, 1]&.strip&.presence # pipelock:ignore
 
-      return if token.present? && authenticate_via_doorkeeper(token)
       return if token.present? && authenticate_via_env_token(token)
 
       render_mcp_unauthorized
-    end
-
-    def authenticate_via_doorkeeper(token)
-      access_token = Doorkeeper::AccessToken.by_token(token)
-      return false unless access_token&.accessible?
-      return false unless access_token.scopes.include?(REQUIRED_SCOPE)
-
-      user = User.find_by(id: access_token.resource_owner_id)
-      return false unless user&.active?
-
-      setup_mcp_session(user)
-      true
     end
 
     def authenticate_via_env_token(token)
@@ -221,10 +205,7 @@ class McpController < ApplicationController
     end
 
     def render_mcp_unauthorized
-      response.set_header(
-        "WWW-Authenticate",
-        "Bearer resource_metadata=\"#{configured_base_url}/.well-known/oauth-protected-resource/mcp\", scope=\"#{REQUIRED_SCOPE}\""
-      )
+      response.set_header("WWW-Authenticate", "Bearer")
       render json: { error: "unauthorized" }, status: :unauthorized
     end
 

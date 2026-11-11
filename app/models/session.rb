@@ -54,8 +54,8 @@ class Session < ApplicationRecord
     end
 
     # Shared cookie -> Session resolver used by every path that authenticates
-    # via the signed session_token cookie (Authentication concern, Doorkeeper
-    # authenticators, SuperAdminConstraint), so inactivity expiry can't be
+    # via the signed session_token cookie (Authentication concern,
+    # SuperAdminConstraint), so inactivity expiry can't be
     # bypassed by adding a new entry point that forgets to check `expired?`.
     #
     # Also refreshes the activity clock here (not per-caller) so any of these

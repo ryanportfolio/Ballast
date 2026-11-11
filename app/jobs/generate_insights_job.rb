@@ -37,12 +37,11 @@ class GenerateInsightsJob < ApplicationJob
       # broadcast below too, not just the generation.
       return unless family.preview_features_enabled?
 
-      notifiable_insights = with_advisory_lock(family_id) do
+      with_advisory_lock(family_id) do
         I18n.with_locale(family.locale) do
           result = Insight::GeneratorRegistry.new(family).generate_all
-          created_or_resurfaced = upsert_insights(family, result.insights)
+          upsert_insights(family, result.insights)
           expire_stale_insights(family, result)
-          created_or_resurfaced
         end
       end
 
@@ -50,7 +49,6 @@ class GenerateInsightsJob < ApplicationJob
       # current state, so a subscribed /insights page (waiting on its manual
       # refresh) always gets its list and button restored.
       I18n.with_locale(family.locale) { broadcast_feed(family) }
-      Array(notifiable_insights).each { |insight| DeliverInsightNotificationJob.enqueue_for(insight) }
     end
 
     def broadcast_feed(family)

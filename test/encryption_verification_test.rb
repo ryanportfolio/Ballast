@@ -200,43 +200,6 @@ class EncryptionVerificationTest < ActiveSupport::TestCase
   end
 
   # ============================================================================
-  # MOBILE DEVICE MODEL TESTS
-  # ============================================================================
-
-  test "mobile device device_id is encrypted and uniqueness works" do
-    device = MobileDevice.create!(
-      user: users(:family_admin),
-      device_id: "test-device-12345",
-      device_name: "Test iPhone",
-      device_type: "ios"
-    )
-
-    # Should be able to find by device_id
-    found = MobileDevice.find_by(device_id: "test-device-12345", user: users(:family_admin))
-    assert_equal device.id, found.id
-
-    # Same device_id for same user should fail
-    device2 = MobileDevice.new(
-      user: users(:family_admin),
-      device_id: "test-device-12345",
-      device_name: "Another iPhone",
-      device_type: "ios"
-    )
-    assert_not device2.valid?
-
-    # Same device_id for different user should work
-    device3 = MobileDevice.new(
-      user: users(:family_member),
-      device_id: "test-device-12345",
-      device_name: "Their iPhone",
-      device_type: "ios"
-    )
-    assert device3.valid?
-
-    device.destroy
-  end
-
-  # ============================================================================
   # PROVIDER ITEM TESTS (if fixtures exist)
   # ============================================================================
 

@@ -67,7 +67,7 @@ Example request:
 
 ```http
 POST /api/v1/tags
-Authorization: Bearer <access_token>
+X-Api-Key: <api_key>
 Content-Type: application/json
 
 {
@@ -98,7 +98,7 @@ Example request:
 
 ```http
 PATCH /api/v1/tags/550e8400-e29b-41d4-a716-446655440001
-Authorization: Bearer <access_token>
+X-Api-Key: <api_key>
 Content-Type: application/json
 
 {
@@ -117,7 +117,7 @@ Example request:
 
 ```http
 DELETE /api/v1/tags/550e8400-e29b-41d4-a716-446655440001
-Authorization: Bearer <access_token>
+X-Api-Key: <api_key>
 ```
 
 Returns `204 No Content` on success.
@@ -156,7 +156,7 @@ Common error codes include:
 
 | Status | Error | Description |
 | --- | --- | --- |
-| 401 | `unauthorized` | Invalid or missing access token. |
+| 401 | `unauthorized` | Invalid or missing API key. |
 | 404 | `not_found` | Tag not found or does not belong to the family. |
 | 422 | `validation_failed` | Invalid input (e.g., duplicate name, missing required field). |
 | 500 | `internal_server_error` | Unexpected server error. |

@@ -265,15 +265,6 @@ Rails.application.routes.draw do
       post :new_connection
     end
   end
-  get ".well-known/oauth-protected-resource(/*resource_path)",
-      to: "oauth_metadata#protected_resource",
-      as: :oauth_protected_resource_metadata,
-      format: false
-  get ".well-known/oauth-authorization-server", to: "oauth_metadata#authorization_server"
-  post "register", to: "oauth_registration#create"
-  use_doorkeeper do |mapping|
-    mapping.controllers authorizations: "oauth/authorizations"
-  end
   # MFA routes
   resource :mfa, controller: "mfa", only: [ :new, :create ] do
     get :verify
@@ -389,9 +380,7 @@ Rails.application.routes.draw do
       post :options, on: :collection
     end
     resources :api_keys, only: [ :index, :show, :new, :create, :destroy ]
-    resource :mcp, controller: "mcp", only: :show do
-      delete "tokens/:token_id", to: "mcp#revoke", as: :revoke_token
-    end
+    resource :mcp, controller: "mcp", only: :show
     resource :ai_prompts, only: %i[show update]
     resource :classifier, only: %i[show update] do
       patch :rule
@@ -749,12 +738,6 @@ Rails.application.routes.draw do
         post "publishers/:publisher_id/batches", to: "batches#create", as: :publisher_batches_upload
         get "publishers/:publisher_id/batches/:batch_id", to: "batches#show", as: :publisher_batch_status
       end
-      # Authentication endpoints
-      post "auth/signup", to: "auth#signup"
-      post "auth/login", to: "auth#login"
-      post "auth/refresh", to: "auth#refresh"
-      patch "auth/enable_ai", to: "auth#enable_ai"
-
       # Production API endpoints
       resources :accounts, only: [ :index, :show ]
       resources :balances, only: [ :index, :show ]
@@ -793,7 +776,6 @@ Rails.application.routes.draw do
       resource :spending_vs_normal, only: [ :show ], controller: :spending_vs_normal
       resource :balance_sheet, only: [ :show ], controller: :balance_sheet
       resources :insights, only: [ :index ]
-      resources :push_subscriptions, only: [ :create, :destroy ]
       resource :family_settings, only: [ :show ], controller: :family_settings
       post :sync, to: "sync#create", as: :sync_job
       resources :syncs, only: [ :index, :show ] do
@@ -1024,7 +1006,6 @@ Rails.application.routes.draw do
       get :ai_status
       get :hosted_usage
       post :verify_worker_ai
-      post :send_test_push
     end
   end
 

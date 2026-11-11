@@ -21,7 +21,7 @@ The Users API allows external applications to manage user account data within Su
 
 ## Authentication requirements
 
-All user endpoints require an OAuth2 access token or API key that grants the `read_write` scope.
+All user endpoints require an API key (`X-Api-Key` header) that grants the `read_write` scope.
 
 ## Available endpoints
 

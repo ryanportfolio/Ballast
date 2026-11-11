@@ -73,9 +73,7 @@ class Api::V1::UsageControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "should return correct message for OAuth authentication" do
-    # This test would need OAuth setup, but for now we can mock it
-    # For the current implementation, we'll test what happens with no authentication
+  test "should require authentication" do
     get "/api/v1/usage"
     assert_response :unauthorized
   end

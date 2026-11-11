@@ -67,7 +67,7 @@ Example request:
 
 ```http
 GET /api/v1/merchants
-Authorization: Bearer <access_token>
+X-Api-Key: <api_key>
 ```
 
 Example response:

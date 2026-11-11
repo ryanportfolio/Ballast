@@ -9,7 +9,6 @@ require "yaml"
 class I18nTest < ActiveSupport::TestCase
   GERMAN_COVERAGE_GLOBS = [
     "config/locales/breadcrumbs/*.yml",
-    "config/locales/doorkeeper.*.yml",
     "config/locales/mailers/**/*.yml",
     "config/locales/models/**/*.yml",
     "config/locales/views/**/*.yml"

@@ -5,7 +5,7 @@
 # Or with bundle: bundle exec ruby test/support/verify_api_endpoint_consistency.rb
 #
 # Option: pass --compliance to also scan the current API codebase and report violations
-# (rswag specs using OAuth instead of API key, missing Minitest for API controllers,
+# (rswag specs using Bearer tokens instead of API key, missing Minitest for API controllers,
 # rswag specs with expect/assert).
 
 require "yaml"
@@ -62,7 +62,6 @@ assert_includes guide_content, "rswag:specs:swaggerize", "Shared checklist must 
 assert_includes guide_content, "Same API key auth", "Shared checklist must include API key auth section"
 assert_includes guide_content, "ApiKey.generate_secure_key", "Shared checklist must show API key pattern"
 assert_includes guide_content, "plain_key", "Shared checklist must mention plain_key"
-assert_includes guide_content, "Doorkeeper", "Shared checklist must mention Doorkeeper (to avoid OAuth in specs)"
 
 assert File.exist?(agents_path), "AGENTS.md should exist"
 agents_content = File.read(agents_path, encoding: "UTF-8")
@@ -80,17 +79,16 @@ if ARGV.include?("--compliance")
   test_dir = File.join(root, "test", "controllers", "api", "v1")
   app_controllers_dir = File.join(root, "app", "controllers", "api", "v1")
 
-  rswag_oauth = []
+  rswag_bearer = []
   rswag_assertions = []
   missing_minitest = []
 
   if File.directory?(spec_dir)
     Dir.glob(File.join(spec_dir, "*_spec.rb")).each do |path|
       basename = File.basename(path, "_spec.rb")
-      next if basename == "auth"
       content = File.read(path, encoding: "UTF-8")
-      if content.include?("Doorkeeper") || content.include?("Bearer") || content.include?("access_token")
-        rswag_oauth << "#{basename}_spec.rb"
+      if content.include?("Bearer") || content.include?("access_token")
+        rswag_bearer << "#{basename}_spec.rb"
       end
       rswag_assertions << "#{basename}_spec.rb" if content.include?("expect(") || content.include?("assert_")
     end
@@ -106,8 +104,8 @@ if ARGV.include?("--compliance")
     end
   end
 
-  if rswag_oauth.any?
-    puts "rswag using OAuth (should use API key per rule): #{rswag_oauth.join(", ")}"
+  if rswag_bearer.any?
+    puts "rswag using Bearer tokens (should use API key per rule): #{rswag_bearer.join(", ")}"
   else
     puts "rswag auth: all specs use API key."
   end

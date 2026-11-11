@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Api::V1::BaseController < ApplicationController
-  include Doorkeeper::Rails::Helpers
-
   InvalidFilterError = Class.new(StandardError)
 
   class << self
@@ -22,7 +20,7 @@ class Api::V1::BaseController < ApplicationController
 
   # Force JSON format for all API requests
   before_action :force_json_format
-  # Use our custom authentication that supports both OAuth and API keys
+  # Authenticate with an API key (X-Api-Key header)
   before_action :authenticate_request!
   # Localize registers this before API authentication in ApplicationController.
   # Resolve the family zone only after the API identity has populated Current.
@@ -31,16 +29,8 @@ class Api::V1::BaseController < ApplicationController
   before_action :check_api_key_rate_limit
   before_action :log_api_access
 
-
-
-  # Override Doorkeeper's default behavior to return JSON instead of redirecting
-  def doorkeeper_unauthorized_render_options(error: nil)
-    { json: { error: "unauthorized", message: "Access token is invalid, expired, or missing" } }
-  end
-
   # Error handling for common API errors
   rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
-  rescue_from Doorkeeper::Errors::DoorkeeperError, with: :handle_unauthorized
   rescue_from ActionController::ParameterMissing, with: :handle_bad_request
   rescue_from InvalidFilterError, with: :handle_invalid_filter
 
@@ -51,61 +41,12 @@ class Api::V1::BaseController < ApplicationController
       request.format = :json
     end
 
-    # Authenticate using either OAuth or API key
     def authenticate_request!
-      return if authenticate_oauth
       return if authenticate_api_key
       render_unauthorized unless performed?
     end
 
-    # Try OAuth authentication first
-    def authenticate_oauth
-      return false unless request.headers["Authorization"].present?
-
-      # Manually verify the token (bypassing doorkeeper_authorize! which had scope issues)
-      token_string = request.authorization&.split(" ")&.last
-      access_token = Doorkeeper::AccessToken.by_token(token_string)
-
-      # Check token validity and scope (read_write includes read access)
-      has_sufficient_scope = access_token&.scopes&.include?("read") || access_token&.scopes&.include?("read_write")
-
-      unless access_token&.accessible? && has_sufficient_scope
-        render_json({ error: "unauthorized", message: "Access token is invalid, expired, or missing required scope" }, status: :unauthorized)
-        return false
-      end
-
-      # Set the doorkeeper_token for compatibility
-      @_doorkeeper_token = access_token
-
-      if doorkeeper_token&.resource_owner_id
-        @current_user = User.find_by(id: doorkeeper_token.resource_owner_id)
-
-        # If user doesn't exist, the token is invalid (user was deleted)
-        unless @current_user
-          Rails.logger.warn "API OAuth Token Invalid: Access token resource_owner_id #{doorkeeper_token.resource_owner_id} does not exist"
-          render_json({ error: "unauthorized", message: "Access token is invalid - user not found" }, status: :unauthorized)
-          return false
-        end
-
-        unless @current_user.active?
-          render_json({ error: "unauthorized", message: "Account has been deactivated" }, status: :unauthorized)
-          return false
-        end
-      else
-        Rails.logger.warn "API OAuth Token Invalid: Access token missing resource_owner_id"
-        render_json({ error: "unauthorized", message: "Access token is invalid - missing resource owner" }, status: :unauthorized)
-        return false
-      end
-
-      @authentication_method = :oauth
-      setup_current_context_for_api
-      true
-    rescue Doorkeeper::Errors::DoorkeeperError => e
-      Rails.logger.warn "API OAuth Error: #{e.message}"
-      false
-    end
-
-    # Try API key authentication
+    # API key authentication
     def authenticate_api_key
       api_key_value = request.headers["X-Api-Key"]
       return false unless api_key_value
@@ -175,16 +116,13 @@ class Api::V1::BaseController < ApplicationController
       render_json({ error: "unauthorized", message: "Access token or API key is invalid, expired, or missing" }, status: :unauthorized)
     end
 
-    # Returns the user that owns the access token or API key
+    # Returns the user that owns the API key
     def current_resource_owner
       @current_user
     end
 
-    # Get current scopes from either authentication method
     def current_scopes
       case @authentication_method
-      when :oauth
-        doorkeeper_token&.scopes&.to_a || []
       when :api_key
         @api_key&.scopes || []
       else
@@ -267,11 +205,6 @@ class Api::V1::BaseController < ApplicationController
       render_json({ error: "record_not_found", message: "The requested resource was not found" }, status: :not_found)
     end
 
-    def handle_unauthorized(exception)
-      Rails.logger.warn "API Unauthorized: #{exception.message}"
-      render_json({ error: "unauthorized", message: "Access token is invalid or expired" }, status: :unauthorized)
-    end
-
     def handle_bad_request(exception)
       Rails.logger.warn "API Bad Request: #{exception.message}"
       render_json({ error: "bad_request", message: "Required parameters are missing or invalid" }, status: :bad_request)
@@ -301,8 +234,6 @@ class Api::V1::BaseController < ApplicationController
       return unless current_resource_owner
 
       auth_info = case @authentication_method
-      when :oauth
-        "OAuth Token"
       when :api_key
         "API Key: #{@api_key.name}"
       else
@@ -323,11 +254,6 @@ class Api::V1::BaseController < ApplicationController
       end
 
       true
-    end
-
-    # Manual doorkeeper_token accessor for compatibility with manual token verification
-    def doorkeeper_token
-      @_doorkeeper_token
     end
 
     # Set up Current context for API requests since we don't use session-based auth

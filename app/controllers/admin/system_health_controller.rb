@@ -2,7 +2,6 @@
 
 module Admin
   class SystemHealthController < Admin::BaseController
-    before_action :require_hosted_push, only: :send_test_push
     before_action :require_hosted_usage, only: :hosted_usage
     skip_before_action :sync_family, only: :hosted_usage
 
@@ -17,12 +16,6 @@ module Admin
       tabs << "hosted_usage" if @hosted_usage_available
       @active_tab = params[:tab].presence_in(tabs) || "background_jobs"
       @configuration_health = ConfigurationHealth.new
-      if Apns::Client.hosted?
-        @push_notification_test = PushNotificationTest.new(Current.user)
-        @push_disabled_reason = @push_notification_test.disabled_reason
-        @latest_push_test = @push_notification_test.latest
-        @push_test_results = @latest_push_test ? @push_notification_test.results(@latest_push_test) : []
-      end
       SidekiqHealth.expire_cache!
       @health = SidekiqHealth.new
     end
@@ -51,12 +44,6 @@ module Admin
       redirect_to admin_system_health_path(tab: "ai", locale: locale_from_param), notice: t(".queued")
     end
 
-    def send_test_push
-      result = PushNotificationTest.new(Current.user).request!
-      flash[result == :queued ? :notice : :alert] = t("admin.system_health.push_notifications.messages.#{result}")
-      redirect_to admin_system_health_path(tab: "background_jobs", anchor: "push-notifications"), status: :see_other
-    end
-
     private
       def require_hosted_usage
         head :not_found unless hosted_usage_available?
@@ -69,10 +56,6 @@ module Admin
         original_host = request.get_header("HTTP_HOST").to_s
         original_host.match?(/\A#{Regexp.escape(request.host)}(?::[0-9]+)?\z/) &&
           HostedUsage.available?(request_host: request.host)
-      end
-
-      def require_hosted_push
-        head :not_found unless Apns::Client.hosted?
       end
   end
 end

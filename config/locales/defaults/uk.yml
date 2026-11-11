@@ -284,8 +284,3 @@ uk:
     errors:
       invalid_session_id: Недійсний ідентифікатор сесії MCP
       unsupported_protocol_version: 'Непідтримувана версія протоколу MCP: %{version}'
-  oauth:
-    registration:
-      invalid_redirect_uris: redirect_uris мають використовувати https, loopback http або URI-схему нативного застосунку
-      invalid_client_name: client_name не може містити керівні символи напрямку тексту
-      reserved_client_name: client_name зарезервовано для власних застосунків

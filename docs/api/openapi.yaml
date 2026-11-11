@@ -22,15 +22,6 @@ components:
       bearerFormat: opaque publisher credential
       description: Revocable credential restricted to one FinanceKit publisher upload
         URL.
-    oauth2:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: "/oauth/authorize"
-          tokenUrl: "/oauth/token"
-          scopes:
-            read: Read access
-            read_write: Read and write access
   schemas:
     SplitRequest:
       type: object
@@ -246,16 +237,6 @@ components:
           format: uuid
           description: Import ID preserved for retry or inspection after upload succeeds
             but publish fails
-    MfaRequiredResponse:
-      type: object
-      required:
-      - error
-      - mfa_required
-      properties:
-        error:
-          type: string
-        mfa_required:
-          type: boolean
     ToolCall:
       type: object
       required:
@@ -443,55 +424,6 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Insight"
-    PushSubscriptionRegistration:
-      type: object
-      required:
-      - token
-      - environment
-      - platform
-      properties:
-        token:
-          type: string
-          maxLength: 2048
-          pattern: "^(?:[0-9a-fA-F]{2})+$"
-        environment:
-          type: string
-          enum:
-          - sandbox
-          - production
-        platform:
-          type: string
-          enum:
-          - ios
-        device_key:
-          type: string
-          pattern: "^[0-9a-f]{64}$"
-          description: Optional 256-bit installation secret, unique per server and
-            kept in device secure storage. Required proof to replace another user’s
-            registration for this device. Never returned.
-    PushSubscription:
-      type: object
-      required:
-      - id
-      - environment
-      - platform
-      - last_registered_at
-      properties:
-        id:
-          type: string
-          format: uuid
-        environment:
-          type: string
-          enum:
-          - sandbox
-          - production
-        platform:
-          type: string
-          enum:
-          - ios
-        last_registered_at:
-          type: string
-          format: date-time
     RetryResponse:
       type: object
       required:
@@ -4800,318 +4732,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
-  "/api/v1/auth/signup":
-    post:
-      summary: Sign up a new user
-      tags:
-      - Auth
-      description: Creates a new user and family. The first user on a fresh instance
-        is assigned the super_admin role; later family creators are assigned an admin
-        role.
-      parameters: []
-      responses:
-        '201':
-          description: user created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access_token:
-                    type: string
-                  refresh_token:
-                    type: string
-                  token_type:
-                    type: string
-                  expires_in:
-                    type: integer
-                  created_at:
-                    type: integer
-                  user:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      email:
-                        type: string
-                      first_name:
-                        type: string
-                      last_name:
-                        type: string
-                      ui_layout:
-                        type: string
-                        enum:
-                        - dashboard
-                        - intro
-                      ai_enabled:
-                        type: boolean
-        '422':
-          description: validation error
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '403':
-          description: 'registration refused: the instance is closed to new registrations,
-            or an invite code is required or invalid'
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user:
-                  type: object
-                  properties:
-                    email:
-                      type: string
-                      format: email
-                      description: User email address
-                    password:
-                      type: string
-                      description: Password (min 8 chars, mixed case, number, special
-                        char)
-                    first_name:
-                      type: string
-                    last_name:
-                      type: string
-                  required:
-                  - email
-                  - password
-                device:
-                  type: object
-                  properties:
-                    device_id:
-                      type: string
-                      description: Unique device identifier
-                    device_name:
-                      type: string
-                      description: Human-readable device name
-                    device_type:
-                      type: string
-                      description: Device type (e.g. ios, android)
-                    os_version:
-                      type: string
-                    app_version:
-                      type: string
-                  required:
-                  - device_id
-                  - device_name
-                  - device_type
-                  - os_version
-                  - app_version
-                invite_code:
-                  type: string
-                  nullable: true
-                  description: Invite code (required when invites are enforced)
-              required:
-              - user
-              - device
-        required: true
-  "/api/v1/auth/login":
-    post:
-      summary: Log in with email and password
-      tags:
-      - Auth
-      parameters: []
-      responses:
-        '200':
-          description: login successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access_token:
-                    type: string
-                  refresh_token:
-                    type: string
-                  token_type:
-                    type: string
-                  expires_in:
-                    type: integer
-                  created_at:
-                    type: integer
-                  user:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      email:
-                        type: string
-                      first_name:
-                        type: string
-                      last_name:
-                        type: string
-                      ui_layout:
-                        type: string
-                        enum:
-                        - dashboard
-                        - intro
-                      ai_enabled:
-                        type: boolean
-        '401':
-          description: invalid credentials, MFA required, or account deactivated
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '403':
-          description: 'local login is disabled, and this
-            account is not a super admin using the emergency override'
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                otp_code:
-                  type: string
-                  nullable: true
-                  description: TOTP code if MFA is enabled
-                device:
-                  type: object
-                  properties:
-                    device_id:
-                      type: string
-                    device_name:
-                      type: string
-                    device_type:
-                      type: string
-                    os_version:
-                      type: string
-                    app_version:
-                      type: string
-                  required:
-                  - device_id
-                  - device_name
-                  - device_type
-                  - os_version
-                  - app_version
-              required:
-              - email
-              - password
-              - device
-        required: true
-  "/api/v1/auth/refresh":
-    post:
-      summary: Refresh an access token
-      tags:
-      - Auth
-      parameters: []
-      responses:
-        '200':
-          description: token refreshed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access_token:
-                    type: string
-                  refresh_token:
-                    type: string
-                  token_type:
-                    type: string
-                  expires_in:
-                    type: integer
-                  created_at:
-                    type: integer
-        '401':
-          description: invalid or revoked refresh token, or account deactivated
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '400':
-          description: missing refresh token
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                refresh_token:
-                  type: string
-                  description: The refresh token from a previous login or refresh
-                device:
-                  type: object
-                  properties:
-                    device_id:
-                      type: string
-                  required:
-                  - device_id
-              required:
-              - refresh_token
-              - device
-        required: true
-  "/api/v1/auth/enable_ai":
-    patch:
-      summary: Enable AI features for the authenticated user
-      tags:
-      - Auth
-      security:
-      - apiKeyAuth: []
-      responses:
-        '200':
-          description: ai enabled
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      email:
-                        type: string
-                      first_name:
-                        type: string
-                        nullable: true
-                      last_name:
-                        type: string
-                        nullable: true
-                      ui_layout:
-                        type: string
-                        enum:
-                        - dashboard
-                        - intro
-                      ai_enabled:
-                        type: boolean
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '403':
-          description: insufficient scope
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
   "/api/v1/balance_sheet":
     get:
       summary: Show balance sheet
@@ -6067,8 +5687,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read
       responses:
         '200':
           description: Publisher limits and protocol versions
@@ -6135,8 +5753,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read_write
       parameters: []
       responses:
         '201':
@@ -6217,8 +5833,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read
       parameters:
       - name: page
         in: query
@@ -6293,8 +5907,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read_write
       parameters:
       - name: disposition
         in: query
@@ -6392,8 +6004,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read_write
       parameters: []
       responses:
         '200':
@@ -6474,8 +6084,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read_write
       responses:
         '200':
           description: Publisher configuration and a newly issued restricted credential
@@ -6549,8 +6157,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read_write
       responses:
         '200':
           description: Publisher configuration and a newly issued restricted credential
@@ -6624,8 +6230,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read_write
       responses:
         '200':
           description: Publisher configuration and a newly issued restricted credential
@@ -6835,8 +6439,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read
       responses:
         '200':
           description: Conflict collection
@@ -6923,8 +6525,6 @@ paths:
       - FinanceKit
       security:
       - apiKeyAuth: []
-      - oauth2:
-        - read_write
       parameters: []
       responses:
         '200':
@@ -8180,65 +7780,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
-  "/api/v1/push_subscriptions":
-    post:
-      summary: Register an APNs device token
-      description: Available only in hosted (managed) mode. Requires write scope.
-      tags:
-      - Push Subscriptions
-      security:
-      - apiKeyAuth: []
-      parameters: []
-      responses:
-        '403':
-          description: push unavailable in self-hosted mode or insufficient write
-            scope
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '201':
-          description: token registered
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/PushSubscription"
-        '422':
-          description: invalid or conflicting subscription
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              "$ref": "#/components/schemas/PushSubscriptionRegistration"
-        required: true
-  "/api/v1/push_subscriptions/{id}":
-    parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: string
-    delete:
-      summary: Unregister an APNs device token
-      description: Available only in hosted (managed) mode. Requires write scope.
-      tags:
-      - Push Subscriptions
-      security:
-      - apiKeyAuth: []
-      responses:
-        '403':
-          description: push unavailable in self-hosted mode or insufficient write
-            scope
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '204':
-          description: token unregistered
   "/api/v1/recurring_transactions":
     get:
       summary: List recurring transactions

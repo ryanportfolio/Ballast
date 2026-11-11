@@ -9,9 +9,8 @@
 # record the native controller destroys — which cascades to the Transaction
 # child via `delegated_type :entryable, dependent: :destroy`.
 #
-# Authorization: the *** endpoint enforces a single `read_write` OAuth scope
-# for every tool, so this tool enforces the *write* gate itself by resolving
-# only through accounts the user can write to (owner or full_control share),
+# Authorization: the *** endpoint applies no per-tool scope, so this tool
+# enforces the *write* gate itself by resolving only through accounts the user can write to (owner or full_control share),
 # consistent with CreateTransaction. A read-only shared account, a cross-family
 # id, or an unknown id all resolve to a safe `not_found` without leaking
 # whether the record exists.

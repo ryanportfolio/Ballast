@@ -58,9 +58,6 @@ pl:
         many: Następnych %{count} dni
         one: Następny dzień
         other: Następnych %{count} dni
-    notification:
-      body: Otwórz Sure, aby przejrzeć najnowszą analizę AI.
-      title: Nowa analiza finansowa
     refresh:
       checking: Sprawdzanie...
       queued: Generujemy świeże analizy. Sprawdź za minutę.

@@ -21,7 +21,7 @@ The Chat API allows external applications to interact with Sure's AI chat functi
 
 ## Authentication requirements
 
-All chat endpoints require an OAuth2 access token or API key that grants the appropriate scope. The authenticated user must also have AI features enabled (`ai_enabled: true`).
+All chat endpoints require an API key (`X-Api-Key` header) that grants the appropriate scope. The authenticated user must also have AI features enabled (`ai_enabled: true`).
 
 ## Available endpoints
 

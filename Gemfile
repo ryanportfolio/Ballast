@@ -57,12 +57,10 @@ gem "image_processing", ">= 1.2"
 gem "ostruct"
 gem "bcrypt", "~> 3.1"
 gem "jwt"
-gem "apnotic", "~> 1.8"
 gem "jbuilder"
 gem "countries"
 
-# OAuth & API Security
-gem "doorkeeper"
+# API Security
 gem "rack-attack", "~> 6.6"
 gem "rack-cors"
 gem "pundit"

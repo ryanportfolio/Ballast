@@ -84,42 +84,6 @@ class Admin::SystemHealthTest < ApplicationSystemTestCase
     end
   end
 
-  test "hosted super admin enables the test button by registering an iOS device" do
-    Rails.application.config.stubs(:app_mode).returns("managed".inquiry)
-    Apns::Client.stubs(:configured?).returns(true)
-    Rails.stubs(:cache).returns(ActiveSupport::Cache::MemoryStore.new)
-    visit admin_system_health_path
-    assert_selector "button[role='tab']", count: 3
-    assert_selector "button[role='tab'][aria-selected='true']", text: "Jobs"
-    assert_selector "h2", text: "Push notifications"
-    assert_button "Send test push notification", disabled: true
-    assert_text "Enable push notifications in the Sure iOS app"
-
-    user = users(:sure_support_staff)
-    user.push_subscriptions.create!(
-      token: "ab" * 32, environment: "sandbox", platform: "ios", last_registered_at: Time.current
-    )
-    visit admin_system_health_path(tab: "background_jobs")
-    assert_button "Send test push notification", disabled: false
-    Apns::Client.expects(:new).never
-    assert_enqueued_jobs 1, only: DeliverTestPushNotificationJob do
-      click_button "Send test push notification"
-      assert_text "Test notification queued"
-    end
-    assert_text "Queued"
-    assert_button "Send test push notification", disabled: true
-    Apns::Client.unstub(:new)
-    Apns::Client.any_instance.stubs(:deliver_test).returns(stub(ok?: true))
-    perform_enqueued_jobs only: DeliverTestPushNotificationJob
-    travel 31.seconds do
-      visit admin_system_health_path(tab: "background_jobs")
-      assert_text "Latest test requested at"
-      assert_text "Accepted by APNs"
-      assert_button "Send test push notification", disabled: false
-      page.save_screenshot(Rails.root.join("tmp", "system-health-background-push-notifications.png"))
-    end
-  end
-
   test "configuration tab supports repeated selection and navigation without running AI probes" do
     ApplicationMailer.stubs(:perform_deliveries).returns(true)
     ApplicationMailer.stubs(:delivery_method).returns(:smtp)

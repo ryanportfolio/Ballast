@@ -4,7 +4,7 @@ The Imports API allows external applications to programmatically upload and proc
 
 ## Authentication requirements
 
-All import endpoints require an OAuth2 access token or API key that grants the appropriate scope (`read` or `read_write`).
+All import endpoints require an API key (`X-Api-Key` header) that grants the appropriate scope (`read` or `read_write`).
 
 ## Available endpoints
 

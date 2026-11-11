@@ -21,7 +21,7 @@ The Transactions API allows external applications to manage financial transactio
 
 ## Authentication requirements
 
-All transaction endpoints require an OAuth2 access token or API key that grants the appropriate scope (`read` or `read_write`).
+All transaction endpoints require an API key (`X-Api-Key` header) that grants the appropriate scope (`read` or `read_write`).
 
 ## Available endpoints
 

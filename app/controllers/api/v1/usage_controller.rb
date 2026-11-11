@@ -22,12 +22,6 @@ class Api::V1::UsageController < Api::V1::BaseController
           reset_at: Time.current + usage_info[:reset_time].seconds
         }
       })
-    when :oauth
-      # For OAuth, we don't track detailed usage yet, but we can return basic info
-      render_json({
-        authentication_method: "oauth",
-        message: "Detailed usage tracking is available for API key authentication"
-      })
     else
       render_json({
         error: "invalid_authentication_method",

@@ -12,18 +12,6 @@ class Api::V1::MerchantsControllerTest < ActionDispatch::IntegrationTest
 
     @user.api_keys.active.destroy_all
 
-    @oauth_app = Doorkeeper::Application.create!(
-      name: "Test App",
-      redirect_uri: "https://example.com/callback",
-      scopes: "read"
-    )
-
-    @access_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: @user.id,
-      scopes: "read"
-    )
-
     @merchant = @user.family.merchants.first || @user.family.merchants.create!(
       name: "Test Merchant"
     )
@@ -187,7 +175,7 @@ class Api::V1::MerchantsControllerTest < ActionDispatch::IntegrationTest
   private
 
     def auth_headers
-      { "Authorization" => "Bearer #{@access_token.token}" }
+      api_headers(read_only_api_key)
     end
 
     def read_write_api_key

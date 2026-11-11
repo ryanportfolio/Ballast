@@ -2,48 +2,6 @@
 tr:
   admin:
     system_health:
-      push_notifications:
-        send_test: Test anlık bildirimi gönder
-        queueing: Kuyruğa alınıyor…
-        title: Anlık bildirimler
-        requested_at: Son test isteği %{time}
-        result_help: APNs tarafından kabul edilmesi, bildirimin cihazınıza ulaştığını doğrulamaz. Çalışan sonuçlarını görmek için yenileyin. Sonuçlar 24 saat saklanır.
-        results_label: Test sonuçları
-        device: Cihaz %{number}
-        pending: Beklemede
-        refresh: Sonuçları yenile
-        columns:
-          device: Cihaz
-          environment: APNs ortamı
-          status: Sonuç
-          checked_at: Son güncelleme
-        environments:
-          sandbox: Sandbox
-          production: Production
-        messages:
-          enqueue_failed: Test kuyruğa alınamadı. Sidekiq'i kontrol edin ve aşağıdaki sonuçları yenileyin.
-          ready: Hesabınıza kayıtlı, bildirimleri etkin iOS cihazlarına bir test bildirimi gönderin.
-          queued: Test bildirimi kuyruğa alındı. Durumunu görmek için aşağıdaki sonuçları yenileyin.
-          hosted_only: Anlık bildirimler yalnızca barındırılan modda kullanılabilir.
-          ineligible: Test bildirimini yalnızca aktif bir süper yönetici gönderebilir.
-          no_devices: Test göndermek için bu hesapta Sure iOS uygulamasından anlık bildirimleri etkinleştirin.
-          disabled: Anlık bildirim gönderimi operatör tarafından devre dışı bırakıldı.
-          not_configured: APNs kimlik bilgileri yapılandırılmamış.
-          cooldown: Yeni bir test göndermeden önce lütfen 30 saniye bekleyin.
-          storage_unavailable: Test isteği kaydedilemedi. Paylaşılan önbellek yapılandırmasını kontrol edin.
-        statuses:
-          queued: Kuyrukta
-          accepted: APNs tarafından kabul edildi
-          skipped: 'Atlandı: artık uygun değil'
-          rejected: APNs tarafından reddedildi; push hata ayıklama günlüklerini kontrol edin
-          unregistered: Cihaz kaydı artık geçerli değil
-          retrying: Geçici bir hata nedeniyle yeniden deneniyor
-          failed: Başarısız; push hata ayıklama günlüklerini kontrol edin
-          enqueue_failed: Kuyruğa alınamadı; Sidekiq'i kontrol edin
-          expired: Kesin sonuç alınmadan süresi doldu
-      push_notification:
-        title: Sure test bildirimi
-        body: Bu, Sure hesabınız için bir test anlık bildirimidir.
       verify_worker_ai:
         queued: Çalışan kontrolü kuyruğa alındı. Bir çalışan işlemi onu aldığında, genellikle birkaç saniye içinde aşağıda görünecek.
       show:

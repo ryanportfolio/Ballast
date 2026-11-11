@@ -67,8 +67,6 @@ class DemoFamilyRefreshJob < ApplicationJob
       family.users.find_each do |user|
         user.sessions.delete_all
         user.api_keys.active.visible.update_all(revoked_at: Time.current)
-        Doorkeeper::AccessToken.where(resource_owner_id: user.id, revoked_at: nil).update_all(revoked_at: Time.current)
-        Doorkeeper::AccessGrant.where(resource_owner_id: user.id, revoked_at: nil).update_all(revoked_at: Time.current)
         user.update_columns(active: false)
       end
     end

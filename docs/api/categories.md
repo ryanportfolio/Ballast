@@ -21,7 +21,7 @@ The Categories API allows external applications to retrieve financial categories
 
 ## Authentication requirements
 
-All category endpoints require an OAuth2 access token or API key that grants the `read` scope.
+All category endpoints require an API key (`X-Api-Key` header) that grants the `read` scope.
 
 ## Available endpoints
 

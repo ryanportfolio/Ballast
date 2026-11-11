@@ -112,10 +112,6 @@ class DemoFamilyRefreshJobTest < ActiveJob::TestCase
     Setting.demo_family_refresh_enabled = true
     @demo_family.start_subscription!(Subscription::DEMO_STRIPE_ID)
     session = Session.create!(user: @demo_user)
-    app = Doorkeeper::Application.create!(name: "Demo Retirement Test", redirect_uri: "https://example.com/callback", confidential: false)
-    token = Doorkeeper::AccessToken.create!( # pipelock:ignore Credential in URL
-      application: app, resource_owner_id: @demo_user.id, scopes: "read", expires_in: 1.year)
-    grant = Doorkeeper::AccessGrant.create!(application: app, resource_owner_id: @demo_user.id, redirect_uri: app.redirect_uri, expires_in: 10.minutes, scopes: "read")
     key = @demo_user.api_keys.create!(name: "visitor", key: "old-demo-visitor-key", scopes: [ "read" ], source: "web")
 
     generator = mock
@@ -132,8 +128,6 @@ class DemoFamilyRefreshJobTest < ActiveJob::TestCase
     assert_not @demo_user.reload.active?
     assert_not Session.exists?(session.id)
     assert key.reload.revoked?
-    assert token.reload.revoked_at
-    assert grant.reload.revoked_at
     subscription = @demo_family.reload.subscription
     assert subscription.active?
 

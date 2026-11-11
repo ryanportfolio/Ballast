@@ -1,8 +1,8 @@
 require "swagger_helper"
 
 RSpec.describe "Api::V1::Financekit", type: :request do
-  FINANCEKIT_READ_SECURITY = [ { apiKeyAuth: [] }, { oauth2: %w[read] } ].freeze
-  FINANCEKIT_WRITE_SECURITY = [ { apiKeyAuth: [] }, { oauth2: %w[read_write] } ].freeze
+  FINANCEKIT_READ_SECURITY = [ { apiKeyAuth: [] } ].freeze
+  FINANCEKIT_WRITE_SECURITY = [ { apiKeyAuth: [] } ].freeze
   FINANCEKIT_PUBLISHER_SECURITY = [ { financekitPublisher: [] } ].freeze
 
   let(:family) do

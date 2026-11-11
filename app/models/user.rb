@@ -26,9 +26,7 @@ class User < ApplicationRecord
   has_many :sessions, dependent: :destroy
   has_many :chats, dependent: :destroy
   has_many :api_keys, dependent: :destroy
-  has_many :push_subscriptions, dependent: :destroy
   has_many :webauthn_credentials, dependent: :destroy
-  has_many :mobile_devices, dependent: :destroy
   has_many :invitations, foreign_key: :inviter_id, dependent: :destroy
   has_many :impersonator_support_sessions, class_name: "ImpersonationSession", foreign_key: :impersonator_id, dependent: :destroy
   has_many :impersonated_support_sessions, class_name: "ImpersonationSession", foreign_key: :impersonated_id, dependent: :destroy
@@ -310,18 +308,14 @@ class User < ApplicationRecord
   # Web sessions are not gated on #active?, so they must be torn down here for
   # revocation to be immediate; the async purge would otherwise leave a window.
   def revoke_all_credentials!
-    Doorkeeper::AccessToken
-      .where(resource_owner_id: id, revoked_at: nil)
-      .update_all(revoked_at: Time.current)
     sessions.destroy_all
     api_keys.destroy_all
-    mobile_devices.destroy_all
     webauthn_credentials.destroy_all
   end
 
   # Raised by #with_active_lock! to reject session/token issuance for a
   # deactivated or concurrently-purged user. The one error contract every
-  # web/JSON/mobile/OAuth-adapter caller rescues, so a deactivation result
+  # web/JSON caller rescues, so a deactivation result
   # can never be confused with an unrelated persistence failure.
   class InactiveError < StandardError; end
 
@@ -440,26 +434,16 @@ class User < ApplicationRecord
     Array(provider.public_send(item_association.name)) if item_association
   end
 
-  # Revokes mobile/third-party API access alongside the web-session
-  # invalidation above. Without this, a deactivated user's existing
-  # Doorkeeper tokens and API keys stay valid on the wire — currently
-  # harmless only because Api::V1::BaseController/McpController re-check
+  # Revokes API keys alongside the web-session invalidation above. Without
+  # this, a deactivated user's existing API keys stay valid on the wire —
+  # currently harmless only because Api::V1::BaseController re-checks
   # active? on every request, but that's a second, independent safeguard,
-  # not a substitute for actually revoking the credentials. Also revokes
-  # unexchanged OAuth authorization grants — /oauth/token doesn't go
-  # through the cookie authenticator, so a still-valid grant issued right
-  # before deactivation could otherwise be exchanged for a fresh token
-  # afterward.
+  # not a substitute for actually revoking the credentials.
   def revoke_all_access_tokens
-    tokens_revoked = Doorkeeper::AccessToken.where(resource_owner_id: id, revoked_at: nil).update_all(revoked_at: Time.current)
-    grants_revoked = Doorkeeper::AccessGrant.where(resource_owner_id: id, revoked_at: nil).update_all(revoked_at: Time.current)
     keys_revoked = api_keys.active.visible.update_all(revoked_at: Time.current)
 
-    if tokens_revoked > 0 || grants_revoked > 0 || keys_revoked > 0
-      Rails.logger.warn(
-        "[AUTH] Revoked #{tokens_revoked} access token(s), #{grants_revoked} authorization grant(s), " \
-        "and #{keys_revoked} API key(s) for deactivated user_id=#{id}"
-      )
+    if keys_revoked > 0
+      Rails.logger.warn("[AUTH] Revoked #{keys_revoked} API key(s) for deactivated user_id=#{id}")
     end
   end
 

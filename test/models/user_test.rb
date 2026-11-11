@@ -1309,7 +1309,7 @@ class UserTest < ActiveSupport::TestCase
     assert admin1.update(role: :member)
   end
 
-  test "deactivating a user revokes their API keys, access tokens, and authorization grants" do
+  test "deactivating a user revokes their API keys" do
     user = users(:family_member)
     api_key = ApiKey.create!( # pipelock:ignore
       user: user,
@@ -1317,36 +1317,12 @@ class UserTest < ActiveSupport::TestCase
       display_key: "test_revoke_key_#{SecureRandom.hex(8)}",
       scopes: [ "read" ]
     )
-    app = Doorkeeper::Application.create!(
-      name: "Test App #{SecureRandom.hex(4)}",
-      redirect_uri: "https://example.com/callback",
-      confidential: false
-    )
-    token = Doorkeeper::AccessToken.create!( # pipelock:ignore
-      application: app,
-      resource_owner_id: user.id,
-      scopes: "read_write",
-      expires_in: 1.year
-    )
-    # An unexchanged authorization code — the step before a token is minted,
-    # which /oauth/token would otherwise still accept post-deactivation.
-    grant = Doorkeeper::AccessGrant.create!(
-      application: app,
-      resource_owner_id: user.id,
-      redirect_uri: app.redirect_uri,
-      expires_in: 10.minutes,
-      scopes: "read_write"
-    )
 
     assert api_key.active?
-    assert_nil token.revoked_at
-    assert_nil grant.revoked_at
 
     user.deactivate
 
     assert api_key.reload.revoked?
-    assert token.reload.revoked_at.present?
-    assert grant.reload.revoked_at.present?
   end
 
   test "update_manual_account_order keeps other groups and only accessible accounts" do

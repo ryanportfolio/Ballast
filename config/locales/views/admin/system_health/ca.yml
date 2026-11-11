@@ -2,48 +2,6 @@
 ca:
   admin:
     system_health:
-      push_notifications:
-        send_test: Envia una notificació push de prova
-        queueing: Posant a la cua…
-        title: Notificacions push
-        requested_at: Última prova sol·licitada el %{time}
-        result_help: Que APNs l'accepti no confirma que s'hagi lliurat al dispositiu. Actualitza per veure els resultats del worker. Els resultats es conserven durant 24 hores.
-        results_label: Resultats de la prova
-        device: Dispositiu %{number}
-        pending: Pendent
-        refresh: Actualitza els resultats
-        columns:
-          device: Dispositiu
-          environment: Entorn d'APNs
-          status: Resultat
-          checked_at: Última actualització
-        environments:
-          sandbox: Sandbox
-          production: Producció
-        messages:
-          enqueue_failed: No s'ha pogut posar la prova a la cua. Comprova Sidekiq i actualitza els resultats de sota.
-          ready: Envia una notificació de prova als dispositius iOS activats registrats al teu compte.
-          queued: Notificació de prova a la cua. Actualitza els resultats de sota per comprovar-ne l'estat.
-          hosted_only: Les notificacions push només estan disponibles en el mode allotjat.
-          ineligible: Només un superadministrador actiu pot enviar una notificació de prova.
-          no_devices: Activa les notificacions push a l'app de Sure per a iOS per a aquest compte per enviar una prova.
-          disabled: L'operador ha desactivat l'enviament de notificacions push.
-          not_configured: Les credencials d'APNs no estan configurades.
-          cooldown: Espera 30 segons abans d'enviar una altra prova.
-          storage_unavailable: No s'ha pogut desar la sol·licitud de prova. Comprova la configuració de la memòria cau compartida.
-        statuses:
-          queued: A la cua
-          accepted: Acceptada per APNs
-          skipped: 'Omesa: ja no compleix els requisits'
-          rejected: Rebutjada per APNs; consulta els registres de depuració de push
-          unregistered: El registre del dispositiu ja no és vàlid
-          retrying: Reintentant després d'un error temporal
-          failed: Ha fallat; consulta els registres de depuració de push
-          enqueue_failed: No s'ha pogut posar a la cua; comprova Sidekiq
-          expired: Ha caducat sense un resultat final
-      push_notification:
-        title: Notificació de prova de Sure
-        body: Aquesta és una notificació push de prova per al teu compte de Sure.
       verify_worker_ai:
         queued: Comprovació del worker a la cua. Apareixerà a sota quan un procés worker l'agafi, normalment en pocs segons.
       show:

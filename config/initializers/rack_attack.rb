@@ -5,15 +5,6 @@ class Rack::Attack
   enabled = Rails.env.production? || Rails.env.staging?
   self.enabled = enabled
 
-  # Throttle requests to the OAuth token endpoint
-  throttle("oauth/token", limit: 10, period: 1.minute) do |request|
-    request.ip if request.path == "/oauth/token"
-  end
-
-  throttle("oauth/register", limit: 10, period: 1.minute) do |request|
-    request.ip if request.post? && request.path == "/register"
-  end
-
   # Throttle unauthenticated WebAuthn ceremonies similarly to sign-in
   # endpoints; registration remains behind normal application authentication.
   # Covers both the MFA step-up and passwordless passkey sign-in.
@@ -56,8 +47,7 @@ class Rack::Attack
   # matching throttles to pass.
   #
   # request.params only exposes query/form parameters — Rack::Attack runs
-  # ahead of Rails' JSON parameter parsing, so JSON API clients (the
-  # documented format for api/v1/auth/login) would otherwise
+  # ahead of Rails' JSON parameter parsing, so JSON clients would otherwise
   # bypass the email throttle entirely. Peek at the JSON body without
   # consuming it, so the controller still gets a fresh, unread input stream.
   json_request_email = ->(request) do
@@ -114,14 +104,6 @@ class Rack::Attack
 
   throttle("password_resets/email", limit: 10, period: 1.minute) do |request|
     credential_guess_email.call(request) if request.post? && credential_guess_path.call(request, "/password_reset")
-  end
-
-  throttle("api_login/ip", limit: 10, period: 1.minute) do |request|
-    request.ip if request.post? && credential_guess_path.call(request, "/api/v1/auth/login")
-  end
-
-  throttle("api_login/email", limit: 10, period: 1.minute) do |request|
-    credential_guess_email.call(request) if request.post? && credential_guess_path.call(request, "/api/v1/auth/login")
   end
 
   # Self-service password change checks the current password

@@ -7,22 +7,18 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
     @user = users(:family_admin)
     @user.update!(ai_enabled: true)
 
-    @oauth_app = Doorkeeper::Application.create!(
-      name: "Test API App",
-      redirect_uri: "https://example.com/callback",
-      scopes: "read write read_write"
+    @read_key = ApiKey.create!(
+      user: @user,
+      name: "Chats Read Key",
+      scopes: [ "read" ],
+      display_key: "test_read_#{SecureRandom.hex(8)}"
     )
 
-    @read_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: @user.id,
-      scopes: "read"
-    )
-
-    @write_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: @user.id,
-      scopes: "read_write"
+    @write_key = ApiKey.create!(
+      user: @user,
+      name: "Chats Write Key",
+      scopes: [ "read_write" ],
+      display_key: "test_rw_#{SecureRandom.hex(8)}"
     )
 
     @chat = chats(:one)
@@ -36,7 +32,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
   test "should require AI to be enabled" do
     @user.update!(ai_enabled: false)
 
-    get "/api/v1/chats", headers: bearer_auth_header(@read_token)
+    get "/api/v1/chats", headers: api_headers(@read_key)
     assert_response :forbidden
 
     response_body = JSON.parse(response.body)
@@ -68,7 +64,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should list chats with read scope" do
-    get "/api/v1/chats", headers: bearer_auth_header(@read_token)
+    get "/api/v1/chats", headers: api_headers(@read_key)
     assert_response :success
 
     response_body = JSON.parse(response.body)
@@ -77,7 +73,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should show chat with messages" do
-    get "/api/v1/chats/#{@chat.id}", headers: bearer_auth_header(@read_token)
+    get "/api/v1/chats/#{@chat.id}", headers: api_headers(@read_key)
     assert_response :success
 
     response_body = JSON.parse(response.body)
@@ -89,7 +85,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_difference "Chat.count" do
       post "/api/v1/chats",
         params: { title: "New chat", message: "Hello AI" },
-        headers: bearer_auth_header(@write_token)
+        headers: api_headers(@write_key)
     end
 
     assert_response :created
@@ -100,7 +96,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
   test "should not create chat with read scope" do
     post "/api/v1/chats",
       params: { title: "New chat" },
-      headers: bearer_auth_header(@read_token)
+      headers: api_headers(@read_key)
 
     assert_response :forbidden
   end
@@ -108,7 +104,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
   test "should update chat" do
     patch "/api/v1/chats/#{@chat.id}",
       params: { title: "Updated title" },
-      headers: bearer_auth_header(@write_token)
+      headers: api_headers(@write_key)
 
     assert_response :success
     response_body = JSON.parse(response.body)
@@ -117,7 +113,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
 
   test "should delete chat" do
     assert_difference "Chat.count", -1 do
-      delete "/api/v1/chats/#{@chat.id}", headers: bearer_auth_header(@write_token)
+      delete "/api/v1/chats/#{@chat.id}", headers: api_headers(@write_key)
     end
 
     assert_response :no_content
@@ -129,7 +125,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
     other_chat = chats(:two)
     other_chat.update!(user: other_user)
 
-    get "/api/v1/chats/#{other_chat.id}", headers: bearer_auth_header(@read_token)
+    get "/api/v1/chats/#{other_chat.id}", headers: api_headers(@read_key)
     assert_response :not_found
   end
 
@@ -182,40 +178,7 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes chat_ids, impersonated_chat.id
   end
 
-  test "OAuth authentication should not inherit web session impersonation" do
-    support_user = users(:sure_support_staff)
-    support_user.update!(ai_enabled: true)
-    support_chat = support_user.chats.create!(title: "Support Chat")
-    support_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: support_user.id,
-      scopes: "read"
-    )
-
-    impersonation_session = impersonation_sessions(:in_progress)
-    impersonated_chat = impersonation_session.impersonated.chats.create!(title: "Impersonated Chat")
-    support_user.sessions.destroy_all
-    support_user.sessions.create!(
-      user_agent: "Browser session",
-      ip_address: "127.0.0.1",
-      active_impersonator_session: impersonation_session
-    )
-
-    get "/api/v1/chats", headers: bearer_auth_header(support_token)
-
-    assert_response :success
-    response_body = JSON.parse(response.body)
-    chat_ids = response_body["chats"].pluck("id")
-
-    assert_includes chat_ids, support_chat.id
-    assert_not_includes chat_ids, impersonated_chat.id
-  end
-
   private
-
-    def bearer_auth_header(token)
-      { "Authorization" => "Bearer #{token.token}" }
-    end
 
     def api_headers(api_key)
       { "X-Api-Key" => api_key.plain_key }

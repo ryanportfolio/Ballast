@@ -7,16 +7,11 @@ class Api::V1::MessagesControllerTest < ActionDispatch::IntegrationTest
     @user = users(:family_admin)
     @user.update!(ai_enabled: true)
 
-    @oauth_app = Doorkeeper::Application.create!(
-      name: "Test API App",
-      redirect_uri: "https://example.com/callback",
-      scopes: "read write read_write"
-    )
-
-    @write_token = Doorkeeper::AccessToken.create!(
-      application: @oauth_app,
-      resource_owner_id: @user.id,
-      scopes: "read_write"
+    @write_key = ApiKey.create!(
+      user: @user,
+      name: "Messages Write Key",
+      scopes: [ "read_write" ],
+      display_key: "test_rw_#{SecureRandom.hex(8)}"
     )
 
     @chat = chats(:one)
@@ -32,7 +27,7 @@ class Api::V1::MessagesControllerTest < ActionDispatch::IntegrationTest
 
     post "/api/v1/chats/#{@chat.id}/messages",
       params: { content: "Hello" },
-      headers: bearer_auth_header(@write_token)
+      headers: api_headers(@write_key)
     assert_response :forbidden
   end
 
@@ -40,7 +35,7 @@ class Api::V1::MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_difference "UserMessage.count" do
       post "/api/v1/chats/#{@chat.id}/messages",
         params: { content: "Test message", model: "gpt-4" },
-        headers: bearer_auth_header(@write_token)
+        headers: api_headers(@write_key)
     end
 
     assert_response :created
@@ -54,7 +49,7 @@ class Api::V1::MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_enqueued_with(job: AssistantResponseJob) do
       post "/api/v1/chats/#{@chat.id}/messages",
         params: { content: "Test message" },
-        headers: bearer_auth_header(@write_token)
+        headers: api_headers(@write_key)
     end
   end
 
@@ -70,7 +65,7 @@ class Api::V1::MessagesControllerTest < ActionDispatch::IntegrationTest
 
     assert_enqueued_with(job: AssistantResponseJob) do
       post "/api/v1/chats/#{@chat.id}/messages/retry",
-        headers: bearer_auth_header(@write_token)
+        headers: api_headers(@write_key)
     end
 
     assert_response :accepted
@@ -83,7 +78,7 @@ class Api::V1::MessagesControllerTest < ActionDispatch::IntegrationTest
     @chat.messages.where(type: "AssistantMessage").destroy_all
 
     post "/api/v1/chats/#{@chat.id}/messages/retry.json",
-      headers: bearer_auth_header(@write_token)
+      headers: api_headers(@write_key)
 
     assert_response :unprocessable_entity
     response_body = JSON.parse(response.body)
@@ -98,14 +93,14 @@ class Api::V1::MessagesControllerTest < ActionDispatch::IntegrationTest
 
     post "/api/v1/chats/#{other_chat.id}/messages",
       params: { content: "Test" },
-      headers: bearer_auth_header(@write_token)
+      headers: api_headers(@write_key)
 
     assert_response :not_found
   end
 
   private
 
-    def bearer_auth_header(token)
-      { "Authorization" => "Bearer #{token.token}" }
+    def api_headers(api_key)
+      { "X-Api-Key" => api_key.plain_key }
     end
 end

@@ -59,7 +59,6 @@ class ApiEndpointConsistencyRuleTest < ActiveSupport::TestCase
     assert_includes content, "Same API key auth"
     assert_includes content, "ApiKey.generate_secure_key"
     assert_includes content, "plain_key"
-    assert_includes content, "Doorkeeper"
   end
 
   test "AGENTS.md references post-commit API consistency" do

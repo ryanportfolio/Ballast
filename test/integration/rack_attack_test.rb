@@ -18,12 +18,6 @@ class RackAttackTest < ActionDispatch::IntegrationTest
     assert_equal 1, middleware_classes.count(Rack::Attack)
   end
 
-  test "oauth token endpoint has rate limiting configured" do
-    # Test that the throttle is configured (we don't need to trigger it)
-    throttles = Rack::Attack.throttles.keys
-    assert_includes throttles, "oauth/token", "OAuth token endpoint should have rate limiting"
-  end
-
   test "api requests have rate limiting configured" do
     # Test that API rate limiting is configured
     throttles = Rack::Attack.throttles.keys
@@ -36,7 +30,6 @@ class RackAttackTest < ActionDispatch::IntegrationTest
       logins/ip logins/email
       mfa/verify/ip mfa/verify/user
       password_resets/ip password_resets/email
-      api_login/ip api_login/email
       password_change/ip password_change/user
     ].each do |name|
       assert_includes throttles, name, "#{name} should have rate limiting configured"
@@ -80,30 +73,20 @@ class RackAttackTest < ActionDispatch::IntegrationTest
     assert_nil user_block.call(no_session_request)
   end
 
-  test "api login throttle matches its own path only" do
-    api_login_block = Rack::Attack.throttles["api_login/ip"].block
+  test "login email throttle discriminates JSON bodies" do
+    login_email_block = Rack::Attack.throttles["logins/email"].block
 
-    api_login_request = throttle_request("/api/v1/auth/login", method: "POST")
-    assert_equal "203.0.113.5", api_login_block.call(api_login_request)
-
-    other_request = throttle_request("/api/v1/auth/signup", method: "POST")
-    assert_nil api_login_block.call(other_request)
-  end
-
-  test "api login email throttle discriminates JSON bodies, the documented mobile format" do
-    api_login_email_block = Rack::Attack.throttles["api_login/email"].block
-
-    api_login_request = throttle_request("/api/v1/auth/login", method: "POST",
+    json_login_request = throttle_request("/sessions", method: "POST",
       json_body: { email: " User@Example.com ", password: "secret" })
-    assert_equal "user@example.com", api_login_email_block.call(api_login_request)
+    assert_equal "user@example.com", login_email_block.call(json_login_request)
 
     # The controller must still be able to read the body after Rack::Attack
     # inspected it — this is what proves the peek rewinds rather than
     # consuming the input stream.
-    assert_equal({ "email" => " User@Example.com ", "password" => "secret" }, JSON.parse(api_login_request.body.read))
+    assert_equal({ "email" => " User@Example.com ", "password" => "secret" }, JSON.parse(json_login_request.body.read))
 
-    malformed_request = throttle_request("/api/v1/auth/login", method: "POST", json_body_raw: "not json")
-    assert_nil api_login_email_block.call(malformed_request)
+    malformed_request = throttle_request("/sessions", method: "POST", json_body_raw: "not json")
+    assert_nil login_email_block.call(malformed_request)
   end
 
   test "password change throttles discriminate by ip and signed-in user, and ignore unrelated requests" do
@@ -251,15 +234,11 @@ class RackAttackTest < ActionDispatch::IntegrationTest
     assert_equal "203.0.113.5", ip_block.call(request)
     assert_equal "user@example.com", email_block.call(request)
 
-    api_login_block = Rack::Attack.throttles["api_login/ip"].block
-    api_login_request = throttle_request("/api/v1/auth/login.json", method: "POST")
-    assert_equal "203.0.113.5", api_login_block.call(api_login_request)
-
     # Rails' actual default segment matcher for `(.:format)` is `[^./?]+`,
     # not `\w+` — it permits hyphens (and other punctuation), so a format
     # value like "rate-limit" is a real route match, not just a hypothetical.
-    hyphenated_format_request = throttle_request("/api/v1/auth/login.rate-limit", method: "POST")
-    assert_equal "203.0.113.5", api_login_block.call(hyphenated_format_request)
+    hyphenated_format_request = throttle_request("/sessions.rate-limit", method: "POST")
+    assert_equal "203.0.113.5", ip_block.call(hyphenated_format_request)
 
     # A path that merely starts with the throttled path, without being a
     # format suffix, must still be ignored.
@@ -268,23 +247,23 @@ class RackAttackTest < ActionDispatch::IntegrationTest
   end
 
   test "json email extraction tolerates non-object JSON payloads without raising" do
-    api_login_email_block = Rack::Attack.throttles["api_login/email"].block
+    login_email_block = Rack::Attack.throttles["logins/email"].block
 
-    null_request = throttle_request("/api/v1/auth/login", method: "POST", json_body_raw: "null")
-    assert_nil api_login_email_block.call(null_request)
+    null_request = throttle_request("/sessions", method: "POST", json_body_raw: "null")
+    assert_nil login_email_block.call(null_request)
 
-    array_request = throttle_request("/api/v1/auth/login", method: "POST", json_body_raw: "[1,2,3]")
-    assert_nil api_login_email_block.call(array_request)
+    array_request = throttle_request("/sessions", method: "POST", json_body_raw: "[1,2,3]")
+    assert_nil login_email_block.call(array_request)
   end
 
   test "json email extraction skips a non-rewindable rack.input instead of raising or consuming the body" do
     # Rack 3 no longer requires rack.input to be rewindable (streaming
     # servers may not buffer it) — simulate that by using an input object
     # that only implements #read, not #rewind.
-    api_login_email_block = Rack::Attack.throttles["api_login/email"].block
+    login_email_block = Rack::Attack.throttles["logins/email"].block
 
-    request = throttle_request("/api/v1/auth/login", method: "POST", non_rewindable_json_body: { email: "user@example.com" })
-    assert_nil api_login_email_block.call(request)
+    request = throttle_request("/sessions", method: "POST", non_rewindable_json_body: { email: "user@example.com" })
+    assert_nil login_email_block.call(request)
 
     # A block that read the body and then just returned nil (e.g. on a
     # parse error) would also pass the assertion above while leaving the

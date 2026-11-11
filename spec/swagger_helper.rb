@@ -37,19 +37,6 @@ RSpec.configure do |config|
             scheme: :bearer,
             bearerFormat: 'opaque publisher credential',
             description: 'Revocable credential restricted to one FinanceKit publisher upload URL.'
-          },
-          oauth2: {
-            type: :oauth2,
-            flows: {
-              authorizationCode: {
-                authorizationUrl: '/oauth/authorize',
-                tokenUrl: '/oauth/token',
-                scopes: {
-                  read: 'Read access',
-                  read_write: 'Read and write access'
-                }
-              }
-            }
           }
         },
         schemas: {
@@ -193,14 +180,6 @@ RSpec.configure do |config|
               }
             }
           },
-          MfaRequiredResponse: {
-            type: :object,
-            required: %w[error mfa_required],
-            properties: {
-              error: { type: :string },
-              mfa_required: { type: :boolean }
-            }
-          },
           ToolCall: {
             type: :object,
             required: %w[id function_name function_arguments created_at],
@@ -316,25 +295,6 @@ RSpec.configure do |config|
             required: %w[insights],
             properties: {
               insights: { type: :array, items: { '$ref' => '#/components/schemas/Insight' } }
-            }
-          },
-          PushSubscriptionRegistration: {
-            type: :object, required: %w[token environment platform],
-            properties: {
-              token: { type: :string, maxLength: 2048, pattern: "^(?:[0-9a-fA-F]{2})+$" },
-              environment: { type: :string, enum: %w[sandbox production] },
-              platform: { type: :string, enum: %w[ios] },
-              device_key: { type: :string, pattern: '^[0-9a-f]{64}$', description: 'Optional 256-bit installation secret, unique per server and kept in device secure storage. Required proof to replace another user’s registration for this device. Never returned.' }
-            }
-          },
-          PushSubscription: {
-            type: :object,
-            required: %w[id environment platform last_registered_at],
-            properties: {
-              id: { type: :string, format: :uuid },
-              environment: { type: :string, enum: %w[sandbox production] },
-              platform: { type: :string, enum: %w[ios] },
-              last_registered_at: { type: :string, format: :'date-time' }
             }
           },
           RetryResponse: {
