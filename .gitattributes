@@ -23,4 +23,6 @@ bin/* text eol=lf
 
 # Workflow and issue-template YAML stays LF. A Windows checkout that rewrites it
 # to CRLF produces a whole-file diff for everyone with core.autocrlf off.
-*.yml text eol=lf
+# Scoped to .github/: Sure commits some locale YAML with CRLF, and a repo-wide rule
+# would show those files as modified in every checkout.
+.github/**/*.yml text eol=lf
