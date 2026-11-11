@@ -4,7 +4,7 @@ pt-PT:
     users:
       index:
         title: "Gestão de Utilizadores"
-        description: "Gestão das funções dos utilizadores, da associação a famílias/grupos e da remoção de contas na sua instância. Os superadministradores podem aceder às definições dos serviços SSO e à gestão de utilizadores."
+        description: "Gestão das funções dos utilizadores, da associação a famílias/grupos e da remoção de contas na sua instância. Os superadministradores podem aceder à gestão de utilizadores."
         section_title: "Famílias / Grupos"
         you: "(Você)"
         trial_ends_at: "Fim do período experimental"
@@ -53,26 +53,16 @@ pt-PT:
         delete_confirm_last_user: "Tem a certeza de que pretende eliminar este utilizador? É o último utilizador da sua família/grupo, pelo que a eliminação removerá também toda a família/grupo e todos os dados associados. Esta ação é irreversível."
         remove: "Eliminar utilizador"
         role_descriptions_title: "Descrições de Funções"
-        removed_sso_identities:
-          title: "Identidades SSO removidas"
-          description: "Estas identidades não podem criar nem restabelecer uma conta. Permita novamente uma identidade apenas quando a remoção tiver sido acidental."
-          allow_again: "Permitir novamente"
-          confirm: "Permitir que %{email} inicie sessão ou crie uma conta através do SSO novamente?"
         roles:
           guest: "Convidado"
           member: "Membro"
           admin: "Administrador"
           super_admin: "Super Administrador"
-        auth_types:
-          sso: "SSO"
-          local: "Local"
-          local_and_sso: "Local + SSO"
-          sso_provider_tooltip: "Serviço SSO: %{providers}"
         role_descriptions:
           guest: "Experiência centrada no assistente com permissões intencionalmente restritas para fluxos de trabalho introdutórios."
           member: "Acesso básico de utilizador. Pode gerir as suas próprias contas, transações e definições."
           admin: "Administrador da família. Pode aceder a definições avançadas como chaves de API, importações e avisos de IA."
-          super_admin: "Administrador da instância. Pode gerir serviços de SSO, funções de utilizador e representar utilizadores para apoio."
+          super_admin: "Administrador da instância. Pode gerir funções de utilizador e representar utilizadores para apoio."
         invitations:
           pending_label: "Convidado (pendente)"
           expires: "Expira em %{date}"
@@ -92,7 +82,7 @@ pt-PT:
         failure: "Falha ao atualizar os dados do utilizador (função ou associação à família/grupo)."
         family_required: "Selecione uma família/grupo existente ou introduza um nome para uma nova."
         password_and_family_conflict: "A palavra-passe e a associação à família/grupo não podem ser atualizadas ao mesmo tempo."
-        password_disabled: "Definir uma palavra-passe está desativado porque os utilizadores só podem iniciar sessão com SSO."
+        password_disabled: "Definir uma palavra-passe está desativado porque o início de sessão local está desativado."
         password_too_short: "A palavra-passe tem de ter pelo menos 8 caracteres."
         password_missing_case: "A palavra-passe tem de incluir letras maiúsculas e minúsculas."
         password_missing_number: "A palavra-passe tem de incluir pelo menos um número."

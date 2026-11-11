@@ -4,7 +4,7 @@ zh-CN:
     users:
       index:
         title: 用户管理
-        description: 管理您实例中的用户角色。超级管理员可以访问 SSO 提供商设置和用户管理。
+        description: 管理您实例中的用户角色。超级管理员可以访问用户管理。
         section_title: 家庭 / 组
         you: （您）
         trial_ends_at: 试用结束于
@@ -40,7 +40,7 @@ zh-CN:
           guest: 以助手优先的体验为主，并为入门流程保留有意限制的权限。
           member: 基本用户权限。可管理自己的账户、交易和设置。
           admin: 家庭管理员。可访问 API 密钥、导入和 AI 提示词等高级设置。
-          super_admin: 实例管理员。可管理 SSO 提供商、用户角色，并可代为登录用户进行支持。
+          super_admin: 实例管理员。可管理用户角色，并可代为登录用户进行支持。
         invitations:
           pending_label: 已邀请（待处理）
           expires: 于 %{date} 过期

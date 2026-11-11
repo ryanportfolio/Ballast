@@ -231,18 +231,6 @@ it:
         enable_mfa: Abilita 2FA
         disable_mfa: Disabilita 2FA
         disable_mfa_confirm: Sei sicuro di voler disabilitare l'autenticazione a due fattori?
-        sso_title: Account collegati
-        sso_subtitle: Gestisci le connessioni al tuo account single sign-on
-        sso_disconnect: Disconnetti
-        sso_last_used: Ultimo utilizzo
-        sso_never: Mai
-        sso_no_email: Nessuna email
-        sso_no_identities: Nessun account SSO collegato
-        sso_connect_hint: Disconnetti e accedi con un provider SSO per collegare un account.
-        sso_confirm_title: Disconnettere l'account?
-        sso_confirm_body: Sei sicuro di voler disconnettere il tuo account %{provider}? Puoi ricollegarlo in seguito accedendo di nuovo con quel provider.
-        sso_confirm_button: Disconnetti
-        sso_warning_message: Questo è il tuo unico metodo di accesso. Dovresti impostare una password nelle impostazioni di sicurezza prima di disconnetterti, altrimenti potresti essere escluso dal tuo account.
     mcp:
       show:
         page_title: Server MCP
@@ -288,7 +276,6 @@ it:
       mcp_label: MCP
       security_label: Sicurezza
       self_hosting_label: Self-Hosting
-      sso_providers_label: Provider SSO
       statement_vault_label: Archivio estratti
       tags_label: Etichette
       transactions_section_title: Transazioni

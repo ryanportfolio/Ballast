@@ -1,6 +1,0 @@
----
-tr:
-  admin:
-    sso_identity_blocks:
-      destroy:
-        success: Bu SSO kimliği artık yeniden giriş yapabilir veya hesap oluşturabilir.

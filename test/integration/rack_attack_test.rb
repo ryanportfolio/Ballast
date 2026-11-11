@@ -36,9 +36,7 @@ class RackAttackTest < ActionDispatch::IntegrationTest
       logins/ip logins/email
       mfa/verify/ip mfa/verify/user
       password_resets/ip password_resets/email
-      oidc_account_link/ip oidc_account_link/email
       api_login/ip api_login/email
-      api_sso_link/ip api_sso_link/email
       password_change/ip password_change/user
     ].each do |name|
       assert_includes throttles, name, "#{name} should have rate limiting configured"
@@ -82,30 +80,22 @@ class RackAttackTest < ActionDispatch::IntegrationTest
     assert_nil user_block.call(no_session_request)
   end
 
-  test "api login and sso-link throttles match their own paths only" do
+  test "api login throttle matches its own path only" do
     api_login_block = Rack::Attack.throttles["api_login/ip"].block
-    sso_link_block = Rack::Attack.throttles["api_sso_link/ip"].block
 
     api_login_request = throttle_request("/api/v1/auth/login", method: "POST")
     assert_equal "203.0.113.5", api_login_block.call(api_login_request)
-    assert_nil sso_link_block.call(api_login_request)
 
-    sso_link_request = throttle_request("/api/v1/auth/sso_link", method: "POST")
-    assert_equal "203.0.113.5", sso_link_block.call(sso_link_request)
-    assert_nil api_login_block.call(sso_link_request)
+    other_request = throttle_request("/api/v1/auth/signup", method: "POST")
+    assert_nil api_login_block.call(other_request)
   end
 
-  test "api login and sso-link email throttles discriminate JSON bodies, the documented mobile format" do
+  test "api login email throttle discriminates JSON bodies, the documented mobile format" do
     api_login_email_block = Rack::Attack.throttles["api_login/email"].block
-    api_sso_link_email_block = Rack::Attack.throttles["api_sso_link/email"].block
 
     api_login_request = throttle_request("/api/v1/auth/login", method: "POST",
       json_body: { email: " User@Example.com ", password: "secret" })
     assert_equal "user@example.com", api_login_email_block.call(api_login_request)
-
-    sso_link_request = throttle_request("/api/v1/auth/sso_link", method: "POST",
-      json_body: { email: " User@Example.com ", password: "secret" })
-    assert_equal "user@example.com", api_sso_link_email_block.call(sso_link_request)
 
     # The controller must still be able to read the body after Rack::Attack
     # inspected it — this is what proves the peek rewinds rather than

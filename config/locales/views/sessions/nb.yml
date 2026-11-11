@@ -5,8 +5,6 @@ nb:
       invalid_credentials: Ugyldig e-post eller passord.
     destroy:
       logout_successful: Du har blitt logget ut.
-    openid_connect:
-      failed: Kunne ikke autentisere via OpenID Connect.
     new:
       email: E-postadresse
       email_placeholder: meg@example.com
@@ -15,5 +13,3 @@ nb:
       submit: Logg inn
       title: Logg inn på kontoen din
       password_placeholder: Angi passordet ditt
-      openid_connect: Logg inn med OpenID Connect
-      oidc: Logg inn med OpenID Connect

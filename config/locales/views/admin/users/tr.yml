@@ -4,7 +4,7 @@ tr:
     users:
       index:
         description: Örneğiniz için kullanıcı rollerini yönetin. Süper yöneticiler
-          SSO sağlayıcı ayarlarına ve kullanıcı yönetimine erişebilir.
+          kullanıcı yönetimine erişebilir.
         family_summary: "%{members} üye · %{accounts} hesap · %{transactions} işlem"
         filters:
           role: Rol
@@ -29,7 +29,7 @@ tr:
             asistan öncelikli deneyim.
           member: Temel kullanıcı erişimi. Kendi hesaplarını, işlemlerini ve ayarlarını
             yönetebilir.
-          super_admin: Örnek yöneticisi. SSO sağlayıcılarını, kullanıcı rollerini
+          super_admin: Örnek yöneticisi. Kullanıcı rollerini
             yönetebilir ve destek için kullanıcı kimliğine bürünebilir.
         role_descriptions_title: Rol Açıklamaları
         roles:
@@ -73,16 +73,6 @@ tr:
         delete_confirm: Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
         delete_confirm_last_user: Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu, ailesindeki/grubundaki son kullanıcı olduğundan onu silmek tüm aileyi/grubu ve ilişkili tüm verileri de silecektir. Bu işlem geri alınamaz.
         remove: Kullanıcıyı Sil
-        removed_sso_identities:
-          title: Kaldırılan SSO kimlikleri
-          description: Bu kimlikler hesap oluşturamaz veya yeniden bağlanamaz. Bir kimliğe yalnızca kaldırma işlemi yanlışlıkla yapıldıysa yeniden izin verin.
-          allow_again: Yeniden izin ver
-          confirm: '%{email} adresinin SSO üzerinden yeniden giriş yapmasına veya hesap oluşturmasına izin verilsin mi?'
-        auth_types:
-          sso: SSO
-          local: Yerel
-          local_and_sso: Yerel + SSO
-          sso_provider_tooltip: 'SSO sağlayıcısı: %{providers}'
         unused_families:
           title: Kullanılmayan aileler / gruplar
           family_id: 'Aile kimliği: %{id}'
@@ -98,7 +88,7 @@ tr:
         success_family: Kullanıcının aile/grup üyeliği başarıyla güncellendi.
         family_required: Mevcut bir aile/grup seçin veya yeni bir tane için ad girin.
         password_and_family_conflict: Şifre ve aile/grup üyeliği aynı anda güncellenemez.
-        password_disabled: Kullanıcılar yalnızca SSO ile giriş yapabildiği için şifre belirleme devre dışı.
+        password_disabled: Yerel giriş kapalı olduğu için şifre belirleme devre dışı.
         password_too_short: Şifre en az 8 karakter uzunluğunda olmalıdır.
         password_missing_case: Şifre hem büyük hem de küçük harf içermelidir.
         password_missing_number: Şifre en az bir rakam içermelidir.

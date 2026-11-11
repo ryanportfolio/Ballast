@@ -293,18 +293,6 @@ pt-PT:
         enable_mfa: Ativar 2FA
         disable_mfa: Desativar 2FA
         disable_mfa_confirm: Tem a certeza de que pretende desativar a autenticação de dois fatores?
-        sso_title: Contas associadas
-        sso_subtitle: Ligações às suas contas SSO
-        sso_disconnect: Desligar
-        sso_last_used: Última utilização
-        sso_never: Nunca
-        sso_no_email: Sem email
-        sso_no_identities: Sem contas SSO associadas
-        sso_connect_hint: Termine a sessão e inicie-a novamente com um serviço SSO para ligar uma conta.
-        sso_confirm_title: Desligar Conta?
-        sso_confirm_body: Tem a certeza de que pretende desligar a sua conta %{provider}? Pode voltar a ligá-la mais tarde ao iniciar sessão com esse serviço novamente.
-        sso_confirm_button: Desligar
-        sso_warning_message: Este é o seu único método de início de sessão. Deve definir uma palavra-passe nas suas definições de segurança antes de desligar, caso contrário poderá ficar bloqueado na sua conta.
     mcp:
       show:
         page_title: Servidor MCP
@@ -351,7 +339,6 @@ pt-PT:
       mcp_label: MCP
       security_label: Segurança
       self_hosting_label: Self-Hosting
-      sso_providers_label: Serviços SSO
       statement_vault_label: Arquivo de Extratos
       system_health_label: Estado do sistema
       tags_label: Etiquetas

@@ -834,21 +834,6 @@ pl:
           - ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
           title: Brak kluczy szyfrowania
         page_title: Bezpieczeństwo
-        sso_confirm_body: Czy na pewno chcesz odłączyć konto %{provider}? Możesz je
-          połączyć ponownie później, logując się ponownie przez tego dostawcę.
-        sso_confirm_button: Odłącz
-        sso_confirm_title: Odłączyć konto?
-        sso_connect_hint: Wyloguj się i zaloguj przez dostawcę SSO, aby połączyć konto.
-        sso_disconnect: Odłącz
-        sso_last_used: Ostatnio używane
-        sso_never: Nigdy
-        sso_no_email: Brak adresu e-mail
-        sso_no_identities: Brak połączonych kont SSO
-        sso_subtitle: Zarządzaj połączeniami kont jednokrotnego logowania
-        sso_title: Połączone konta
-        sso_warning_message: To jest Twoja jedyna metoda logowania. Przed odłączeniem
-          ustaw hasło w ustawieniach bezpieczeństwa, w przeciwnym razie możesz utracić
-          dostęp do konta.
     settings_nav:
       accounts_label: Konta
       advanced_section_title: Zaawansowane
@@ -879,7 +864,6 @@ pl:
       rules_label: Reguły
       security_label: Bezpieczeństwo
       self_hosting_label: Hosting własny
-      sso_providers_label: Dostawcy SSO
       statement_vault_label: Magazyn wyciągów
       system_health_label: Stan systemu
       tags_label: Tagi

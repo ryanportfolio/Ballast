@@ -351,21 +351,6 @@ Rails.application.routes.draw do
   # rate limited alongside the MFA WebAuthn endpoints in Rack::Attack.
   post "/sessions/passkey_options", to: "passkey_sessions#options", as: :passkey_session_options
   post "/sessions/passkey", to: "passkey_sessions#create", as: :passkey_session
-  # Desktop app SSO: opens the flow in the system browser (so passkeys/WebAuthn
-  # work), then hands a single-use, PKCE-bound code back via the sure:// scheme
-  # which the desktop webview exchanges for a normal web session.
-  post "/sessions/desktop_exchange", to: "sessions#desktop_exchange", as: :desktop_sso_exchange
-  get "/auth/desktop/:provider", to: "sessions#desktop_sso_start"
-  get "/auth/mobile/:provider", to: "sessions#mobile_sso_start"
-  match "/auth/:provider/callback", to: "sessions#openid_connect", via: %i[get post]
-  match "/auth/failure", to: "sessions#failure", via: %i[get post]
-  get "/auth/logout/callback", to: "sessions#post_logout"
-  resource :oidc_account, only: [] do
-    get :link, on: :collection
-    post :create_link, on: :collection
-    get :new_user, on: :collection
-    post :create_user, on: :collection
-  end
   resource :password_reset, only: %i[new create edit update]
   resource :password, only: %i[edit update]
   resource :email_confirmation, only: :new
@@ -403,7 +388,6 @@ Rails.application.routes.draw do
     resources :webauthn_credentials, only: %i[create destroy] do
       post :options, on: :collection
     end
-    resources :sso_identities, only: :destroy
     resources :api_keys, only: [ :index, :show, :new, :create, :destroy ]
     resource :mcp, controller: "mcp", only: :show do
       delete "tokens/:token_id", to: "mcp#revoke", as: :revoke_token
@@ -769,10 +753,6 @@ Rails.application.routes.draw do
       post "auth/signup", to: "auth#signup"
       post "auth/login", to: "auth#login"
       post "auth/refresh", to: "auth#refresh"
-      get "auth/sso_providers", to: "auth#sso_providers"
-      post "auth/sso_exchange", to: "auth#sso_exchange"
-      post "auth/sso_link", to: "auth#sso_link"
-      post "auth/sso_create_account", to: "auth#sso_create_account"
       patch "auth/enable_ai", to: "auth#enable_ai"
 
       # Production API endpoints
@@ -1026,16 +1006,9 @@ Rails.application.routes.draw do
 
   # Admin namespace for super admin functionality
   namespace :admin do
-    resources :sso_providers do
-      member do
-        patch :toggle
-        post :test_connection
-      end
-    end
     resources :users, only: [ :index, :update, :destroy ] do
       get :deletion, on: :member
     end
-    resources :sso_identity_blocks, only: [ :destroy ]
     resources :invitations, only: [ :destroy ]
     resources :families, only: [ :destroy ] do
       member do

@@ -317,18 +317,6 @@ uk:
         enable_mfa: Увімкнути 2FA
         disable_mfa: Вимкнути 2FA
         disable_mfa_confirm: Ви впевнені, що хочете вимкнути двофакторну автентифікацію?
-        sso_title: Підключені облікові записи
-        sso_subtitle: Керуйте підключеннями до облікових записів єдиного входу
-        sso_disconnect: Відключити
-        sso_last_used: Останнє використання
-        sso_never: Ніколи
-        sso_no_email: Немає електронної пошти
-        sso_no_identities: Немає підключених облікових записів SSO
-        sso_connect_hint: Вийдіть і увійдіть за допомогою постачальника SSO, щоб підключити обліковий запис.
-        sso_confirm_title: Відключити обліковий запис?
-        sso_confirm_body: Ви впевнені, що хочете відключити свій обліковий запис %{provider}? Ви можете перепідключити його пізніше, увійшовши знову за допомогою цього постачальника.
-        sso_confirm_button: Відключити
-        sso_warning_message: Це ваш єдиний спосіб входу. Ви повинні встановити пароль у налаштуваннях безпеки перед відключенням, інакше ви можете бути заблоковані у своєму обліковому записі.
     mcp:
       show:
         page_title: Сервер MCP
@@ -375,7 +363,6 @@ uk:
       mcp_label: MCP
       security_label: Безпека
       self_hosting_label: Самостійний хостинг
-      sso_providers_label: Постачальники SSO
       statement_vault_label: Сховище виписок
       tags_label: Теги
       transactions_section_title: Транзакції

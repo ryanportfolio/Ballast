@@ -55,7 +55,6 @@ id:
     messages: Pesan
     mfa: Autentikasi dua faktor
     monobank_items: Monobank
-    oidc_accounts: Akun SSO
     onboardings: Onboarding
     other_assets: Aset lainnya
     other_liabilities: Liabilitas lainnya
@@ -81,8 +80,6 @@ id:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Pemisahan transaksi
-    sso_identities: Koneksi SSO
-    sso_providers: Penyedia SSO
     subscriptions: Langganan
     system_health: Kesehatan Sistem
     tags: Tag

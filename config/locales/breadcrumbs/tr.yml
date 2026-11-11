@@ -51,7 +51,6 @@ tr:
     mercury_items: Mercury
     messages: Mesajlar
     mfa: İki faktörlü kimlik doğrulama
-    oidc_accounts: SSO hesapları
     onboardings: Kurulum
     other_assets: Diğer varlıklar
     other_liabilities: Diğer borçlar
@@ -75,8 +74,6 @@ tr:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Bölme
-    sso_identities: SSO bağlantıları
-    sso_providers: SSO sağlayıcıları
     subscriptions: Abonelik
     tags: Etiketler
     trades: Alım Satımlar

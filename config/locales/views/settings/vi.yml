@@ -221,18 +221,6 @@ vi:
         enable_mfa: Bật 2FA
         disable_mfa: Tắt 2FA
         disable_mfa_confirm: Bạn có chắc muốn tắt xác thực hai yếu tố?
-        sso_title: Tài khoản đã kết nối
-        sso_subtitle: Quản lý các kết nối tài khoản đăng nhập một lần
-        sso_disconnect: Ngắt kết nối
-        sso_last_used: Sử dụng lần cuối
-        sso_never: Chưa bao giờ
-        sso_no_email: Không có email
-        sso_no_identities: Chưa kết nối tài khoản SSO
-        sso_connect_hint: Đăng xuất và đăng nhập bằng nhà cung cấp SSO để kết nối tài khoản.
-        sso_confirm_title: Ngắt kết nối tài khoản?
-        sso_confirm_body: Bạn có chắc muốn ngắt kết nối tài khoản %{provider}? Bạn có thể kết nối lại sau bằng cách đăng nhập với nhà cung cấp đó.
-        sso_confirm_button: Ngắt kết nối
-        sso_warning_message: Đây là phương thức đăng nhập duy nhất của bạn. Hãy đặt mật khẩu trong cài đặt bảo mật trước khi ngắt kết nối, nếu không bạn có thể bị khóa khỏi tài khoản.
     settings_nav:
       accounts_label: Tài khoản
       advanced_section_title: Nâng cao
@@ -257,7 +245,6 @@ vi:
       rules_label: Quy tắc
       security_label: Bảo mật
       self_hosting_label: Tự lưu trữ
-      sso_providers_label: Nhà cung cấp SSO
       statement_vault_label: Kho sao kê
       tags_label: Nhãn
       transactions_section_title: Giao dịch

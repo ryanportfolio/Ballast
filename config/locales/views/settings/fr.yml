@@ -759,21 +759,8 @@ fr:
             - ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
           title: Clés de chiffrement manquantes
         mfa_description: Ajoutez une couche de sécurité supplémentaire à votre compte en exigeant un code de votre application d'authentification lors de la connexion
-        mfa_sso_only: L'authentification à deux facteurs est gérée par votre fournisseur d'identité.
         mfa_title: Authentification à deux facteurs
         page_title: Sécurité
-        sso_confirm_body: Êtes-vous sûr(e) de vouloir déconnecter votre compte %{provider} ? Vous pourrez le reconnecter ultérieurement en vous connectant avec ce fournisseur.
-        sso_confirm_button: Déconnecter
-        sso_confirm_title: Déconnecter le compte ?
-        sso_connect_hint: Déconnectez-vous et connectez-vous avec un fournisseur SSO pour connecter un compte.
-        sso_disconnect: Déconnecter
-        sso_last_used: Dernière utilisation
-        sso_never: Jamais
-        sso_no_email: Pas d'email
-        sso_no_identities: Aucun compte SSO connecté
-        sso_subtitle: Gérez vos connexions de compte à authentification unique
-        sso_title: Comptes connectés
-        sso_warning_message: C'est votre seule méthode de connexion. Vous devriez définir un mot de passe dans vos paramètres de sécurité avant de déconnecter, sinon vous pourriez être bloqué(e) hors de votre compte.
     settings_nav:
       accounts_label: Comptes
       advanced_section_title: Avancé
@@ -804,7 +791,6 @@ fr:
       rules_label: Règles
       security_label: Sécurité
       self_hosting_label: Auto-hébergement
-      sso_providers_label: Fournisseurs SSO
       statement_vault_label: Coffre des relevés
       system_health_label: Santé du système
       tags_label: Étiquettes

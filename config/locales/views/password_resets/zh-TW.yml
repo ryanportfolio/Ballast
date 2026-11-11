@@ -1,8 +1,7 @@
 ---
 zh-TW:
   password_resets:
-    disabled: 透過 Sure 重設密碼的功能已停用。請透過您的身分驗證供應商（Identity Provider）來重設密碼。
-    sso_only_user: 您的帳號使用 SSO 驗證，請聯絡管理員來管理您的憑證。
+    disabled: 此系統已停用重設密碼的功能。請聯絡您的管理員。
     edit:
       title: 重設密碼
     new:

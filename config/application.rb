@@ -72,9 +72,5 @@ module Sure
     config.x.debug_log = ActiveSupport::OrderedOptions.new
     retention_days = ENV.fetch("DEBUG_LOG_RETENTION_DAYS", "90").to_i
     config.x.debug_log.retention_days = retention_days.positive? ? retention_days : 90
-
-    # Handle OmniAuth/OIDC errors gracefully (must be before OmniAuth middleware)
-    require_relative "../app/middleware/omniauth_error_handler"
-    config.middleware.use OmniauthErrorHandler
   end
 end

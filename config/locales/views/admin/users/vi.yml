@@ -4,7 +4,7 @@ vi:
     users:
       index:
         title: "Quản lý người dùng"
-        description: "Quản lý vai trò người dùng cho phiên bản của bạn. Quản trị viên cấp cao có thể truy cập cài đặt nhà cung cấp SSO và quản lý người dùng."
+        description: "Quản lý vai trò người dùng cho phiên bản của bạn. Quản trị viên cấp cao có thể truy cập quản lý người dùng."
         section_title: "Gia đình / Nhóm"
         you: "(Bạn)"
         trial_ends_at: "Kết thúc dùng thử"
@@ -40,7 +40,7 @@ vi:
           guest: "Trải nghiệm ưu tiên trợ lý với quyền hạn bị hạn chế có chủ ý cho quy trình giới thiệu."
           member: "Quyền truy cập người dùng cơ bản. Có thể quản lý tài khoản, giao dịch và cài đặt của riêng họ."
           admin: "Quản trị viên gia đình. Có thể truy cập các cài đặt nâng cao như khóa API, nhập dữ liệu và lệnh AI."
-          super_admin: "Quản trị viên phiên bản. Có thể quản lý nhà cung cấp SSO, vai trò người dùng và mạo danh người dùng để hỗ trợ."
+          super_admin: "Quản trị viên phiên bản. Có thể quản lý vai trò người dùng và mạo danh người dùng để hỗ trợ."
         invitations:
           pending_label: "Đã mời (đang chờ)"
           expires: "Hết hạn %{date}"

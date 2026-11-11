@@ -55,7 +55,6 @@ zh-CN:
     messages: 消息
     mfa: 双重验证
     monobank_items: Monobank
-    oidc_accounts: OIDC 账户
     onboardings: 入门
     other_assets: 其他资产
     other_liabilities: 其他负债
@@ -81,8 +80,6 @@ zh-CN:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: 拆分
-    sso_identities: SSO 连接
-    sso_providers: SSO 提供商
     subscriptions: 订阅
     system_health: 系统健康
     tags: 标签

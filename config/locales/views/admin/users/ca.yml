@@ -4,8 +4,7 @@ ca:
     users:
       index:
         description: Gestiona els rols d'usuari per a la teva instància. Els super
-          administradors poden accedir a la configuració de proveïdors SSO i a la
-          gestió d'usuaris.
+          administradors poden accedir a la gestió d'usuaris.
         family_summary: "%{members} membres · %{accounts} comptes · %{transactions}
           transaccions"
         filters:
@@ -31,7 +30,7 @@ ca:
             per a fluxos d'introducció.
           member: Accés bàsic d'usuari. Pot gestionar els seus propis comptes, transaccions
             i configuracions.
-          super_admin: Administrador d'instància. Pot gestionar proveïdors SSO, rols
+          super_admin: Administrador d'instància. Pot gestionar rols
             d'usuari i suplantar usuaris per donar suport.
         role_descriptions_title: Descripcions dels rols
         roles:
@@ -75,16 +74,6 @@ ca:
         delete_confirm: Segur que vols eliminar aquest usuari? Aquesta acció no es pot desfer.
         delete_confirm_last_user: Segur que vols eliminar aquest usuari? És l'últim usuari de la seva família/grup, així que eliminar-lo també eliminarà tota la família/grup i totes les dades associades. Aquesta acció no es pot desfer.
         remove: Elimina l'usuari
-        removed_sso_identities:
-          title: Identitats SSO eliminades
-          description: Aquestes identitats no poden crear ni tornar a connectar un compte. Permet de nou una identitat només si l'eliminació va ser accidental.
-          allow_again: Permet de nou
-          confirm: Vols permetre que %{email} torni a iniciar sessió o crear un compte mitjançant SSO?
-        auth_types:
-          sso: SSO
-          local: Local
-          local_and_sso: Local + SSO
-          sso_provider_tooltip: 'Proveïdor SSO: %{providers}'
         unused_families:
           title: Famílies / grups sense ús
           family_id: 'ID de família: %{id}'
@@ -100,7 +89,7 @@ ca:
         success_family: Pertinença de l'usuari a la família/grup actualitzada correctament.
         family_required: Selecciona una família/grup existent o introdueix un nom per crear-ne una de nova.
         password_and_family_conflict: No es poden actualitzar alhora la contrasenya i la pertinença a la família/grup.
-        password_disabled: Establir una contrasenya està desactivat perquè els usuaris només poden iniciar sessió amb SSO.
+        password_disabled: Establir una contrasenya està desactivat perquè l'inici de sessió local està desactivat.
         password_too_short: La contrasenya ha de tenir com a mínim 8 caràcters.
         password_missing_case: La contrasenya ha d'incloure lletres majúscules i minúscules.
         password_missing_number: La contrasenya ha d'incloure com a mínim un número.

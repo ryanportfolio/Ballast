@@ -54,7 +54,6 @@ pl:
     messages: Wiadomości
     mfa: Uwierzytelnianie dwuskładnikowe
     monobank_items: Monobank
-    oidc_accounts: Konta SSO
     onboardings: Wprowadzenie
     other_assets: Inne aktywa
     other_liabilities: Inne zobowiązania
@@ -80,8 +79,6 @@ pl:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Podział
-    sso_identities: Połączenia SSO
-    sso_providers: Dostawcy SSO
     subscriptions: Subskrypcja
     tags: Tagi
     trades: Transakcje giełdowe

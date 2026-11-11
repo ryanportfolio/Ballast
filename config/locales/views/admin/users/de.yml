@@ -4,7 +4,7 @@ de:
     users:
       index:
         title: "Benutzerverwaltung"
-        description: Benutzerrollen für deine Instanz verwalten. Super-Admins haben Zugriff auf SSO-Provider und Benutzerverwaltung.
+        description: Benutzerrollen für deine Instanz verwalten. Super-Admins haben Zugriff auf die Benutzerverwaltung.
         section_title: "Benutzer"
         you: "(Sie)"
         trial_ends_at: "Testversion endet"
@@ -28,11 +28,6 @@ de:
           never: "Nie"
           role: "Rolle"
         role_descriptions_title: "Rollenbeschreibungen"
-        removed_sso_identities:
-          title: "Entfernte SSO-Identitäten"
-          description: "Mit diesen Identitäten kann kein Konto erstellt oder erneut verknüpft werden. Lass eine Identität nur dann wieder zu, wenn sie versehentlich entfernt wurde."
-          allow_again: "Wieder zulassen"
-          confirm: "Möchtest du die SSO-Identität %{email} wieder für die Anmeldung oder Kontoerstellung zulassen?"
         roles:
           guest: "Gast"
           member: "Mitglied"
@@ -42,7 +37,7 @@ de:
           guest: "Assistenten-orientierte Nutzung mit eingeschränkten Rechten für Einführungsabläufe."
           member: "Standard-Zugriff. Kann eigene Konten, Buchungen und Einstellungen verwalten."
           admin: "Familien-Administrator. Zugriff auf erweiterte Einstellungen wie API-Schlüssel, Importe und KI-Prompts."
-          super_admin: "Instanz-Administrator. Kann SSO-Provider, Benutzerrollen verwalten und Benutzer für Support vertreten."
+          super_admin: "Instanz-Administrator. Kann Benutzerrollen verwalten und Benutzer für Support vertreten."
         family_summary: "%{members} Mitglieder · %{accounts} Konten · %{transactions} Transaktionen"
         invitations:
           delete: Löschen

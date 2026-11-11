@@ -151,10 +151,12 @@ class MfaController < ApplicationController
       Current.user.authenticate(params[:password]).present?
     end
 
-    # A user who signs in through an identity provider has no local password to
-    # confirm with, so these pages are closed to them rather than left as a
-    # dead end. GET /mfa/new matters as much as the writes: it calls setup_mfa!
-    # and would strand an otp_secret they could never finish wiring up.
+    # A user with an empty password_digest (for example an account carried
+    # over from a database where it was created without a password) has
+    # nothing to confirm with, so these pages are closed to them rather than
+    # left as a dead end. GET /mfa/new matters as much as the writes: it calls
+    # setup_mfa! and would strand an otp_secret they could never finish wiring
+    # up.
     def require_local_password
       return if Current.user.has_local_password?
 

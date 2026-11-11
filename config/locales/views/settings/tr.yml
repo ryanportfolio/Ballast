@@ -789,22 +789,6 @@ tr:
           bir kod isteyerek ekstra bir güvenlik katmanı ekleyin
         mfa_title: İki Faktörlü Kimlik Doğrulama
         page_title: Güvenlik
-        sso_confirm_body: "%{provider} hesabınızın bağlantısını kesmek istediğinizden
-          emin misiniz? Daha sonra o sağlayıcıyla tekrar giriş yaparak yeniden bağlayabilirsiniz."
-        sso_confirm_button: Bağlantıyı kes
-        sso_confirm_title: Hesap bağlantısı kesilsin mi?
-        sso_connect_hint: Bir hesap bağlamak için çıkış yapın ve bir SSO sağlayıcısıyla
-          giriş yapın.
-        sso_disconnect: Bağlantıyı kes
-        sso_last_used: Son kullanım
-        sso_never: Hiçbir zaman
-        sso_no_email: E-posta yok
-        sso_no_identities: Bağlı SSO hesabı yok
-        sso_subtitle: Tekli oturum açma hesap bağlantılarınızı yönetin
-        sso_title: Bağlı Hesaplar
-        sso_warning_message: Bu sizin tek giriş yönteminiz. Bağlantıyı kesmeden önce
-          güvenlik ayarlarınızda bir şifre belirlemelisiniz, aksi takdirde hesabınızın
-          dışında kalabilirsiniz.
     settings_nav:
       accounts_label: Hesaplar
       advanced_section_title: Gelişmiş
@@ -834,7 +818,6 @@ tr:
       rules_label: Kurallar
       security_label: Güvenlik
       self_hosting_label: Kendi Sunucunda Barındırma
-      sso_providers_label: SSO Sağlayıcıları
       statement_vault_label: Ekstre Kasası
       tags_label: Etiketler
       transactions_section_title: İşlemler

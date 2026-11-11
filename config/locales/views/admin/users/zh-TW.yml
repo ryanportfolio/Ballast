@@ -4,7 +4,7 @@ zh-TW:
     users:
       index:
         title: 使用者管理
-        description: 管理這個執行個體的使用者角色。超級管理員可以存取 SSO 供應商設定與使用者管理。
+        description: 管理這個執行個體的使用者角色。超級管理員可以存取使用者管理。
         section_title: 家庭／群組
         you: （您）
         trial_ends_at: 試用結束
@@ -40,7 +40,7 @@ zh-TW:
           guest: 以助手為主的體驗，權限刻意限制在入門流程所需的範圍內。
           member: 一般使用者權限。可以管理自己的帳戶、交易與設定。
           admin: 家庭管理員。可以存取 API 金鑰、匯入與 AI 提示詞等進階設定。
-          super_admin: 執行個體管理員。可以管理 SSO 供應商、使用者角色，並為了支援而模擬登入使用者。
+          super_admin: 執行個體管理員。可以管理使用者角色，並為了支援而模擬登入使用者。
         invitations:
           pending_label: 已邀請（待接受）
           expires: '%{date} 到期'

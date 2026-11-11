@@ -55,12 +55,9 @@ class Rack::Attack
   # throttle firing blocks the request, since Rack::Attack requires ALL
   # matching throttles to pass.
   #
-  # oidc_account/create_link and api/v1/auth/sso_link are password checks
-  # gating account linking, not sign-in — easy to miss by grepping routes.rb
-  # for "session"/"login"/"password" alone.
   # request.params only exposes query/form parameters — Rack::Attack runs
   # ahead of Rails' JSON parameter parsing, so JSON API clients (the
-  # documented format for api/v1/auth/login and .../sso_link) would otherwise
+  # documented format for api/v1/auth/login) would otherwise
   # bypass the email throttle entirely. Peek at the JSON body without
   # consuming it, so the controller still gets a fresh, unread input stream.
   json_request_email = ->(request) do
@@ -119,28 +116,12 @@ class Rack::Attack
     credential_guess_email.call(request) if request.post? && credential_guess_path.call(request, "/password_reset")
   end
 
-  throttle("oidc_account_link/ip", limit: 10, period: 1.minute) do |request|
-    request.ip if request.post? && credential_guess_path.call(request, "/oidc_account/create_link")
-  end
-
-  throttle("oidc_account_link/email", limit: 10, period: 1.minute) do |request|
-    credential_guess_email.call(request) if request.post? && credential_guess_path.call(request, "/oidc_account/create_link")
-  end
-
   throttle("api_login/ip", limit: 10, period: 1.minute) do |request|
     request.ip if request.post? && credential_guess_path.call(request, "/api/v1/auth/login")
   end
 
   throttle("api_login/email", limit: 10, period: 1.minute) do |request|
     credential_guess_email.call(request) if request.post? && credential_guess_path.call(request, "/api/v1/auth/login")
-  end
-
-  throttle("api_sso_link/ip", limit: 10, period: 1.minute) do |request|
-    request.ip if request.post? && credential_guess_path.call(request, "/api/v1/auth/sso_link")
-  end
-
-  throttle("api_sso_link/email", limit: 10, period: 1.minute) do |request|
-    credential_guess_email.call(request) if request.post? && credential_guess_path.call(request, "/api/v1/auth/sso_link")
   end
 
   # Self-service password change checks the current password

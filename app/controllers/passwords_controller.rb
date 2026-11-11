@@ -14,7 +14,7 @@ class PasswordsController < ApplicationController
 
   private
 
-    # Mirrors the local login policy: when only SSO is allowed, a local
+    # Mirrors the local login policy: when local login is disabled, a
     # password could not be used to sign in, so it must not be set here
     # either. Super admins keep this page under the local admin override,
     # since that override is exactly what lets them sign in with a password.

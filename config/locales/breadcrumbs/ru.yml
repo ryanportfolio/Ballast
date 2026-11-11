@@ -51,7 +51,6 @@ ru:
     mercury_items: Mercury
     messages: Сообщения
     mfa: Двухфакторная аутентификация
-    oidc_accounts: Учетные записи SSO
     onboardings: Онбординг
     other_assets: Прочие активы
     other_liabilities: Прочие обязательства
@@ -75,8 +74,6 @@ ru:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Разделение
-    sso_identities: Подключения SSO
-    sso_providers: Провайдеры SSO
     subscriptions: Подписка
     tags: Теги
     trades: Сделки

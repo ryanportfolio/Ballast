@@ -53,7 +53,6 @@ zh-TW:
     mercury_items: Mercury
     messages: 訊息
     mfa: 雙重驗證
-    oidc_accounts: SSO 帳號
     onboardings: 新手導覽
     other_assets: 其他資產
     other_liabilities: 其他負債
@@ -79,8 +78,6 @@ zh-TW:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: 拆分
-    sso_identities: SSO 連結
-    sso_providers: SSO 供應商
     subscriptions: 訂閱
     tags: 標籤
     trades: 證券交易

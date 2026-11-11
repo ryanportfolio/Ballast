@@ -725,24 +725,6 @@ ca:
     securities:
       show:
         page_title: Seguretat
-        sso_confirm_body: Segur que vols desconnectar el teu compte de %{provider}?
-          Pots tornar-lo a connectar més tard iniciant sessió amb aquest proveïdor
-          una altra vegada.
-        sso_confirm_button: Desconnecta
-        sso_confirm_title: Vols desconnectar el compte?
-        sso_connect_hint: Tanca sessió i inicia amb un proveïdor SSO per connectar
-          un compte.
-        sso_disconnect: Desconnecta
-        sso_last_used: Darrer ús
-        sso_never: Mai
-        sso_no_email: Sense correu electrònic
-        sso_no_identities: No hi ha comptes SSO connectats
-        sso_subtitle: Gestiona les teves connexions de compte amb inici de sessió
-          únic
-        sso_title: Comptes connectats
-        sso_warning_message: Aquesta és l'única forma d'inici de sessió. Hauries de
-          configurar una contrasenya a la teva configuració de seguretat abans de
-          desconnectar, altrament podries quedar bloquejat/da fora del teu compte.
         encryption_warning:
           title: Falten les claus de xifratge
           intro: 'Les dades sensibles (claus API, tokens de proveïdors, secrets de MFA i dades personals) s''emmagatzemen sense xifrar. Per activar el xifratge, defineix les claus següents a les variables d''entorn o a les credencials de Rails:'
@@ -847,7 +829,6 @@ ca:
       rules_label: Regles
       security_label: Seguretat
       self_hosting_label: Self hosting
-      sso_providers_label: Proveïdors SSO
       statement_vault_label: Arxiu d'extractes
       system_health_label: Estat del sistema
       tags_label: Etiquetes

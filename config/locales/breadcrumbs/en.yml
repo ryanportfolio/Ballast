@@ -55,7 +55,6 @@ en:
     messages: Messages
     mfa: Two-factor authentication
     monobank_items: Monobank
-    oidc_accounts: SSO accounts
     onboardings: Onboarding
     other_assets: Other assets
     other_liabilities: Other liabilities
@@ -81,8 +80,6 @@ en:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Split
-    sso_identities: SSO connections
-    sso_providers: SSO providers
     subscriptions: Subscription
     system_health: System Health
     tags: Tags

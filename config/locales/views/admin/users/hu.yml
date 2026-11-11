@@ -4,7 +4,7 @@ hu:
     users:
       index:
         title: "Felhasználókezelés"
-        description: "Felhasználói szerepkörök kezelése a példányodhoz. A szuperadminok hozzáférnek az SSO-szolgáltató beállításaihoz és a felhasználókezeléshez."
+        description: "Felhasználói szerepkörök kezelése a példányodhoz. A szuperadminok hozzáférnek a felhasználókezeléshez."
         section_title: "Családok / Csoportok"
         you: "(Te)"
         trial_ends_at: "Próbaidő vége"
@@ -40,7 +40,7 @@ hu:
           guest: "Asszisztens-első élmény, szándékosan korlátozott jogosultságokkal az alapszintű munkafolyamatokhoz."
           member: "Alap felhasználói hozzáférés. Kezelheti saját fiókjait, tranzakcióit és beállításait."
           admin: "Családi rendszergazda. Hozzáférhet a fejlett beállításokhoz, mint az API-kulcsok, importálások és AI-promptok."
-          super_admin: "Példány-rendszergazda. Kezelheti az SSO-szolgáltatókat, a felhasználói szerepköröket, és megszemélyesíthet felhasználókat támogatási céllal."
+          super_admin: "Példány-rendszergazda. Kezelheti a felhasználói szerepköröket, és megszemélyesíthet felhasználókat támogatási céllal."
         invitations:
           pending_label: "Meghívva (függőben)"
           expires: "Lejár: %{date}"

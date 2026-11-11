@@ -53,7 +53,6 @@ de:
     mercury_items: Mercury
     messages: Nachrichten
     mfa: Zwei-Faktor-Authentifizierung
-    oidc_accounts: SSO-Konten
     onboardings: Einrichtung
     other_assets: Sonstige Vermögenswerte
     other_liabilities: Sonstige Verbindlichkeiten
@@ -79,8 +78,6 @@ de:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Aufteilung
-    sso_identities: SSO-Verbindungen
-    sso_providers: SSO-Anbieter
     subscriptions: Abo
     system_health: Systemstatus
     tags: Tags

@@ -106,18 +106,6 @@ nl:
         enable_mfa: 2FA inschakelen
         disable_mfa: 2FA uitschakelen
         disable_mfa_confirm: Weet u zeker dat u twee-factor authenticatie wilt uitschakelen?
-        sso_title: Gekoppelde Accounts
-        sso_subtitle: Beheer uw single sign-on accountverbindingen
-        sso_disconnect: Loskoppelen
-        sso_last_used: Laatst gebruikt
-        sso_never: Nooit
-        sso_no_email: Geen e-mail
-        sso_no_identities: Geen SSO-accounts verbonden
-        sso_connect_hint: Log uit en log in met een SSO-provider om een account te verbinden.
-        sso_confirm_title: Account loskoppelen?
-        sso_confirm_body: "Weet u zeker dat u uw %{provider} account wilt loskoppelen? U kunt het later opnieuw verbinden door in te loggen met die provider."
-        sso_confirm_button: Loskoppelen
-        sso_warning_message: Dit is uw enige inlogmethode. U zou een wachtwoord moeten instellen in uw beveiligingsinstellingen voordat u loskoppelt, anders kunt u worden buitengesloten van uw account.
     settings_nav:
       accounts_label: Accounts
       advanced_section_title: Geavanceerd

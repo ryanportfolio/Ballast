@@ -102,19 +102,6 @@
                                 <span class="text-xs font-medium text-secondary"><%= t(".you") %></span>
                               <% end %>
                               <%= render DS::Pill.new(label: t(".roles.#{user.role}"), tone: user.super_admin? ? :success : :neutral) %>
-                              <% if user.oidc_identities.any? %>
-                                <% sso_providers = user.oidc_identities.map { |i| (i.provider_config&.dig(:label) || i.provider_config&.dig("label")).presence || i.provider.titleize }.uniq.join(", ") %>
-                                <% provider_tooltip = t(".auth_types.sso_provider_tooltip", providers: sso_providers) %>
-                                <% if user.sso_only? %>
-                                  <%= render DS::Pill.new(label: t(".auth_types.sso"), tone: :info) %>
-                                  <%= render DS::Tooltip.new(text: provider_tooltip, as: :span) %>
-                                <% else %>
-                                  <%= render DS::Pill.new(label: t(".auth_types.local_and_sso"), tone: :info) %>
-                                  <%= render DS::Tooltip.new(text: provider_tooltip, as: :span) %>
-                                <% end %>
-                              <% else %>
-                                <%= render DS::Pill.new(label: t(".auth_types.local"), tone: :neutral) %>
-                              <% end %>
                             </div>
                             <p class="text-sm text-secondary"><%= user.email %></p>
                           </div>
@@ -328,31 +315,6 @@
       </div>
     <% end %>
   </div>
-
-  <% if @sso_identity_blocks.any? %>
-    <%= settings_section title: t(".removed_sso_identities.title"), collapsible: true, open: false do %>
-      <p class="text-sm text-secondary mb-4"><%= t(".removed_sso_identities.description") %></p>
-      <div class="space-y-2">
-        <% @sso_identity_blocks.each do |block| %>
-          <div class="flex items-center justify-between gap-4 rounded-lg border border-primary p-3">
-            <div>
-              <p class="font-medium text-primary"><%= block.identity_label %></p>
-              <p class="text-sm text-secondary"><%= block.provider %> · <%= l(block.created_at, format: :long) %></p>
-            </div>
-            <%= form_with url: admin_sso_identity_block_path(block), method: :delete do %>
-              <%= render DS::Button.new(
-                    text: t(".removed_sso_identities.allow_again"),
-                    type: "submit",
-                    variant: :outline_destructive,
-                    size: :sm,
-                    data: { turbo_confirm: t(".removed_sso_identities.confirm", email: block.identity_label) }
-                  ) %>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    <% end %>
-  <% end %>
 
   <%= settings_section title: t(".role_descriptions_title"), collapsible: true, open: true do %>
     <div class="space-y-3 text-sm">

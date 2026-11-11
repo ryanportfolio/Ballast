@@ -50,7 +50,6 @@ vi:
     mercury_items: Mercury
     messages: Tin nhắn
     mfa: Xác thực hai yếu tố
-    oidc_accounts: Tài khoản SSO
     onboardings: Khởi đầu
     other_assets: Tài sản khác
     other_liabilities: Nợ khác
@@ -74,8 +73,6 @@ vi:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Phân chia
-    sso_identities: Kết nối SSO
-    sso_providers: Nhà cung cấp SSO
     subscriptions: Gói đăng ký
     tags: Nhãn
     trades: Giao dịch chứng khoán

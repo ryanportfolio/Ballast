@@ -771,22 +771,6 @@ ru:
             - ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
           title: Отсутствуют ключи шифрования
         page_title: Безопасность
-        sso_confirm_body: Вы уверены, что хотите отключить ваш аккаунт %{provider}?
-          Вы можете подключить его снова, войдя с этим поставщиком.
-        sso_confirm_button: Отключить
-        sso_confirm_title: Отключить аккаунт?
-        sso_connect_hint: Выйдите и войдите с помощью поставщика SSO, чтобы подключить
-          аккаунт.
-        sso_disconnect: Отключить
-        sso_last_used: Последнее использование
-        sso_never: Никогда
-        sso_no_email: Нет электронной почты
-        sso_no_identities: Нет подключённых аккаунтов SSO
-        sso_subtitle: Управляйте подключениями вашего аккаунта единого входа
-        sso_title: Подключённые аккаунты
-        sso_warning_message: Это ваш единственный метод входа. Вы должны установить
-          пароль в настройках безопасности перед отключением, иначе вы можете потерять
-          доступ к своему аккаунту.
     settings_nav:
       accounts_label: Счета
       advanced_section_title: Расширенные
@@ -816,7 +800,6 @@ ru:
       rules_label: Правила
       security_label: Безопасность
       self_hosting_label: Самостоятельный хостинг
-      sso_providers_label: Поставщики SSO
       statement_vault_label: Хранилище выписок
       tags_label: Теги
       transactions_section_title: Операции

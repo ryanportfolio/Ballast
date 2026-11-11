@@ -53,7 +53,6 @@ pt-PT:
     mercury_items: Mercury
     messages: Mensagens
     mfa: Autenticação de dois fatores
-    oidc_accounts: Contas SSO
     onboardings: Onboarding
     other_assets: Outros Ativos
     other_liabilities: Outros Passivos
@@ -79,8 +78,6 @@ pt-PT:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Divisão
-    sso_identities: Ligações SSO
-    sso_providers: Serviços SSO
     subscriptions: Subscrição
     tags: Etiquetas
     trades: Negociações

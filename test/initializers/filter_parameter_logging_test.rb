@@ -5,19 +5,17 @@ class FilterParameterLoggingTest < ActiveSupport::TestCase
     @filter = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
   end
 
-  # MFA codes, OAuth/bank authorization codes and the desktop SSO exchange all
-  # arrive as a bare "code" and are credentials until they are spent.
+  # MFA codes and OAuth/bank authorization codes all arrive as a bare "code"
+  # and are credentials until they are spent.
   test "filters one-time codes and other bearer values from logs" do
     filtered = @filter.filter(
       code: "123456",
-      linking_code: "abc",
       invite_code: "deadbeef",
       user: { invite_code: "deadbeef" },
       simplefin_item: { access_url: "https://user:secret@bridge.example/simplefin" }
     )
 
     assert_equal "[FILTERED]", filtered[:code]
-    assert_equal "[FILTERED]", filtered[:linking_code]
     assert_equal "[FILTERED]", filtered[:invite_code]
     assert_equal "[FILTERED]", filtered.dig(:user, :invite_code)
     assert_equal "[FILTERED]", filtered.dig(:simplefin_item, :access_url)

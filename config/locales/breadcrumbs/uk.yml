@@ -50,7 +50,6 @@ uk:
     mercury_items: Mercury
     messages: Повідомлення
     mfa: Двофакторна автентифікація
-    oidc_accounts: SSO-рахунки
     onboardings: Онбординг
     other_assets: Інші активи
     other_liabilities: Інші зобов'язання
@@ -75,8 +74,6 @@ uk:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Розділення
-    sso_identities: SSO-з'єднання
-    sso_providers: Постачальники SSO
     subscriptions: Підписка
     tags: Теги
     trades: Угоди

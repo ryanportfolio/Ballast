@@ -179,7 +179,7 @@ class AccountTest < ActiveSupport::TestCase
     super_admin = users(:sure_support_staff)
 
     # Fixtures stamp every row with one `created_at`, and this family holds a
-    # second admin (`sso_only`), so "the earliest admin" is only meaningful
+    # second admin (`sure_support_staff`), so "the earliest admin" is only meaningful
     # once the timestamps differ. Without this the assertion below rides on
     # whichever admin the query plan happens to return first.
     family.users.update_all(created_at: 1.hour.ago)

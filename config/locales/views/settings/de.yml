@@ -170,18 +170,6 @@ de:
         enable_mfa: 2FA aktivieren
         disable_mfa: 2FA deaktivieren
         disable_mfa_confirm: Bist du sicher, dass du die Zwei-Faktor-Authentifizierung deaktivieren möchtest?
-        sso_title: Verbundene Konten
-        sso_subtitle: Verwalte deine Single Sign-On-Kontoverbindungen
-        sso_disconnect: Trennen
-        sso_last_used: Zuletzt verwendet
-        sso_never: Nie
-        sso_no_email: Keine E-Mail
-        sso_no_identities: Keine SSO-Konten verbunden
-        sso_connect_hint: Melde dich ab und mit einem SSO-Anbieter an, um ein Konto zu verbinden.
-        sso_confirm_title: Konto trennen?
-        sso_confirm_body: Bist du sicher, dass du dein %{provider}-Konto trennen möchtest? Du kannst es später erneut verbinden, indem du dich erneut mit diesem Anbieter anmeldest.
-        sso_confirm_button: Trennen
-        sso_warning_message: Dies ist deine einzige Anmeldemethode. Du solltest vor dem Trennen ein Passwort in den Sicherheitseinstellungen festlegen, sonst könntest du dich aus deinem Konto ausschließen.
         encryption_warning:
           generate: 'Einen Satz erzeugst du mit: bin/rails db:encryption:init'
           intro: 'Sensible Daten wie API-Keys, Anbieter-Tokens, MFA-Geheimnisse und personenbezogene Angaben liegen unverschlüsselt auf der Platte. Setze diese Schlüssel in deinen Umgebungsvariablen oder Rails-Credentials, um die Verschlüsselung einzuschalten:'
@@ -223,7 +211,6 @@ de:
       llm_usage_label: LLM-Nutzung
       mcp_label: MCP
       providers_label: Anbieter
-      sso_providers_label: SSO-Anbieter
       statement_vault_label: Auszugsarchiv
       users_label: Benutzer
       system_health_label: Systemstatus

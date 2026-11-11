@@ -57,39 +57,6 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_match(/No subscription/, response.body, "Page should show 'No subscription' for families without one")
   end
 
-  test "index renders auth type pills for local and sso users" do
-    solo_family = Family.create!(name: "SSO Test Family")
-    sso_email = "unique-sso-user-#{SecureRandom.hex(4)}@example.com"
-    sso_user = User.create!(
-      family: solo_family,
-      email: sso_email,
-      first_name: "SSO",
-      last_name: "User",
-      skip_password_validation: true,
-      role: :member
-    )
-    OidcIdentity.create!(
-      user: sso_user,
-      provider: "google",
-      uid: "google-12345"
-    )
-
-    get admin_users_url
-    assert_response :success
-
-    # Locate each user's row and verify auth-type pills are scoped correctly
-    doc = Nokogiri::HTML(response.body)
-    sso_row = doc.at_css("tr:has(p:contains('#{sso_email}'))")
-    assert sso_row, "Expected a table row for SSO user #{sso_email}"
-    assert_match(/SSO/, sso_row.text)
-    assert_match(/SSO Provider: /, sso_row.text)
-
-    local_email = users(:family_admin).email
-    local_row = doc.at_css("tr:has(p:contains('#{local_email}'))")
-    assert local_row, "Expected a table row for local user #{local_email}"
-    assert_match(/Local/, local_row.text)
-  end
-
   test "index exposes delete and family controls for super admins" do
     Family.create!(name: "Unused Family")
 
@@ -456,31 +423,6 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_equal old_digest, target.reload.password_digest
   end
 
-  test "update ignores password param for SSO-only users" do
-    solo_family = Family.create!(name: "SSO Ignore Family")
-    sso_user = User.create!(
-      family: solo_family,
-      email: "sso-ignore-#{SecureRandom.hex(4)}@example.com",
-      first_name: "SSO",
-      last_name: "Ignore",
-      skip_password_validation: true,
-      role: :member
-    )
-    OidcIdentity.create!(user: sso_user, provider: "google", uid: "ignore-#{SecureRandom.hex(4)}")
-    assert sso_user.sso_only?, "Precondition: user must be SSO-only"
-    assert_nil sso_user.password_digest
-
-    patch admin_user_url(sso_user), params: {
-      user: {
-        role: sso_user.role,
-        password: "attempt_to_set_password"
-      }
-    }
-
-    assert_redirected_to admin_users_url
-    assert_nil sso_user.reload.password_digest, "SSO-only user should not gain a local password"
-  end
-
   test "update blocks simultaneous family and password change" do
     target = users(:family_member)
     assert target.has_local_password?, "Precondition: target must have a local password"
@@ -503,21 +445,9 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_equal old_digest, target.password_digest, "Password should not change when conflict is detected"
   end
 
-  test "index shows set password field for local users but not for SSO-only users" do
+  test "index shows set password field for local users" do
     local_user = users(:family_member)
     assert local_user.has_local_password?, "Precondition: local_user must have a local password"
-
-    solo_family = Family.create!(name: "SSO Only Family")
-    sso_user = User.create!(
-      family: solo_family,
-      email: "sso-only-pwd-test-#{SecureRandom.hex(4)}@example.com",
-      first_name: "SSO",
-      last_name: "Only",
-      skip_password_validation: true,
-      role: :member
-    )
-    OidcIdentity.create!(user: sso_user, provider: "google", uid: "pwd-test-#{SecureRandom.hex(4)}")
-    assert sso_user.sso_only?, "Precondition: sso_user must be SSO-only"
 
     get admin_users_url
     assert_response :success
@@ -525,7 +455,7 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Set new password/, response.body, "Should show set password field for local users")
   end
 
-  test "update rejects setting a password when only SSO login is allowed" do
+  test "update rejects setting a password when local login is disabled" do
     AuthConfig.stubs(:local_login_enabled?).returns(false)
     AuthConfig.stubs(:local_admin_override_enabled?).returns(false)
     target = users(:family_member)
@@ -542,7 +472,7 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "member", target.role, "Nothing else should be saved alongside a rejected password"
   end
 
-  test "update still changes the role without a password when only SSO login is allowed" do
+  test "update still changes the role without a password when local login is disabled" do
     AuthConfig.stubs(:local_login_enabled?).returns(false)
     AuthConfig.stubs(:local_admin_override_enabled?).returns(false)
     target = users(:family_member)
@@ -583,7 +513,7 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert target.reload.authenticate("Secure1!pass")
   end
 
-  test "index hides the set password field when only SSO login is allowed" do
+  test "index hides the set password field when local login is disabled" do
     AuthConfig.stubs(:local_login_enabled?).returns(false)
     AuthConfig.stubs(:local_admin_override_enabled?).returns(false)
 
@@ -593,26 +523,9 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[type=password][name='user[password]']", count: 0
   end
 
-  test "index shows removed SSO identities with a recovery action" do
-    block = SsoIdentityBlock.create!(
-      provider: "openid_connect",
-      uid_digest: SsoIdentityBlock.digest("blocked-subject"),
-      identity_label: "removed-user@example.com"
-    )
-
-    get admin_users_url
-
-    assert_response :success
-    assert_select "form[action=?]", admin_sso_identity_block_path(block)
-    assert_match block.identity_label, response.body
-  end
-
   test "super admin permanently removes a user and revokes their credentials" do
     target = users(:family_member)
     target_email = target.email
-    removed_identity = target.oidc_identities.first!
-    removed_provider = removed_identity.provider
-    removed_uid = removed_identity.uid
     target.sessions.create!
     oauth_app = Doorkeeper::Application.create!(
       name: "Removal test",
@@ -625,33 +538,18 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
       scopes: "read_write",
       use_refresh_token: true
     )
-    assert target.oidc_identities.exists?
     assert target.api_keys.exists?
 
-    assert_difference -> { SsoAuditLog.by_event("user_removed").count }, 1 do
-      assert_enqueued_with(job: UserPurgeJob, args: [ target ]) do
-        delete admin_user_url(target), params: { confirmation_email: target_email }
-      end
+    assert_enqueued_with(job: UserPurgeJob, args: [ target ]) do
+      delete admin_user_url(target), params: { confirmation_email: target_email }
     end
 
     assert_redirected_to admin_users_path
     target.reload
     assert_not target.active?
     assert_empty target.sessions
-    assert_empty target.oidc_identities
     assert_empty target.api_keys
     assert oauth_token.reload.revoked?
-    assert SsoIdentityBlock.blocked?(provider: removed_provider, uid: removed_uid)
-    identity_block = SsoIdentityBlock.find_by!(provider: removed_provider)
-    if SsoIdentityBlock.encryption_ready?
-      assert_equal target_email, identity_block.identity_label
-    else
-      assert_not_equal target_email, identity_block.identity_label
-    end
-    audit_log = SsoAuditLog.by_event("user_removed").order(:created_at).last
-    assert_equal target.id, audit_log.metadata.fetch("target_user_id")
-    assert_not audit_log.metadata.key?("target_email")
-    assert_equal users(:sure_support_staff).id, audit_log.metadata.fetch("actor_user_id")
   end
 
   test "super admin cannot remove themselves" do
@@ -664,21 +562,6 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_users_path
     assert User.exists?(me.id)
     assert me.reload.active?
-  end
-
-  test "audit failure rolls back user removal" do
-    target = users(:family_member)
-    target_email = target.email
-    SsoAuditLog.expects(:log_user_removed!).raises("audit failure")
-
-    assert_no_enqueued_jobs only: UserPurgeJob do
-      assert_raises(RuntimeError, match: /audit failure/) do
-        delete admin_user_url(target), params: { confirmation_email: target_email }
-      end
-    end
-
-    assert target.reload.active?
-    assert target.oidc_identities.exists?
   end
 
   test "inactive super admin cannot use an existing session to remove the last active super admin" do

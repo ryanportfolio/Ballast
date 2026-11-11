@@ -34,18 +34,13 @@ pl:
           self_update_confirm: Czy na pewno chcesz zmienić rolę lub rodzinę/grupę
             własnego konta?
           update: Zaktualizuj użytkownika
-        auth_types:
-          local: Lokalne
-          local_and_sso: Lokalne + SSO
-          sso: SSO
-          sso_provider_tooltip: 'Dostawca SSO: %{providers}'
         delete_confirm: Czy na pewno chcesz usunąć tego użytkownika? Tej operacji
           nie można cofnąć.
         delete_confirm_last_user: Czy na pewno chcesz usunąć tego użytkownika? To
           ostatni użytkownik w tej rodzinie/grupie, więc jego usunięcie usunie też
           całą rodzinę/grupę i wszystkie powiązane dane. Tej operacji nie można cofnąć.
         description: Zarządzaj rolami użytkowników w swojej instancji. Superadministratorzy
-          mają dostęp do ustawień dostawców SSO i zarządzania użytkownikami.
+          mają dostęp do zarządzania użytkownikami.
         family_monikers:
           family: Rodzina
           group: Grupa
@@ -68,13 +63,6 @@ pl:
         no_users: Nie znaleziono użytkowników.
         not_available: brak danych
         remove: Usuń użytkownika
-        removed_sso_identities:
-          allow_again: Zezwól ponownie
-          confirm: Czy ponownie zezwolić na logowanie się lub zakładanie konta przez
-            SSO dla użytkownika %{email}?
-          description: Te tożsamości nie mogą założyć ani ponownie połączyć konta.
-            Zezwól ponownie tylko wtedy, gdy usunięcie było przypadkowe.
-          title: Usunięte tożsamości SSO
         role_descriptions:
           admin: Administrator rodziny. Ma dostęp do ustawień zaawansowanych, takich
             jak klucze API, importy i prompty AI.
@@ -82,7 +70,7 @@ pl:
             dla przepływów wprowadzających.
           member: Podstawowy dostęp użytkownika. Może zarządzać własnymi kontami,
             transakcjami i ustawieniami.
-          super_admin: Administrator instancji. Może zarządzać dostawcami SSO, rolami
+          super_admin: Administrator instancji. Może zarządzać rolami
             użytkowników i wcielać się w użytkowników na potrzeby wsparcia.
         role_descriptions_title: Opisy ról
         roles:
@@ -127,7 +115,7 @@ pl:
           w systemie.
         password_and_family_conflict: Nie można jednocześnie zaktualizować hasła i
           przynależności do rodziny/grupy.
-        password_disabled: Ustawianie hasła jest wyłączone, ponieważ użytkownicy mogą logować się tylko przez SSO.
+        password_disabled: Ustawianie hasła jest wyłączone, ponieważ logowanie lokalne jest wyłączone.
         password_missing_case: Hasło musi zawierać zarówno wielkie, jak i małe litery.
         password_missing_number: Hasło musi zawierać co najmniej jedną cyfrę.
         password_missing_special: Hasło musi zawierać co najmniej jeden znak specjalny.

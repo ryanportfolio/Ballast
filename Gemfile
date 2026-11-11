@@ -89,14 +89,6 @@ gem "activerecord-import"
 gem "rubyzip", "~> 3.4"
 gem "pdf-reader", "~> 2.12"
 
-# OpenID Connect, OAuth & SAML authentication
-gem "omniauth", "~> 2.1"
-gem "omniauth-rails_csrf_protection", ">= 2.0"
-gem "omniauth_openid_connect"
-gem "omniauth-google-oauth2"
-gem "omniauth-github"
-gem "omniauth-saml", "~> 2.1"
-
 # State machines
 gem "aasm"
 gem "after_commit_everywhere", "~> 1.0"

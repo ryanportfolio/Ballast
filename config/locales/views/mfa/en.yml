@@ -1,8 +1,8 @@
 ---
 en:
   mfa:
-    local_password_required: Two-factor authentication needs a local password.
-      Yours is managed through your identity provider.
+    local_password_required: Two-factor authentication needs a password, and
+      your account has none. Please contact your administrator.
     backup_codes:
       backup_codes_description: Each code can only be used once. Keep these codes
         safe and secure.

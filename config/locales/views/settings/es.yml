@@ -236,18 +236,6 @@ es:
         enable_mfa: Activar 2FA
         disable_mfa: Desactivar 2FA
         disable_mfa_confirm: ¿Estás seguro de que deseas desactivar la autenticación de dos factores?
-        sso_title: Cuentas Conectadas
-        sso_subtitle: Gestiona tus conexiones de inicio de sesión único (SSO)
-        sso_disconnect: Desconectar
-        sso_last_used: Último uso
-        sso_never: Nunca
-        sso_no_email: Sin correo
-        sso_no_identities: No hay cuentas de SSO conectadas
-        sso_connect_hint: Cierra sesión e iníciala con un proveedor de SSO para conectar una cuenta.
-        sso_confirm_title: ¿Desconectar cuenta?
-        sso_confirm_body: ¿Estás seguro de que deseas desconectar tu cuenta de %{provider}? Podrás volver a conectarla más tarde iniciando sesión de nuevo con ese proveedor.
-        sso_confirm_button: Desconectar
-        sso_warning_message: Este es tu único método de acceso. Deberías establecer una contraseña en tus ajustes de seguridad antes de desconectarlo, de lo contrario podrías perder el acceso a tu cuenta.
     mcp:
       show:
         page_title: Servidor MCP
@@ -293,7 +281,6 @@ es:
       mcp_label: MCP
       security_label: Seguridad
       self_hosting_label: Autoalojamiento
-      sso_providers_label: Proveedores SSO
       statement_vault_label: Archivo de extractos
       tags_label: Etiquetas
       transactions_section_title: Transacciones

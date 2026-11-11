@@ -65,7 +65,6 @@ class DemoFamilyRefreshJob < ApplicationJob
     # monitoring key to the replacement before this runs.
     def retire_old_family!(family)
       family.users.find_each do |user|
-        SsoIdentityBlock.block_all!(user.oidc_identities, identity_label: user.email)
         user.sessions.delete_all
         user.api_keys.active.visible.update_all(revoked_at: Time.current)
         Doorkeeper::AccessToken.where(resource_owner_id: user.id, revoked_at: nil).update_all(revoked_at: Time.current)

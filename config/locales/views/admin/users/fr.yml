@@ -28,15 +28,10 @@ fr:
           self_edit_warning: Changer votre propre rôle modifiera vos privilèges d'administration.
           self_update_confirm: Voulez-vous vraiment modifier le rôle ou la famille de votre propre compte ?
           update: Mettre à jour l'utilisateur
-        auth_types:
-          local: Local
-          local_and_sso: Local + SSO
-          sso: SSO
-          sso_provider_tooltip: 'Fournisseur SSO : %{providers}'
         delete_confirm: Voulez-vous vraiment supprimer cet utilisateur ? Cette action est irréversible.
         delete_confirm_last_user: 'Voulez-vous vraiment supprimer cet utilisateur ? C''est le dernier de sa famille / de son groupe : le supprimer supprimera aussi la famille / le groupe et toutes les données associées. Cette action est irréversible.'
         description: Gérez les rôles des utilisateurs pour votre instance. Les super
-          administrateurs peuvent accéder aux paramètres des fournisseurs SSO et à
+          administrateurs peuvent accéder à
           la gestion des utilisateurs.
         family_monikers:
           family: Famille
@@ -60,11 +55,6 @@ fr:
         no_users: Aucun utilisateur trouvé.
         not_available: n/a
         remove: Supprimer l'utilisateur
-        removed_sso_identities:
-          allow_again: Autoriser de nouveau
-          confirm: Autoriser de nouveau %{email} à se connecter ou à créer un compte via SSO ?
-          description: Ces identités ne peuvent ni créer ni reconnecter un compte. N'en autorisez une de nouveau que si la suppression était accidentelle.
-          title: Identités SSO supprimées
         role_descriptions:
           admin: Administrateur familial. Peut accéder aux paramètres avancés comme
             les clés API, les importations et les prompts IA.
@@ -72,7 +62,7 @@ fr:
             restreintes pour les parcours d'introduction.
           member: Accès utilisateur de base. Peut gérer ses propres comptes, transactions
             et paramètres.
-          super_admin: Administrateur de l'instance. Peut gérer les fournisseurs SSO,
+          super_admin: Administrateur de l'instance. Peut gérer
             les rôles des utilisateurs et usurper l'identité des utilisateurs pour
             le support.
         role_descriptions_title: Description des rôles
@@ -115,7 +105,7 @@ fr:
         family_required: Sélectionnez une famille / un groupe existant ou saisissez un nom pour en créer un.
         last_super_admin_error: Impossible de rétrograder le dernier super administrateur du système.
         password_and_family_conflict: Le mot de passe et l'appartenance à une famille / un groupe ne peuvent pas être modifiés en même temps.
-        password_disabled: La définition d'un mot de passe est désactivée, car les utilisateurs ne peuvent se connecter que via SSO.
+        password_disabled: La définition d'un mot de passe est désactivée, car la connexion locale est désactivée.
         password_missing_case: Le mot de passe doit contenir des majuscules et des minuscules.
         password_missing_number: Le mot de passe doit contenir au moins un chiffre.
         password_missing_special: Le mot de passe doit contenir au moins un caractère spécial.

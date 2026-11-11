@@ -33,33 +33,20 @@ class PasswordResetsControllerTest < ActionDispatch::IntegrationTest
 
     get new_password_reset_path
     assert_redirected_to new_session_path
-    assert_equal "Password reset via Sure is disabled. Please reset your password through your identity provider.", flash[:alert]
+    assert_equal "Password resets are disabled on this instance. Please contact your administrator.", flash[:alert]
 
     post password_reset_path, params: { email: @user.email }
     assert_redirected_to new_session_path
-    assert_equal "Password reset via Sure is disabled. Please reset your password through your identity provider.", flash[:alert]
+    assert_equal "Password resets are disabled on this instance. Please contact your administrator.", flash[:alert]
 
     get edit_password_reset_path(token: @user.generate_token_for(:password_reset))
     assert_redirected_to new_session_path
-    assert_equal "Password reset via Sure is disabled. Please reset your password through your identity provider.", flash[:alert]
+    assert_equal "Password resets are disabled on this instance. Please contact your administrator.", flash[:alert]
 
     patch password_reset_path(token: @user.generate_token_for(:password_reset)),
       params: { user: { password: "password", password_confirmation: "password" } }
     assert_redirected_to new_session_path
-    assert_equal "Password reset via Sure is disabled. Please reset your password through your identity provider.", flash[:alert]
-  end
-
-  # Security: SSO-only users should not receive password reset emails
-  test "create does not send email for SSO-only user" do
-    sso_user = users(:sso_only)
-    assert sso_user.sso_only?, "Test user should be SSO-only"
-
-    assert_no_enqueued_emails do
-      post password_reset_path, params: { email: sso_user.email }
-    end
-
-    # Should still redirect to pending to prevent email enumeration
-    assert_redirected_to new_password_reset_url(step: "pending")
+    assert_equal "Password resets are disabled on this instance. Please contact your administrator.", flash[:alert]
   end
 
   test "create sends email for user with local password" do
@@ -70,21 +57,5 @@ class PasswordResetsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to new_password_reset_url(step: "pending")
-  end
-
-  # Security: SSO-only users cannot set password via reset
-  test "update blocks password setting for SSO-only user" do
-    sso_user = users(:sso_only)
-    token = sso_user.generate_token_for(:password_reset)
-
-    patch password_reset_path(token: token),
-      params: { user: { password: "NewSecure1!", password_confirmation: "NewSecure1!" } }
-
-    assert_redirected_to new_session_path
-    assert_equal "Your account uses SSO for authentication. Please contact your administrator to manage your credentials.", flash[:alert]
-
-    # Verify password was not set
-    sso_user.reload
-    assert_nil sso_user.password_digest, "SSO-only user should still have nil password_digest"
   end
 end

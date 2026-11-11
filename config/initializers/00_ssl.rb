@@ -26,8 +26,8 @@ require "fileutils"
 # IMPORTANT: When a valid SSL_CA_FILE is provided, this initializer sets the
 # SSL_CERT_FILE environment variable to a combined CA bundle (system CAs + custom CA).
 # This is a *global* side-effect that affects ALL SSL connections in the Ruby process,
-# including gems that do not go through SslConfigurable (e.g. openid_connect).
-# This is intentional — it ensures OIDC discovery, webhook callbacks, and any other
+# including gems that do not go through SslConfigurable.
+# This is intentional — it ensures webhook callbacks, and any other
 # outbound HTTPS connection trusts both public CAs and the user's custom CA.
 
 # Path for the combined CA bundle file (predictable location for debugging)
@@ -245,7 +245,7 @@ Rails.application.configure do
     # Create combined CA bundle and set SSL_CERT_FILE for global SSL configuration.
     #
     # This sets ENV["SSL_CERT_FILE"] globally so that ALL Ruby SSL connections
-    # (including gems like openid_connect that bypass SslConfigurable) will trust
+    # (including gems that bypass SslConfigurable) will trust
     # both system CAs (for public services) and the custom CA (for self-signed services).
     if ca_file_status[:valid]
       combined_path = SslInitializerHelper.create_combined_ca_bundle(ca_file_status[:path])

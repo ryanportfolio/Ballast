@@ -4,7 +4,7 @@ es:
     users:
       index:
         title: Gestión de usuarios
-        description: Gestiona los roles de usuario para tu instancia. Los superadministradores pueden acceder a la configuración del proveedor de SSO y a la gestión de usuarios.
+        description: Gestiona los roles de usuario para tu instancia. Los superadministradores pueden acceder a la gestión de usuarios.
         section_title: Usuarios
         you: (Tú)
         trial_ends_at: La prueba finaliza
@@ -40,7 +40,7 @@ es:
           guest: Experiencia centrada en el asistente con permisos restringidos intencionadamente para flujos de introducción.
           member: Acceso de usuario básico. Pueden gestionar sus propias cuentas, transacciones y ajustes.
           admin: Administrador de la familia. Puede acceder a ajustes avanzados como claves API, importaciones e instrucciones de IA.
-          super_admin: Administrador de la instancia. Puede gestionar proveedores de SSO, roles de usuario y suplantar a usuarios para soporte.
+          super_admin: Administrador de la instancia. Puede gestionar roles de usuario y suplantar a usuarios para soporte.
         invitations:
           pending_label: Invitado (pendiente)
           expires: Caduca el %{date}

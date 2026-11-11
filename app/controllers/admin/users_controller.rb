@@ -8,7 +8,7 @@ module Admin
       authorize User
       scope = policy_scope(User)
         .left_joins(family: :subscription)
-        .includes(:oidc_identities, family: :subscription)
+        .includes(family: :subscription)
         .with_attached_profile_image
 
       scope = scope.where(role: params[:role]) if params[:role].present?
@@ -42,8 +42,6 @@ module Admin
 
       @families = Family.order(:name, :created_at)
       @unused_families = Family.left_joins(:users).where(users: { id: nil }).order(:name, :created_at)
-
-      @sso_identity_blocks = SsoIdentityBlock.order(created_at: :desc)
 
       # Used by the view to hide the "remove" action for the sole remaining
       # active super admin, computed once here instead of per-row.
@@ -163,14 +161,7 @@ module Admin
         return
       end
 
-      removed = @user.transaction do
-        next false unless @user.permanently_remove!
-
-        SsoAuditLog.log_user_removed!(user: @user, actor: Current.user, request: request)
-        true
-      end
-
-      if removed
+      if @user.permanently_remove!
         redirect_to admin_users_path, notice: t(".success")
       else
         redirect_to admin_users_path, alert: @user.errors.full_messages.to_sentence.presence || t(".failure")

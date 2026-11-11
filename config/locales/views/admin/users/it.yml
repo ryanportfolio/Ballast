@@ -4,7 +4,7 @@ it:
     users:
       index:
         title: "Gestione utenti"
-        description: "Gestisci i ruoli utente per la tua istanza. I super amministratori possono accedere alle impostazioni del provider SSO e alla gestione utenti."
+        description: "Gestisci i ruoli utente per la tua istanza. I super amministratori possono accedere alla gestione utenti."
         section_title: "Famiglie / Gruppi"
         you: "(Tu)"
         trial_ends_at: "Prova scade"
@@ -40,7 +40,7 @@ it:
           guest: "Esperienza assistente-first con permessi volutamente limitati per i flussi di introduzione."
           member: "Accesso utente base. Può gestire i propri conti, transazioni e impostazioni."
           admin: "Amministratore famiglia. Può accedere alle impostazioni avanzate come chiavi API, importazioni e prompt AI."
-          super_admin: "Amministratore istanza. Può gestire provider SSO, ruoli utente e impersonare utenti per supporto."
+          super_admin: "Amministratore istanza. Può gestire i ruoli utente e impersonare utenti per supporto."
         invitations:
           pending_label: "Invitato (in attesa)"
           expires: "Scade %{date}"

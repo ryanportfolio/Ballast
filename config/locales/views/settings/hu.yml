@@ -180,18 +180,6 @@ hu:
         enable_mfa: Kétlépéses azonosítás bekapcsolása
         disable_mfa: Kétlépéses azonosítás kikapcsolása
         disable_mfa_confirm: Biztosan ki szeretnéd kapcsolni a kétlépéses azonosítást?
-        sso_title: Kapcsolt fiókok
-        sso_subtitle: Egyszeri bejelentkezési fiókkapcsolatok kezelése
-        sso_disconnect: Leválasztás
-        sso_last_used: Utoljára használva
-        sso_never: Soha
-        sso_no_email: Nincs e-mail cím
-        sso_no_identities: Nincs kapcsolt egyszeri bejelentkezési fiók
-        sso_connect_hint: Jelentkezz ki, majd jelentkezz be egy SSO-szolgáltatóval a fiók összekapcsolásához.
-        sso_confirm_title: Fiók leválasztása?
-        sso_confirm_body: Biztosan le szeretnéd választani a %{provider} fiókodat? Később újra összekapcsolhatod, ha azzal a szolgáltatóval jelentkezel be.
-        sso_confirm_button: Leválasztás
-        sso_warning_message: Ez az egyetlen bejelentkezési módod. Mielőtt leválasztanád, állíts be jelszót a biztonsági beállításokban, különben kizárhatod magad a fiókodból.
     settings_nav:
       accounts_label: Számlák
       advanced_section_title: Speciális
@@ -216,7 +204,6 @@ hu:
       rules_label: Szabályok
       security_label: Biztonság
       self_hosting_label: Saját üzemeltetés
-      sso_providers_label: SSO-szolgáltatók
       statement_vault_label: Kimutatástár
       tags_label: Címkék
       transactions_section_title: Tranzakciók

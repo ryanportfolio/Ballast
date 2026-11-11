@@ -3,8 +3,7 @@ class User < ApplicationRecord
 
   include Encryptable
 
-  # Allow nil password for SSO-only users (JIT provisioning).
-  # Custom validation ensures password is present for non-SSO registration.
+  # Password presence and length are validated explicitly below.
   has_secure_password validations: false
 
   # Encrypt sensitive fields if ActiveRecord encryption is configured
@@ -33,8 +32,6 @@ class User < ApplicationRecord
   has_many :invitations, foreign_key: :inviter_id, dependent: :destroy
   has_many :impersonator_support_sessions, class_name: "ImpersonationSession", foreign_key: :impersonator_id, dependent: :destroy
   has_many :impersonated_support_sessions, class_name: "ImpersonationSession", foreign_key: :impersonated_id, dependent: :destroy
-  has_many :oidc_identities, dependent: :destroy
-  has_many :sso_audit_logs, dependent: :nullify
   has_many :owned_accounts, class_name: "Account", foreign_key: :owner_id
   has_many :account_shares, dependent: :destroy
   has_many :shared_accounts, through: :account_shares, source: :account
@@ -50,9 +47,7 @@ class User < ApplicationRecord
   validates :default_account_order, inclusion: { in: AccountOrder::ORDERS.keys }
   validates :locale, inclusion: { in: I18n.available_locales.map(&:to_s) }, allow_nil: true
 
-  # Password is required on create unless the user is being created via SSO JIT.
-  # SSO JIT users have password_digest = nil and authenticate via OIDC only.
-  validates :password, presence: true, on: :create, unless: :skip_password_validation?
+  validates :password, presence: true, on: :create
   validates :password, length: { minimum: 8 }, allow_nil: true
   normalizes :email, with: ->(email) { email.strip.downcase }
   normalizes :unconfirmed_email, with: ->(email) { email&.strip&.downcase }
@@ -236,19 +231,10 @@ class User < ApplicationRecord
     layout.in?(%w[intro dashboard]) ? layout : "dashboard"
   end
 
-  # SSO-only users have OIDC identities but no local password.
-  # They cannot use password reset or local login.
-  def sso_only?
-    password_digest.nil? && oidc_identities.any?
-  end
-
   # Check if user has a local password set (can authenticate locally)
   def has_local_password?
     password_digest.present?
   end
-
-  # Attribute to skip password validation during SSO JIT provisioning
-  attr_accessor :skip_password_validation
 
   # Deactivation
   validate :can_deactivate, if: -> { active_changed? && !active }
@@ -310,10 +296,8 @@ class User < ApplicationRecord
   def permanently_remove!
     was_active = active?
     removed = transaction do
-      identity_label = email
       raise ActiveRecord::Rollback unless deactivate
 
-      SsoIdentityBlock.block_all!(oidc_identities, identity_label: identity_label)
       revoke_all_credentials!
       true
     end || false
@@ -323,8 +307,7 @@ class User < ApplicationRecord
   end
 
   # Destroys every credential/session that can authenticate as this user.
-  # Web sessions and the SSO identity re-auth path (OidcIdentity lookup by
-  # provider+uid) are not gated on #active?, so they must be torn down here for
+  # Web sessions are not gated on #active?, so they must be torn down here for
   # revocation to be immediate; the async purge would otherwise leave a window.
   def revoke_all_credentials!
     Doorkeeper::AccessToken
@@ -334,7 +317,6 @@ class User < ApplicationRecord
     api_keys.destroy_all
     mobile_devices.destroy_all
     webauthn_credentials.destroy_all
-    oidc_identities.destroy_all
   end
 
   # Raised by #with_active_lock! to reject session/token issuance for a
@@ -850,10 +832,6 @@ class User < ApplicationRecord
 
       previous_role, new_role = role_change_to_be_saved
       previous_role == "guest" && new_role != "guest"
-    end
-
-    def skip_password_validation?
-      skip_password_validation == true
     end
 
     # The dashboard only sends the order of the widgets it rendered, so put

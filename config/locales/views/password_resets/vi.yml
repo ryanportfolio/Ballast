@@ -1,8 +1,6 @@
 ---
 vi:
   password_resets:
-    disabled: Đặt lại mật khẩu qua Sure đã bị tắt. Vui lòng đặt lại mật khẩu của bạn thông qua nhà cung cấp danh tính.
-    sso_only_user: Tài khoản của bạn sử dụng SSO để xác thực. Vui lòng liên hệ với quản trị viên để quản lý thông tin đăng nhập của bạn.
     edit:
       title: Đặt lại mật khẩu
     new:

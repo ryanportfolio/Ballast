@@ -10,7 +10,6 @@ module Api
       before_action :ensure_write_scope, only: :enable_ai
       before_action :check_api_key_rate_limit, only: :enable_ai
       before_action :log_api_access, only: :enable_ai
-      rescue_from SsoIdentityBlock::BlockedIdentity, with: :render_removed_identity
 
       def signup
         # RegistrationsController refuses to register a user while the instance
@@ -85,7 +84,7 @@ module Api
         user = User.find_by(email: params[:email])
 
         unless local_login_permitted_for?(user)
-          render json: { error: "Local login is disabled. Please use SSO." }, status: :forbidden
+          render json: { error: "Local login is disabled." }, status: :forbidden
           return
         end
 
@@ -140,219 +139,6 @@ module Api
           render json: token_response.merge(user: mobile_user_payload(user))
         else
           render json: { error: "Invalid email or password" }, status: :unauthorized
-        end
-      end
-
-      # Lists the providers GET /auth/mobile/:provider accepts, so clients can
-      # render one button per provider. Only display fields are exposed; the
-      # provider config also carries client secrets. Labels fall back the same
-      # way as the web sign-in page.
-      def sso_providers
-        providers = Rails.configuration.x.auth.sso_providers.map do |provider|
-          name = provider[:name].to_s
-          strategy = provider[:strategy].to_s
-          id = provider[:id].to_s
-          default_label = if id == "google" || strategy == "google_oauth2"
-            I18n.t("sessions.new.google_auth_connect")
-          elsif id.present?
-            I18n.t("sessions.new.#{id}", default: name.titleize)
-          else
-            name.titleize
-          end
-
-          { name: name, strategy: strategy, label: provider[:label].presence || default_label }
-        end
-
-        render json: { providers: providers }
-      end
-
-      def sso_exchange
-        code = sso_exchange_params
-
-        if code.blank?
-          render json: { error: "invalid_or_expired_code", message: "Authorization code is required" }, status: :unauthorized
-          return
-        end
-
-        cache_key = "mobile_sso:#{code}"
-        cached = Rails.cache.read(cache_key)
-
-        unless cached.present?
-          render json: { error: "invalid_or_expired_code", message: "Authorization code is invalid or expired" }, status: :unauthorized
-          return
-        end
-
-        # Atomic delete — only the request that successfully deletes the key may proceed.
-        # This prevents a race where two concurrent requests both read the same code.
-        unless Rails.cache.delete(cache_key)
-          render json: { error: "invalid_or_expired_code", message: "Authorization code is invalid or expired" }, status: :unauthorized
-          return
-        end
-
-        render json: {
-          access_token: cached[:access_token],
-          refresh_token: cached[:refresh_token],
-          token_type: cached[:token_type],
-          expires_in: cached[:expires_in],
-          created_at: cached[:created_at],
-          user: {
-            id: cached[:user_id],
-            email: cached[:user_email],
-            first_name: cached[:user_first_name],
-            last_name: cached[:user_last_name],
-            ui_layout: cached[:user_ui_layout],
-            ai_enabled: cached[:user_ai_enabled]
-          }
-        }
-      end
-
-      def sso_link
-        linking_code = params[:linking_code]
-        cached = validate_linking_code(linking_code)
-        return unless cached
-
-        user = User.authenticate_by(email: params[:email], password: params[:password])
-
-        unless user
-          render json: { error: "Invalid email or password" }, status: :unauthorized
-          return
-        end
-
-        unless user.active?
-          render json: { error: "This account has been deactivated. Please contact an administrator." }, status: :unauthorized
-          return
-        end
-
-        if user.otp_required?
-          render json: { error: "MFA users should sign in with email and password", mfa_required: true }, status: :unauthorized
-          return
-        end
-
-        # Atomically claim the code before creating the identity
-        return render json: { error: "Linking code is invalid or expired" }, status: :unauthorized unless consume_linking_code!(linking_code)
-
-        device_info = cached[:device_info]
-        device_info = device_info.symbolize_keys if device_info.respond_to?(:symbolize_keys)
-
-        # Identity creation, the audit record, and the actual token mint all
-        # run in one transaction so a rejected request can't leave a linked
-        # identity or a successful-link audit record behind. issue_token!'s
-        # locked active? recheck (the real authorization boundary) is what
-        # decides whether this commits or rolls everything back together.
-        token_response = nil
-        begin
-          ActiveRecord::Base.transaction do
-            OidcIdentity.create_from_omniauth(build_omniauth_hash(cached), user)
-
-            SsoAuditLog.log_link!(
-              user: user,
-              provider: cached[:provider],
-              request: request
-            )
-
-            device = MobileDevice.upsert_device!(user, device_info)
-            token_response = device.issue_token!
-          end
-        rescue User::InactiveError
-          restore_linking_code!(linking_code, cached)
-          render json: { error: "This account has been deactivated. Please contact an administrator." }, status: :unauthorized
-          return
-        rescue ActiveRecord::RecordInvalid => e
-          restore_linking_code!(linking_code, cached)
-          Rails.logger.error("[Auth] Device registration failed: #{e.message}")
-          render json: { error: "Failed to register device" }, status: :unprocessable_entity
-          return
-        end
-
-        render json: token_response.merge(user: mobile_user_payload(user))
-      end
-
-      def sso_create_account
-        linking_code = params[:linking_code]
-        cached = validate_linking_code(linking_code)
-        return unless cached
-
-        email = cached[:email]
-
-        # Check for a pending invitation for this email
-        invitation = Invitation.pending.find_by(email: email)
-
-        unless invitation.present? || cached[:allow_account_creation]
-          render json: { error: "SSO account creation is disabled. Please contact an administrator." }, status: :forbidden
-          return
-        end
-
-        # Atomically claim the code before creating the user
-        return render json: { error: "Linking code is invalid or expired" }, status: :unauthorized unless consume_linking_code!(linking_code)
-
-        user = User.new(
-          email: email,
-          first_name: params[:first_name].presence || cached[:first_name],
-          last_name: params[:last_name].presence || cached[:last_name],
-          skip_password_validation: true
-        )
-
-        if invitation.present?
-          # Accept the pending invitation: join the existing family
-          user.family_id = invitation.family_id
-          user.role = invitation.role
-        else
-          user.family = Family.new
-
-          # New family creators must be able to administer their own family.
-          # Lower provider defaults are promoted to admin by role_for_new_family_creator,
-          # while intentional super_admin defaults remain supported.
-          provider_config = Rails.configuration.x.auth.sso_providers&.find { |p| p[:name] == cached[:provider] }
-          provider_default_role = provider_config&.dig(:settings, :default_role)
-        end
-
-        identity = nil
-        account_created = false
-
-        begin
-          account_created = ActiveRecord::Base.transaction do
-            unless invitation.present?
-              User.lock_first_user_role!
-              user.role = User.role_for_new_family_creator(fallback_role: provider_default_role || :admin)
-            end
-
-            unless user.save
-              raise ActiveRecord::Rollback
-            end
-
-            # Mark invitation as accepted if one was used
-            invitation&.update!(accepted_at: Time.current)
-
-            # Joining an existing family via invitation must honor the family's
-            # default sharing policy, matching Invitation#accept_for, so a mobile
-            # SSO invitee sees the accounts the family shares by default.
-            user.family.auto_share_existing_accounts_with(user) if invitation.present?
-
-            identity = OidcIdentity.create_from_omniauth(build_omniauth_hash(cached), user)
-            true
-          end
-        rescue ActiveRecord::RecordInvalid => e
-          # Expected persistence failures (e.g. a duplicate identity) roll the
-          # whole onboarding back and return the error response. Unexpected
-          # errors propagate so they surface instead of being hidden.
-          user.errors.add(:base, e.message)
-        rescue ActiveRecord::RecordNotUnique
-          # PostgreSQL's message names the index and echoes the conflicting values.
-          user.errors.add(:base, "An account or sign-in identity with these details already exists")
-        end
-
-        if account_created
-          if identity&.persisted?
-            SsoAuditLog.log_jit_account_created!(
-              user: user,
-              provider: cached[:provider],
-              request: request
-            )
-          end
-
-          issue_mobile_tokens(user, cached[:device_info])
-        else
-          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
         end
       end
 
@@ -429,8 +215,8 @@ module Api
 
       private
 
-        # Mirrors SessionsController#create: with SSO-only mode on, the only
-        # local sign-in allowed is a super admin using the emergency override.
+        # Mirrors SessionsController#create: with local login disabled, the only
+        # sign-in allowed is a super admin using the emergency override.
         def local_login_permitted_for?(user)
           return true if AuthConfig.local_login_enabled?
 
@@ -482,10 +268,6 @@ module Api
           params.require(:device).permit(:device_id, :device_name, :device_type, :os_version, :app_version)
         end
 
-        def sso_exchange_params
-          params.require(:code)
-        end
-
         def mobile_user_payload(user)
           {
             id: user.id,
@@ -505,89 +287,6 @@ module Api
           user.reload.active?
         rescue ActiveRecord::RecordNotFound
           false
-        end
-
-        def build_omniauth_hash(cached)
-          OpenStruct.new(
-            provider: cached[:provider],
-            uid: cached[:uid],
-            info: OpenStruct.new(cached.slice(:email, :name, :first_name, :last_name)),
-            extra: OpenStruct.new(raw_info: OpenStruct.new(iss: cached[:issuer]))
-          )
-        end
-
-        def validate_linking_code(linking_code)
-          if linking_code.blank?
-            render json: { error: "Linking code is required" }, status: :bad_request
-            return nil
-          end
-
-          cache_key = "mobile_sso_link:#{linking_code}"
-          cached = Rails.cache.read(cache_key)
-
-          unless cached.present?
-            render json: { error: "Linking code is invalid or expired" }, status: :unauthorized
-            return nil
-          end
-
-          if SsoIdentityBlock.blocked?(provider: cached[:provider], uid: cached[:uid])
-            Rails.cache.delete(cache_key)
-            render json: { error: "SSO identity was removed by an administrator" }, status: :forbidden
-            return nil
-          end
-
-          cached
-        end
-
-        def render_removed_identity
-          render json: { error: "SSO identity was removed by an administrator" }, status: :forbidden
-        end
-
-        # Atomically deletes the linking code from cache.
-        # Returns true only for the first caller; subsequent callers get false.
-        def consume_linking_code!(linking_code)
-          Rails.cache.delete("mobile_sso_link:#{linking_code}")
-        end
-
-        # Best-effort restore so a request rejected *after* consuming the
-        # code (deactivation race or a device-registration failure inside
-        # the transaction) can retry with the same code instead of
-        # restarting the SSO flow from the IdP. Safe to write back verbatim:
-        # a legitimate retry re-authenticates with email/password from
-        # scratch, and OidcIdentity's unique (provider, uid) index is the
-        # backstop if a second request somehow raced onto the restored code.
-        def restore_linking_code!(linking_code, cached)
-          Rails.cache.write("mobile_sso_link:#{linking_code}", cached, expires_in: 10.minutes)
-        end
-
-        # Used by sso_create_account for its brand-new user (always active —
-        # the reload is a harmless no-op there, but still races a concurrent
-        # purge the same way login's fast path does). Reload right before
-        # minting, same reasoning as Authentication#create_session_for.
-        def issue_mobile_tokens(user, device_info)
-          unless user_reloadable_and_active?(user)
-            render json: { error: "This account has been deactivated. Please contact an administrator." }, status: :unauthorized
-            return
-          end
-
-          device_info = device_info.symbolize_keys if device_info.respond_to?(:symbolize_keys)
-
-          begin
-            device = MobileDevice.upsert_device!(user, device_info)
-          rescue ActiveRecord::RecordInvalid => e
-            Rails.logger.error("[Auth] Device registration failed: #{e.message}")
-            render json: { error: "Failed to register device" }, status: :unprocessable_entity
-            return
-          end
-
-          begin
-            token_response = device.issue_token!
-          rescue User::InactiveError
-            render json: { error: "This account has been deactivated. Please contact an administrator." }, status: :unauthorized
-            return
-          end
-
-          render json: token_response.merge(user: mobile_user_payload(user))
         end
 
         def ensure_write_scope
