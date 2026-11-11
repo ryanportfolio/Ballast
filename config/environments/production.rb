@@ -48,16 +48,9 @@ Rails.application.configure do
   # Can be used together with config.force_ssl for Strict-Transport-Security and secure cookies.
   config.assume_ssl = ActiveModel::Type::Boolean.new.cast(ENV.fetch("RAILS_ASSUME_SSL", true))
 
-  # Log to Logtail if API key is present, otherwise log to STDOUT
-  base_logger = if ENV["LOGTAIL_API_KEY"].present? && ENV["LOGTAIL_INGESTING_HOST"].present?
-    Logtail::Logger.create_default_logger(
-      ENV["LOGTAIL_API_KEY"],
-      ingesting_host: ENV["LOGTAIL_INGESTING_HOST"]
-    )
-  else
-    ActiveSupport::Logger.new(STDOUT)
-      .tap { |logger| logger.formatter = ::Logger::Formatter.new }
-  end
+  # Ballast never ships logs out: always STDOUT, LOGTAIL_* settings are ignored.
+  base_logger = ActiveSupport::Logger.new(STDOUT)
+    .tap { |logger| logger.formatter = ::Logger::Formatter.new }
 
   config.logger = ActiveSupport::TaggedLogging.new(base_logger)
 
