@@ -36,7 +36,3 @@ id:
         download_complete: Unduhan selesai
         download_failed: Unduhan gagal. Silakan coba lagi.
         download_location: File berada di folder Unduhan Anda.
-    trial:
-      open_demo: Buka demo
-      data_deleted_in_days: Data akan dihapus dalam %{days} hari
-      contribute: Berkontribusi

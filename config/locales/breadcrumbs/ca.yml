@@ -53,7 +53,6 @@ ca:
     onboardings: Configuració inicial
     other_assets: Altres actius
     other_liabilities: Altres passius
-    payments: Pagaments
     pending_duplicate_merges: Revisió de duplicats
     plaid_items: Plaid
     preferences: Preferències
@@ -73,7 +72,6 @@ ca:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Divisió
-    subscriptions: Subscripció
     tags: Etiquetes
     trades: Operacions
     transactions: Transaccions

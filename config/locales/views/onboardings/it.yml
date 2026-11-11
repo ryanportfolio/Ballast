@@ -6,7 +6,6 @@ it:
       setup: Configurazione
       preferences: Preferenze
       goals: Obiettivi
-      start: Inizia
     logout:
       sign_out: Disconnetti
     show:
@@ -50,17 +49,3 @@ it:
       optimization: Analizzare e ottimizzare i conti
       reduce_stress: Ridurre lo stress o l'ansia finanziaria
       submit: Avanti
-    trial:
-      title: Prova Sure per 45 giorni
-      data_deletion: I dati saranno eliminati in seguito
-      description_html: A partire da oggi puoi dare un'occhiata approfondita al prodotto.<br/>Se ti piace, fai self-hosting o contribuisci per continuare a usarlo qui.
-      try_button: Prova Sure per 45 giorni
-      continue_trial: Continua la prova
-      upgrade: Aggiorna
-      how_it_works: Come funziona qui
-      today: Oggi
-      today_description: Avrai accesso gratuito a Sure per 45 giorni sul nostro AWS.
-      in_40_days: Tra 40 giorni (%{date})
-      in_40_days_description: Ti invieremo una notifica per ricordarti di esportare i tuoi dati.
-      in_45_days: Tra 45 giorni (%{date})
-      in_45_days_description: Eliminiamo i tuoi dati — contribuisci per continuare a usare Sure qui!

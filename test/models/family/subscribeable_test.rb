@@ -5,27 +5,6 @@ class Family::SubscribeableTest < ActiveSupport::TestCase
     @family = families(:dylan_family)
   end
 
-  # We keep the status eventually consistent, but don't rely on it for guarding the app
-  test "trial respects end date even if status is not yet updated" do
-    @family.subscription.update!(trial_ends_at: 1.day.ago, status: "trialing")
-    assert_not @family.trialing?
-  end
-
-  test "can_manage_subscription? returns true when stripe_customer_id is present" do
-    @family.update!(stripe_customer_id: "cus_test123")
-    assert @family.can_manage_subscription?
-  end
-
-  test "can_manage_subscription? returns false when stripe_customer_id is nil" do
-    @family.update!(stripe_customer_id: nil)
-    assert_not @family.can_manage_subscription?
-  end
-
-  test "can_manage_subscription? returns false when stripe_customer_id is blank" do
-    @family.update!(stripe_customer_id: "")
-    assert_not @family.can_manage_subscription?
-  end
-
   test "inactive_trial_for_cleanup includes families with expired paused trials" do
     inactive = families(:inactive_trial)
     results = Family.inactive_trial_for_cleanup
@@ -68,42 +47,15 @@ class Family::SubscribeableTest < ActiveSupport::TestCase
     recent_family.destroy
   end
 
-  test "destroying a family with the demo sentinel stripe ID does not call Stripe" do
-    family = Family.create!(name: "Demo Family")
-    family.start_subscription!(Subscription::DEMO_STRIPE_ID)
-    Provider::Registry.expects(:get_provider).with(:stripe).never
-
+  test "destroying a family removes its subscription row" do
+    family = Family.create!(name: "Subscribed Family")
+    family.start_subscription!("sub_real_123")
     subscription = family.subscription
+
     family.destroy!
 
     assert family.destroyed?
     assert_not Subscription.exists?(subscription.id)
-  end
-
-  test "destroying a family cancels a real Stripe subscription" do
-    family = Family.create!(name: "Subscribed Family")
-    family.start_subscription!("sub_real_123")
-    stripe = mock
-    Provider::Registry.expects(:get_provider).with(:stripe).returns(stripe)
-    stripe.expects(:cancel_subscription).with("sub_real_123")
-
-    family.destroy!
-
-    assert family.destroyed?
-  end
-
-  test "failed Stripe cancellation prevents family and subscription deletion" do
-    family = Family.create!(name: "Subscribed Family")
-    family.start_subscription!("sub_real_123")
-    subscription = family.subscription
-    stripe = mock
-    Provider::Registry.expects(:get_provider).with(:stripe).returns(stripe)
-    stripe.expects(:cancel_subscription).with("sub_real_123").raises(Stripe::InvalidRequestError.new("No such subscription", "id"))
-
-    assert_not family.destroy
-    assert Family.exists?(family.id)
-    assert Subscription.exists?(subscription.id)
-    assert family.errors.added?(:base, :cannot_delete_with_active_subscription)
   end
 
   test "requires_data_archive? returns false with few transactions" do

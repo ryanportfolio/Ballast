@@ -36,7 +36,3 @@ ca:
         download_complete: Baixada completada
         download_failed: No s'ha pogut baixar. Torna-ho a provar.
         download_location: El fitxer és a la carpeta Baixades.
-    trial:
-      contribute: Contribueix
-      data_deleted_in_days: Les dades s'eliminaran en %{days} dies
-      open_demo: Demostració oberta

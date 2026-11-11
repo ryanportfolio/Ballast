@@ -3,8 +3,7 @@ require "test_helper"
 class ConfigurationHealth::OptionalServicesTest < ActiveSupport::TestCase
   ENVIRONMENT = %w[
     LANGFUSE_PUBLIC_KEY LANGFUSE_SECRET_KEY LANGFUSE_HOST SENTRY_DSN
-    SKYLIGHT_AUTHENTICATION SKYLIGHT_ENABLED STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET
-    STRIPE_MONTHLY_PRICE_ID STRIPE_ANNUAL_PRICE_ID POSTHOG_KEY POSTHOG_HOST
+    SKYLIGHT_AUTHENTICATION SKYLIGHT_ENABLED POSTHOG_KEY POSTHOG_HOST
     POSTHOG_FEEDBACK_ENABLED POSTHOG_DEVELOPMENT_ENABLED LOGTAIL_API_KEY LOGTAIL_INGESTING_HOST
   ].index_with(nil).freeze
 
@@ -26,13 +25,12 @@ class ConfigurationHealth::OptionalServicesTest < ActiveSupport::TestCase
     Sentry.expects(:init).never
     Sentry.expects(:capture_exception).never
     Sentry.expects(:capture_message).never
-    Stripe::StripeClient.expects(:new).never
     PostHog::Client.expects(:new).never
     Logtail::Logger.expects(:create_default_logger).never
 
     with_environment do
       checks = @health.checks
-      assert_equal %i[langfuse sentry skylight stripe posthog logtail], checks.map(&:key)
+      assert_equal %i[langfuse sentry skylight posthog logtail], checks.map(&:key)
       assert checks.all? { |check| check.status == :not_configured }
       assert checks.all? { |check| check.tone == :neutral }
       assert checks.all? { |check| check.settings.empty? }
@@ -98,43 +96,6 @@ class ConfigurationHealth::OptionalServicesTest < ActiveSupport::TestCase
     end
   end
 
-  test "managed Stripe requires both credentials and both offered plan IDs" do
-    with_environment("STRIPE_SECRET_KEY" => "private-secret", "STRIPE_WEBHOOK_SECRET" => "private-webhook") do
-      check = @health.stripe
-      assert_equal :incomplete, check.status
-      assert_equal %w[STRIPE_MONTHLY_PRICE_ID STRIPE_ANNUAL_PRICE_ID], check.settings
-    end
-    with_environment(stripe_settings) do
-      assert_equal :configured, @health.stripe.status
-      assert_no_match(/private-/, @health.stripe.inspect)
-    end
-    with_environment(stripe_settings.merge("STRIPE_WEBHOOK_SECRET" => nil)) do
-      assert_equal [ "STRIPE_WEBHOOK_SECRET" ], @health.stripe.settings
-    end
-  end
-
-  test "self hosted Stripe does not require checkout prices or claim all processing is disabled" do
-    Rails.application.config.stubs(:app_mode).returns("self_hosted".inquiry)
-    with_environment do
-      assert_equal :not_configured, @health.stripe.status
-      assert_equal :neutral, @health.stripe.tone
-      assert_equal [ :self_hosted_checkout_disabled ], @health.stripe.notes
-    end
-    with_environment("STRIPE_SECRET_KEY" => "private-secret", "STRIPE_WEBHOOK_SECRET" => "private-webhook") do
-      assert_equal :configured, @health.stripe.status
-      assert_empty @health.stripe.settings
-      assert_equal [ :self_hosted_checkout_disabled ], @health.stripe.notes
-    end
-  end
-
-  test "Stripe price IDs alone still reveal missing credentials in self hosted mode" do
-    Rails.application.config.stubs(:app_mode).returns("self_hosted".inquiry)
-    with_environment("STRIPE_MONTHLY_PRICE_ID" => "private-price") do
-      assert_equal :incomplete, @health.stripe.status
-      assert_equal %w[STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET], @health.stripe.settings
-    end
-  end
-
   test "PostHog reads boot loaded settings rather than later environment changes" do
     with_environment("POSTHOG_KEY" => "later-key", "POSTHOG_HOST" => "https://later-host.test") do
       assert_equal :not_configured, @health.posthog.status
@@ -192,12 +153,5 @@ class ConfigurationHealth::OptionalServicesTest < ActiveSupport::TestCase
   private
     def with_environment(overrides = {}, &block)
       ClimateControl.modify(ENVIRONMENT.merge(overrides), &block)
-    end
-
-    def stripe_settings
-      {
-        "STRIPE_SECRET_KEY" => "private-secret", "STRIPE_WEBHOOK_SECRET" => "private-webhook",
-        "STRIPE_MONTHLY_PRICE_ID" => "private-monthly", "STRIPE_ANNUAL_PRICE_ID" => "private-annual"
-      }
     end
 end

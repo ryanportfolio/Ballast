@@ -127,22 +127,6 @@ zh-TW:
         merchant_detector:
           title: 商家偵測器
           subtitle: AI 會辨識交易資料並自動補全商家資訊
-    payments:
-      show:
-        page_title: 付款
-        subscription_subtitle: 更新您的信用卡資訊
-        subscription_title: 管理貢獻
-        currently_on_plan: 目前使用的方案為
-        trialing: 目前使用的是 %{product_name} 的公開試用版
-        trial_days_left:
-          one: 資料將在 %{count} 天後刪除
-          other: 資料將在 %{count} 天後刪除
-        not_contributing_prefix: 您目前
-        not_contributing_emphasis: 尚未貢獻
-        contributions_note: 對 %{product_name} 的貢獻會顯示在這裡。
-        manage: 管理
-        choose_level: 選擇級距
-        payment_via_stripe: 透過 Stripe 付款
     appearances:
       show:
         page_title: 外觀
@@ -292,7 +276,6 @@ zh-TW:
       auto_matches_label: 自動配對
       background_jobs_label: 背景工作
       api_key_label: API 金鑰
-      payment_label: 付款
       categories_label: 分類管理
       feedback_label: 意見回饋
       general_section_title: 一般

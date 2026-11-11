@@ -40,15 +40,6 @@ class Provider::Registry
     end
 
     private
-      def stripe
-        secret_key = ENV["STRIPE_SECRET_KEY"]
-        webhook_secret = ENV["STRIPE_WEBHOOK_SECRET"]
-
-        return nil unless secret_key.present? && webhook_secret.present?
-
-        Provider::Stripe.new(secret_key:, webhook_secret:)
-      end
-
       def twelve_data
         api_key = ENV["TWELVE_DATA_API_KEY"].presence || Setting.twelve_data_api_key
 

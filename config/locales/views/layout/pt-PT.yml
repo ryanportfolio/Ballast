@@ -28,7 +28,3 @@ pt-PT:
         are_you_sure: Tem a certeza?
         cannot_be_undone: Esta ação é irreversível.
         confirm: Confirmar
-    trial:
-      open_demo: Abrir demo
-      data_deleted_in_days: Dados removidos em %{days} dias
-      contribute: Contribuir

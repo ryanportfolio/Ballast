@@ -56,7 +56,6 @@ zh-TW:
     onboardings: 新手導覽
     other_assets: 其他資產
     other_liabilities: 其他負債
-    payments: 付款
     pending_duplicate_merges: 重複交易檢視
     plaid_items: Plaid
     plan: 規劃
@@ -78,7 +77,6 @@ zh-TW:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: 拆分
-    subscriptions: 訂閱
     tags: 標籤
     trades: 證券交易
     transactions: 交易紀錄

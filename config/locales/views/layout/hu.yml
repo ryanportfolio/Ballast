@@ -23,7 +23,3 @@ hu:
         are_you_sure: Biztosan?
         cannot_be_undone: Ez a művelet nem vonható vissza.
         confirm: Megerősítés
-    trial:
-      open_demo: Demo megnyitása
-      data_deleted_in_days: Az adatok törlődnek %{days} nap múlva
-      contribute: Közreműködés

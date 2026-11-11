@@ -21,11 +21,6 @@ ro:
         merchant_detector:
           title: Detector de comercianți
           subtitle: AI identifică și îmbogățește datele tranzacțiilor cu informații despre comercianți
-    payments:
-      show:
-        page_title: Plată
-        subscription_subtitle: Actualizează-ți abonamentul și detaliile de plată
-        subscription_title: Gestionează abonamentul
     preferences:
       show:
         country: Țară
@@ -107,7 +102,6 @@ ro:
       ai_prompts_label: Prompturi AI
       auto_matches_label: Potriviri automate
       api_key_label: Cheie API
-      payment_label: Plată
       categories_label: Categorii
       feedback_label: Feedback
       general_section_title: General

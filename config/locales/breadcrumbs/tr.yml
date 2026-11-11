@@ -54,7 +54,6 @@ tr:
     onboardings: Kurulum
     other_assets: Diğer varlıklar
     other_liabilities: Diğer borçlar
-    payments: Ödemeler
     pending_duplicate_merges: Kopya inceleme
     plaid_items: Plaid
     preferences: Tercihler
@@ -74,7 +73,6 @@ tr:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Bölme
-    subscriptions: Abonelik
     tags: Etiketler
     trades: Alım Satımlar
     transactions: İşlemler

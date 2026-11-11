@@ -58,7 +58,6 @@ id:
     onboardings: Onboarding
     other_assets: Aset lainnya
     other_liabilities: Liabilitas lainnya
-    payments: Pembayaran
     pending_duplicate_merges: Tinjauan duplikat
     plaid_items: Plaid
     plan: Rencana
@@ -80,7 +79,6 @@ id:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Pemisahan transaksi
-    subscriptions: Langganan
     system_health: Kesehatan Sistem
     tags: Tag
     trades: Transaksi efek

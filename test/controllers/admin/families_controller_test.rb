@@ -25,15 +25,18 @@ class Admin::FamiliesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_users_url
   end
 
-  test "destroy does not delete a family with an active subscription" do
+  # Ballast has no billing provider to cancel with, so a leftover
+  # subscription row goes with its family.
+  test "destroy deletes an unused family and its subscription row" do
     family = Family.create!(name: "Subscribed Empty Family")
     family.start_subscription!("sub_admin_cleanup")
+    subscription = family.subscription
 
-    assert_no_difference("Family.count") do
+    assert_difference("Family.count", -1) do
       delete admin_family_url(family)
     end
 
     assert_redirected_to admin_users_url
-    assert_equal "Could not cancel active Stripe subscription. Please cancel it manually before deleting the family.", flash[:alert]
+    assert_not Subscription.exists?(subscription.id)
   end
 end

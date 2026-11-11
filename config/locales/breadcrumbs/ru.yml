@@ -54,7 +54,6 @@ ru:
     onboardings: Онбординг
     other_assets: Прочие активы
     other_liabilities: Прочие обязательства
-    payments: Оплата
     pending_duplicate_merges: Обзор дубликатов
     plaid_items: Plaid
     preferences: Предпочтения
@@ -74,7 +73,6 @@ ru:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Разделение
-    subscriptions: Подписка
     tags: Теги
     trades: Сделки
     transactions: Операции

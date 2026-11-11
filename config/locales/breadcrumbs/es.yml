@@ -54,7 +54,6 @@ es:
     onboardings: Primeros pasos
     other_assets: Otros activos
     other_liabilities: Otros pasivos
-    payments: Pagos
     pending_duplicate_merges: Revisión de duplicados
     plaid_items: Plaid
     preferences: Preferencias
@@ -74,7 +73,6 @@ es:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: División
-    subscriptions: Suscripción
     tags: Etiquetas
     trades: Operaciones
     transactions: Transacciones

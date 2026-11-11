@@ -10,13 +10,11 @@ class ConfigurationHealth::OptionalServices
   end
 
   LANGFUSE_KEYS = %w[LANGFUSE_PUBLIC_KEY LANGFUSE_SECRET_KEY].freeze
-  STRIPE_KEYS = %w[STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET].freeze
-  STRIPE_PRICES = %w[STRIPE_MONTHLY_PRICE_ID STRIPE_ANNUAL_PRICE_ID].freeze
   LOGTAIL_KEYS = %w[LOGTAIL_API_KEY LOGTAIL_INGESTING_HOST].freeze
 
   # Returns only static identifiers and status metadata, never setting values.
   def checks
-    [ langfuse, sentry, skylight, stripe, posthog, logtail ]
+    [ langfuse, sentry, skylight, posthog, logtail ]
   end
 
   def langfuse
@@ -36,15 +34,6 @@ class ConfigurationHealth::OptionalServices
       return service(:skylight, :disabled, notes: [ :explicitly_disabled ])
     end
     environment_service(:skylight, %w[SKYLIGHT_AUTHENTICATION], intended: ENV["SKYLIGHT_ENABLED"].present?)
-  end
-
-  def stripe
-    # Self-hosted subscription checkout is disabled, but webhook processing can
-    # still use Stripe. Price IDs are required only for the managed checkout UI.
-    self_hosted = Rails.application.config.app_mode.self_hosted?
-    required = self_hosted ? STRIPE_KEYS : STRIPE_KEYS + STRIPE_PRICES
-    notes = self_hosted ? [ :self_hosted_checkout_disabled ] : []
-    environment_service(:stripe, required, intended: STRIPE_PRICES.any? { |key| ENV[key].present? }, notes: notes)
   end
 
   def posthog

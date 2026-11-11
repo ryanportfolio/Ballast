@@ -357,7 +357,6 @@ Rails.application.routes.draw do
     collection do
       get :preferences
       get :goals
-      get :trial
     end
   end
 
@@ -374,7 +373,6 @@ Rails.application.routes.draw do
       delete :clear_cache, on: :collection
       delete :disconnect_external_assistant, on: :collection
     end
-    resource :payment, only: :show
     resource :security, only: :show
     resources :webauthn_credentials, only: %i[create destroy] do
       post :options, on: :collection
@@ -401,13 +399,6 @@ Rails.application.routes.draw do
         post ":provider_key/sync", action: :sync, as: :sync_provider
         get ":provider_key/connect_form", action: :connect_form, as: :connect_form
       end
-    end
-  end
-
-  resource :subscription, only: %i[new show create] do
-    collection do
-      get :upgrade
-      get :success
     end
   end
 
@@ -962,7 +953,6 @@ Rails.application.routes.draw do
   namespace :webhooks do
     post "plaid"
     post "plaid_eu"
-    post "stripe"
   end
 
   get "redis-configuration-error", to: "pages#redis_configuration_error"
@@ -1004,7 +994,6 @@ Rails.application.routes.draw do
     # so name it explicitly.
     resource :system_health, only: :show, controller: "system_health" do
       get :ai_status
-      get :hosted_usage
       post :verify_worker_ai
     end
   end

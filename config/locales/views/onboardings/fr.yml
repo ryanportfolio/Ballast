@@ -19,7 +19,6 @@ fr:
       preferences: Préférences
       setup: Configuration
       sign_out: Se déconnecter
-      start: Démarrer
     logout:
       sign_out: Se déconnecter
     preferences:
@@ -53,22 +52,3 @@ fr:
       submit: Continuer
       subtitle: Commençons par compléter votre profil.
       title: Configurons votre compte
-    trial:
-      continue_trial: Continuer l'essai
-      data_deletion: Les données seront supprimées ensuite
-      description_html: À partir d'aujourd'hui, vous pouvez tester le produit en profondeur.<br/>Si
-        vous l'aimez, hébergez-le vous-même ou contribuez pour continuer à l'utiliser
-        ici.
-      how_it_works: Comment ça fonctionne
-      in_40_days: Dans 40 jours (%{date})
-      in_40_days_description: Nous vous notifierons pour vous rappeler d'exporter
-        vos données.
-      in_45_days: Dans 45 jours (%{date})
-      in_45_days_description: Nous supprimons vos données — contribuez pour continuer
-        à utiliser Sure ici !
-      title: Essayez Sure pendant 45 jours
-      today: Aujourd'hui
-      today_description: Vous aurez un accès gratuit à Sure pendant 45 jours sur notre
-        AWS.
-      try_button: Essayer Sure pendant 45 jours
-      upgrade: Mettre à niveau

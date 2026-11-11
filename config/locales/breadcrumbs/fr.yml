@@ -58,7 +58,6 @@ fr:
     onboardings: Intégration
     other_assets: Autres actifs
     other_liabilities: Autres passifs
-    payments: Paiements
     pending_duplicate_merges: Avis en double
     plaid_items: Plaid
     plan: Plan
@@ -80,7 +79,6 @@ fr:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Diviser
-    subscriptions: Abonnement
     system_health: Santé du système
     tags: Balises
     trades: Transactions boursières

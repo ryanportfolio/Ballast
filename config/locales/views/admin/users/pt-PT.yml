@@ -103,6 +103,5 @@ pt-PT:
         submit: "Eliminar utilizador permanentemente"
     families:
       destroy:
-        family_has_active_subscription: "A família/grupo tem uma subscrição ativa e não pode ser eliminada até a subscrição ser cancelada."
         family_has_users: "A família/grupo ainda tem utilizadores e não pode ser eliminada."
         success: "Família/grupo eliminada com sucesso."

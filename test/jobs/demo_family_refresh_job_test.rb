@@ -106,7 +106,7 @@ class DemoFamilyRefreshJobTest < ActiveJob::TestCase
     Setting.demo_family_refresh_family_id = nil
   end
 
-  test "self-hosted refresh revokes old credentials and allows deletion without Stripe" do
+  test "self-hosted refresh revokes old credentials and allows deletion" do
     Rails.configuration.stubs(:app_mode).returns("self_hosted".inquiry)
     Setting.demo_family_refresh_family_id = @demo_family.id.to_s
     Setting.demo_family_refresh_enabled = true
@@ -120,7 +120,6 @@ class DemoFamilyRefreshJobTest < ActiveJob::TestCase
       new_family.users.create!(first_name: "New", last_name: "Demo", email: @demo_email, password: "password123", role: :admin)
     end
     Demo::Generator.expects(:new).returns(generator)
-    Provider::Registry.expects(:get_provider).with(:stripe).never
 
     assert_enqueued_with(job: DestroyJob, args: [ @demo_family ]) do
       DemoFamilyRefreshJob.perform_now

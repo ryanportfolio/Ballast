@@ -22,11 +22,6 @@ pt-BR:
         merchant_detector:
           title: Detector de Estabelecimentos
           subtitle: A IA identifica e enriquece dados de transações com informações do estabelecimento
-    payments:
-      show:
-        page_title: Pagamento
-        subscription_subtitle: Atualize sua assinatura e detalhes de pagamento
-        subscription_title: Gerenciar assinatura
     appearances:
       show:
         page_title: Aparência
@@ -134,7 +129,6 @@ pt-BR:
       ai_prompts_label: Sugestões de IA
       auto_matches_label: Correspondências automáticas
       api_key_label: Chave da API
-      payment_label: Pagamento
       categories_label: Categorias
       feedback_label: Feedback
       general_section_title: Geral

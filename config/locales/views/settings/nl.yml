@@ -21,11 +21,6 @@ nl:
         merchant_detector:
           title: Handelaar Detectie
           subtitle: AI identificeert en verrijkt transactiegegevens met handelaarsinformatie
-    payments:
-      show:
-        page_title: Betaling
-        subscription_subtitle: Werk uw abonnement en betalingsgegevens bij
-        subscription_title: Abonnement beheren
     preferences:
       show:
         country: Land
@@ -112,7 +107,6 @@ nl:
       ai_prompts_label: AI Prompts
       auto_matches_label: Automatische matching
       api_key_label: API Key
-      payment_label: Betaling
       categories_label: Categorieën
       feedback_label: Feedback
       general_section_title: Algemeen

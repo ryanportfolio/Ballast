@@ -109,6 +109,5 @@ tr:
         submit: Kullanıcıyı kalıcı olarak kaldır
     families:
       destroy:
-        family_has_active_subscription: Aile/grubun aktif bir aboneliği var; abonelik iptal edilene kadar silinemez.
         family_has_users: Aile/grupta hâlâ kullanıcılar var ve silinemez.
         success: Aile/grup başarıyla silindi.

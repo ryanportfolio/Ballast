@@ -3,7 +3,6 @@ fr:
   admin:
     families:
       destroy:
-        family_has_active_subscription: Cette famille / ce groupe a un abonnement actif et ne peut pas être supprimé tant que l'abonnement n'est pas résilié.
         family_has_users: Cette famille / ce groupe compte encore des utilisateurs et ne peut pas être supprimé.
         success: Famille / groupe supprimé avec succès.
     users:

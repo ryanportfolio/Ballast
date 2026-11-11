@@ -6,23 +6,17 @@ module Onboardable
   end
 
   private
-    # First, we require onboarding, then once that's complete, we require an upgrade for non-subscribed users.
+    # Ballast never bills, so only onboarding is required. The name stays
+    # because other controllers skip this callback by name.
     def require_onboarding_and_upgrade
       return unless Current.user
       return unless redirectable_path?(request.path)
 
-      if Current.user.needs_onboarding?
-        redirect_to onboarding_path
-      elsif Current.family.needs_subscription?
-        redirect_to trial_onboarding_path
-      elsif Current.family.upgrade_required?
-        redirect_to upgrade_subscription_path
-      end
+      redirect_to onboarding_path if Current.user.needs_onboarding?
     end
 
     def redirectable_path?(path)
       return false if path.starts_with?("/settings")
-      return false if path.starts_with?("/subscription")
       return false if path.starts_with?("/onboarding")
       return false if path.starts_with?("/users")
       return false if path.starts_with?("/api")  # Exclude API endpoints from onboarding redirects

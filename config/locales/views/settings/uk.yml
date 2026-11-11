@@ -148,24 +148,6 @@ uk:
       update:
         success: Промпти ШІ оновлено
         multiple_errors: Кілька промптів задовгі (максимум %{count} символів)
-    payments:
-      show:
-        page_title: Платежі
-        subscription_subtitle: Оновіть дані своєї кредитної картки
-        subscription_title: Керування внесками
-        currently_on_plan: "Наразі на плані"
-        trialing: "Наразі використовується відкрита демо-версія %{product_name}"
-        trial_days_left:
-          one: "Дані будуть видалені через %{count} день"
-          other: "Дані будуть видалені через %{count} днів"
-          few: Дані будуть видалені через %{count} дні
-          many: Дані будуть видалені через %{count} днів
-        not_contributing_prefix: "Ви наразі"
-        not_contributing_emphasis: "не робите внесок"
-        contributions_note: "Внески до %{product_name} будуть відображатися тут."
-        manage: "Керувати"
-        choose_level: "Вибрати рівень"
-        payment_via_stripe: "Оплата через Stripe"
     appearances:
       show:
         page_title: Зовнішній вигляд
@@ -330,7 +312,6 @@ uk:
       auto_matches_label: Автоматичне зіставлення
       background_jobs_label: Фонові завдання
       api_key_label: Ключі API
-      payment_label: Оплата
       categories_label: Категорії
       feedback_label: Зворотний зв'язок
       general_section_title: Загальні

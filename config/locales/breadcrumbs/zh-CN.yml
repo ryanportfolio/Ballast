@@ -58,7 +58,6 @@ zh-CN:
     onboardings: 入门
     other_assets: 其他资产
     other_liabilities: 其他负债
-    payments: 付款
     pending_duplicate_merges: 重复项审核
     plaid_items: Plaid
     plan: 计划
@@ -80,7 +79,6 @@ zh-CN:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: 拆分
-    subscriptions: 订阅
     system_health: 系统健康
     tags: 标签
     trades: 交易

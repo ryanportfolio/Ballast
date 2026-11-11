@@ -24,7 +24,3 @@ zh-CN:
         are_you_sure: 您确定吗？
         cannot_be_undone: 此操作无法撤销。
         confirm: 确认
-    trial:
-      open_demo: 打开演示
-      data_deleted_in_days: 数据将在 %{days} 天后删除
-      contribute: 贡献支持

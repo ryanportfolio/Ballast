@@ -54,7 +54,6 @@ it:
     onboardings: Configurazione iniziale
     other_assets: Altri asset
     other_liabilities: Altre passività
-    payments: Pagamenti
     pending_duplicate_merges: Revisione duplicati
     plaid_items: Plaid
     plan: Piano
@@ -75,7 +74,6 @@ it:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Suddivisione
-    subscriptions: Abbonamento
     tags: Etichette
     trades: Operazioni
     transactions: Transazioni

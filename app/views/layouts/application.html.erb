@@ -124,27 +124,6 @@ end %>
           <div class="grow">
             <%= render "accounts/account_sidebar_tabs", family: Current.family, active_tab: @account_group_tab %>
           </div>
-
-          <% if Current.family.trialing? && !self_hosted? %>
-            <div class="px-4 py-3 space-y-4 bg-container shadow-border-xs rounded-xl">
-              <div class="flex items-start justify-between">
-                <div>
-                  <p class="text-sm font-medium text-primary"><%= t("layouts.trial.open_demo") %></p>
-                  <p class="text-sm text-secondary"><%= t("layouts.trial.data_deleted_in_days", days: Current.family.days_left_in_trial) %></p>
-                </div>
-
-                <%= render DS::Link.new(
-                  text: t("layouts.trial.contribute"),
-                  href: upgrade_subscription_path,
-                ) %>
-              </div>
-
-              <div class="flex items-center gap-0.5 h-1.5">
-                <div class="h-full bg-warning rounded-full" style="width: <%= Current.family.percentage_of_trial_completed %>%"></div>
-                <div class="h-full bg-surface-inset rounded-full" style="width: <%= Current.family.percentage_of_trial_remaining %>%"></div>
-              </div>
-            </div>
-          <% end %>
         <% end %>
       </div>
     <% end %>

@@ -10,9 +10,6 @@ class OnboardingsController < ApplicationController
   def preferences
   end
 
-  def trial
-  end
-
   private
     def set_user
       @user = Current.user

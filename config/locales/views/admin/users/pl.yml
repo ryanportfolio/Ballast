@@ -3,8 +3,6 @@ pl:
   admin:
     families:
       destroy:
-        family_has_active_subscription: Rodzina/grupa ma aktywną subskrypcję i nie
-          można jej usunąć, dopóki subskrypcja nie zostanie anulowana.
         family_has_users: Rodzina/grupa nadal ma użytkowników i nie można jej usunąć.
         success: Rodzina/grupa została usunięta.
     users:

@@ -7,14 +7,11 @@ class Demo::DataCleanerTest < ActiveSupport::TestCase
     Provider::Registry.stubs(:plaid_provider_for_region).returns(nil)
   end
 
-  # The generator gives its demo family a fake Stripe subscription, and a
-  # family cancels its subscription at Stripe before it goes. The cancel always
-  # failed, so `rake demo_data:default SKIP_CLEAR=0` could never remove the
-  # demo family it had created itself.
-  test "clears a family with a Stripe subscription without calling Stripe" do
+  # The generator gives its demo family a subscription row, and
+  # `rake demo_data:default SKIP_CLEAR=0` must remove it with the family.
+  test "clears a family with a subscription row" do
     family = Family.create!(name: "Demo Family")
     family.start_subscription!(Subscription::DEMO_STRIPE_ID)
-    Provider::Registry.expects(:get_provider).with(:stripe).never
 
     clear!
 
@@ -64,15 +61,13 @@ class Demo::DataCleanerTest < ActiveSupport::TestCase
   end
 
   # The guards are disarmed before any family goes. A reset that fails after
-  # that must not leave subscriptions cancelled and the super admin demoted.
+  # that must not leave the super admin demoted.
   test "a failed reset rolls back what it already did" do
-    subscription = subscriptions(:active)
     super_admin = User.find_by!(role: "super_admin")
     Family.any_instance.stubs(:destroy!).raises(ActiveRecord::RecordNotDestroyed.new("Failed to destroy Family"))
 
     assert_raises(ActiveRecord::RecordNotDestroyed) { clear! }
 
-    assert_equal "active", subscription.reload.status
     assert_equal "super_admin", super_admin.reload.role
   end
 

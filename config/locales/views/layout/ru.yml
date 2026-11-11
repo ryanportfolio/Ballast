@@ -36,7 +36,3 @@ ru:
         download_complete: Загрузка завершена
         download_failed: Не удалось скачать файл. Попробуйте ещё раз.
         download_location: Файл находится в папке «Загрузки».
-    trial:
-      contribute: Внести вклад
-      data_deleted_in_days: Данные будут удалены через %{days} дней
-      open_demo: Открыть демо

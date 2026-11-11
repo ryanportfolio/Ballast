@@ -136,22 +136,6 @@ ca:
         total_cost: Cost total
         total_requests: Total de sol·licituds
         total_tokens: Total de tokens
-    payments:
-      show:
-        choose_level: Tria un nivell
-        contributions_note: Les contribucions a %{product_name} apareixeran aquí.
-        currently_on_plan: 'Actualment al pla:'
-        manage: Gestiona
-        not_contributing_emphasis: no contribueixes
-        not_contributing_prefix: Actualment
-        page_title: Pagaments
-        payment_via_stripe: Pagament a través de Stripe
-        subscription_subtitle: Actualitza les teves dades de targeta de crèdit
-        subscription_title: Gestiona contribucions
-        trial_days_left:
-          one: Les dades s'eliminaran en %{count} dia
-          other: Les dades s'eliminaran en %{count} dies
-        trialing: Actualment fas servir la demostració oberta de %{product_name}
     preferences:
       show:
         additional_currencies_label: Divises addicionals
@@ -807,7 +791,6 @@ ca:
       mcp_label: MCP
       merchants_label: Comerços
       other_section_title: Més
-      payment_label: Pagament
       preferences_label: Preferències
       profile_label: Informació del perfil
       providers_label: Proveïdors

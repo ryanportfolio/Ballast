@@ -19,7 +19,6 @@ pl:
       preferences: Preferencje
       setup: Konfiguracja
       sign_out: Wyloguj się
-      start: Początek
     logout:
       sign_out: Wyloguj się
     preferences:
@@ -52,20 +51,3 @@ pl:
       submit: Dalej
       subtitle: Na początek skonfigurujmy Twój profil.
       title: Skonfigurujmy Twoje konto
-    trial:
-      continue_trial: Kontynuuj okres próbny
-      data_deletion: Dane zostaną wtedy usunięte
-      description_html: Od dziś możesz dokładnie przetestować produkt.<br/>Jeśli Ci
-        się spodoba, uruchom go samodzielnie lub wesprzyj projekt, aby dalej korzystać
-        tutaj.
-      how_it_works: Jak to tutaj działa
-      in_40_days: Za 40 dni (%{date})
-      in_40_days_description: Wyślemy Ci przypomnienie o eksporcie danych.
-      in_45_days: Za 45 dni (%{date})
-      in_45_days_description: Usuwamy dane — wesprzyj projekt, aby dalej korzystać
-        z Sure tutaj!
-      title: Wypróbuj Sure przez 45 dni
-      today: Dziś
-      today_description: Otrzymasz bezpłatny dostęp do Sure na 45 dni na naszym AWS.
-      try_button: Wypróbuj Sure przez 45 dni
-      upgrade: Ulepsz

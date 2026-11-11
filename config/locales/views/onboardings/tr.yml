@@ -19,7 +19,6 @@ tr:
       preferences: Tercihler
       setup: Kurulum
       sign_out: Çıkış yap
-      start: Başla
     logout:
       sign_out: Çıkış yap
     preferences:
@@ -53,20 +52,3 @@ tr:
       submit: Devam et
       subtitle: Önce profilinizi tamamlayalım.
       title: Hesabınızı kuralım
-    trial:
-      continue_trial: Denemeye devam et
-      data_deletion: Veriler daha sonra silinecek
-      description_html: Bugünden itibaren ürünü detaylı test edebilirsiniz.<br/>Beğenirseniz,
-        kendiniz barındırın veya burada kullanmaya devam etmek için katkıda bulunun.
-      how_it_works: Nasıl çalışır
-      in_40_days: 40 gün içinde (%{date})
-      in_40_days_description: Verilerinizi dışa aktarmanızı hatırlatmak için sizi
-        bilgilendireceğiz.
-      in_45_days: 45 gün içinde (%{date})
-      in_45_days_description: Verilerinizi siliyoruz — Sure'u burada kullanmaya devam
-        etmek için katkıda bulunun!
-      title: Sure'u 45 gün deneyin
-      today: Bugün
-      today_description: AWS'mizde Sure'a 45 gün ücretsiz erişim elde edeceksiniz.
-      try_button: Sure'u 45 gün dene
-      upgrade: Yükselt

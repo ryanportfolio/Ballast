@@ -84,22 +84,6 @@ zh-CN:
         merchant_detector:
           title: 商户识别器
           subtitle: AI 会识别并补充交易数据中的商户信息
-    payments:
-      show:
-        page_title: 付款
-        subscription_subtitle: 更新您的信用卡信息
-        subscription_title: 管理捐助
-        currently_on_plan: 当前使用的是
-        trialing: 当前正在使用 %{product_name} 的开放演示版
-        trial_days_left:
-          one: 数据将在 %{count} 天后删除
-          other: 数据将在 %{count} 天后删除
-        not_contributing_prefix: 您当前
-        not_contributing_emphasis: 未在捐助
-        contributions_note: 对 %{product_name} 的捐助将显示在这里。
-        manage: 管理
-        choose_level: 选择等级
-        payment_via_stripe: 通过 Stripe 付款
     appearances:
       show:
         page_title: 外观
@@ -227,7 +211,6 @@ zh-CN:
       ai_prompts_label: AI 提示词
       auto_matches_label: 自动匹配
       api_key_label: API 密钥
-      payment_label: 付款
       categories_label: 分类
       feedback_label: 反馈
       general_section_title: 常规

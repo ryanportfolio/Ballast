@@ -901,8 +901,8 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "[data-testid='configuration-health'] > :last-child[data-testid='optional-services']" do
       assert_select "h2", text: "Optional services"
-      assert_select "details:not([open])", count: 6
-      %w[Langfuse Sentry Skylight Stripe PostHog Logtail].each do |name|
+      assert_select "details:not([open])", count: 5
+      %w[Langfuse Sentry Skylight PostHog Logtail].each do |name|
         assert_select "summary span", text: name
       end
       assert_select "input, form, button", count: 0
@@ -914,7 +914,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     stub_healthy_sidekiq
     Sentry.stubs(:configuration).returns(OpenStruct.new(dsn: "optional-sentry-secret", enabled_in_current_env?: true))
     LangfuseTracing.expects(:new).never
-    Stripe::StripeClient.expects(:new).never
     PostHog::Client.expects(:new).never
     Sentry.expects(:capture_exception).never
     Logtail::Logger.expects(:create_default_logger).never
@@ -925,9 +924,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
 
     ClimateControl.modify(
       "LANGFUSE_PUBLIC_KEY" => "optional-public-secret", "LANGFUSE_SECRET_KEY" => "optional-langfuse-secret",
-      "SKYLIGHT_AUTHENTICATION" => "optional-skylight-secret", "STRIPE_SECRET_KEY" => "optional-stripe-secret",
-      "STRIPE_WEBHOOK_SECRET" => "optional-webhook-secret", "STRIPE_MONTHLY_PRICE_ID" => "optional-monthly-secret",
-      "STRIPE_ANNUAL_PRICE_ID" => "optional-annual-secret", "LOGTAIL_API_KEY" => "optional-logtail-secret",
+      "SKYLIGHT_AUTHENTICATION" => "optional-skylight-secret", "LOGTAIL_API_KEY" => "optional-logtail-secret",
       "LOGTAIL_INGESTING_HOST" => "optional-logtail-host"
     ) do
       get admin_system_health_url(tab: "configuration")
@@ -937,7 +934,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='optional-services']" do |section|
       assert_no_match(/optional-.*?(secret|host)/, section.first.to_html)
       assert_select "[data-testid='optional-service-langfuse'] summary", text: /Configured/
-      assert_select "[data-testid='optional-service-stripe'] summary", text: /Configured/
+      assert_select "[data-testid='optional-service-skylight'] summary", text: /Configured/
     end
   end
 
@@ -948,7 +945,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "[data-testid='optional-services'] h2", text: "Optionale Dienste"
-    assert_select "[data-testid='optional-service-stripe'] p", text: /STRIPE_WEBHOOK_SECRET/
+    assert_select "[data-testid='optional-service-langfuse'] p", text: /LANGFUSE_SECRET_KEY/
   end
 
   test "configuration translations exist in German without English fallback" do

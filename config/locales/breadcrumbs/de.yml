@@ -56,7 +56,6 @@ de:
     onboardings: Einrichtung
     other_assets: Sonstige Vermögenswerte
     other_liabilities: Sonstige Verbindlichkeiten
-    payments: Zahlungen
     pending_duplicate_merges: Duplikatprüfung
     plaid_items: Plaid
     plan: Plan
@@ -78,7 +77,6 @@ de:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Aufteilung
-    subscriptions: Abo
     system_health: Systemstatus
     tags: Tags
     trades: Trades

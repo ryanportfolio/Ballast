@@ -32,7 +32,3 @@ pl:
       footer:
         privacy_policy: Polityka prywatności
         terms_of_service: Warunki korzystania
-    trial:
-      contribute: Wesprzyj
-      data_deleted_in_days: Dane zostaną usunięte za %{days} dni
-      open_demo: Otwórz demo

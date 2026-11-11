@@ -87,8 +87,6 @@ class UsersController < ApplicationController
         redirect_to settings_preferences_path, notice: notice
       when "goals"
         redirect_to goals_onboarding_path
-      when "trial"
-        redirect_to trial_onboarding_path
       when "appearance"
         redirect_to settings_appearance_path, notice: notice
       when "ai_prompts"

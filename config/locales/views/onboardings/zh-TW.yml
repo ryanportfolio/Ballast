@@ -6,7 +6,6 @@ zh-TW:
       setup: 設定
       preferences: 偏好設定
       goals: 目標
-      start: 開始
     logout:
       sign_out: 登出
     show:
@@ -50,17 +49,3 @@ zh-TW:
       optimization: 分析和最佳化帳戶
       reduce_stress: 減輕財務壓力或焦慮
       submit: 下一步
-    trial:
-      title: 試用 Sure 45 天
-      data_deletion: 到時候資料會被刪除
-      description_html: 從今天開始，您可以深入體驗產品。<br/>如果您喜歡，可以自行代管，或是參與貢獻，繼續在這裡使用。
-      try_button: 試用 Sure 45 天
-      continue_trial: 繼續試用
-      upgrade: 升級
-      how_it_works: 運作方式
-      today: 今天
-      today_description: 您可以在我們的 AWS 上免費使用 Sure 45 天。
-      in_40_days: 40 天後（%{date}）
-      in_40_days_description: 我們會提醒您匯出資料。
-      in_45_days: 45 天後（%{date}）
-      in_45_days_description: 我們會刪除您的資料。想繼續在這裡使用 Sure，歡迎參與貢獻！

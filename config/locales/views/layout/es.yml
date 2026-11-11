@@ -26,7 +26,3 @@ es:
         are_you_sure: ¿Estás seguro?
         cannot_be_undone: Esta acción no se puede deshacer.
         confirm: Confirmar
-    trial:
-      open_demo: Demo pública
-      data_deleted_in_days: Los datos se eliminarán en %{days} días
-      contribute: Contribuir

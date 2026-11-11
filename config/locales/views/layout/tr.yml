@@ -36,7 +36,3 @@ tr:
         download_complete: İndirme tamamlandı
         download_failed: İndirme başarısız oldu. Lütfen tekrar deneyin.
         download_location: Dosya İndirilenler klasörünüzde.
-    trial:
-      contribute: Katkıda bulun
-      data_deleted_in_days: Veriler %{days} gün içinde silinecek
-      open_demo: Açık demo

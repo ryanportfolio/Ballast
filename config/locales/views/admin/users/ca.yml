@@ -110,6 +110,5 @@ ca:
         submit: Elimina l'usuari permanentment
     families:
       destroy:
-        family_has_active_subscription: La família/grup té una subscripció activa i no es pot eliminar fins que no es cancel·li la subscripció.
         family_has_users: La família/grup encara té usuaris i no es pot eliminar.
         success: Família/grup eliminada correctament.

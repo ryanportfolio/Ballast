@@ -53,7 +53,6 @@ uk:
     onboardings: Онбординг
     other_assets: Інші активи
     other_liabilities: Інші зобов'язання
-    payments: Платежі
     pending_duplicate_merges: Перевірка дублікатів
     plaid_items: Plaid
     preferences: Налаштування
@@ -74,7 +73,6 @@ uk:
     snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Розділення
-    subscriptions: Підписка
     tags: Теги
     trades: Угоди
     transactions: Транзакції

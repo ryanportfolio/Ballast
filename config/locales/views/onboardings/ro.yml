@@ -6,7 +6,6 @@ ro:
       setup: Configurare
       preferences: Preferințe
       goals: Obiective
-      start: Start
     logout:
       sign_out: Deconectare
     show:
@@ -45,17 +44,3 @@ ro:
       optimization: Să analizez și să optimizez conturile
       reduce_stress: Să reduc stresul financiar sau anxietatea
       submit: Următorul
-    trial:
-      title: Încearcă Sure timp de 45 de zile
-      data_deletion: Datele vor fi șterse după aceea
-      description_html: Începând de azi poți testa produsul în profunzime.<br/>Dacă îți place, găzduiește-l singur sau contribuie pentru a continua să-l folosești aici.
-      try_button: Încearcă Sure timp de 45 de zile
-      continue_trial: Continuă perioada de probă
-      upgrade: Actualizează
-      how_it_works: Cum funcționează
-      today: Astăzi
-      today_description: Vei avea acces gratuit la Sure timp de 45 de zile pe AWS-ul nostru.
-      in_40_days: În 40 de zile (%{date})
-      in_40_days_description: Te vom notifica să-ți amintim să-ți exporți datele.
-      in_45_days: În 45 de zile (%{date})
-      in_45_days_description: Îți ștergem datele — contribuie pentru a continua să folosești Sure aici!
