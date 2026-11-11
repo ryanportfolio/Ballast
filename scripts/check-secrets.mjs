@@ -11,7 +11,6 @@
 // Exit codes: 0 clean, 1 findings, 2 the check itself failed.
 
 import { execFileSync, spawn } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
 
 // Path rules: files that must never be committed, whatever they contain.
 const PATH_RULES = [
@@ -40,7 +39,7 @@ const CONTENT_RULES = [
   { id: "aws-key", why: "AWS access key id", re: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/ },
   { id: "github-token", why: "GitHub token", re: /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36,}\b|\bgithub_pat_[A-Za-z0-9_]{40,}\b/ },
   { id: "anthropic-key", why: "Anthropic API key", re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },
-  { id: "openai-key", why: "OpenAI API key", re: /\bsk-(proj-)?[A-Za-z0-9]{32,}\b/ },
+  { id: "openai-key", why: "OpenAI API key", re: /\bsk-(proj|svcacct|admin)-[A-Za-z0-9_-]{32,}|\bsk-[A-Za-z0-9]{32,}\b/ },
 ];
 
 // SimpleFIN setup tokens are base64 of a claim URL; decode long base64 runs.
@@ -53,16 +52,44 @@ function hasEncodedSimplefin(text) {
   return false;
 }
 
+// Text as a string, or null for binary. Windows PowerShell 5.1 writes UTF-16
+// with `>` and Out-File; those files contain NUL bytes but are still text.
+function decodeText(buf) {
+  if (buf[0] === 0xff && buf[1] === 0xfe) return buf.subarray(2).toString("utf16le");
+  if (buf[0] === 0xfe && buf[1] === 0xff) {
+    const b = buf.subarray(2, 2 + ((buf.length - 2) & ~1));
+    return Buffer.from(b).swap16().toString("utf16le");
+  }
+  const head = buf.subarray(0, 8000);
+  if (!head.includes(0)) return buf.toString("utf8");
+  // BOM-less UTF-16: NULs sit in every other byte.
+  let evenNul = 0, oddNul = 0;
+  for (let i = 0; i < head.length; i++) if (head[i] === 0) (i % 2 ? oddNul++ : evenNul++);
+  const half = head.length / 2;
+  if (oddNul > half * 0.9 && evenNul === 0) return buf.toString("utf16le");
+  if (evenNul > half * 0.9 && oddNul === 0) {
+    const even = buf.length - (buf.length % 2);
+    return Buffer.from(buf.subarray(0, even)).swap16().toString("utf16le");
+  }
+  return null;
+}
+
 function globToRe(glob) {
   const esc = glob.replace(/[.+^${}()|[\]\\]/g, "\\$&")
     .replace(/\*\*/g, "\0").replace(/\*/g, "[^/]*").replace(/\0/g, ".*").replace(/\?/g, "[^/]");
   return new RegExp(`^${esc}$`);
 }
 
+// Read the allowlist from the index, like the scanned files, so an unstaged
+// exemption can't let a staged secret through.
 function loadAllowlist() {
-  const file = ".secrets-guard-allow";
-  if (!existsSync(file)) return [];
-  return readFileSync(file, "utf8").split(/\r?\n/)
+  let text;
+  try {
+    text = execFileSync("git", ["show", ":.secrets-guard-allow"], { stdio: ["ignore", "pipe", "ignore"] }).toString();
+  } catch {
+    return []; // not in the index
+  }
+  return text.split(/\r?\n/)
     .map((l) => l.replace(/#.*/, "").trim()).filter(Boolean)
     .map((l) => {
       const [rule, glob] = l.split(/\s+/);
@@ -130,8 +157,8 @@ async function main() {
   const blobs = await readBlobs(entries.map((e) => e.sha));
   for (const e of entries) {
     const data = blobs.get(e.sha);
-    if (!data || data.subarray(0, 8000).includes(0)) continue; // binary
-    const text = data.toString("utf8");
+    const text = data && decodeText(data);
+    if (text === null || text === undefined) continue; // binary
     for (const r of CONTENT_RULES) {
       if (r.re.test(text) && !allowed(r.id, e.path)) findings.push(`${e.path}: [${r.id}] ${r.why}`);
     }
