@@ -22,3 +22,30 @@ build/
 Thumbs.db
 .DS_Store
 debug.log
+
+# --- Ballast: never commit secrets or personal financial data ---
+# scripts/check-secrets.mjs enforces the same list as a pre-commit hook and in CI.
+.env*
+!.env*.example
+!.env*.erb
+*.sql
+*.sql.gz
+*.dump
+*.pgdump
+*.backup
+*.sqlite
+*.sqlite3
+dump.rdb
+*.ofx
+*.qfx
+*.qif
+*.qbo
+*.pem
+*.key
+*.p12
+*.pfx
+/backups/
+/config/master.key
+/config/credentials/*.key
+compose.yml
+compose.override.yml
