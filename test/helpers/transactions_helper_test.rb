@@ -8,36 +8,18 @@ class TransactionsHelperTest < ActionView::TestCase
     OpenStruct.new(extra: extra)
   end
 
-  test "extracts the named Plaid fields into their own section" do
+  test "flattens a nested provider hash into labeled rows" do
     details = build_transaction_extra_details(transaction_with({
-      "plaid" => {
-        "pending" => false,
-        "original_description" => "AMZN Mktp US*AB12CD SEATTLE WA",
-        "payment_channel" => "online",
-        "transaction_code" => "purchase"
-      }
-    }))
-
-    assert_equal :plaid, details[:kind]
-    assert_equal "AMZN Mktp US*AB12CD SEATTLE WA", details[:plaid][:original_description]
-    assert_equal "online", details[:plaid][:payment_channel]
-    assert_equal "purchase", details[:plaid][:transaction_code]
-  end
-
-  test "flattens payment_meta and counterparties into labeled rows" do
-    details = build_transaction_extra_details(transaction_with({
-      "plaid" => {
-        "payment_meta" => { "reference_number" => "REF-1" },
-        "counterparties" => [ { "name" => "Amazon", "type" => "merchant" } ]
+      "simplefin" => {
+        "extra" => { "payment_meta" => { "reference_number" => "REF-1", "payer" => "Amazon" } }
       }
     }))
 
     rows = details[:provider_extras].index_by { |row| row[:key] }
 
     assert_equal "REF-1", rows["Payment meta · Reference number"][:value]
-    assert_equal "Amazon", rows["Counterparty 1 · Name"][:value]
-    assert_equal "merchant", rows["Counterparty 1 · Type"][:value]
-    refute rows["Counterparty 1 · Name"][:multiline]
+    assert_equal "Amazon", rows["Payment meta · Payer"][:value]
+    refute rows["Payment meta · Payer"][:multiline]
   end
 
   # A composed label is part translation, part provider identifier. Running
@@ -45,7 +27,7 @@ class TransactionsHelperTest < ActionView::TestCase
   # name is translated on its own and the result is left alone.
   test "labels a provider field we do not know by humanizing its identifier" do
     details = build_transaction_extra_details(transaction_with({
-      "plaid" => { "payment_meta" => { "some_future_field" => "value" } }
+      "simplefin" => { "extra" => { "payment_meta" => { "some_future_field" => "value" } } }
     }))
 
     keys = details[:provider_extras].map { |row| row[:key] }
@@ -57,7 +39,7 @@ class TransactionsHelperTest < ActionView::TestCase
   # which returned the whole provider_extra_fields hash and rendered it as the label.
   test "never renders a translation hash as a label for a blank or dotted key" do
     details = build_transaction_extra_details(transaction_with({
-      "plaid" => { "payment_meta" => { "" => "blank key", "a.b" => "dotted key" } }
+      "simplefin" => { "extra" => { "payment_meta" => { "" => "blank key", "a.b" => "dotted key" } } }
     }))
 
     details[:provider_extras].each do |row|
@@ -87,16 +69,6 @@ class TransactionsHelperTest < ActionView::TestCase
     assert_includes values, 0
   end
 
-  # The drawer should stay closed for transactions where Plaid told us nothing
-  # beyond reconciliation flags the pending badge already shows.
-  test "returns nil when the Plaid extra holds only pending flags" do
-    details = build_transaction_extra_details(transaction_with({
-      "plaid" => { "pending" => true, "pending_transaction_id" => "txn_1" }
-    }))
-
-    assert_nil details
-  end
-
   # SimpleFIN writes a pending flag on every transaction, so this is the common
   # case rather than an edge one: without the guard the section opens empty.
   test "returns nil when the SimpleFIN extra holds only a pending flag" do
@@ -121,8 +93,8 @@ class TransactionsHelperTest < ActionView::TestCase
   # an escaped one-liner ("[\n  {\"a\": 1}\n]") instead of a formatted block.
   test "renders an array of hashes as formatted JSON, encoded once" do
     details = build_transaction_extra_details(transaction_with({
-      "plaid" => {
-        "payment_meta" => { "parties" => [ { "name" => "Amazon" } ] }
+      "simplefin" => {
+        "extra" => { "payment_meta" => { "parties" => [ { "name" => "Amazon" } ] } }
       }
     }))
 

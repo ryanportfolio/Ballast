@@ -15,6 +15,7 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
 
     # Ensure provider adapters are loaded for all tests
     Provider::Factory.ensure_adapters_loaded
+    stub_instance_wide_providers
   end
 
   test "GET /settings/bank_sync redirects permanently to /settings/providers" do
@@ -28,7 +29,7 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     get settings_providers_url
     assert_response :success
 
-    patch settings_providers_url, params: { setting: { plaid_client_id: "test123" } }
+    patch settings_providers_url, params: { setting: { example_bank_client_id: "test123" } }
     assert_redirected_to settings_providers_url
   end
 
@@ -36,22 +37,22 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     Rails.configuration.stubs(:app_mode).returns("managed".inquiry)
     sign_in users(:empty)
 
-    patch settings_providers_url, params: { setting: { plaid_client_id: "attacker", plaid_secret: "attacker-secret" } }
+    patch settings_providers_url, params: { setting: { example_bank_client_id: "attacker", example_bank_secret: "attacker-secret" } }
 
     assert_redirected_to settings_providers_url
     assert_equal I18n.t("settings.providers.not_authorized"), flash[:alert]
-    assert_nil Setting["plaid_client_id"]
-    assert_nil Setting["plaid_secret"]
+    assert_nil Setting["example_bank_client_id"]
+    assert_nil Setting["example_bank_secret"]
   end
 
   test "a family admin cannot change provider credentials on a self-hosted instance with several families" do
     with_self_hosting do
       sign_in users(:empty)
 
-      patch settings_providers_url, params: { setting: { plaid_client_id: "attacker" } }
+      patch settings_providers_url, params: { setting: { example_bank_client_id: "attacker" } }
 
       assert_redirected_to settings_providers_url
-      assert_nil Setting["plaid_client_id"]
+      assert_nil Setting["example_bank_client_id"]
     end
   end
 
@@ -60,13 +61,13 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       Family.stubs(:count).returns(1)
       sign_in users(:empty)
 
-      patch settings_providers_url, params: { setting: { plaid_client_id: "own-client-id" } }
+      patch settings_providers_url, params: { setting: { example_bank_client_id: "own-client-id" } }
 
       assert_redirected_to settings_providers_url
-      assert_equal "own-client-id", Setting["plaid_client_id"]
+      assert_equal "own-client-id", Setting["example_bank_client_id"]
     end
   ensure
-    Setting["plaid_client_id"] = nil
+    Setting["example_bank_client_id"] = nil
   end
 
   test "instance-wide provider forms are only offered to those who may save them" do
@@ -83,7 +84,7 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert instance_wide_forms.none? { |path| response.body.include?(path) }
 
-    get connect_form_settings_providers_path(provider_key: "plaid")
+    get connect_form_settings_providers_path(provider_key: "example_bank")
     assert_redirected_to settings_providers_path
     assert_equal I18n.t("settings.providers.not_authorized"), flash[:alert]
   end
@@ -190,9 +191,9 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     # All current provider fields are dynamic, but the logic should correctly
     # distinguish between declared and dynamic fields
     with_self_hosting do
-      # plaid_client_id is a dynamic field (not defined in Setting)
-      refute Setting.singleton_class.method_defined?(:plaid_client_id=),
-        "plaid_client_id= should NOT be defined on Setting's singleton class"
+      # example_bank_client_id is a dynamic field (not defined in Setting)
+      refute Setting.singleton_class.method_defined?(:example_bank_client_id=),
+        "example_bank_client_id= should NOT be defined on Setting's singleton class"
 
       # openai_model IS a declared field (defined in Setting)
       # but it's not a provider field, so it won't go through this controller
@@ -202,42 +203,42 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "updates dynamic provider fields using batch update" do
-    # plaid_client_id is a dynamic field, stored as an individual entry
+    # example_bank_client_id is a dynamic field, stored as an individual entry
     with_self_hosting do
-      # Clear any existing plaid settings
-      Setting["plaid_client_id"] = nil
+      # Clear any existing example_bank settings
+      Setting["example_bank_client_id"] = nil
 
       patch settings_providers_url, params: {
-        setting: { plaid_client_id: "test_client_id" }
+        setting: { example_bank_client_id: "test_client_id" }
       }
 
       assert_redirected_to settings_providers_url
-      assert_equal "test_client_id", Setting["plaid_client_id"]
+      assert_equal "test_client_id", Setting["example_bank_client_id"]
     end
   end
 
   test "batches multiple dynamic fields from same provider atomically" do
-    # Test that multiple fields from Plaid are updated as individual entries
+    # Test that multiple fields from one provider are updated as individual entries
     with_self_hosting do
       # Clear existing fields
-      Setting["plaid_client_id"] = nil
-      Setting["plaid_secret"] = nil
-      Setting["plaid_environment"] = nil
+      Setting["example_bank_client_id"] = nil
+      Setting["example_bank_secret"] = nil
+      Setting["example_bank_environment"] = nil
 
       patch settings_providers_url, params: {
         setting: {
-          plaid_client_id: "new_client_id",
-          plaid_secret: "new_secret",
-          plaid_environment: "production"
+          example_bank_client_id: "new_client_id",
+          example_bank_secret: "new_secret",
+          example_bank_environment: "production"
         }
       }
 
       assert_redirected_to settings_providers_url
 
       # All three should be present as individual entries
-      assert_equal "new_client_id", Setting["plaid_client_id"]
-      assert_equal "new_secret", Setting["plaid_secret"]
-      assert_equal "production", Setting["plaid_environment"]
+      assert_equal "new_client_id", Setting["example_bank_client_id"]
+      assert_equal "new_secret", Setting["example_bank_secret"]
+      assert_equal "production", Setting["example_bank_environment"]
     end
   end
 
@@ -245,27 +246,27 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     # Test that fields from different providers are stored as individual entries
     with_self_hosting do
       # Clear existing fields
-      Setting["plaid_client_id"] = nil
-      Setting["plaid_secret"] = nil
-      Setting["plaid_eu_client_id"] = nil
-      Setting["plaid_eu_secret"] = nil
+      Setting["example_bank_client_id"] = nil
+      Setting["example_bank_secret"] = nil
+      Setting["example_bank_eu_client_id"] = nil
+      Setting["example_bank_eu_secret"] = nil
 
       patch settings_providers_url, params: {
         setting: {
-          plaid_client_id: "plaid_client",
-          plaid_secret: "plaid_secret",
-          plaid_eu_client_id: "plaid_eu_client",
-          plaid_eu_secret: "plaid_eu_secret"
+          example_bank_client_id: "example_bank_client",
+          example_bank_secret: "example_bank_secret",
+          example_bank_eu_client_id: "example_bank_eu_client",
+          example_bank_eu_secret: "example_bank_eu_secret"
         }
       }
 
       assert_redirected_to settings_providers_url
 
       # All fields should be present
-      assert_equal "plaid_client", Setting["plaid_client_id"]
-      assert_equal "plaid_secret", Setting["plaid_secret"]
-      assert_equal "plaid_eu_client", Setting["plaid_eu_client_id"]
-      assert_equal "plaid_eu_secret", Setting["plaid_eu_secret"]
+      assert_equal "example_bank_client", Setting["example_bank_client_id"]
+      assert_equal "example_bank_secret", Setting["example_bank_secret"]
+      assert_equal "example_bank_eu_client", Setting["example_bank_eu_client_id"]
+      assert_equal "example_bank_eu_secret", Setting["example_bank_eu_secret"]
     end
   end
 
@@ -274,13 +275,13 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     with_self_hosting do
       # Set initial fields
       Setting["existing_field_1"] = "value1"
-      Setting["plaid_client_id"] = "old_client_id"
+      Setting["example_bank_client_id"] = "old_client_id"
 
       # Update one field and add a new one
       patch settings_providers_url, params: {
         setting: {
-          plaid_client_id: "new_client_id",
-          plaid_secret: "new_secret"
+          example_bank_client_id: "new_client_id",
+          example_bank_secret: "new_secret"
         }
       }
 
@@ -290,51 +291,51 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       assert_equal "value1", Setting["existing_field_1"]
 
       # Updated field should have new value
-      assert_equal "new_client_id", Setting["plaid_client_id"]
+      assert_equal "new_client_id", Setting["example_bank_client_id"]
 
       # New field should be added
-      assert_equal "new_secret", Setting["plaid_secret"]
+      assert_equal "new_secret", Setting["example_bank_secret"]
     end
   end
 
   test "skips placeholder values for secret fields" do
     with_self_hosting do
       # Set an initial secret value
-      Setting["plaid_secret"] = "real_secret"
+      Setting["example_bank_secret"] = "real_secret"
 
       # Try to update with placeholder
       patch settings_providers_url, params: {
         setting: {
-          plaid_client_id: "new_client_id",
-          plaid_secret: "********"  # Placeholder value
+          example_bank_client_id: "new_client_id",
+          example_bank_secret: "********"  # Placeholder value
         }
       }
 
       assert_redirected_to settings_providers_url
 
       # Client ID should be updated
-      assert_equal "new_client_id", Setting["plaid_client_id"]
+      assert_equal "new_client_id", Setting["example_bank_client_id"]
 
       # Secret should remain unchanged
-      assert_equal "real_secret", Setting["plaid_secret"]
+      assert_equal "real_secret", Setting["example_bank_secret"]
     end
   end
 
   test "converts blank values to nil and removes from dynamic_fields" do
     with_self_hosting do
       # Set initial values
-      Setting["plaid_client_id"] = "old_value"
-      assert_equal "old_value", Setting["plaid_client_id"]
-      assert Setting.key?("plaid_client_id")
+      Setting["example_bank_client_id"] = "old_value"
+      assert_equal "old_value", Setting["example_bank_client_id"]
+      assert Setting.key?("example_bank_client_id")
 
       patch settings_providers_url, params: {
-        setting: { plaid_client_id: "  " }  # Blank string with spaces
+        setting: { example_bank_client_id: "  " }  # Blank string with spaces
       }
 
       assert_redirected_to settings_providers_url
-      assert_nil Setting["plaid_client_id"]
+      assert_nil Setting["example_bank_client_id"]
       # Entry should be removed, not just set to nil
-      refute Setting.key?("plaid_client_id"),
+      refute Setting.key?("example_bank_client_id"),
         "nil values should delete the entry"
     end
   end
@@ -346,11 +347,11 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     with_self_hosting do
       Setting["existing_field"] = "existing_value"
 
-      # Simulate first request updating plaid fields
+      # Simulate first request updating example_bank fields
       patch settings_providers_url, params: {
         setting: {
-          plaid_client_id: "client_id_1",
-          plaid_secret: "secret_1"
+          example_bank_client_id: "client_id_1",
+          example_bank_secret: "secret_1"
         }
       }
 
@@ -358,21 +359,21 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       assert_equal "existing_value", Setting["existing_field"]
 
       # New fields should be added
-      assert_equal "client_id_1", Setting["plaid_client_id"]
-      assert_equal "secret_1", Setting["plaid_secret"]
+      assert_equal "client_id_1", Setting["example_bank_client_id"]
+      assert_equal "secret_1", Setting["example_bank_secret"]
 
-      # Simulate second request updating different plaid fields
+      # Simulate second request updating different example_bank fields
       patch settings_providers_url, params: {
         setting: {
-          plaid_environment: "production"
+          example_bank_environment: "production"
         }
       }
 
       # All previously set fields should still be there
       assert_equal "existing_value", Setting["existing_field"]
-      assert_equal "client_id_1", Setting["plaid_client_id"]
-      assert_equal "secret_1", Setting["plaid_secret"]
-      assert_equal "production", Setting["plaid_environment"]
+      assert_equal "client_id_1", Setting["example_bank_client_id"]
+      assert_equal "secret_1", Setting["example_bank_secret"]
+      assert_equal "production", Setting["example_bank_environment"]
     end
   end
 
@@ -381,7 +382,7 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       # Try to update a field that doesn't exist in any provider configuration
       patch settings_providers_url, params: {
         setting: {
-          plaid_client_id: "valid_field",
+          example_bank_client_id: "valid_field",
           fake_field_that_does_not_exist: "should_be_ignored"
         }
       }
@@ -389,7 +390,7 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       assert_redirected_to settings_providers_url
 
       # Valid field should be updated
-      assert_equal "valid_field", Setting["plaid_client_id"]
+      assert_equal "valid_field", Setting["example_bank_client_id"]
 
       # Invalid field should not be stored
       assert_nil Setting["fake_field_that_does_not_exist"]
@@ -399,10 +400,12 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
   test "calls reload_configuration on updated providers" do
     with_self_hosting do
       # Mock the adapter class to verify reload_configuration is called
-      Provider::PlaidAdapter.expects(:reload_configuration).once
+      adapter = mock("example_bank_adapter")
+      adapter.expects(:reload_configuration).once
+      Provider::ConfigurationRegistry.stubs(:get_adapter_class).with("example_bank").returns(adapter)
 
       patch settings_providers_url, params: {
-        setting: { plaid_client_id: "new_client_id" }
+        setting: { example_bank_client_id: "new_client_id" }
       }
 
       assert_redirected_to settings_providers_url
@@ -411,14 +414,18 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
 
   test "reloads configuration for multiple providers when updated" do
     with_self_hosting do
-      # Both Plaid providers (US and EU) should have their configuration reloaded
-      Provider::PlaidAdapter.expects(:reload_configuration).once
-      Provider::PlaidEuAdapter.expects(:reload_configuration).once
+      # Both providers should have their configuration reloaded
+      adapter = mock("example_bank_adapter")
+      adapter.expects(:reload_configuration).once
+      eu_adapter = mock("example_bank_eu_adapter")
+      eu_adapter.expects(:reload_configuration).once
+      Provider::ConfigurationRegistry.stubs(:get_adapter_class).with("example_bank").returns(adapter)
+      Provider::ConfigurationRegistry.stubs(:get_adapter_class).with("example_bank_eu").returns(eu_adapter)
 
       patch settings_providers_url, params: {
         setting: {
-          plaid_client_id: "plaid_client",
-          plaid_eu_client_id: "plaid_eu_client"
+          example_bank_client_id: "example_bank_client",
+          example_bank_eu_client_id: "example_bank_eu_client"
         }
       }
 
@@ -430,14 +437,14 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     with_self_hosting do
       # Test that errors during update are properly logged and handled gracefully
       # We'll force an error by making the []= method raise
-      Setting.expects(:[]=).with("plaid_client_id", "test").raises(StandardError.new("Database error")).once
+      Setting.expects(:[]=).with("example_bank_client_id", "test").raises(StandardError.new("Database error")).once
 
       # Mock logger to verify error is logged (pin both the exception class
       # name and the message so a regression that drops one still fails).
       Rails.logger.expects(:error).with(regexp_matches(/Failed to update provider settings: StandardError - Database error/)).once
 
       patch settings_providers_url, params: {
-        setting: { plaid_client_id: "test" }
+        setting: { example_bank_client_id: "test" }
       }
 
       # Controller should handle the error gracefully with generic message (no internal details)
@@ -449,10 +456,10 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
   test "shows no changes message when no fields are updated" do
     with_self_hosting do
       # Only send a secret field with placeholder value (which gets skipped)
-      Setting["plaid_secret"] = "existing_secret"
+      Setting["example_bank_secret"] = "existing_secret"
 
       patch settings_providers_url, params: {
-        setting: { plaid_secret: "********" }
+        setting: { example_bank_secret: "********" }
       }
 
       assert_redirected_to settings_providers_url
@@ -509,13 +516,13 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Sync started/i, response.body)
   end
 
-  test "GET show warns on configured provider forms when self-hosted encryption keys are not explicitly configured" do
-    Setting["plaid_client_id"] = "test-client-id"
-    Setting["plaid_secret"] = "test-secret"
+  test "GET connect_form warns on configured provider forms when self-hosted encryption keys are not explicitly configured" do
+    Setting["example_bank_client_id"] = "test-client-id"
+    Setting["example_bank_secret"] = "test-secret"
     ActiveRecordEncryptionConfig.stubs(:explicitly_configured?).returns(false)
 
     with_self_hosting do
-      get settings_providers_url
+      get connect_form_settings_providers_path(provider_key: "example_bank")
 
       assert_response :success
       assert_includes response.body, I18n.t("settings.providers.provider_setup_encryption_warning.title")
@@ -526,19 +533,20 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       assert_includes response.body, I18n.t("settings.providers.drawer_trust_statement_encryption_unconfigured")
     end
   ensure
-    Setting["plaid_client_id"] = nil
-    Setting["plaid_secret"] = nil
+    Setting["example_bank_client_id"] = nil
+    Setting["example_bank_secret"] = nil
   end
 
-  test "GET show hides provider form encryption warning in managed mode" do
-    Setting["plaid_client_id"] = "test-client-id"
-    Setting["plaid_secret"] = "test-secret"
+  test "GET connect_form hides configured provider form encryption warning in managed mode" do
+    Setting["example_bank_client_id"] = "test-client-id"
+    Setting["example_bank_secret"] = "test-secret"
     Rails.configuration.stubs(:app_mode).returns("managed".inquiry)
     ActiveRecordEncryptionConfig.stubs(:explicitly_configured?).returns(false)
 
-    get settings_providers_url
+    get connect_form_settings_providers_path(provider_key: "example_bank")
 
     assert_response :success
+    assert_select "#config-connect-form input[name=?]", "setting[example_bank_client_id]"
     refute_includes response.body, I18n.t("settings.providers.provider_setup_encryption_warning.title")
     assert_select 'a[href=?][target="_blank"][rel="noopener noreferrer"]',
                   "https://github.com/we-promise/docs/blob/main/self-hosting.mdx#turning-on-active-record-encryption-after-first-boot",
@@ -546,8 +554,8 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     refute_includes response.body, I18n.t("settings.providers.provider_setup_encryption_warning.message")
     refute_includes response.body, I18n.t("settings.providers.drawer_trust_statement_encryption_unconfigured")
   ensure
-    Setting["plaid_client_id"] = nil
-    Setting["plaid_secret"] = nil
+    Setting["example_bank_client_id"] = nil
+    Setting["example_bank_secret"] = nil
   end
 
   test "GET connect_form warns when self-hosted encryption keys are not explicitly configured" do
@@ -622,14 +630,14 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       sign_in users(:family_member)
 
       patch settings_providers_url, params: {
-        setting: { plaid_client_id: "test" }
+        setting: { example_bank_client_id: "test" }
       }
 
       assert_redirected_to root_path
       assert_equal "Not authorized", flash[:alert]
 
       # Value should not have changed
-      assert_nil Setting["plaid_client_id"]
+      assert_nil Setting["example_bank_client_id"]
     end
   end
 
@@ -643,10 +651,10 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       assert Setting.respond_to?(:openai_model=),
         "respond_to? should return true for declared field"
 
-      # plaid_client_id is a dynamic field
-      refute Setting.singleton_class.method_defined?(:plaid_client_id=),
-        "plaid_client_id= should NOT be defined on Setting's singleton class"
-      refute Setting.respond_to?(:plaid_client_id=),
+      # example_bank_client_id is a dynamic field
+      refute Setting.singleton_class.method_defined?(:example_bank_client_id=),
+        "example_bank_client_id= should NOT be defined on Setting's singleton class"
+      refute Setting.respond_to?(:example_bank_client_id=),
         "respond_to? should return false for dynamic field"
 
       # Both methods currently return the same result, but singleton_class.method_defined?
@@ -655,6 +663,22 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+    # No adapter in this app declares instance-wide settings any more, so these
+    # tests register two stand-in configurations the way a provider:global
+    # adapter's `configure` block would.
+    def stub_instance_wide_providers
+      example_bank = Provider::Configurable::Configuration.new("example_bank")
+      example_bank.field :client_id, label: "Client ID", required: true
+      example_bank.field :secret, label: "Secret", required: true, secret: true
+      example_bank.field :environment, label: "Environment", default: "sandbox"
+
+      example_bank_eu = Provider::Configurable::Configuration.new("example_bank_eu")
+      example_bank_eu.field :client_id, label: "Client ID", required: true
+      example_bank_eu.field :secret, label: "Secret", required: true, secret: true
+
+      Provider::ConfigurationRegistry.stubs(:all).returns([ example_bank, example_bank_eu ])
+    end
+
     def create_simplefin_connection
       SimplefinItem.create!(
         family: families(:dylan_family),

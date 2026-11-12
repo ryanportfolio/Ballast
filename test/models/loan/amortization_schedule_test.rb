@@ -114,10 +114,9 @@ class Loan::AmortizationScheduleTest < ActiveSupport::TestCase
   end
 
   # A rate type outside the form's vocabulary is still a rate type (#100
-  # decision 8). PlaidAccount::Liabilities::MortgageProcessor writes Plaid's
-  # raw `interest_rate.type` straight through, so this is reachable from a
-  # sync, not only from the form, and such a loan is variable rather than
-  # unknown.
+  # decision 8). A provider can write its raw rate type straight through, so
+  # this is reachable from a sync, not only from the form, and such a loan is
+  # variable rather than unknown.
   test "is buildable for a provider's own rate type" do
     loan = loan_account(interest_rate: 3.5, term_months: 360, rate_type: "teaser").loan
 

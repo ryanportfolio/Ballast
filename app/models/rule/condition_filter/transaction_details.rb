@@ -36,9 +36,9 @@ class Rule::ConditionFilter::TransactionDetails < Rule::ConditionFilter
       # Only the string and number values are searched, at any depth. Casting the
       # whole document to text also searched its keys and its true/false/null
       # literals, so a rule for "payment" or "description" matched every row whose
-      # provider stored a key with that word in it, whatever the values said. Plaid
-      # rows already carried pending and pending_transaction_id, which made
-      # "pending", "transaction" and "id" match every one of them.
+      # provider stored a key with that word in it, whatever the values said. Rows
+      # carrying pending and pending_transaction_id keys made "pending",
+      # "transaction" and "id" match every one of them.
       sanitized_value = "%#{ActiveRecord::Base.sanitize_sql_like(value)}%"
       sql_operator = operator == "like" ? "ILIKE" : "LIKE"
 

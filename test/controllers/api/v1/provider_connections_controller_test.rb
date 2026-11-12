@@ -115,15 +115,15 @@ class Api::V1::ProviderConnectionsControllerTest < ActionDispatch::IntegrationTe
     get api_v1_provider_connections_url, headers: api_headers(@api_key)
     assert_response :success
 
-    plaid_connection = JSON.parse(response.body)["data"].detect do |connection|
-      connection["provider"] == "plaid"
+    simplefin_connection = JSON.parse(response.body)["data"].detect do |connection|
+      connection["id"] == @simplefin_item.id && connection["provider"] == "simplefin"
     end
 
-    assert_not_nil plaid_connection
-    assert_includes [ true, false ], plaid_connection["requires_update"]
-    assert_equal false, plaid_connection["credentials_configured"]
-    assert_includes [ true, false ], plaid_connection["scheduled_for_deletion"]
-    assert_includes [ true, false ], plaid_connection["pending_account_setup"]
+    assert_not_nil simplefin_connection
+    assert_includes [ true, false ], simplefin_connection["requires_update"]
+    assert_equal false, simplefin_connection["credentials_configured"]
+    assert_includes [ true, false ], simplefin_connection["scheduled_for_deletion"]
+    assert_includes [ true, false ], simplefin_connection["pending_account_setup"]
   end
 
   test "excludes another family's provider connections" do

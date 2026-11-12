@@ -310,8 +310,6 @@ es:
       recently_synced: Sincronizado hace poco. Inténtalo de nuevo en un momento.
       taglines:
         simplefin: Conecta cuentas bancarias de EE. UU. mediante el protocolo abierto SimpleFIN.
-        plaid: Conecta miles de instituciones financieras de EE. UU. a través de Plaid.
-        plaid_eu: Conecta instituciones financieras europeas a través de Plaid (PSD2 / Open Banking).
       search_filters:
         aria_label: Buscar proveedores
         placeholder: Buscar proveedores
@@ -333,11 +331,5 @@ es:
         setup_token_label: Token de configuración
         setup_token_placeholder: Pega el token de configuración de SimpleFIN
         save_and_connect: Guardar y conectar
-      plaid_panel:
-        step_1_html: Abre el %{link} y copia tu Client ID y tu Secret Key.
-        step_2: Elige un entorno. Usa sandbox para pruebas y production para cuentas reales.
-        step_3: Pega tus credenciales abajo y conecta.
-      plaid_eu_panel:
-        step_1_html: Abre el %{link} y copia tu Client ID y tu Secret Key de la UE.
       not_found: Proveedor no encontrado.
       sync_provider_no_items: No hay conexiones disponibles para sincronizar.

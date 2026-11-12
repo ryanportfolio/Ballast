@@ -862,9 +862,7 @@ class UserTest < ActiveSupport::TestCase
   test "default_account_for_transactions returns nil when account is linked" do
     account = accounts(:depository)
     @user.update!(default_account: account)
-    plaid_account = plaid_accounts(:one)
-    AccountProvider.create!(account: account, provider: plaid_account)
-    account.reload
+    link_account_to_simplefin!(account)
     assert_nil @user.default_account_for_transactions
   end
 
@@ -892,9 +890,7 @@ class UserTest < ActiveSupport::TestCase
     source_family = user.family
     new_family = Family.create!(name: "Transferred Provider Family")
     account = Account.create!(family: source_family, owner: user, name: "Synced Checking", balance: 100, currency: "USD", accountable: Depository.new)
-    plaid_item = PlaidItem.create!(family: source_family, plaid_id: "item_transfer_#{SecureRandom.hex(4)}", access_token: "token", name: "Transfer Bank")
-    plaid_account = PlaidAccount.create!(plaid_item: plaid_item, plaid_id: "acct_transfer_#{SecureRandom.hex(4)}", name: "Transfer Checking", plaid_type: "depository", currency: "USD", current_balance: 100)
-    AccountProvider.create!(account: account, provider: plaid_account)
+    simplefin_item = link_account_to_simplefin!(account).simplefin_item
     statement = AccountStatement.create_from_upload!(
       family: source_family,
       account: account,
@@ -905,12 +901,8 @@ class UserTest < ActiveSupport::TestCase
 
     assert_equal new_family, user.reload.family
     assert_equal new_family, account.reload.family
-    assert_equal new_family, plaid_item.reload.family
+    assert_equal new_family, simplefin_item.reload.family
     assert_equal new_family, statement.reload.family
-
-    # The connection's owner has to follow it across, or it would be left
-    # pointing at a user in the family it just left.
-    assert_equal user, plaid_item.owner
   end
 
   test "transfer_to_family! rejects provider items linked to accounts outside the transfer" do
@@ -920,11 +912,8 @@ class UserTest < ActiveSupport::TestCase
     new_family = Family.create!(name: "Rejected Provider Family")
     moved_account = Account.create!(family: source_family, owner: user, name: "Moved Synced", balance: 100, currency: "USD", accountable: Depository.new)
     remaining_account = Account.create!(family: source_family, owner: other_user, name: "Remaining Synced", balance: 200, currency: "USD", accountable: Depository.new)
-    plaid_item = PlaidItem.create!(family: source_family, plaid_id: "item_reject_#{SecureRandom.hex(4)}", access_token: "token", name: "Shared Bank")
-    moved_plaid_account = PlaidAccount.create!(plaid_item: plaid_item, plaid_id: "acct_reject_moved_#{SecureRandom.hex(4)}", name: "Moved Checking", plaid_type: "depository", currency: "USD", current_balance: 100)
-    remaining_plaid_account = PlaidAccount.create!(plaid_item: plaid_item, plaid_id: "acct_reject_remaining_#{SecureRandom.hex(4)}", name: "Remaining Checking", plaid_type: "depository", currency: "USD", current_balance: 200)
-    AccountProvider.create!(account: moved_account, provider: moved_plaid_account)
-    AccountProvider.create!(account: remaining_account, provider: remaining_plaid_account)
+    simplefin_item = link_account_to_simplefin!(moved_account).simplefin_item
+    link_account_to_simplefin!(remaining_account, simplefin_item: simplefin_item)
 
     error = assert_raises(ActiveRecord::RecordInvalid) do
       user.transfer_to_family!(new_family, role: "admin")
@@ -933,7 +922,7 @@ class UserTest < ActiveSupport::TestCase
     assert_includes error.record.errors[:base], I18n.t("activerecord.errors.models.user.attributes.base.provider_item_has_other_accounts")
     assert_equal source_family, user.reload.family
     assert_equal source_family, moved_account.reload.family
-    assert_equal source_family, plaid_item.reload.family
+    assert_equal source_family, simplefin_item.reload.family
   end
 
   test "has_local_password? returns true when password_digest is present" do

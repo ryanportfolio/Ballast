@@ -4,8 +4,6 @@ class PropertiesEditTest < ApplicationSystemTestCase
   setup do
     sign_in @user = users(:family_admin)
 
-    Family.any_instance.stubs(:get_link_token).returns("test-link-token")
-
     visit root_url
     open_new_account_modal
     create_new_property_account

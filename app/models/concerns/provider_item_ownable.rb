@@ -9,7 +9,7 @@
 # credential is safe for a non-admin member to supply:
 #
 #   per_connection -- the credential covers only what the person supplying it
-#                     authenticated to (Plaid Link, an exchange API key). A
+#                     authenticated to (a bank login, an exchange API key). A
 #                     member connecting their own bank exposes nothing of
 #                     anyone else's.
 #   tenant_wide    -- one credential enumerates accounts the supplier may not
@@ -28,7 +28,7 @@ module ProviderItemOwnable
   # so it does not depend on autoload order -- add a provider here when wiring
   # one up. Callers that must sweep ownership across providers (a user changing
   # families, say) iterate this.
-  OWNED_ITEM_CLASS_NAMES = %w[PlaidItem].freeze
+  OWNED_ITEM_CLASS_NAMES = %w[].freeze
 
   def self.owned_item_classes
     OWNED_ITEM_CLASS_NAMES.map(&:constantize)

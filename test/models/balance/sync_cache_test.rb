@@ -91,14 +91,14 @@ class Balance::SyncCacheTest < ActiveSupport::TestCase
       name: "Pending Transaction",
       amount: 100,
       currency: "USD",
-      entryable: Transaction.new(extra: { "plaid" => { "pending" => true } })
+      entryable: Transaction.new(extra: { "simplefin" => { "pending" => true } })
     )
     posted = @account.entries.create!(
       date: Date.current,
       name: "Posted Transaction",
       amount: 200,
       currency: "USD",
-      entryable: Transaction.new(extra: { "plaid" => { "pending" => false } })
+      entryable: Transaction.new(extra: { "simplefin" => { "pending" => false } })
     )
     security = Security.create!(ticker: "KEPT", name: "Kept Trade")
     trade = @account.entries.create!(

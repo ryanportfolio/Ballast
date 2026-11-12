@@ -272,7 +272,7 @@ class CreditCardTest < ActiveSupport::TestCase
     charge(account, Date.new(2026, 9, 10), 100)
 
     pending = charge(account, Date.new(2026, 9, 11), 500)
-    Transaction.find(pending.entryable_id).update!(extra: { "plaid" => { "pending" => true } })
+    Transaction.find(pending.entryable_id).update!(extra: { "simplefin" => { "pending" => true } })
 
     # A split parent is replaced by its children, so the 300 stays in the
     # statement once and the parent row itself never counts.

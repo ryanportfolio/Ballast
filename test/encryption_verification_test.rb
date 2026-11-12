@@ -203,29 +203,29 @@ class EncryptionVerificationTest < ActiveSupport::TestCase
   # PROVIDER ITEM TESTS (if fixtures exist)
   # ============================================================================
 
-  test "plaid account holdings stored before encryption was enabled can be read and backfilled" do
-    account = PlaidAccount.create!(
-      plaid_item: plaid_items(:one),
-      plaid_id: "holdings_backfill_probe",
+  test "simplefin account holdings stored before encryption was enabled can be read and backfilled" do
+    simplefin_item = SimplefinItem.create!(family: families(:dylan_family), name: "SimpleFIN Connection", access_url: "https://example.com/access")
+    account = simplefin_item.simplefin_accounts.create!(
+      account_id: "holdings_backfill_probe",
       name: "Brokerage",
-      plaid_type: "investment",
+      account_type: "investment",
       currency: "USD",
       current_balance: 1000
     )
     # Store plaintext, as an instance that enabled encryption after syncing would have.
-    PlaidAccount.where(id: account.id).update_all(
+    SimplefinAccount.where(id: account.id).update_all(
       "raw_holdings_payload = '{\"holdings\": [{\"security_id\": \"sec_probe\"}]}'::jsonb"
     )
 
     with_unencrypted_data_supported do
-      account = PlaidAccount.find(account.id)
+      account = SimplefinAccount.find(account.id)
       assert_equal "sec_probe", account.raw_holdings_payload["holdings"].first["security_id"]
 
       account.encrypt
     end
 
     assert_equal "sec_probe", account.reload.raw_holdings_payload["holdings"].first["security_id"]
-    assert_column_not_plaintext(PlaidAccount, account.id, :raw_holdings_payload, "sec_probe")
+    assert_column_not_plaintext(SimplefinAccount, account.id, :raw_holdings_payload, "sec_probe")
   end
 
   # ============================================================================

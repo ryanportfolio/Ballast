@@ -3705,7 +3705,6 @@ components:
           - family_merchant_associations
           - provider_items
           - active_storage_attachments
-          - plaid_items
           additionalProperties:
             type: integer
             minimum: 0
@@ -3804,9 +3803,6 @@ components:
               type: integer
               minimum: 0
             active_storage_attachments:
-              type: integer
-              minimum: 0
-            plaid_items:
               type: integer
               minimum: 0
 paths:

@@ -287,8 +287,6 @@ vi:
       recently_synced: Đã đồng bộ gần đây. Thử lại sau một chút.
       taglines:
         simplefin: Kết nối tài khoản ngân hàng Mỹ qua giao thức mở SimpleFIN.
-        plaid: Kết nối hàng ngàn tổ chức tài chính Mỹ qua Plaid.
-        plaid_eu: Kết nối tổ chức tài chính châu Âu qua Plaid (PSD2 / Open Banking).
       search_filters:
         aria_label: Tìm kiếm nhà cung cấp
         placeholder: Tìm kiếm nhà cung cấp
@@ -310,11 +308,5 @@ vi:
         setup_token_label: "Token thiết lập"
         setup_token_placeholder: "Dán token thiết lập SimpleFIN"
         save_and_connect: "Lưu và kết nối"
-      plaid_panel:
-        step_1_html: "Mở %{link} và sao chép ID khách hàng và Khóa bí mật."
-        step_2: "Chọn môi trường. Dùng sandbox để kiểm tra và production cho tài khoản thực."
-        step_3: "Dán thông tin xác thực vào bên dưới và kết nối."
-      plaid_eu_panel:
-        step_1_html: "Mở %{link} và sao chép ID khách hàng EU và Khóa bí mật."
       not_found: Không tìm thấy nhà cung cấp.
       sync_provider_no_items: Không có kết nối nào để đồng bộ.

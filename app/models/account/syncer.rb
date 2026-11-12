@@ -39,7 +39,7 @@ class Account::Syncer
     # A provider that dates its holdings itself, but whose balance is anchored
     # on the day of the sync, leaves the two a day apart; the reverse
     # calculator reads the difference as cash, on every day, in the amount of
-    # the day's move (Sure #3815 and, in Plaid, #3874). Nothing fails, so the only
+    # the day's move (Sure #3815 and #3874). Nothing fails, so the only
     # place it can show is here, once every provider has written.
     #
     # The log records changes, compared with the account's latest entry from

@@ -9,7 +9,7 @@
 # 1. Duplicate processing of the same transactions
 # 2. Overwriting richer data with less complete data
 #
-# Unlike Plaid (which has a separate investment_transactions endpoint), SimpleFIN returns
+# Unlike providers with a separate investment_transactions endpoint, SimpleFIN returns
 # all transactions in a single `transactions` array regardless of account type.
 #
 # Holdings are processed separately by SimplefinAccount::Investments::HoldingsProcessor.

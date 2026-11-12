@@ -56,7 +56,6 @@ gem "image_processing", ">= 1.2"
 # Other
 gem "ostruct"
 gem "bcrypt", "~> 3.1"
-gem "jwt"
 gem "jbuilder"
 gem "countries"
 
@@ -76,7 +75,6 @@ gem "tzinfo-data", platforms: %i[mswin mswin64 mingw x64_mingw jruby]
 gem "csv"
 gem "rchardet" # Character encoding detection
 gem "redcarpet"
-gem "plaid"
 gem "httparty"
 gem "rotp", "~> 6.3"
 gem "rqrcode", "~> 3.0"

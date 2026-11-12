@@ -7,6 +7,7 @@ class GoalTest < ActiveSupport::TestCase
     @family = families(:dylan_family)
     @depository = accounts(:depository)
     @connected = accounts(:connected)
+    link_account_to_simplefin!(@connected)
     @goal = goals(:vacation_italy)
   end
 
@@ -314,7 +315,7 @@ class GoalTest < ActiveSupport::TestCase
 
     # Pending inflow that must be excluded by `Transaction.excluding_pending`.
     pending_entry = create_transaction(account: account, amount: -1_000, date: 10.days.ago.to_date)
-    pending_entry.transaction.update!(extra: { "plaid" => { "pending" => true } })
+    pending_entry.transaction.update!(extra: { "simplefin" => { "pending" => true } })
 
     # User-excluded outflow that must be excluded by `entries.excluded = false`.
     excluded_entry = create_transaction(account: account, amount: 500, date: 20.days.ago.to_date)
@@ -380,7 +381,7 @@ class GoalTest < ActiveSupport::TestCase
     assert_equal :reached, @goal.display_status
   end
 
-  test "any_connected_account? reflects plaid_account presence" do
+  test "any_connected_account? reflects provider link presence" do
     assert @goal.any_connected_account?
     only_manual = goals(:emergency_fund)
     only_manual.goal_accounts.where(account_id: @connected.id).destroy_all

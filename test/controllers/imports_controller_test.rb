@@ -664,14 +664,14 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "shows the differences when an existing provider merchant differs from the Sure import file" do
-    ProviderMerchant.create!(name: "AMZN MKTP", source: "plaid", website_url: "https://amazon.com")
+    ProviderMerchant.create!(name: "AMZN MKTP", source: "ai", website_url: "https://amazon.com")
     import = @user.family.imports.create!(type: "SureImport")
     ndjson = [
       { type: "Account", data: {
         id: "account-1", name: "Checking", balance: "1000.00", currency: "USD",
         accountable_type: "Depository", accountable: { subtype: "checking" }
       } },
-      { type: "ProviderMerchant", data: { id: "pm-1", name: "AMZN MKTP", source: "plaid", website_url: "https://amazon.co.uk" } }
+      { type: "ProviderMerchant", data: { id: "pm-1", name: "AMZN MKTP", source: "ai", website_url: "https://amazon.co.uk" } }
     ].map(&:to_json).join("\n")
     import.ndjson_file.attach(io: StringIO.new(ndjson), filename: "all.ndjson", content_type: "application/x-ndjson")
     import.sync_ndjson_rows_count!
@@ -720,6 +720,9 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     # partial under test only renders for an uploaded PDF — stub the
     # state so we exercise the actual account-select scoping path.
     PdfImport.any_instance.stubs(:pdf_uploaded?).returns(true)
+    # Provider-backed accounts are offered too, so an unshared linked account
+    # must stay hidden as well.
+    link_account_to_simplefin!(accounts(:connected))
 
     get import_url(pdf_import)
 
@@ -727,7 +730,7 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_select 'select[name="import[account_id]"] option', text: "Checking Account"
     assert_select 'select[name="import[account_id]"] option', text: "Collectable Account", count: 0
     assert_select 'select[name="import[account_id]"] option', text: "IOU (personal debt to friend)", count: 0
-    assert_select 'select[name="import[account_id]"] option', text: "Plaid Depository Account", count: 0
+    assert_select 'select[name="import[account_id]"] option', text: "Connected Depository Account", count: 0
   end
 
   private

@@ -12,8 +12,8 @@ class Loan < ApplicationRecord
   }.freeze
 
   # The rate types the form offers. They are not the only ones a loan can
-  # carry: PlaidAccount::Liabilities::MortgageProcessor writes Plaid's raw
-  # `interest_rate.type` straight through ("arm", among others), and a loan
+  # carry: a provider import or an older database can hold a raw rate type
+  # ("arm", among others), and a loan
   # whose rate can move is variable whatever the provider's word for it.
   # So the predicates below read the column as: "fixed" is fixed, any other
   # non-blank value is variable, and blank says nothing -- such a loan is
@@ -493,8 +493,8 @@ class Loan < ApplicationRecord
   #
   # `initial_balance` is the recorded contractual principal. The account form
   # writes it beside the opening valuation and the demo generator does the
-  # same, so for anything created here the two agree. Plaid's student-loan
-  # import writes `origination_principal_amount` into it, and there they can
+  # same, so for anything created here the two agree. A provider import that
+  # writes the original principal into it can make them
   # disagree by the whole of the repayment history: a loan imported after
   # years of payments has a first tracked valuation part way down the curve,
   # not the amount borrowed.

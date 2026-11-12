@@ -49,13 +49,13 @@ class InvestmentFlowStatementTest < ActiveSupport::TestCase
     expenses_before = IncomeStatement.new(family).expense_totals(period: period).total
 
     inflow = brokerage.import_transaction(
-      external_id: "plaid_brokerage_contribution", amount: -500, currency: "USD",
-      date: Date.current, name: "Contribution", source: "plaid",
+      external_id: "simplefin_brokerage_contribution", amount: -500, currency: "USD",
+      date: Date.current, name: "Contribution", source: "simplefin",
       investment_activity_label: "Contribution"
     )
     outflow = checking.import_transaction(
-      external_id: "plaid_checking_to_brokerage", amount: 500, currency: "USD",
-      date: Date.current, name: "Transfer to brokerage", source: "plaid"
+      external_id: "simplefin_checking_to_brokerage", amount: 500, currency: "USD",
+      date: Date.current, name: "Transfer to brokerage", source: "simplefin"
     )
     family.auto_match_transfers!
     assert inflow.transaction.reload.transfer.present?, "expected the two legs to be auto-matched"
@@ -63,8 +63,8 @@ class InvestmentFlowStatementTest < ActiveSupport::TestCase
 
     # The next sync replays the brokerage row; the matched inflow keeps funds_movement.
     brokerage.import_transaction(
-      external_id: "plaid_brokerage_contribution", amount: -500, currency: "USD",
-      date: Date.current, name: "Contribution", source: "plaid",
+      external_id: "simplefin_brokerage_contribution", amount: -500, currency: "USD",
+      date: Date.current, name: "Contribution", source: "simplefin",
       investment_activity_label: "Contribution"
     )
     assert_equal "funds_movement", inflow.transaction.reload.kind

@@ -10,16 +10,34 @@ class ProviderItemOwnableTest < ActiveSupport::TestCase
 
   teardown { Current.reset }
 
-  # An anonymous model that includes the concern without declaring a scope,
-  # standing in for any of the 24 providers that have not been classified yet.
+  # No live provider item includes the concern today (SimpleFIN is tenant_wide
+  # and admin-only), so anonymous models stand in for provider items. They sit
+  # on the accounts table, which has the family_id and owner_id columns the
+  # concern needs.
   def undeclared_item_class
     Class.new(ApplicationRecord) do
-      self.table_name = "plaid_items"
+      self.table_name = "accounts"
       belongs_to :family
       include ProviderItemOwnable
 
       def self.name = "UndeclaredItem"
     end
+  end
+
+  # Stands in for a provider whose credential covers a single connection.
+  def per_connection_item_class
+    Class.new(ApplicationRecord) do
+      self.table_name = "accounts"
+      belongs_to :family
+      include ProviderItemOwnable
+      credential_scope :per_connection
+
+      def self.name = "PerConnectionItem"
+    end
+  end
+
+  def per_connection_item(owner:)
+    per_connection_item_class.create!(family: @family, name: "Member Bank", owner: owner)
   end
 
   test "credential scope defaults to tenant_wide so an unclassified provider stays admin-only" do
@@ -34,25 +52,16 @@ class ProviderItemOwnableTest < ActiveSupport::TestCase
     assert_match(/unknown credential scope/, error.message)
   end
 
-  test "PlaidItem declares per_connection" do
-    assert_equal :per_connection, PlaidItem.declared_credential_scope
-    assert PlaidItem.member_connectable?
-  end
-
   test "owner defaults to the current user" do
     Current.session = @member.sessions.create!
 
-    item = @family.plaid_items.create!(
-      name: "Member Bank", plaid_id: "item_owner_default", access_token: "token_owner_default"
-    )
+    item = per_connection_item_class.create!(family: @family, name: "Member Bank")
 
     assert_equal @member, item.owner
   end
 
   test "owner falls back to a family admin when there is no current user" do
-    item = @family.plaid_items.create!(
-      name: "Console Bank", plaid_id: "item_owner_fallback", access_token: "token_owner_fallback"
-    )
+    item = per_connection_item_class.create!(family: @family, name: "Console Bank")
 
     assert_equal @admin, item.owner
   end
@@ -60,36 +69,31 @@ class ProviderItemOwnableTest < ActiveSupport::TestCase
   test "owner must belong to the same family" do
     outsider = users(:empty)
 
-    item = @family.plaid_items.new(
-      name: "Cross Family", plaid_id: "item_cross", access_token: "token_cross", owner: outsider
-    )
+    item = per_connection_item_class.new(family: @family, name: "Cross Family", owner: outsider)
 
     assert_not item.valid?
     assert_includes item.errors[:owner], "is invalid"
   end
 
   test "an admin may manage any connection in the family" do
-    item = plaid_items(:one)
-    item.update!(owner: @member)
+    item = per_connection_item(owner: @member)
 
     assert item.manageable_by?(@admin)
   end
 
   test "a member may manage a per_connection item they own" do
-    item = plaid_items(:one)
-    item.update!(owner: @member)
+    item = per_connection_item(owner: @member)
 
     assert item.manageable_by?(@member)
   end
 
   test "a member may not manage a connection owned by someone else" do
-    item = plaid_items(:one)
-    item.update!(owner: @admin)
+    item = per_connection_item(owner: @admin)
 
     assert_not item.manageable_by?(@member)
   end
 
   test "manageable_by? is false without a user" do
-    assert_not plaid_items(:one).manageable_by?(nil)
+    assert_not per_connection_item(owner: @admin).manageable_by?(nil)
   end
 end

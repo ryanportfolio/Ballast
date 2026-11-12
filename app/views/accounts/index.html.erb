@@ -10,16 +10,10 @@
   ) %>
 <% end %>
 
-<% if @manual_accounts.empty? && @plaid_items.empty? && @simplefin_items.empty? %>
+<% if @manual_accounts.empty? && @simplefin_items.empty? %>
   <%= render "empty" %>
 <% else %>
   <div class="space-y-2">
-    <% if @plaid_items.any? %>
-      <% @plaid_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
     <% if @simplefin_items.any? %>
       <% @simplefin_items.sort_by(&:created_at).each do |item| %>
         <%= render item, visible_accounts: visible_card_accounts(item) %>

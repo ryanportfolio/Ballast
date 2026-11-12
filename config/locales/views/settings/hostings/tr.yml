@@ -258,9 +258,6 @@ tr:
         auto_sync_time_description: Otomatik eşitlemenin gerçekleşeceği günün saatini
           belirtin.
         auto_sync_time_label: Eşitleme saati (HH:MM)
-        env_configured_message: Bir sağlayıcı ortam değişkeni (SIMPLEFIN_INCLUDE_PENDING
-          veya PLAID_INCLUDE_PENDING) ayarlandığı için bu ayar devre dışı bırakıldı.
-          Bu ayarı etkinleştirmek için kaldırın.
         include_pending_description: Etkinleştirildiğinde, bekleyen (henüz kesinleşmemiş)
           işlemler içe aktarılır ve kesinleştiklerinde otomatik olarak eşleştirilir.
           Bankanız güvenilmez bekleyen veri sağlıyorsa devre dışı bırakın.

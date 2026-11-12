@@ -1,27 +1,4 @@
 namespace :data_migration do
-  desc "Migrate EU Plaid webhooks"
-  # 2025-02-07: EU Plaid items need to be moved over to a new webhook URL so that we can
-  # instantiate the correct Plaid client for verification based on which Plaid instance it comes from
-  task eu_plaid_webhooks: :environment do
-    Provider::PlaidEuAdapter.ensure_configuration_loaded
-    provider = Provider::Plaid.new(Rails.application.config.plaid_eu, region: :eu)
-
-    eu_items = PlaidItem.where(plaid_region: "eu")
-
-    eu_items.find_each do |item|
-      request = Plaid::ItemWebhookUpdateRequest.new(
-        access_token: item.access_token,
-        webhook: "https://app.sure.am/webhooks/plaid_eu"
-      )
-
-      provider.client.item_webhook_update(request)
-
-      puts "Updated webhook for Plaid item #{item.plaid_id}"
-    rescue => error
-      puts "Error updating webhook for Plaid item #{item.plaid_id}: #{error.message}"
-    end
-  end
-
   desc "Migrate duplicate securities"
   # 2025-05-22: older data allowed multiple rows with the same
   # ticker / exchange_operating_mic (case-insensitive, NULLs collapsed).
@@ -116,7 +93,7 @@ namespace :data_migration do
   desc "Migrate account valuation anchors"
   # 2025-07-10: Set opening_anchor kinds for valuations to support event-sourced ledger model.
   # Manual accounts get their oldest valuation marked as opening_anchor, which acts as the
-  # starting balance for the account. Current anchors are only used for Plaid accounts.
+  # starting balance for the account. Current anchors are only used for linked accounts.
   task migrate_account_valuation_anchors: :environment do
     puts "==> Migrating account valuation anchors..."
 

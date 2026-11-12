@@ -94,6 +94,7 @@ class Assistant::Function::SetOpeningBalanceTest < ActiveSupport::TestCase
   end
 
   test "refuses accounts synced from a provider" do
+    link_account_to_simplefin!(accounts(:connected))
     result = @function.call("account_id" => accounts(:connected).id, "balance" => 0)
 
     assert_equal "linked_account", result[:error]

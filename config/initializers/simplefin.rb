@@ -15,7 +15,7 @@ Rails.application.configure do
 
   # Common money market fund tickers that should be treated as cash equivalents
   # These are settlement funds that users consider "cash available to invest"
-  # SimpleFIN doesn't provide is_cash_equivalent metadata like Plaid does,
+  # SimpleFIN doesn't provide is_cash_equivalent metadata,
   # so we detect by ticker symbol and description patterns
   config.x.simplefin.money_market_tickers = %w[
     VMFXX VMMXX VMRXX VUSXX

@@ -17,7 +17,7 @@ class EntryReconciliationTest < ActiveSupport::TestCase
   end
 
   test "an entry carrying provider provenance is cleared without storing a flag" do
-    from_external_id = create_transaction(account: @account, external_id: "plaid-1")
+    from_external_id = create_transaction(account: @account, external_id: "other-1")
     from_source = create_transaction(account: @account, source: "simplefin")
 
     assert_equal :cleared, from_external_id.reconciliation_state
@@ -25,7 +25,7 @@ class EntryReconciliationTest < ActiveSupport::TestCase
   end
 
   test "reconciled outranks cleared" do
-    entry = create_transaction(account: @account, source: "plaid")
+    entry = create_transaction(account: @account, source: "other_provider")
     entry.mark_reconciled!(statement: @statement)
 
     assert_equal :reconciled, entry.reload.reconciliation_state
@@ -33,7 +33,7 @@ class EntryReconciliationTest < ActiveSupport::TestCase
   end
 
   test "reconciling is reversible but clearing is not affected by it" do
-    entry = create_transaction(account: @account, source: "plaid")
+    entry = create_transaction(account: @account, source: "other_provider")
     entry.mark_reconciled!(statement: @statement)
     entry.unmark_reconciled!
 

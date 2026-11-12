@@ -7,13 +7,13 @@
 # can report consistent sync summaries.
 #
 # @example Include in a syncer class
-#   class PlaidItem::Syncer
+#   class SimplefinItem::Syncer
 #     include SyncStats::Collector
 #
 #     def perform_sync(sync)
 #       # ... sync logic ...
-#       collect_setup_stats(sync, provider_accounts: plaid_item.plaid_accounts)
-#       collect_transaction_stats(sync, account_ids: account_ids, source: "plaid")
+#       collect_setup_stats(sync, provider_accounts: simplefin_item.simplefin_accounts)
+#       collect_transaction_stats(sync, account_ids: account_ids, source: "simplefin")
 #       # ...
 #     end
 #   end
@@ -25,7 +25,7 @@ module SyncStats
     # Collects account setup statistics (total, linked, unlinked counts).
     #
     # @param sync [Sync] The sync record to update
-    # @param provider_accounts [ActiveRecord::Relation] The provider accounts (e.g., SimplefinAccount, PlaidAccount)
+    # @param provider_accounts [ActiveRecord::Relation] The provider accounts (e.g., SimplefinAccount)
     # @param linked_check [Proc, nil] Optional proc to check if an account is linked. If nil, uses default logic.
     # @return [Hash] The setup stats that were collected
     def collect_setup_stats(sync, provider_accounts:, linked_check: nil)
@@ -60,7 +60,7 @@ module SyncStats
     #
     # @param sync [Sync] The sync record to update
     # @param account_ids [Array<String>] The account IDs to count transactions for
-    # @param source [String] The transaction source (e.g., "simplefin", "plaid")
+    # @param source [String] The transaction source (e.g., "simplefin")
     # @param window_start [Time, nil] Start of the sync window (defaults to sync.created_at or 30 minutes ago)
     # @param window_end [Time, nil] End of the sync window (defaults to Time.current)
     # @return [Hash] The transaction stats that were collected
@@ -109,7 +109,7 @@ module SyncStats
     #
     # @param sync [Sync] The sync record to update
     # @param account_ids [Array<String>] The account IDs to count trades for
-    # @param source [String] The trade source (e.g., "simplefin", "plaid")
+    # @param source [String] The trade source (e.g., "simplefin")
     # @param window_start [Time, nil] Start of the sync window (defaults to sync.created_at or 30 minutes ago)
     # @param window_end [Time, nil] End of the sync window (defaults to Time.current)
     # @return [Hash] The trades stats that were collected

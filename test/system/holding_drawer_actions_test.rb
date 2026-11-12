@@ -31,7 +31,7 @@ class HoldingDrawerActionsTest < ApplicationSystemTestCase
   end
 
   test "resetting a remapped security asks first and keeps the mapping when cancelled" do
-    @holding.account.update!(plaid_account: plaid_accounts(:one))
+    link_account_to_simplefin!(@holding.account, account_type: "investment")
     @holding.update!(security: securities(:msft), provider_security: securities(:aapl), security_locked: true)
 
     visit holding_path(@holding)

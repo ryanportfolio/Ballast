@@ -179,7 +179,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
   end
 
   test "keeps a provider-supplied logo when adding the website" do
-    merchant = ProviderMerchant.create!(source: "plaid", name: "Acme Exchange", provider_merchant_id: "plaid_acme", logo_url: "https://plaid.example/acme.png")
+    merchant = ProviderMerchant.create!(source: "simplefin", name: "Acme Exchange", provider_merchant_id: "sf_acme", logo_url: "https://provider.example/acme.png")
     create_transaction(account: @account, name: "Acme Exchange transfer", merchant: merchant)
 
     provider_response = provider_success_response([
@@ -191,7 +191,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
 
     assert_equal 1, result[:enhanced]
     assert_equal "acme.example", merchant.reload.website_url
-    assert_equal "https://plaid.example/acme.png", merchant.logo_url
+    assert_equal "https://provider.example/acme.png", merchant.logo_url
   end
 
   private

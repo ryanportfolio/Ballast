@@ -61,7 +61,7 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
   test "appends to a single-line enum" do
     result = append(<<~RUBY)
       class ProviderMerchant < Merchant
-        enum :source, { plaid: "plaid", simplefin: "simplefin" }
+        enum :source, { ai: "ai", simplefin: "simplefin" }
       end
     RUBY
 
@@ -73,7 +73,7 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
     result = append(<<~RUBY)
       class DataEnrichment < ApplicationRecord
         enum :source, {
-          plaid: "plaid",
+          ai: "ai",
           simplefin: "simplefin"
         }
       end
@@ -85,7 +85,7 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
   end
 
   test "does not double the comma on a single-line enum with a trailing comma" do
-    result = append('enum :source, { plaid: "plaid", simplefin: "simplefin", }')
+    result = append('enum :source, { ai: "ai", simplefin: "simplefin", }')
 
     assert_parses "x = #{result}"
     assert_not_includes result, ",,"
@@ -95,7 +95,7 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
     result = append(<<~RUBY)
       class DataEnrichment < ApplicationRecord
         enum :source, {
-          plaid: "plaid",
+          ai: "ai",
           simplefin: "simplefin",
         }
       end
@@ -132,9 +132,9 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
   end
 
   test "preserves backslashes in the hash body rather than treating them as backreferences" do
-    result = append(%(enum :source, { plaid: "pl\\\\aid" }))
+    result = append(%(enum :source, { ai: "a\\\\i" }))
 
-    assert_includes result, "pl\\\\aid"
+    assert_includes result, "a\\\\i"
   end
 
   # Row and drawer forms post from the page, so no request carries a Turbo-Frame

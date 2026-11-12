@@ -5,7 +5,7 @@ class ProviderMerchantTest < ActiveSupport::TestCase
 
   setup do
     @family = families(:dylan_family)
-    @provider_merchant = ProviderMerchant.create!(name: "Acme Synced", source: "plaid")
+    @provider_merchant = ProviderMerchant.create!(name: "Acme Synced", source: "ai")
   end
 
   # Regression: issue #1977. Converting a synced merchant to a family merchant
@@ -36,18 +36,18 @@ class ProviderMerchantTest < ActiveSupport::TestCase
   end
 
   test "find_by_import_data prefers provider_merchant_id over name, scoped to source" do
-    by_id = ProviderMerchant.create!(name: "Renamed Upstream", source: "plaid", provider_merchant_id: "plaid_acme")
+    by_id = ProviderMerchant.create!(name: "Renamed Upstream", source: "ai", provider_merchant_id: "upstream_acme")
     ProviderMerchant.create!(name: "Acme", source: "simplefin")
 
-    found = ProviderMerchant.find_by_import_data({ "name" => "Old Name", "provider_merchant_id" => "plaid_acme" }, "plaid")
+    found = ProviderMerchant.find_by_import_data({ "name" => "Old Name", "provider_merchant_id" => "upstream_acme" }, "ai")
 
     assert_equal by_id, found
-    assert_equal @provider_merchant, ProviderMerchant.find_by_import_data({ "name" => "Acme Synced" }, "plaid")
+    assert_equal @provider_merchant, ProviderMerchant.find_by_import_data({ "name" => "Acme Synced" }, "ai")
     assert_nil ProviderMerchant.find_by_import_data({ "name" => "Acme Synced" }, "simplefin")
   end
 
   test "import_diff reports only non-blank website_url and name differences" do
-    merchant = ProviderMerchant.create!(name: "Acme", source: "plaid", provider_merchant_id: "plaid_acme", website_url: "https://acme.com")
+    merchant = ProviderMerchant.create!(name: "Acme", source: "simplefin", provider_merchant_id: "upstream_acme", website_url: "https://acme.com")
 
     assert_empty merchant.import_diff({ "name" => "Acme", "website_url" => "https://acme.com", "color" => "#123456" })
     assert_empty merchant.import_diff({ "name" => "Acme", "website_url" => "" })
@@ -61,7 +61,7 @@ class ProviderMerchantTest < ActiveSupport::TestCase
 
   test "import_diff flags a non-blank provider_merchant_id that differs from, or is missing on, the existing merchant" do
     with_id = ProviderMerchant.create!(name: "Acme", source: "simplefin", provider_merchant_id: "id-1")
-    without_id = ProviderMerchant.create!(name: "Acme", source: "plaid")
+    without_id = ProviderMerchant.create!(name: "Acme", source: "ai")
 
     assert_equal(
       [ { field: "provider_merchant_id", imported_value: "id-2", kept_value: "id-1" } ],
@@ -76,16 +76,16 @@ class ProviderMerchantTest < ActiveSupport::TestCase
   end
 
   test "does not support color: writes are discarded and the stored value is NULL" do
-    assert_nil ProviderMerchant.new(name: "New", source: "plaid", color: "#123456").color
+    assert_nil ProviderMerchant.new(name: "New", source: "simplefin", color: "#123456").color
 
-    created = ProviderMerchant.create!(name: "Colored", source: "plaid", color: "#123456")
+    created = ProviderMerchant.create!(name: "Colored", source: "simplefin", color: "#123456")
 
     assert_nil created.color
     assert_nil ProviderMerchant.where(id: created.id).pick(:color)
   end
 
   test "does not support color: a stale value on an old row is never read and is cleared on the next save" do
-    legacy = ProviderMerchant.create!(name: "Legacy", source: "plaid")
+    legacy = ProviderMerchant.create!(name: "Legacy", source: "simplefin")
     legacy.update_column(:color, "#654321")
 
     assert_nil ProviderMerchant.find(legacy.id).color, "a stale value must not reach a view"
@@ -118,9 +118,9 @@ class ProviderMerchantTest < ActiveSupport::TestCase
 
   test "keeps a provider-supplied logo" do
     with_brandfetch do
-      merchant = ProviderMerchant.create!(name: "Walmart", source: "plaid", website_url: "walmart.com", logo_url: "https://plaid.com/walmart.png")
+      merchant = ProviderMerchant.create!(name: "Walmart", source: "simplefin", website_url: "walmart.com", logo_url: "https://provider.example.com/walmart.png")
 
-      assert_equal "https://plaid.com/walmart.png", merchant.logo_url
+      assert_equal "https://provider.example.com/walmart.png", merchant.logo_url
     end
   end
 
@@ -137,15 +137,15 @@ class ProviderMerchantTest < ActiveSupport::TestCase
   # logo with the Brandfetch fallback (issue #2925).
   test "generate_logo_url_from_website! keeps a provider-supplied logo" do
     with_brandfetch do
-      merchant = ProviderMerchant.create!(name: "Walmart", source: "plaid", website_url: "walmart.com", logo_url: "https://plaid.com/walmart.png")
+      merchant = ProviderMerchant.create!(name: "Walmart", source: "simplefin", website_url: "walmart.com", logo_url: "https://provider.example.com/walmart.png")
 
       merchant.update!(website_url: "walmart.de")
       merchant.generate_logo_url_from_website!
-      assert_equal "https://plaid.com/walmart.png", merchant.reload.logo_url
+      assert_equal "https://provider.example.com/walmart.png", merchant.reload.logo_url
 
       merchant.update!(website_url: nil)
       merchant.generate_logo_url_from_website!
-      assert_equal "https://plaid.com/walmart.png", merchant.reload.logo_url
+      assert_equal "https://provider.example.com/walmart.png", merchant.reload.logo_url
     end
   end
 
@@ -155,7 +155,7 @@ class ProviderMerchantTest < ActiveSupport::TestCase
   test "generate_logo_url_from_website! keeps a provider-supplied logo hosted on the Brandfetch CDN" do
     with_brandfetch do
       provider_supplied = "https://cdn.brandfetch.io/walmart.com/icon/fallback/lettermark/w/40/h/40?c=some_other_account_id"
-      merchant = ProviderMerchant.create!(name: "Walmart", source: "plaid", website_url: "walmart.com", logo_url: provider_supplied)
+      merchant = ProviderMerchant.create!(name: "Walmart", source: "simplefin", website_url: "walmart.com", logo_url: provider_supplied)
 
       merchant.update!(website_url: "walmart.de")
       merchant.generate_logo_url_from_website!
@@ -191,7 +191,7 @@ class ProviderMerchantTest < ActiveSupport::TestCase
     Setting.stubs(:brand_fetch_client_id).returns(nil) # the websites arrived before Brandfetch was configured
     website_only = ProviderMerchant.create!(name: "Walmart", source: "ai", website_url: "walmart.com")
     out_of_scope = ProviderMerchant.create!(name: "Target", source: "ai", website_url: "target.com")
-    with_logo = ProviderMerchant.create!(name: "Costco", source: "plaid", website_url: "costco.com", logo_url: "https://plaid.com/costco.png")
+    with_logo = ProviderMerchant.create!(name: "Costco", source: "simplefin", website_url: "costco.com", logo_url: "https://provider.example.com/costco.png")
 
     with_brandfetch do
       scope = ProviderMerchant.where(id: [ website_only.id, with_logo.id, @provider_merchant.id ])
@@ -201,7 +201,7 @@ class ProviderMerchantTest < ActiveSupport::TestCase
 
     assert_equal brandfetch_logo("walmart.com"), website_only.reload.logo_url
     assert_nil out_of_scope.reload.logo_url
-    assert_equal "https://plaid.com/costco.png", with_logo.reload.logo_url
+    assert_equal "https://provider.example.com/costco.png", with_logo.reload.logo_url
     assert_nil @provider_merchant.reload.logo_url
   end
 

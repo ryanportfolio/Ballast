@@ -10,7 +10,6 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
       color: "#12B76A",
       lucide_icon: "tag"
     )
-    Provider::Registry.stubs(:plaid_provider_for_region).returns(nil)
   end
 
   test "dry run reports target counts and deletes nothing" do
@@ -42,7 +41,7 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
 
   test "sync counts use the family sync scope without double counting" do
     account = @family.accounts.first
-    provider_item = @family.plaid_items.first
+    provider_item = @family.simplefin_items.create!(name: "Sync Count Bank", access_url: "https://example.com/access")
     @family.syncs.create!
     account.syncs.create!
     provider_item.syncs.create!
@@ -113,39 +112,33 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
     assert Category.exists?(@other_category.id)
   end
 
-  test "destructive reset revokes provider item and clears provider account attachments" do
+  test "destructive reset deletes provider item and clears provider account attachments" do
     account = @other_family.accounts.create!(
       name: "Provider Reset Checking",
       balance: 100,
       currency: "USD",
       accountable: Depository.new
     )
-    plaid_item = @other_family.plaid_items.create!(
+    simplefin_item = @other_family.simplefin_items.create!(
       name: "Provider Reset Bank",
-      plaid_id: "provider_reset_item",
-      access_token: "provider_reset_access_token",
-      plaid_region: "us"
+      access_url: "https://example.com/provider_reset_access"
     )
-    plaid_account = plaid_item.plaid_accounts.create!(
-      plaid_id: "provider_reset_account",
-      plaid_type: "depository",
+    simplefin_account = simplefin_item.simplefin_accounts.create!(
+      account_id: "provider_reset_account",
+      account_type: "checking",
       current_balance: 100,
       currency: "USD",
       name: "Provider Reset Account"
     )
-    account_provider = AccountProvider.create!(account: account, provider: plaid_account)
-    plaid_item.logo.attach(io: StringIO.new("logo"), filename: "logo.png", content_type: "image/png")
-    attachment = plaid_item.logo.attachment
-
-    plaid_provider = mock
-    Provider::Registry.stubs(:plaid_provider_for_region).returns(plaid_provider)
-    plaid_provider.expects(:remove_item).with(plaid_item.access_token).once
+    account_provider = AccountProvider.create!(account: account, provider: simplefin_account)
+    simplefin_item.logo.attach(io: StringIO.new("logo"), filename: "logo.png", content_type: "image/png")
+    attachment = simplefin_item.logo.attachment
 
     result = Family::FinancialDataReset.new(family: @other_family, dry_run: false, confirmed: true).call
 
     assert_equal 0, result.after_counts.values.sum
-    assert_not PlaidItem.exists?(plaid_item.id)
-    assert_not PlaidAccount.exists?(plaid_account.id)
+    assert_not SimplefinItem.exists?(simplefin_item.id)
+    assert_not SimplefinAccount.exists?(simplefin_account.id)
     assert_not AccountProvider.exists?(account_provider.id)
     assert_not ActiveStorage::Attachment.exists?(attachment.id)
   end
@@ -279,24 +272,22 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
       family_export = family.family_exports.create!(status: "completed")
       family_export.export_file.attach(io: StringIO.new("zip"), filename: "#{safe_label}.zip", content_type: "application/zip")
       account_statement = create_account_statement!(family: family, account: account, label: label)
-      plaid_item = family.plaid_items.create!(
-        name: "#{label} Plaid Item",
-        plaid_id: "plaid_item_#{safe_label}_#{family.id.delete("-")}",
-        access_token: "access_#{safe_label}_#{family.id.delete("-")}",
-        plaid_region: "us"
+      simplefin_item = family.simplefin_items.create!(
+        name: "#{label} SimpleFIN Item",
+        access_url: "https://example.com/access_#{safe_label}_#{family.id.delete("-")}"
       )
-      plaid_account = plaid_item.plaid_accounts.create!(
-        plaid_id: "plaid_account_#{safe_label}",
-        plaid_type: "depository",
+      simplefin_account = simplefin_item.simplefin_accounts.create!(
+        account_id: "simplefin_account_#{safe_label}",
+        account_type: "checking",
         current_balance: 100,
         currency: family.currency,
-        name: "#{label} Plaid Account"
+        name: "#{label} SimpleFIN Account"
       )
-      account_provider = AccountProvider.create!(account: account, provider: plaid_account)
-      plaid_item.logo.attach(io: StringIO.new("logo"), filename: "#{safe_label}.png", content_type: "image/png")
+      account_provider = AccountProvider.create!(account: account, provider: simplefin_account)
+      simplefin_item.logo.attach(io: StringIO.new("logo"), filename: "#{safe_label}.png", content_type: "image/png")
       family_sync = family.syncs.create!
       account_sync = account.syncs.create!
-      provider_sync = plaid_item.syncs.create!
+      provider_sync = simplefin_item.syncs.create!
 
       {
         account: account,
@@ -329,8 +320,8 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
         import_mapping: import_mapping,
         family_export: family_export,
         account_statement: account_statement,
-        plaid_item: plaid_item,
-        plaid_account: plaid_account,
+        simplefin_item: simplefin_item,
+        simplefin_account: simplefin_account,
         account_provider: account_provider,
         family_sync: family_sync,
         account_sync: account_sync,
@@ -401,7 +392,7 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
           attachment_snapshot(records[:transaction], "attachments"),
           attachment_snapshot(records[:family_export], "export_file"),
           attachment_snapshot(records[:account_statement], "original_file"),
-          attachment_snapshot(records[:plaid_item], "logo")
+          attachment_snapshot(records[:simplefin_item], "logo")
         ]
       )
     end

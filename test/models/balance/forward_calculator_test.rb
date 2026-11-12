@@ -96,7 +96,7 @@ class Balance::ForwardCalculatorTest < ActiveSupport::TestCase
       ]
     )
     account.entries.find_by!(date: 5.days.ago.to_date).entryable.update!(
-      extra: { "plaid" => { "pending" => true } }
+      extra: { "simplefin" => { "pending" => true } }
     )
 
     calculator = Balance::ForwardCalculator.new(account)
@@ -856,7 +856,7 @@ class Balance::ForwardCalculatorTest < ActiveSupport::TestCase
       ]
     )
     account.entries.find_by!(date: 1.day.ago.to_date).entryable.update!(
-      extra: { "plaid" => { "pending" => true } }
+      extra: { "simplefin" => { "pending" => true } }
     )
 
     Balance::Materializer.new(account, strategy: :forward).materialize_balances

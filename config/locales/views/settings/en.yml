@@ -409,8 +409,6 @@ en:
       recently_synced: Synced recently. Try again in a moment.
       taglines:
         simplefin: Connect US bank accounts via the open SimpleFIN protocol.
-        plaid: Connect thousands of US financial institutions via Plaid.
-        plaid_eu: Connect European financial institutions via Plaid (PSD2 / Open Banking).
       search_filters:
         aria_label: Search providers
         placeholder: Search providers
@@ -432,11 +430,5 @@ en:
         setup_token_label: "Setup Token"
         setup_token_placeholder: "Paste SimpleFIN setup token"
         save_and_connect: "Save and connect"
-      plaid_panel:
-        step_1_html: "Open the %{link} and copy your Client ID and Secret Key."
-        step_2: "Pick an environment. Use sandbox for testing and production for real accounts."
-        step_3: "Paste your credentials below and connect."
-      plaid_eu_panel:
-        step_1_html: "Open the %{link} and copy your EU Client ID and Secret Key."
       not_found: Provider not found.
       sync_provider_no_items: No connections available to sync.

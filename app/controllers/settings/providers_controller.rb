@@ -161,7 +161,7 @@ class Settings::ProvidersController < ApplicationController
       redirect_to root_path, alert: t("settings.providers.not_authorized")
     end
 
-    # Registry-driven configurations (e.g. Plaid) are stored in the global
+    # Registry-driven configurations (e.g. a provider:global adapter) are stored in the global
     # Setting and apply to every family on the instance.
     def ensure_instance_settings_manager
       return if Current.user.manages_instance_settings?

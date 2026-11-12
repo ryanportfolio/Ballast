@@ -287,8 +287,6 @@ zh-CN:
       recently_synced: 刚刚已同步，请稍后再试。
       taglines:
         simplefin: 通过开放的 SimpleFIN 协议连接美国银行账户。
-        plaid: 通过 Plaid 连接数千家美国金融机构。
-        plaid_eu: 通过 Plaid 连接欧洲金融机构（PSD2 / Open Banking）。
       search_filters:
         aria_label: 搜索提供商
         placeholder: 搜索提供商
@@ -310,11 +308,5 @@ zh-CN:
         setup_token_label: Setup Token
         setup_token_placeholder: 粘贴 SimpleFIN setup token
         save_and_connect: 保存并连接
-      plaid_panel:
-        step_1_html: 打开 %{link} 并复制您的 Client ID 和 Secret Key。
-        step_2: 选择环境。测试请使用 sandbox，真实账户请使用 production。
-        step_3: 将凭据粘贴到下方并连接。
-      plaid_eu_panel:
-        step_1_html: 打开 %{link} 并复制您的 EU Client ID 和 Secret Key。
       not_found: 未找到提供商。
       sync_provider_no_items: 没有可同步的连接。

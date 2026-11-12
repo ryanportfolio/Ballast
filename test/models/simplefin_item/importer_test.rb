@@ -119,16 +119,18 @@ class SimplefinItem::ImporterTest < ActiveSupport::TestCase
     assert_equal 1_000, depository.cash_balance
   end
 
-  # Both steps read every provider's flag and decide "pending" the same way, so
-  # the sync must count for review before it excludes: run through their one
-  # caller and the stale Plaid entry is reported and then excluded, rather
+  # Both steps read the pending providers' flags and decide "pending" the same
+  # way, so the sync must count for review before it excludes: run through their
+  # one caller and the stale entries are reported and then excluded, rather
   # than excluded by the first step and invisible to the second. Swap the two
-  # calls and stale_unmatched_pending goes to nil here.
-  test "stale pending review counts every provider's flag before the exclusion hides it" do
+  # calls and stale_unmatched_pending goes to nil here. A flag under a key that
+  # is not a pending provider is neither counted nor excluded.
+  test "stale pending review counts every pending flag before the exclusion hides it" do
     account = @family.accounts.create!(name: "Stale pending", balance: 0, currency: "USD", accountable: Depository.new)
     create_pending_entry(account, "simplefin_maybe", "simplefin", "maybe", 10)
     create_pending_entry(account, "simplefin_false", "simplefin", "off", 11)
-    create_pending_entry(account, "plaid_pending", "plaid", true, 12)
+    create_pending_entry(account, "simplefin_true", "simplefin", true, 12)
+    create_pending_entry(account, "other_pending", "other_provider", true, 13)
 
     @importer.send(:review_and_exclude_stale_pending, account)
 
@@ -136,7 +138,7 @@ class SimplefinItem::ImporterTest < ActiveSupport::TestCase
     assert_equal 2, stats["stale_unmatched_pending"]
     assert_equal 2, stats["stale_pending_excluded"]
     assert_empty stats.fetch("reconciliation_errors", [])
-    assert_equal [ "simplefin_false" ], account.entries.where(excluded: false).pluck(:name)
+    assert_equal [ "other_pending", "simplefin_false" ], account.entries.where(excluded: false).pluck(:name).sort
   end
 
   test "a rejected access URL marks the item for reconnection and logs it" do

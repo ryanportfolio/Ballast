@@ -518,13 +518,13 @@ class Rule::ConditionTest < ActiveSupport::TestCase
 
   # Casting extra to text searched its keys as well as its values, so a rule for
   # "payment" matched any row whose provider stored a payment_channel key, whatever
-  # that channel was. Plaid rows already carried pending and pending_transaction_id,
-  # which made "pending" and "transaction" match every one of them.
+  # that channel was. Provider rows that carry pending and pending_transaction_id
+  # made "pending" and "transaction" match every one of them.
   test "applies transaction_details condition to values, never to key names" do
     entry = create_transaction(date: Date.current, account: @account, amount: 40, name: "Costco")
     entry.transaction.update!(
       extra: {
-        "plaid" => {
+        "simplefin" => {
           "pending" => false,
           "pending_transaction_id" => "txn_1",
           "payment_channel" => "in store",
@@ -546,7 +546,7 @@ class Rule::ConditionTest < ActiveSupport::TestCase
     entry = create_transaction(date: Date.current, account: @account, amount: 40, name: "Costco")
     entry.transaction.update!(
       extra: {
-        "plaid" => {
+        "simplefin" => {
           "payment_meta" => { "reference_number" => "REF-9" },
           "counterparties" => [ { "name" => "Costco", "confidence_level" => "VERY_HIGH" } ]
         }
@@ -561,7 +561,7 @@ class Rule::ConditionTest < ActiveSupport::TestCase
   # against every unposted pending flag was never what a details rule meant.
   test "applies transaction_details condition without matching boolean or null literals" do
     entry = create_transaction(date: Date.current, account: @account, amount: 40, name: "Costco")
-    entry.transaction.update!(extra: { "plaid" => { "pending" => false, "payment_meta" => nil } })
+    entry.transaction.update!(extra: { "simplefin" => { "pending" => false, "payment_meta" => nil } })
 
     assert_equal 0, details_matches("like", "false").count
     assert_equal 0, details_matches("like", "null").count

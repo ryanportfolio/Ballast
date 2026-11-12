@@ -86,7 +86,7 @@ namespace :simplefin do
     excluded_pending = Entry.joins(
       "INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'"
     ).where(excluded: true)
-     .where(Transaction.pending_sql("transactions", providers: %w[simplefin plaid]))
+     .where(Transaction.pending_sql("transactions", providers: %w[simplefin]))
 
     puts "Found #{excluded_pending.count} excluded pending transactions to evaluate"
     puts ""
@@ -102,7 +102,7 @@ namespace :simplefin do
         .where(currency: pending_entry.currency)
         .where(amount: pending_entry.amount)
         .where(date: pending_entry.date..(pending_entry.date + date_window.days))
-        .where(Transaction.not_pending_sql("transactions", providers: %w[simplefin plaid]))
+        .where(Transaction.not_pending_sql("transactions", providers: %w[simplefin]))
         .exists?
 
       unless valid_match

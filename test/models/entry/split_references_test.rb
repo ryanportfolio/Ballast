@@ -35,7 +35,7 @@ class Entry::SplitReferencesTest < ActiveSupport::TestCase
   end
 
   test "uses the given merchant scope instead of family merchants" do
-    provider_merchant = ProviderMerchant.create!(name: "Provider Shop", source: "plaid", provider_merchant_id: "split-ref-1")
+    provider_merchant = ProviderMerchant.create!(name: "Provider Shop", source: "simplefin", provider_merchant_id: "split-ref-1")
 
     family_only = Entry::SplitReferences.new(@family)
     with_provider = Entry::SplitReferences.new(@family, merchants: Merchant.where(id: provider_merchant.id))

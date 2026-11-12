@@ -18,7 +18,7 @@ class DestroyJobTest < ActiveJob::TestCase
   end
 
   test "a provider item's failed destroy still resets scheduled_for_deletion" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.update_column(:scheduled_for_deletion, true)
     item.stubs(:destroy).raises(StandardError, "destroy failed")
 
@@ -71,9 +71,9 @@ class DestroyJobTest < ActiveJob::TestCase
   end
 
   test "a failed destroy is also sent to the Rails log and Sentry" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.stubs(:destroy).raises(StandardError, "destroy failed")
-    Rails.logger.expects(:error).with(regexp_matches(/DestroyJob failed for PlaidItem #{item.id}: StandardError: destroy failed/)).once
+    Rails.logger.expects(:error).with(regexp_matches(/DestroyJob failed for SimplefinItem #{item.id}: StandardError: destroy failed/)).once
     Sentry.expects(:capture_exception).with(instance_of(StandardError)).once
 
     DestroyJob.perform_now(item)
@@ -83,7 +83,7 @@ class DestroyJobTest < ActiveJob::TestCase
   # for an item that no longer validates, and leave the job retrying with the
   # flag still set.
   test "resets the flag without re-running validations" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.update_column(:scheduled_for_deletion, true)
     item.stubs(:valid?).returns(false)
     item.stubs(:destroy).raises(StandardError, "destroy failed")
@@ -94,7 +94,7 @@ class DestroyJobTest < ActiveJob::TestCase
   end
 
   test "a failed provider item destroy is recorded in the debug log with its family" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.update_column(:scheduled_for_deletion, true)
     item.stubs(:destroy).raises(StandardError, "destroy failed")
 
@@ -104,8 +104,8 @@ class DestroyJobTest < ActiveJob::TestCase
 
     entry = DebugLogEntry.recent.first
     assert_nil entry.account
-    assert_equal "plaid", entry.provider_key
-    assert_equal "PlaidItem", entry.metadata["record_type"]
+    assert_equal "simplefin", entry.provider_key
+    assert_equal "SimplefinItem", entry.metadata["record_type"]
     assert_equal item.id, entry.metadata["record_id"]
     assert_not item.reload.scheduled_for_deletion?
   end
@@ -139,7 +139,7 @@ class DestroyJobTest < ActiveJob::TestCase
   end
 
   test "a destroy that a callback aborts is recorded and resets the flag" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.update_column(:scheduled_for_deletion, true)
     item.stubs(:destroy).returns(false)
 
@@ -152,7 +152,7 @@ class DestroyJobTest < ActiveJob::TestCase
   end
 
   test "a deadlock is retried instead of failing the deletion" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.update_column(:scheduled_for_deletion, true)
     item.stubs(:destroy).raises(ActiveRecord::Deadlocked, "deadlock detected")
 
@@ -176,9 +176,9 @@ class DestroyJobTest < ActiveJob::TestCase
   end
 
   test "a deadlock that outlasts the retries is recorded and resets the flag" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.update_column(:scheduled_for_deletion, true)
-    PlaidItem.any_instance.stubs(:destroy).raises(ActiveRecord::Deadlocked, "deadlock detected")
+    SimplefinItem.any_instance.stubs(:destroy).raises(ActiveRecord::Deadlocked, "deadlock detected")
 
     assert_difference -> { DebugLogEntry.where(source: "DestroyJob").count }, 1 do
       perform_enqueued_jobs { DestroyJob.perform_later(item) }
@@ -260,7 +260,7 @@ class DestroyJobTest < ActiveJob::TestCase
   end
 
   test "a reset that the database rejects is recorded and does not raise out of the job" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.update_column(:scheduled_for_deletion, true)
     item.stubs(:destroy).raises(StandardError, "destroy failed")
     item.stubs(:update_column).raises(ActiveRecord::RecordNotUnique, "duplicate key")
@@ -274,7 +274,7 @@ class DestroyJobTest < ActiveJob::TestCase
   end
 
   test "the flag is reset even when recording the failure raises" do
-    item = plaid_items(:one)
+    item = create_simplefin_item
     item.update_column(:scheduled_for_deletion, true)
     item.stubs(:destroy).raises(StandardError, "destroy failed")
     DebugLogEntry.stubs(:capture).raises(StandardError, "log write failed")
@@ -311,4 +311,9 @@ class DestroyJobTest < ActiveJob::TestCase
     assert_not enqueued_mid_transaction, "DestroyJob enqueued before the transaction committed"
     assert_enqueued_with job: DestroyJob
   end
+
+  private
+    def create_simplefin_item
+      families(:dylan_family).simplefin_items.create!(name: "SimpleFIN Connection", access_url: "https://example.com/access")
+    end
 end

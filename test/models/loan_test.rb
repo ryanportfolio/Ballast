@@ -114,7 +114,7 @@ class LoanTest < ActiveSupport::TestCase
   end
 
   # #100 decision 8: a provider writes its own vocabulary straight into
-  # rate_type (Plaid's mortgage payload says "arm", others capitalise), and a
+  # rate_type (one says "arm", others capitalise), and a
   # loan whose rate can move is variable whatever the word for it. Only a
   # blank rate type says nothing at all.
   test "any non-blank rate type other than fixed is a variable, amortizable loan" do
@@ -164,8 +164,8 @@ class LoanTest < ActiveSupport::TestCase
   end
 
   # An imported loan is the case where what was borrowed and what has been seen
-  # are different numbers. Plaid sends `origination_principal_amount`, which
-  # lands in `initial_balance`; the first valuation the account carries is
+  # are different numbers. A provider's original principal lands in
+  # `initial_balance`; the first valuation the account carries is
   # whatever the balance was on the day it was linked, years of repayments in.
   #
   # 20,000 borrowed, 10,000 outstanding, 5,000 deposit, a level-term policy at

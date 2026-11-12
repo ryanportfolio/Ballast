@@ -7,7 +7,7 @@ require "rails/generators/active_record"
 #   rails g provider:global NAME field:type[:secret] field:type ...
 #
 # Examples:
-#   rails g provider:global plaid client_id:string:secret secret:string:secret environment:string
+#   rails g provider:global example_bank client_id:string:secret secret:string:secret environment:string
 #   rails g provider:global openai api_key:string:secret model:string
 #
 # Field format:

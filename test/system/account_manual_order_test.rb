@@ -9,26 +9,26 @@ class AccountManualOrderTest < ApplicationSystemTestCase
 
   test "moving an account with the keyboard saves the new order" do
     checking = accounts(:depository)
-    plaid = accounts(:connected)
+    connected = accounts(:connected)
 
     visit account_path(checking)
     open_groups_before = open_group_count
 
     within_testid("account-sidebar-tabs") do
-      assert_equal [ checking.id, plaid.id ], visible_depository_ids.first(2)
+      assert_equal [ checking.id, connected.id ], visible_depository_ids.first(2)
       assert_no_selector "[data-sortable-list-target='item'] button", visible: true
 
       find("button[aria-label='#{I18n.t("accounts.sidebar.sort_mode.start")}']", visible: true).click
 
-      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{plaid.id}'] button")
+      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{connected.id}'] button")
       handle.send_keys(:enter)
       handle.send_keys(:up)
       handle.send_keys(:enter)
 
-      assert_equal [ plaid.id, checking.id ], visible_depository_ids.first(2)
+      assert_equal [ connected.id, checking.id ], visible_depository_ids.first(2)
     end
 
-    assert_eventually { @user.reload.manual_account_order["depository"]&.first(2) == [ plaid.id, checking.id ] }
+    assert_eventually { @user.reload.manual_account_order["depository"]&.first(2) == [ connected.id, checking.id ] }
 
     within_testid("account-sidebar-tabs") do
       click_button I18n.t("accounts.sidebar.sort_mode.done")
@@ -39,49 +39,49 @@ class AccountManualOrderTest < ApplicationSystemTestCase
 
     visit account_path(checking)
     within_testid("account-sidebar-tabs") do
-      assert_equal [ plaid.id, checking.id ], visible_depository_ids.first(2)
+      assert_equal [ connected.id, checking.id ], visible_depository_ids.first(2)
     end
   end
 
   test "leaving sort mode saves a row still held with the keyboard" do
     checking = accounts(:depository)
-    plaid = accounts(:connected)
+    connected = accounts(:connected)
 
     visit account_path(checking)
 
     within_testid("account-sidebar-tabs") do
       find("button[aria-label='#{I18n.t("accounts.sidebar.sort_mode.start")}']", visible: true).click
 
-      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{plaid.id}'] button")
+      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{connected.id}'] button")
       handle.send_keys(:enter)
       handle.send_keys(:up)
 
       click_button I18n.t("accounts.sidebar.sort_mode.done")
     end
 
-    assert_eventually { @user.reload.manual_account_order["depository"]&.first(2) == [ plaid.id, checking.id ] }
+    assert_eventually { @user.reload.manual_account_order["depository"]&.first(2) == [ connected.id, checking.id ] }
   end
 
   test "following an account link saves a row still held with the keyboard" do
     checking = accounts(:depository)
-    plaid = accounts(:connected)
+    connected = accounts(:connected)
 
     visit account_path(checking)
 
     within_testid("account-sidebar-tabs") do
       find("button[aria-label='#{I18n.t("accounts.sidebar.sort_mode.start")}']", visible: true).click
 
-      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{plaid.id}'] button")
+      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{connected.id}'] button")
       handle.send_keys(:enter)
       handle.send_keys(:up)
 
-      find("[data-sortable-list-target='item'][data-sortable-list-id='#{plaid.id}'] a[href='#{account_path(plaid)}']").click
+      find("[data-sortable-list-target='item'][data-sortable-list-id='#{connected.id}'] a[href='#{account_path(connected)}']").click
     end
 
-    assert_current_path account_path(plaid)
-    assert_eventually { @user.reload.manual_account_order["depository"]&.first(2) == [ plaid.id, checking.id ] }
+    assert_current_path account_path(connected)
+    assert_eventually { @user.reload.manual_account_order["depository"]&.first(2) == [ connected.id, checking.id ] }
     within_testid("account-sidebar-tabs") do
-      assert_equal [ plaid.id, checking.id ], visible_depository_ids.first(2)
+      assert_equal [ connected.id, checking.id ], visible_depository_ids.first(2)
     end
   end
 
@@ -110,7 +110,7 @@ class AccountManualOrderTest < ApplicationSystemTestCase
 
   test "a stalled save times out and reloads the saved order" do
     checking = accounts(:depository)
-    plaid = accounts(:connected)
+    connected = accounts(:connected)
 
     visit account_path(checking)
 
@@ -132,18 +132,18 @@ class AccountManualOrderTest < ApplicationSystemTestCase
     within_testid("account-sidebar-tabs") do
       find("button[aria-label='#{I18n.t("accounts.sidebar.sort_mode.start")}']", visible: true).click
 
-      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{plaid.id}'] button")
+      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{connected.id}'] button")
       handle.send_keys(:enter)
       handle.send_keys(:up)
       handle.send_keys(:enter)
 
-      assert_equal [ plaid.id, checking.id ], visible_depository_ids.first(2)
+      assert_equal [ connected.id, checking.id ], visible_depository_ids.first(2)
     end
 
     # The failed save reloads the page, which shows the order actually saved.
     # The reload renders the whole page, which can take several seconds on CI.
     assert_eventually(timeout: 15) do
-      within_testid("account-sidebar-tabs") { visible_depository_ids.first(2) == [ checking.id, plaid.id ] }
+      within_testid("account-sidebar-tabs") { visible_depository_ids.first(2) == [ checking.id, connected.id ] }
     end
 
     assert_nil @user.reload.manual_account_order["depository"]
@@ -151,14 +151,14 @@ class AccountManualOrderTest < ApplicationSystemTestCase
 
   test "a move is mirrored in the other sidebar tabs" do
     checking = accounts(:depository)
-    plaid = accounts(:connected)
+    connected = accounts(:connected)
 
     visit account_path(checking)
 
     within_testid("account-sidebar-tabs") do
       find("button[aria-label='#{I18n.t("accounts.sidebar.sort_mode.start")}']", visible: true).click
 
-      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{plaid.id}'] button")
+      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{connected.id}'] button")
       handle.send_keys(:enter)
       handle.send_keys(:up)
       handle.send_keys(:enter)
@@ -168,20 +168,20 @@ class AccountManualOrderTest < ApplicationSystemTestCase
     assert_operator lists.size, :>, 1
     lists.each do |list|
       ids = list.all("[data-sortable-list-target='item']", visible: :all).map { |item| item["data-sortable-list-id"] }
-      assert_equal [ plaid.id, checking.id ], ids.first(2)
+      assert_equal [ connected.id, checking.id ], ids.first(2)
     end
   end
 
   test "a sync refresh waits while a row is held, even after focus left it" do
     checking = accounts(:depository)
-    plaid = accounts(:connected)
+    connected = accounts(:connected)
 
     visit account_path(checking)
 
     within_testid("account-sidebar-tabs") do
       find("button[aria-label='#{I18n.t("accounts.sidebar.sort_mode.start")}']", visible: true).click
 
-      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{plaid.id}'] button")
+      handle = find("[data-sortable-list-target='item'][data-sortable-list-id='#{connected.id}'] button")
       handle.send_keys(:enter)
       handle.send_keys(:up)
     end
@@ -198,22 +198,22 @@ class AccountManualOrderTest < ApplicationSystemTestCase
     sleep 1
 
     within_testid("account-sidebar-tabs") do
-      assert_equal [ plaid.id, checking.id ], visible_depository_ids.first(2)
+      assert_equal [ connected.id, checking.id ], visible_depository_ids.first(2)
       click_button I18n.t("accounts.sidebar.sort_mode.done")
     end
 
-    assert_eventually { @user.reload.manual_account_order["depository"]&.first(2) == [ plaid.id, checking.id ] }
+    assert_eventually { @user.reload.manual_account_order["depository"]&.first(2) == [ connected.id, checking.id ] }
   end
 
   test "a drag outside sort mode does not move a row" do
     checking = accounts(:depository)
-    plaid = accounts(:connected)
+    connected = accounts(:connected)
 
     visit account_path(checking)
 
     # Like dragging an account logo or selected text: the drag starts inside
     # a row that is not draggable and is dropped at the top of the list.
-    page.execute_script(<<~JS, plaid.id)
+    page.execute_script(<<~JS, connected.id)
       const row = document.querySelector(`[data-sortable-list-target='item'][data-sortable-list-id='${arguments[0]}']`);
       const list = row.closest("[data-controller~='sortable-list']");
       const dataTransfer = new DataTransfer();
@@ -223,7 +223,7 @@ class AccountManualOrderTest < ApplicationSystemTestCase
     JS
 
     within_testid("account-sidebar-tabs") do
-      assert_equal [ checking.id, plaid.id ], visible_depository_ids.first(2)
+      assert_equal [ checking.id, connected.id ], visible_depository_ids.first(2)
     end
     assert_nil @user.reload.manual_account_order["depository"]
   end

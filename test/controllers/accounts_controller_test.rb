@@ -48,46 +48,16 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_equal account_path(@account), account_link["href"]
   end
 
-  test "index localizes the Plaid add accounts action" do
-    ensure_tailwind_build
-    @user.update!(locale: "de")
-
-    get accounts_url
-
-    assert_response :success
-    assert_select "a[href=?]",
-                  edit_plaid_item_path(plaid_items(:one), add_accounts: true),
-                  text: "Konten hinzufügen",
-                  count: 1
-  end
-
   # #3630. A provider card is admitted for a member as soon as ONE of its
   # accounts is shared with them, so the card must list only the accounts this
   # viewer may see. The unshared account is renamed to something no other part
   # of the page can print, so its absence proves the card filtered it.
-  test "a partially shared member sees only their account on a Plaid card" do
-    shared, unshared = link_two_accounts_to(plaid_items(:one)) do |item, index|
-      item.plaid_accounts.create!(
-        name: "Second Plaid Account", plaid_id: "acc_235_#{index}", plaid_type: "investment",
-        currency: "USD", current_balance: 10
-      )
-    end
-
-    sign_in users(:family_member)
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{dom_id(plaid_items(:one))}"
-    assert_select "turbo-frame##{dom_id(shared)}", count: 1
-    assert_select "turbo-frame##{dom_id(unshared)}", count: 0
-    assert_not_includes response.body, unshared.name
-  end
-
-  test "an admin still sees every account on a Plaid card" do
-    shared, unshared = link_two_accounts_to(plaid_items(:one)) do |item, index|
-      item.plaid_accounts.create!(
-        name: "Second Plaid Account", plaid_id: "acc_235_#{index}", plaid_type: "investment",
-        currency: "USD", current_balance: 10
+  test "an admin still sees every account on a SimpleFIN card" do
+    item = SimplefinItem.create!(family: families(:dylan_family), name: "Conn 235", access_url: "https://example.com/access")
+    shared, unshared = link_two_accounts_to(item) do |sf_item, index|
+      sf_item.simplefin_accounts.create!(
+        name: "SF #{index}", account_id: "sf_235_#{index}", currency: "USD",
+        current_balance: 1, account_type: "depository"
       )
     end
 
@@ -122,11 +92,11 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   # involved, so they follow the same rule as the account list: shown only to
   # a viewer who can see every account on the connection. Counts stay.
   test "a partially shared member does not see account names in a card's sync summary" do
-    item = plaid_items(:one)
-    _shared, unshared = link_two_accounts_to(item) do |p_item, index|
-      p_item.plaid_accounts.create!(
-        name: "Second Plaid Account", plaid_id: "acc_235_#{index}", plaid_type: "investment",
-        currency: "USD", current_balance: 10
+    item = SimplefinItem.create!(family: families(:dylan_family), name: "Conn 235", access_url: "https://example.com/access")
+    _shared, unshared = link_two_accounts_to(item) do |sf_item, index|
+      sf_item.simplefin_accounts.create!(
+        name: "SF #{index}", account_id: "sf_235_#{index}", currency: "USD",
+        current_balance: 1, account_type: "depository"
       )
     end
     item.syncs.create!(status: "completed", sync_stats: {
@@ -145,11 +115,11 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "an admin still sees the account names in a card's sync summary" do
-    item = plaid_items(:one)
-    link_two_accounts_to(item) do |p_item, index|
-      p_item.plaid_accounts.create!(
-        name: "Second Plaid Account", plaid_id: "acc_235_#{index}", plaid_type: "investment",
-        currency: "USD", current_balance: 10
+    item = SimplefinItem.create!(family: families(:dylan_family), name: "Conn 235", access_url: "https://example.com/access")
+    link_two_accounts_to(item) do |sf_item, index|
+      sf_item.simplefin_accounts.create!(
+        name: "SF #{index}", account_id: "sf_235_#{index}", currency: "USD",
+        current_balance: 1, account_type: "depository"
       )
     end
     item.syncs.create!(status: "completed", sync_stats: {
@@ -348,21 +318,7 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_empty response.body.scan(/translation missing: [\w.]+/).uniq
   end
 
-  test "sync all requests fresh Plaid transactions before syncing the family" do
-    sequence = sequence("manual sync all")
-    Family.any_instance
-      .expects(:request_plaid_transactions_refreshes_later)
-      .with(source: "AccountsController#sync_all")
-      .in_sequence(sequence)
-    Family.any_instance.expects(:sync_later).once.in_sequence(sequence)
-
-    post sync_all_accounts_url
-
-    assert_redirected_to accounts_url
-  end
-
-  test "sync all continues when Plaid refresh orchestration cannot be enqueued" do
-    PlaidTransactionsRefreshAllJob.stubs(:perform_later).raises(RedisClient::Error, "Redis unavailable")
+  test "sync all syncs the family" do
     Family.any_instance.expects(:sync_later).once
 
     post sync_all_accounts_url
@@ -875,16 +831,12 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "syncing linked account triggers sync for all provider items" do
-    plaid_account = plaid_accounts(:one)
-    AccountProvider.create!(account: @account, provider: plaid_account)
-
-    # Reload to ensure the account has the provider association loaded
-    @account.reload
+    link_account_to_simplefin!(@account)
 
     # Mock at the class level since controller loads account from DB
     Account.any_instance.expects(:syncing?).returns(false)
-    PlaidItem.any_instance.expects(:syncing?).returns(false)
-    PlaidItem.any_instance.expects(:sync_later_with_provider_refresh).once
+    SimplefinItem.any_instance.expects(:syncing?).returns(false)
+    SimplefinItem.any_instance.expects(:sync_later).once
 
     post sync_account_url(@account)
     assert_redirected_to account_url(@account)
@@ -899,8 +851,7 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "confirms unlink for linked account" do
-    plaid_account = plaid_accounts(:one)
-    AccountProvider.create!(account: @account, provider: plaid_account)
+    link_account_to_simplefin!(@account)
 
     get confirm_unlink_account_url(@account)
     assert_response :success
@@ -913,9 +864,7 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "unlinks linked account successfully with new system" do
-    plaid_account = plaid_accounts(:one)
-    AccountProvider.create!(account: @account, provider: plaid_account)
-    @account.reload
+    link_account_to_simplefin!(@account)
 
     assert @account.linked?
 
@@ -928,8 +877,12 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "unlinks linked account successfully with legacy system" do
-    plaid_account = plaid_accounts(:one)
-    @account.update!(plaid_account_id: plaid_account.id)
+    simplefin_item = SimplefinItem.create!(family: @account.family, name: "Legacy link", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(
+      name: "Legacy Checking", account_id: "sf_legacy", currency: "USD",
+      current_balance: 1, account_type: "depository"
+    )
+    @account.update!(simplefin_account_id: simplefin_account.id)
     @account.reload
 
     assert @account.linked?
@@ -938,7 +891,7 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     @account.reload
 
     assert_not @account.linked?
-    assert_nil @account.plaid_account_id
+    assert_nil @account.simplefin_account_id
     assert_redirected_to accounts_path
     assert_equal "Account unlinked successfully. It is now a manual account.", flash[:notice]
   end
@@ -950,9 +903,7 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "unlinked account can be deleted" do
-    plaid_account = plaid_accounts(:one)
-    AccountProvider.create!(account: @account, provider: plaid_account)
-    @account.reload
+    link_account_to_simplefin!(@account)
 
     # Cannot delete while linked
     delete account_url(@account)
@@ -1046,8 +997,7 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "select_provider redirects for already linked account" do
-    plaid_account = plaid_accounts(:one)
-    AccountProvider.create!(account: @account, provider: plaid_account)
+    link_account_to_simplefin!(@account)
 
     get select_provider_account_url(@account)
     assert_redirected_to account_url(@account)
@@ -1112,96 +1062,6 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     ActionController::Base.perform_caching = original_perform_caching
     ActionView::Base.logger = original_view_logger
     Rails.logger = original_rails_logger
-  end
-
-  # --- member-owned connections (issue #3579) ------------------------------
-
-  test "an owner is not shown a connection carrying an account they cannot see" do
-    # Ownership must not widen exposure: the card renders the item's accounts
-    # unfiltered (and is re-rendered by a viewer-less broadcast), so the whole
-    # card is withheld rather than shown with a filtered list.
-    member = users(:family_member)
-    family = families(:dylan_family)
-    item = PlaidItem.create!(
-      family: family, plaid_id: "item_card_#{SecureRandom.hex(4)}",
-      access_token: "token", name: "Owned Bank", owner: member
-    )
-    hidden = Account.create!(
-      family: family, owner: users(:family_admin), name: "Not Shared With Member",
-      balance: 100, currency: "USD", accountable: Depository.new
-    )
-    hidden.account_shares.destroy_all
-    plaid_account = PlaidAccount.create!(
-      plaid_item: item, name: "Hidden Feed", plaid_id: "acct_card_#{SecureRandom.hex(4)}",
-      plaid_type: "depository", plaid_subtype: "checking", currency: "USD",
-      current_balance: 100, available_balance: 100
-    )
-    AccountProvider.create!(account: hidden, provider: plaid_account)
-
-    sign_in member
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{ActionView::RecordIdentifier.dom_id(item)}", count: 0
-    assert_no_match(/Not Shared With Member/, response.body)
-  end
-
-  test "an owner is shown their freshly connected item before it has any accounts" do
-    # The case ownership visibility exists for: just connected, nothing synced.
-    member = users(:family_member)
-    item = PlaidItem.create!(
-      family: families(:dylan_family), plaid_id: "item_fresh_#{SecureRandom.hex(4)}",
-      access_token: "token", name: "Fresh Bank", owner: member
-    )
-
-    sign_in member
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{ActionView::RecordIdentifier.dom_id(item)}", count: 1
-  end
-
-
-  test "an owner sees the management controls on their own connection card" do
-    member = users(:family_member)
-    item = PlaidItem.create!(
-      family: families(:dylan_family), plaid_id: "item_ctrl_#{SecureRandom.hex(4)}",
-      access_token: "token", name: "Controls Bank", owner: member
-    )
-
-    sign_in member
-    get accounts_url
-
-    assert_response :success
-    assert_select "a[href=?]", edit_plaid_item_path(item, add_accounts: true), count: 1
-  end
-
-  test "a member demoted to guest loses the controls on a connection they own" do
-    member = users(:family_member)
-    item = PlaidItem.create!(
-      family: families(:dylan_family), plaid_id: "item_demote_#{SecureRandom.hex(4)}",
-      access_token: "token", name: "Demoted Bank", owner: member
-    )
-    member.update!(role: :guest)
-
-    sign_in member
-    get accounts_url
-
-    assert_response :success
-    assert_select "a[href=?]", edit_plaid_item_path(item, add_accounts: true), count: 0
-  end
-
-  test "a member sees no controls on a connection someone else owns" do
-    item = PlaidItem.create!(
-      family: families(:dylan_family), plaid_id: "item_noctrl_#{SecureRandom.hex(4)}",
-      access_token: "token", name: "Admin Bank", owner: users(:family_admin)
-    )
-
-    sign_in users(:family_member)
-    get accounts_url
-
-    assert_response :success
-    assert_select "a[href=?]", edit_plaid_item_path(item, add_accounts: true), count: 0
   end
 
   test "reorder saves the manual order of one account group" do

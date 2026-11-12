@@ -245,8 +245,6 @@ hu:
       recently_synced: Nemrég szinkronizálva. Próbáld újra egy pillanat múlva.
       taglines:
         simplefin: US bankszámlák csatlakoztatása az open SimpleFIN protokollon keresztül.
-        plaid: Ezernyi US pénzintézet csatlakoztatása Plaid-en keresztül.
-        plaid_eu: Európai pénzintézetek csatlakoztatása Plaid-en keresztül (PSD2 / Open Banking).
       search_filters:
         aria_label: Szolgáltatók keresése
         placeholder: Szolgáltatók keresése
@@ -266,11 +264,5 @@ hu:
         setup_token_label: "Beállítási token"
         setup_token_placeholder: "SimpleFIN beállítási token beillesztése"
         save_and_connect: "Mentés és csatlakozás"
-      plaid_panel:
-        step_1_html: "Nyisd meg a(z) %{link} oldalt, és másold ki az ügyfél-azonosítódat és titkos kulcsodat."
-        step_2: "Válassz környezetet. Teszteléshez sandbox, éles számlákhoz production."
-        step_3: "Illeszd be a hitelesítő adataidat alább és csatlakozz."
-      plaid_eu_panel:
-        step_1_html: "Nyisd meg a(z) %{link} oldalt, és másold ki az EU ügyfél-azonosítódat és titkos kulcsodat."
       not_found: Szolgáltató nem található.
       sync_provider_no_items: Nincs elérhető kapcsolat a szinkronizáláshoz.

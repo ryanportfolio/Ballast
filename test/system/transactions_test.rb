@@ -189,7 +189,7 @@ class TransactionsTest < ApplicationSystemTestCase
     outflow = create_transaction("Bank of America online payment with a long bank descriptor", Date.current, 4321.09, tags: [ tags(:one), tags(:two) ])
     inflow = create_transaction("Payment received", Date.current, -4321.09, account: accounts(:credit_card))
     Transfer.create!(outflow_transaction: outflow.entryable, inflow_transaction: inflow.entryable)
-    outflow.entryable.update!(kind: "funds_movement", extra: { "plaid" => { "pending" => true }, "potential_posted_match" => { "entry_id" => inflow.id, "confidence" => "low" } })
+    outflow.entryable.update!(kind: "funds_movement", extra: { "simplefin" => { "pending" => true }, "potential_posted_match" => { "entry_id" => inflow.id, "confidence" => "low" } })
     [ 820, 1024, 1440 ].each do |width|
       page.current_window.resize_to(width, 900)
       visit transactions_url(per_page: @page_size)

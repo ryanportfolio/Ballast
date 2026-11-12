@@ -380,13 +380,12 @@ class SimplefinItemsController < ApplicationController
     simplefin_account = SimplefinAccount.find(params[:simplefin_account_id])
 
     # Cross-provider guard: we only support swapping SimpleFIN-to-SimpleFIN links
-    # here. If @account is linked to a different provider type (Plaid,
-    # etc.), require explicit unlink first so users don't silently lose
+    # here. If @account is linked to a different provider type, require
+    # explicit unlink first so users don't silently lose
     # cross-provider data. Same-provider relinks (e.g., Citi fraud replacement
     # swapping to a new card sfa) are now allowed below.
     has_foreign_provider = @account.account_providers
-      .where.not(provider_type: "SimplefinAccount").exists? ||
-      @account.plaid_account_id.present?
+      .where.not(provider_type: "SimplefinAccount").exists?
     if has_foreign_provider
       flash[:alert] = t("simplefin_items.link_existing_account.errors.different_provider")
       if turbo_frame_request?

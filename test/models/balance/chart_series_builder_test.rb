@@ -269,8 +269,9 @@ class Balance::ChartSeriesBuilderTest < ActiveSupport::TestCase
     # 1. skip_initial_sync prevents this going forward
     # 2. Migration cleans up orphaned balances for existing linked accounts
 
-    # Use the connected (linked) account fixture
+    # Use the connected account fixture, linked to a provider
     linked_account = accounts(:connected)
+    link_account_to_simplefin!(linked_account)
     linked_account.balances.destroy_all
 
     # Simulate the bug: account is now EUR but has old USD balances from initial sync
@@ -350,6 +351,7 @@ class Balance::ChartSeriesBuilderTest < ActiveSupport::TestCase
     # leaving orphaned USD balances. Without the filter, charts would show wrong values.
 
     linked_account = accounts(:connected)
+    link_account_to_simplefin!(linked_account)
     linked_account.balances.destroy_all
 
     # Account is EUR but has orphaned USD balances (bug state)

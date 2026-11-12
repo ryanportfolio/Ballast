@@ -8,25 +8,6 @@ require "turbo/broadcastable/test_helper"
 class ProviderItemSyncCompleteEventsTest < ActiveSupport::TestCase
   include Turbo::Broadcastable::TestHelper
 
-  PROVIDERS = %w[
-    plaid_item
-  ].freeze
-
-  PROVIDERS.each do |provider|
-    test "a #{provider} sync completion sends the toast, not the card" do
-      item = provider.camelize.constantize.first!
-      Current.reset
-
-      streams = capture_turbo_stream_broadcasts(item.family) do
-        "#{provider.camelize}::SyncCompleteEvent".constantize.new(item).broadcast
-      end
-      targets = streams.map { |stream| stream["target"] }
-
-      assert_not_includes targets, ActionView::RecordIdentifier.dom_id(item)
-      assert_includes targets, "sync-toast"
-    end
-  end
-
   # simplefin_items.yml is empty; SimpleFIN tests build their own item.
   test "a simplefin_item sync completion sends the toast, not the card" do
     item = families(:dylan_family).simplefin_items.create!(name: "SimpleFIN Connection", access_url: "https://example.com/access")

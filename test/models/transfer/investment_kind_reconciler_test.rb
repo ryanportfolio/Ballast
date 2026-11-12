@@ -27,12 +27,12 @@ class Transfer::InvestmentKindReconcilerTest < ActiveSupport::TestCase
 
   test "repairs a legacy pair imported without a kind hint" do
     inflow = Account::ProviderImportAdapter.new(accounts(:investment)).import_transaction(
-      external_id: "plaid_no_hint_in", amount: -80, currency: "USD", date: Date.current,
-      name: "Deposit", source: "plaid"
+      external_id: "simplefin_no_hint_in", amount: -80, currency: "USD", date: Date.current,
+      name: "Deposit", source: "simplefin"
     )
     outflow = Account::ProviderImportAdapter.new(accounts(:crypto)).import_transaction(
-      external_id: "plaid_no_hint_out", amount: 80, currency: "USD", date: Date.current,
-      name: "Withdrawal to brokerage", source: "plaid"
+      external_id: "simplefin_no_hint_out", amount: 80, currency: "USD", date: Date.current,
+      name: "Withdrawal to brokerage", source: "simplefin"
     )
     transfer = Transfer.create!(inflow_transaction: inflow.transaction, outflow_transaction: outflow.transaction, status: "confirmed")
     # State left by the old classification of investment-to-investment transfers.

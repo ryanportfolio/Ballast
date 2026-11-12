@@ -10,8 +10,6 @@ class CryptosControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create persists subtype so account supports trades" do
-    Family.any_instance.stubs(:get_link_token).returns("test-link-token")
-
     assert_difference "@family.accounts.count", 1 do
       post cryptos_path, params: {
         account: {

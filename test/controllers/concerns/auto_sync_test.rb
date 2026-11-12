@@ -49,7 +49,7 @@ class AutoSyncTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "login-triggered sync requests Plaid refresh before syncing family" do
+  test "login-triggered sync syncs the family" do
     controller_class = Class.new do
       def self.before_action(*) = nil
 
@@ -61,26 +61,6 @@ class AutoSyncTest < ActionDispatch::IntegrationTest
     end
 
     Current.stubs(:family).returns(@family)
-    sequence = sequence("login-triggered sync")
-    @family.expects(:request_plaid_transactions_refreshes_later).with(source: "AutoSync").in_sequence(sequence)
-    @family.expects(:sync_later).in_sequence(sequence)
-
-    controller_class.new.run_sync_family
-  end
-
-  test "login-triggered sync continues when Plaid refresh orchestration cannot be enqueued" do
-    controller_class = Class.new do
-      def self.before_action(*) = nil
-
-      include AutoSync
-
-      def run_sync_family
-        sync_family
-      end
-    end
-
-    Current.stubs(:family).returns(@family)
-    PlaidTransactionsRefreshAllJob.stubs(:perform_later).raises(RedisClient::Error, "Redis unavailable")
     @family.expects(:sync_later).once
 
     controller_class.new.run_sync_family

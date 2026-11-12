@@ -20,9 +20,6 @@ it:
       title: Rilevamento automatico degli schemi
       manual_description: Puoi identificare manualmente gli schemi o eliminare le transazioni ricorrenti obsolete usando i pulsanti sopra.
       automatic_description: "Il rilevamento automatico viene eseguito anche dopo:"
-      triggers:
-        - Completamento importazioni CSV (transazioni, operazioni, conti, ecc.)
-        - Completamento di qualsiasi sincronizzazione provider (Plaid, SimpleFIN, ecc.)
     identified: Identificati %{count} schemi di transazioni ricorrenti
     cleaned_up: Eliminate %{count} transazioni ricorrenti obsolete
     marked_inactive: Transazione ricorrente contrassegnata come inattiva

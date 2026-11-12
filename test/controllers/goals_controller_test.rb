@@ -10,6 +10,7 @@ class GoalsControllerTest < ActionDispatch::IntegrationTest
     @goal = goals(:vacation_italy)
     @depository = accounts(:depository)
     @connected = accounts(:connected)
+    link_account_to_simplefin!(@connected)
     ensure_tailwind_build
   end
 

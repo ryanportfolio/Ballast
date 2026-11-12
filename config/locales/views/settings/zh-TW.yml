@@ -353,8 +353,6 @@ zh-TW:
       recently_synced: 剛剛才同步過，請稍候再試。
       taglines:
         simplefin: 透過開放的 SimpleFIN 協定連結美國銀行帳戶。
-        plaid: 透過 Plaid 連結數千家美國金融機構。
-        plaid_eu: 透過 Plaid 連結歐洲金融機構（PSD2／開放銀行）。
       search_filters:
         aria_label: 搜尋供應商
         placeholder: 搜尋供應商
@@ -376,11 +374,5 @@ zh-TW:
         setup_token_label: 設定權杖 (Setup Token)
         setup_token_placeholder: 貼上 SimpleFIN Setup Token
         save_and_connect: 儲存並連線
-      plaid_panel:
-        step_1_html: 開啟 %{link} 並複製您的 Client ID 與 Secret Key。
-        step_2: 挑選一個環境。測試用 sandbox，正式帳戶用 production。
-        step_3: 將您的憑證貼到下方並連線。
-      plaid_eu_panel:
-        step_1_html: 開啟 %{link} 並複製您的 EU Client ID 與 Secret Key。
       not_found: 找不到供應商。
       sync_provider_no_items: 沒有可同步的連線。

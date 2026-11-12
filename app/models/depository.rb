@@ -14,10 +14,9 @@ class Depository < ApplicationRecord
 
   # Depository subtypes that carry tax-advantaged treatment in the budget /
   # cashflow / income-statement filters (`Family#tax_advantaged_account_ids`,
-  # `TaxTreatable#tax_advantaged?`). HSA cash sits here because Plaid routes
-  # `depository.hsa` to `Depository` (not `Investment`) via
-  # `PlaidAccount::TypeMappable`, so a real-world Plaid-linked HSA cash account
-  # was previously invisible to the tax-advantaged filter PR #724 introduced.
+  # `TaxTreatable#tax_advantaged?`). HSA cash sits here because a provider can
+  # map an HSA cash account to `Depository` (not `Investment`), so a real-world
+  # linked HSA cash account was previously invisible to the tax-advantaged filter PR #724 introduced.
   TAX_ADVANTAGED_SUBTYPES = %w[hsa].freeze
 
   # `TaxTreatable` (the `Account` concern) reads this via `respond_to?` so

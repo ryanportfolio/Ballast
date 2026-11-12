@@ -9,11 +9,6 @@ require_relative "../config/environment"
 
 ENV["RAILS_ENV"] ||= "test"
 
-# Set Plaid to sandbox mode for tests
-ENV["PLAID_ENV"] = "sandbox"
-ENV["PLAID_CLIENT_ID"] ||= "test_client_id"
-ENV["PLAID_SECRET"] ||= "test_secret"
-
 # Fixes Segfaults on M1 Macs when running tests in parallel (temporary workaround)
 ENV["PGGSSENCMODE"] = "disable"
 
@@ -51,8 +46,6 @@ VCR.configure do |config|
   config.default_cassette_options = { erb: true }
   config.filter_sensitive_data("<OPENAI_ACCESS_TOKEN>") { ENV["OPENAI_ACCESS_TOKEN"] }
   config.filter_sensitive_data("<OPENAI_ORGANIZATION_ID>") { ENV["OPENAI_ORGANIZATION_ID"] }
-  config.filter_sensitive_data("<PLAID_CLIENT_ID>") { ENV["PLAID_CLIENT_ID"] }
-  config.filter_sensitive_data("<PLAID_SECRET>") { ENV["PLAID_SECRET"] }
 end
 
 module ActiveSupport
@@ -142,6 +135,28 @@ module ActiveSupport
         onboarded_at: Time.current,
         ui_layout: "dashboard"
       )
+    end
+
+    # Links an account to a freshly created SimpleFIN connection through
+    # AccountProvider, so it counts as linked (Account#linked?). Fixtures carry
+    # no SimpleFIN rows (SimpleFIN tests create theirs in setup), so tests that
+    # need a provider-linked account build one here. Returns the SimplefinAccount.
+    def link_account_to_simplefin!(account, simplefin_item: nil, **attrs)
+      simplefin_item ||= SimplefinItem.create!(
+        family: account.family,
+        name: "Test SimpleFIN",
+        access_url: "https://example.com/simplefin/#{SecureRandom.hex(4)}"
+      )
+      simplefin_account = simplefin_item.simplefin_accounts.create!({
+        name: account.name,
+        account_id: "sfa-#{SecureRandom.hex(4)}",
+        currency: account.currency,
+        account_type: "checking",
+        current_balance: account.balance
+      }.merge(attrs))
+      AccountProvider.create!(account: account, provider: simplefin_account)
+      account.reload
+      simplefin_account
     end
 
     # Ensures the Investment Contributions category exists for a family

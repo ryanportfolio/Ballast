@@ -298,7 +298,7 @@ class EntrySplitTest < ActiveSupport::TestCase
 
   test "split_once! skips a transaction that became pending in the meantime" do
     stale = Entry.find(@entry.id)
-    Transaction.where(id: @entry.entryable_id).update_all(extra: { "plaid" => { "pending" => true } })
+    Transaction.where(id: @entry.entryable_id).update_all(extra: { "simplefin" => { "pending" => true } })
     assert Transaction.find(@entry.entryable_id).pending?, "fixture must read as pending"
 
     assert_not stale.split_once!([ { name: "A", amount: 60 }, { name: "B", amount: 40 } ])

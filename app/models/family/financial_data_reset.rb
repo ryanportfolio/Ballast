@@ -38,9 +38,8 @@ class Family::FinancialDataReset
     syncs
     active_storage_attachments
   ].freeze
-  STATUS_COUNT_KEYS = (COUNT_KEYS - %i[syncs]) + %i[plaid_items]
+  STATUS_COUNT_KEYS = COUNT_KEYS - %i[syncs]
   PROVIDER_ITEM_ASSOCIATIONS = %i[
-    plaid_items
     simplefin_items
   ].freeze
 

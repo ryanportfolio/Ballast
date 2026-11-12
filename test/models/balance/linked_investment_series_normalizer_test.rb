@@ -16,15 +16,15 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       name: "Pending Transaction",
       amount: 100,
       currency: "USD",
-      source: "plaid",
-      entryable: Transaction.new(extra: { "plaid" => { "pending" => true } })
+      source: "simplefin",
+      entryable: Transaction.new(extra: { "simplefin" => { "pending" => true } })
     )
     account.entries.create!(
       date: posted_date,
       name: "Posted Transaction",
       amount: 100,
       currency: "USD",
-      source: "plaid",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -590,8 +590,8 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       name: "Pending Transaction",
       amount: 100,
       currency: "USD",
-      source: "plaid",
-      entryable: Transaction.new(extra: { "plaid" => { "pending" => true } })
+      source: "simplefin",
+      entryable: Transaction.new(extra: { "simplefin" => { "pending" => true } })
     )
 
     raw_series = Series.new(

@@ -9,14 +9,14 @@ class TransactionTest < ActiveSupport::TestCase
     assert transaction.pending?
   end
 
-  test "pending? is true when extra.plaid.pending is truthy" do
-    transaction = Transaction.new(extra: { "plaid" => { "pending" => "true" } })
+  test "pending? ignores a pending flag under a key that is not a pending provider" do
+    transaction = Transaction.new(extra: { "other_provider" => { "pending" => "true" } })
 
-    assert transaction.pending?
+    assert_not transaction.pending?
   end
 
   test "pending? is false when no provider pending metadata is present" do
-    transaction = Transaction.new(extra: { "plaid" => { "pending" => false } })
+    transaction = Transaction.new(extra: { "simplefin" => { "pending" => false } })
 
     assert_not transaction.pending?
   end
@@ -29,7 +29,7 @@ class TransactionTest < ActiveSupport::TestCase
 
     [ true, false, nil, "true", "false", "no", "False", "Off", " false", "", "0", "1", "t", "f", 1, 0, 0.0 ].each do |flag|
       transaction = create_transaction(account: account, amount: 10).entryable
-      transaction.update!(extra: { "plaid" => { "pending" => flag } })
+      transaction.update!(extra: { "simplefin" => { "pending" => flag } })
 
       sql_pending_answers(transaction).each do |form, answer|
         assert_equal transaction.pending?, answer, "#{form} disagrees with pending? on #{flag.inspect}"
@@ -75,7 +75,7 @@ class TransactionTest < ActiveSupport::TestCase
     simplefin_false = create_transaction(account: account, amount: 11).entryable
     simplefin_false.update!(extra: { "simplefin" => { "pending" => "off" } })
     other_provider = create_transaction(account: account, amount: 12).entryable
-    other_provider.update!(extra: { "plaid" => { "pending" => true } })
+    other_provider.update!(extra: { "other_provider" => { "pending" => true } })
 
     matches = Transaction.where(Transaction.pending_sql("transactions", providers: [ :simplefin ]))
 
@@ -93,7 +93,7 @@ class TransactionTest < ActiveSupport::TestCase
 
     [ true, false, nil, "true", "false", "no", "False", "Off", " false", "", "0", "1", "t", "f", "maybe", 1, 0 ].each do |flag|
       transaction = create_transaction(account: account, amount: 10).entryable
-      transaction.update!(extra: { "simplefin" => { "pending" => flag }, "plaid" => { "pending" => true } })
+      transaction.update!(extra: { "simplefin" => { "pending" => flag }, "other_provider" => { "pending" => true } })
       expected = Transaction.new(extra: { "simplefin" => { "pending" => flag } }).pending?
 
       assert_equal expected, Transaction.where(Transaction.pending_sql(providers: %w[simplefin])).exists?(transaction.id),
@@ -116,19 +116,20 @@ class TransactionTest < ActiveSupport::TestCase
   end
 
   # A provider key holding something other than an object says nothing about
-  # that provider, and must not stop another provider's flag from counting.
+  # that provider: it is not pending, and checking it must not raise.
   # SQL reads NULL for it and moves on; pending? used to raise inside
-  # Hash#dig and rescue the whole row to false.
-  test "malformed metadata under one provider does not hide another provider's flag" do
+  # Hash#dig and rescue the whole row to false. A flag under a key that is
+  # not a pending provider must not count either.
+  test "malformed metadata under a provider key reads as not pending without raising" do
     account = families(:empty).accounts.create! name: "Pending parity", balance: 0, currency: "USD", accountable: Depository.new
 
     [ "bad", [ "pending" ], 1 ].each do |malformed|
       transaction = create_transaction(account: account, amount: 10).entryable
-      transaction.update!(extra: { "simplefin" => malformed, "plaid" => { "pending" => true } })
+      transaction.update!(extra: { "simplefin" => malformed, "other_provider" => { "pending" => true } })
 
-      assert transaction.pending?, "pending? should see plaid's flag past simplefin => #{malformed.inspect}"
+      assert_not transaction.pending?, "pending? should read simplefin => #{malformed.inspect} as not pending"
       sql_pending_answers(transaction).each do |form, answer|
-        assert answer, "#{form} should see plaid's flag past simplefin => #{malformed.inspect}"
+        assert_not answer, "#{form} should read simplefin => #{malformed.inspect} as not pending"
       end
     end
   end
@@ -136,11 +137,11 @@ class TransactionTest < ActiveSupport::TestCase
   test "pending_duplicate_candidates offers only transactions pending? calls posted" do
     account = families(:empty).accounts.create! name: "Merge", balance: 0, currency: "USD", accountable: Depository.new
     pending_entry = create_transaction(account: account, amount: 10)
-    pending_entry.entryable.update!(extra: { "plaid" => { "pending" => true } })
+    pending_entry.entryable.update!(extra: { "simplefin" => { "pending" => true } })
 
     posted = create_transaction(account: account, amount: 10)
-    create_transaction(account: account, amount: 10).entryable.update!(extra: { "plaid" => { "pending" => "no" } })
-    create_transaction(account: account, amount: 10).entryable.update!(extra: { "plaid" => { "pending" => "maybe" } })
+    create_transaction(account: account, amount: 10).entryable.update!(extra: { "simplefin" => { "pending" => "no" } })
+    create_transaction(account: account, amount: 10).entryable.update!(extra: { "simplefin" => { "pending" => "maybe" } })
 
     assert_equal [ posted.id ], pending_entry.entryable.pending_duplicate_candidates.map(&:id)
   end

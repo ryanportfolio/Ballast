@@ -4,9 +4,9 @@
 # declared credential scope (see ProviderItemOwnable). A controller opts in by
 # naming its item class:
 #
-#   class PlaidItemsController < ApplicationController
+#   class ExampleItemsController < ApplicationController
 #     include ConnectorAuthorizable
-#     connects_provider PlaidItem
+#     connects_provider ExampleItem
 #
 # Controllers that do not opt in are unaffected and keep their own gating, so
 # this is safe to roll out one provider at a time.
@@ -48,7 +48,7 @@ module ConnectorAuthorizable
     end
 
     # The item loaded by the controller's own `before_action`. Convention over
-    # configuration: PlaidItemsController sets @plaid_item.
+    # configuration: ExampleItemsController sets @example_item.
     def connector_item
       return nil if connector_item_class.nil?
 

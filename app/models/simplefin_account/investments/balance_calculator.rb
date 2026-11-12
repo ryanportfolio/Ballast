@@ -1,5 +1,5 @@
 # SimpleFin Investment balance calculator
-# SimpleFin provides clear balance and holdings data, so calculations are simpler than Plaid
+# SimpleFin provides clear balance and holdings data, so calculations are simple
 class SimplefinAccount::Investments::BalanceCalculator
   def initialize(simplefin_account)
     @simplefin_account = simplefin_account
@@ -18,7 +18,7 @@ class SimplefinAccount::Investments::BalanceCalculator
 
     cash = total_balance - non_cash_value
 
-    # Allow negative cash to represent margin debt (matching Plaid's approach)
+    # Allow negative cash to represent margin debt
     # Log a warning for debugging, but don't clamp to zero
     if cash.negative?
       Rails.logger.info("SimpleFin: negative cash_balance (#{cash}) for account #{simplefin_account.account_id || simplefin_account.id} - may indicate margin usage or stale data")

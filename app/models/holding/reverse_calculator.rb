@@ -37,7 +37,7 @@ class Holding::ReverseCalculator
         today_trades = portfolio_cache.get_trades(date: date)
         previous_portfolio = undo_splits(transform_portfolio(current_portfolio, today_trades, direction: :reverse), date)
 
-        # If current day, always use holding prices (since that's what Plaid gives us).  For historical values, use market data (since Plaid doesn't supply historical prices)
+        # If current day, always use holding prices (since that's what the provider gives us).  For historical values, use market data (since providers don't supply historical prices)
         holdings.concat(build_holdings(current_portfolio, date, price_source: date == Date.current ? "holding" : nil))
         current_portfolio = previous_portfolio
       end

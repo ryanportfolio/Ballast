@@ -214,7 +214,7 @@ class Holding < ApplicationRecord
   # Reset security (and all related holdings) back to what the provider originally sent
   # Note: This moves ALL trades for current_security back to original_security. If the user
   # had legitimate trades for the target security before remapping, those would also be moved.
-  # In practice this is rare since SimpleFIN doesn't provide trades, and Plaid trades would
+  # In practice this is rare since SimpleFIN doesn't provide trades, and provider trades would
   # typically be for real tickers not CUSTOM: ones. A more robust solution would track which
   # trades were moved during remap, but that adds significant complexity for an edge case.
   def reset_security_to_provider!

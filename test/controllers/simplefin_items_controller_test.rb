@@ -78,17 +78,10 @@ class SimplefinItemsControllerTest < ActionDispatch::IntegrationTest
     # Link the primary SimpleFIN provider to account A via AccountProvider (legacy link cleared by action)
     AccountProvider.create!(account: account_a, provider: sfa_primary)
 
-    # Also link a different provider TYPE (Plaid) to account A so it is NOT orphaned
-    plaid_item = PlaidItem.create!(family: @family, name: "Plaid Conn", access_token: "test-token", plaid_id: "test-plaid-id")
-    plaid_acct = PlaidAccount.create!(
-      plaid_item: plaid_item,
-      plaid_id: "test-plaid-acct",
-      name: "Plaid A",
-      plaid_type: "depository",
-      currency: "USD",
-      current_balance: 0
-    )
-    AccountProvider.create!(account: account_a, provider: plaid_acct)
+    # Also link a different provider TYPE to account A so it is NOT orphaned.
+    # A second SimplefinItem record stands in for that provider (provider_type "SimplefinItem").
+    other_provider = @family.simplefin_items.create!(name: "Other Provider", access_url: "https://example.com/other_access")
+    AccountProvider.create!(account: account_a, provider: other_provider)
 
     # Perform relink: point sfa_primary at account B
     post link_existing_account_simplefin_items_path, params: {
@@ -836,24 +829,17 @@ class SimplefinItemsControllerTest < ActionDispatch::IntegrationTest
       account.account_providers.where(provider_type: "SimplefinAccount").first&.provider_id
   end
 
-  test "link_existing_account rejects when account is linked to a foreign provider (Plaid)" do
+  test "link_existing_account rejects when account is linked to a foreign provider" do
     account = Account.create!(
       family: @family,
-      name: "Plaid-Linked",
+      name: "Other-Linked",
       balance: 0,
       currency: "USD",
       accountable: Depository.create!(subtype: "checking")
     )
-    plaid_item = PlaidItem.create!(family: @family, name: "Plaid Conn", access_token: "t", plaid_id: "p")
-    plaid_acct = PlaidAccount.create!(
-      plaid_item: plaid_item,
-      plaid_id: "p_acct_1",
-      name: "Plaid A",
-      plaid_type: "depository",
-      currency: "USD",
-      current_balance: 0
-    )
-    AccountProvider.create!(account: account, provider: plaid_acct)
+    # A second SimplefinItem record stands in for a non-SimpleFIN-account provider (provider_type "SimplefinItem").
+    other_provider = @family.simplefin_items.create!(name: "Other Provider", access_url: "https://example.com/other_access")
+    AccountProvider.create!(account: account, provider: other_provider)
 
     sfa = @simplefin_item.simplefin_accounts.create!(
       name: "SF-Target",
@@ -871,8 +857,8 @@ class SimplefinItemsControllerTest < ActionDispatch::IntegrationTest
     # Should NOT have attached the SimpleFIN provider
     account.reload
     assert_empty account.account_providers.where(provider_type: "SimplefinAccount")
-    # Plaid link should remain intact
-    assert account.account_providers.where(provider_type: "PlaidAccount").exists?
+    # Foreign provider link should remain intact
+    assert account.account_providers.where(provider_type: "SimplefinItem").exists?
   end
 
   # Activity badge tests (helps users distinguish live vs replaced/closed cards during setup)

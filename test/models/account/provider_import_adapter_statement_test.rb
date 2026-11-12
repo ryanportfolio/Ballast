@@ -12,13 +12,13 @@ class Account::ProviderImportAdapterStatementTest < ActiveSupport::TestCase
   end
 
   test "provider-synced entries stay invisible by default" do
-    create_transaction(account: @account, date: @date, amount: 50, external_id: "plaid-1", source: "plaid")
+    create_transaction(account: @account, date: @date, amount: 50, external_id: "other-1", source: "other_provider")
 
     assert_nil @adapter.find_duplicate_transaction(date: @date, amount: 50, currency: "USD")
   end
 
   test "provider-synced entries are found when the caller opts in" do
-    synced = create_transaction(account: @account, date: @date, amount: 50, external_id: "plaid-1", source: "plaid")
+    synced = create_transaction(account: @account, date: @date, amount: 50, external_id: "other-1", source: "other_provider")
 
     found = @adapter.find_duplicate_transaction(
       date: @date, amount: 50, currency: "USD", include_provider_entries: true

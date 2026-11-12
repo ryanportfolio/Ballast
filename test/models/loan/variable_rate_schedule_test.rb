@@ -263,9 +263,8 @@ class Loan::VariableRateScheduleTest < ActiveSupport::TestCase
   # ArgumentError straight out of an account page render.
   #
   # Treated exactly as an unrecognised rate_type is: no schedule, no tab. The
-  # tolerant answer matters because term_months is also written by
-  # PlaidAccount::Liabilities::StudentLoanProcessor, from provider dates this
-  # app does not control.
+  # tolerant answer matters because term_months can also be written by a
+  # provider sync, from provider dates this app does not control.
   test "a term longer than the simulator will walk is not amortizable, rather than raising" do
     loan = build_loan(rate_type: "fixed", term_months: Loan::Simulator::MAX_PERIODS + 1)
 

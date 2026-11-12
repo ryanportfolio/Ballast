@@ -4,9 +4,9 @@ require "test_helper"
 
 RakeTaskTestHelper.load_task("simplefin:pending_restore", "simplefin_pending_cleanup")
 
-# simplefin:pending_restore un-excludes SimpleFIN/Plaid pending entries that have
+# simplefin:pending_restore un-excludes SimpleFIN pending entries that have
 # no posted match. "Pending" -- for the excluded entry and for its would-be
-# match -- is decided as Transaction#pending? decides it, for those two providers.
+# match -- is decided as Transaction#pending? decides it, for SimpleFIN.
 class SimplefinPendingRestoreTest < ActiveSupport::TestCase
   include EntriesTestHelper
 
@@ -25,7 +25,7 @@ class SimplefinPendingRestoreTest < ActiveSupport::TestCase
   end
 
   test "restores an excluded entry flagged \"no\", which pending? calls pending" do
-    entry = excluded_entry("plaid" => { "pending" => "no" })
+    entry = excluded_entry("simplefin" => { "pending" => "no" })
 
     restore
 
@@ -34,7 +34,7 @@ class SimplefinPendingRestoreTest < ActiveSupport::TestCase
 
   test "a companion flagged \"no\" is still pending, so it is not a posted match" do
     entry = excluded_entry("simplefin" => { "pending" => true })
-    companion(entry, "plaid" => { "pending" => "no" })
+    companion(entry, "simplefin" => { "pending" => "no" })
 
     restore
 

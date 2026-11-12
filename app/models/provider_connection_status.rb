@@ -2,7 +2,6 @@
 
 class ProviderConnectionStatus
   PROVIDERS = [
-    { key: "plaid", type: "PlaidItem", association: :plaid_items, accounts: :plaid_accounts },
     { key: "simplefin", type: "SimplefinItem", association: :simplefin_items, accounts: :simplefin_accounts }
   ].freeze
 

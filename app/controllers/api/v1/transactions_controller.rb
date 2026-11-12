@@ -312,7 +312,7 @@ class Api::V1::TransactionsController < Api::V1::BaseController
     # An API client can opt a transaction it creates or updates into the
     # same sync-protection a manual edit gets (Entry#protected_from_sync?) -
     # useful for a client that owns its own writes into an account also
-    # linked to a bank-sync provider (Plaid/SimpleFin/etc.), so the next
+    # linked to a bank-sync provider (SimpleFin/etc.), so the next
     # sync only links its external_id to the entry instead of overwriting
     # the category/name the client already set.
     def user_modified_requested?

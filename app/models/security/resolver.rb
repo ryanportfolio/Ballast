@@ -104,7 +104,7 @@ class Security::Resolver
       return nil if security.offline? && security.offline_reason == "resolution_pending"
 
       # When the caller provides an explicit provider (e.g. user selected from
-      # search results), honor that choice. Automated syncs (Plaid, SimpleFIN)
+      # search results), honor that choice. Automated syncs (SimpleFIN)
       # pass price_provider: nil and will not overwrite.
       if price_provider.present? && security.price_provider != price_provider
         security.update!(price_provider: price_provider)
@@ -213,7 +213,7 @@ class Security::Resolver
     # — meaning the user picked this exact security+provider combination from
     # search results, which we trust the same way
     # HoldingsController#remap_security already does unconditionally.
-    # Automated syncs (Plaid, SimpleFIN, imports) pass price_provider: nil and
+    # Automated syncs (SimpleFIN, imports) pass price_provider: nil and
     # won't trigger the explicit-selection path, so a security that went
     # offline for other reasons (e.g. "health_check_failed") stays offline
     # until a human explicitly re-confirms it.

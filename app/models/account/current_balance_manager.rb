@@ -98,7 +98,7 @@ class Account::CurrentBalanceManager
 
     # Linked accounts manage "current balance" via the special `current_anchor` valuation.
     # This is NOT a user-facing feature, and is primarily used in "processors" while syncing
-    # linked account data (e.g. via Plaid)
+    # linked account data (e.g. via SimpleFIN)
     #
     # Before overwriting a stale (previous-day) current_anchor, we convert it to a
     # reconciliation valuation. This preserves the API-reported balance as a historical

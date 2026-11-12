@@ -6,7 +6,6 @@ module Account::Linkable
     has_many :account_providers, dependent: :destroy
 
     # Legacy provider associations - kept for backward compatibility during migration
-    belongs_to :plaid_account, optional: true
     belongs_to :simplefin_account, optional: true
 
     # SQL-level mirror of `linked?`. Use this for set-based checks (e.g. bulk
@@ -15,15 +14,15 @@ module Account::Linkable
     scope :linked, -> {
       left_outer_joins(:account_providers)
         .where(
-          "account_providers.id IS NOT NULL OR accounts.plaid_account_id IS NOT NULL OR accounts.simplefin_account_id IS NOT NULL"
+          "account_providers.id IS NOT NULL OR accounts.simplefin_account_id IS NOT NULL"
         )
         .distinct
     }
   end
 
-  # A "linked" account gets transaction and balance data from a third party like Plaid or SimpleFin
+  # A "linked" account gets transaction and balance data from a third party like SimpleFin
   def linked?
-    account_providers.any? || plaid_account.present? || simplefin_account.present?
+    account_providers.any? || simplefin_account.present?
   end
 
   # An "offline" or "unlinked" account is one where the user tracks values and
@@ -63,7 +62,6 @@ module Account::Linkable
     return provider&.provider_name if provider.present?
 
     # Fall back to legacy system
-    return "plaid" if plaid_account.present?
     return "simplefin" if simplefin_account.present?
 
     nil
@@ -77,12 +75,11 @@ module Account::Linkable
   # Whether this account's provider applies the category matcher to imported
   # transactions, and therefore honors `enable_category_matcher`. Add a provider
   # here only once its entry processor checks the toggle; listing one that
-  # ignores it shows the user a switch that does nothing.
-  CATEGORY_MATCHER_PROVIDER_TYPES = %w[PlaidAccount].freeze
+  # ignores it shows the user a switch that does nothing. No remaining provider
+  # applies it yet (see SimplefinAccount::Transactions::Processor#category_matcher).
+  CATEGORY_MATCHER_PROVIDER_TYPES = %w[].freeze
 
   def supports_category_matcher?
-    return true if plaid_account.present?
-
     account_providers.exists?(provider_type: CATEGORY_MATCHER_PROVIDER_TYPES)
   end
 

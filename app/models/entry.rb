@@ -49,7 +49,7 @@ class Entry < ApplicationRecord
   # (via !cleared?) because Account::ProviderImportAdapter sets both at
   # find_or_initialize_by time, before this callback runs -- without that
   # guard, a first-time sync of a provider transaction with no name (e.g.
-  # Plaid omitting both merchant_name and original_description) would get a
+  # a provider sending neither a merchant nor a description) would get a
   # synthetic "Category - Merchant" name instead of surfacing the blank-name
   # presence error the same way a manual blank submission would.
   before_validation :set_default_name, if: -> {

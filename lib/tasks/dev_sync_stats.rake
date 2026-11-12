@@ -52,7 +52,7 @@ module DevSyncStatsHelpers
     stats["tx_seen"] = stats["tx_imported"] + stats["tx_updated"]
 
     # Add holdings stats for investment-capable providers
-    if %w[simplefin plaid].include?(provider_name)
+    if %w[simplefin].include?(provider_name)
       stats["holdings_found"] = rand(5..50)
     end
 
@@ -117,7 +117,6 @@ namespace :dev do
 
       puts "Generating fake sync stats for testing..."
 
-      DevSyncStatsHelpers.generate_fake_stats_for_items(PlaidItem, "plaid")
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin")
 
       puts "Done! Refresh your browser to see the sync summaries."
@@ -144,7 +143,6 @@ namespace :dev do
 
       puts "Generating fake sync stats with errors and warnings..."
 
-      DevSyncStatsHelpers.generate_fake_stats_for_items(PlaidItem, "plaid", include_issues: true)
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin", include_issues: true)
       puts "Done! Refresh your browser to see the sync summaries with issues."
     end
@@ -183,30 +181,8 @@ namespace :dev do
       end
       puts "    Created 3 SimplefinAccounts"
 
-      # Create a fake Plaid item (requires access_token)
-      plaid_item = family.plaid_items.create!(
-        name: "Test Plaid Connection",
-        access_token: "test-access-token-#{SecureRandom.hex(16)}",
-        plaid_id: "test-plaid-id-#{SecureRandom.hex(8)}"
-      )
-      puts "  Created PlaidItem: #{plaid_item.name}"
-
-      # Create fake Plaid accounts
-      2.times do |i|
-        plaid_item.plaid_accounts.create!(
-          name: "Test Plaid Account #{i + 1}",
-          plaid_id: "test-plaid-account-#{SecureRandom.hex(8)}",
-          currency: "USD",
-          current_balance: rand(1000..50000),
-          plaid_type: %w[depository credit investment].sample,
-          plaid_subtype: "checking"
-        )
-      end
-      puts "    Created 2 PlaidAccounts"
-
       puts "\nNow generating sync stats for the test providers..."
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin", include_issues: true)
-      DevSyncStatsHelpers.generate_fake_stats_for_items(PlaidItem, "plaid", include_issues: false)
 
       puts "\nDone! Visit /accounts to see the sync summaries."
     end
@@ -223,7 +199,6 @@ namespace :dev do
       # Remove items that start with "Test "
       count = 0
       count += SimplefinItem.where("name LIKE ?", "Test %").destroy_all.count
-      count += PlaidItem.where("name LIKE ?", "Test %").destroy_all.count
 
       puts "Removed #{count} test provider items. Done!"
     end

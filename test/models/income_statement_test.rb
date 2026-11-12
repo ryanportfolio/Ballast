@@ -765,9 +765,9 @@ class IncomeStatementTest < ActiveSupport::TestCase
   end
 
   test "family.tax_advantaged_account_ids includes HSA depository accounts and excludes non-HSA depositories" do
-    # Plaid routes `depository.hsa` to `Depository` (not Investment), so HSA
-    # cash accounts created from a Plaid sync end up as Depository(subtype:
-    # "hsa") rows. They are semantically tax-advantaged but were previously
+    # Providers can route an HSA cash account to `Depository` (not
+    # Investment), so such accounts end up as Depository(subtype: "hsa")
+    # rows. They are semantically tax-advantaged but were previously
     # invisible to this filter because it only joined `investments` and
     # `cryptos`.
     hsa_depository = @family.accounts.create!(
@@ -970,7 +970,7 @@ class IncomeStatementTest < ActiveSupport::TestCase
     # (CategoryStats), each of which reads the flag in its own SQL.
     def assert_statement_leaves_out_flagged_expense(flag)
       flagged = create_transaction(account: @checking_account, amount: 250, category: @groceries_category)
-      flagged.entryable.update!(extra: { "plaid" => { "pending" => flag } })
+      flagged.entryable.update!(extra: { "simplefin" => { "pending" => flag } })
       assert flagged.entryable.pending?, "pending? should call #{flag.inspect} pending"
 
       income_statement = IncomeStatement.new(@family)

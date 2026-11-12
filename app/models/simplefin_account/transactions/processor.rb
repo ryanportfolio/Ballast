@@ -54,7 +54,7 @@ class SimplefinAccount::Transactions::Processor
 
     # TODO: When SimpleFIN category matching is wired up (SimplefinAccount::Transactions::CategoryMatcher
     # does not exist yet and this method is currently unused), apply the same
-    # `account&.enable_category_matcher?` guard used in PlaidEntry::Processor#matched_category,
+    # `account&.enable_category_matcher?` guard to the matched category,
     # and include SimpleFIN in Account::Linkable#supports_category_matcher? so the toggle
     # appears for SimpleFIN-linked accounts.
     def category_matcher

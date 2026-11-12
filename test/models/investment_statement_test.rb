@@ -614,14 +614,13 @@ class InvestmentStatementTest < ActiveSupport::TestCase
     create_income_trade(account: account, label: "Dividend", amount: 50, date: period.start_date)
     create_income_transaction(account: account, label: "Dividend", amount: 12.5, date: period.start_date, extra_shape: :flat)
     create_income_transaction(account: account, label: "Interest", amount: 4, date: period.start_date, extra_shape: :none)
-    # PlaidAccount::Investments::TransactionsProcessor writes a dividend as
-    # a qty-0 trade with amount 0 * price, so its cash is not recoverable
-    # here (its `price` is a per-share figure, not the payment). It is
-    # income with amount 0 until the processor is fixed; the 62.5 below
-    # deliberately excludes it.
-    create_plaid_dividend_trade(account: account, date: period.start_date)
+    # A provider that writes a dividend as a qty-0 trade with amount
+    # 0 * price leaves its cash unrecoverable here (its `price` is a
+    # per-share figure, not the payment). It is income with amount 0; the
+    # 62.5 below deliberately excludes it.
+    create_zero_amount_dividend_trade(account: account, date: period.start_date)
     # Pending income is not counted until it posts
-    create_labelled_transaction(account: account, label: "Dividend", amount: -99, date: period.start_date, extra: { "plaid" => { "pending" => true } })
+    create_labelled_transaction(account: account, label: "Dividend", amount: -99, date: period.start_date, extra: { "simplefin" => { "pending" => true } })
     # A labelled transaction outside the period is not counted
     create_income_transaction(account: account, label: "Dividend", amount: 999, date: period.start_date - 1.day, extra_shape: :flat)
 
@@ -830,9 +829,9 @@ class InvestmentStatementTest < ActiveSupport::TestCase
       )
     end
 
-    # PlaidAccount::Investments::TransactionsProcessor routes a cash dividend
-    # through the trade path with quantity 0, so the amount is 0 * price = 0.
-    def create_plaid_dividend_trade(account:, security: create_portfolio_security, price: 100, date: Date.current)
+    # A cash dividend a provider routes through the trade path with quantity 0,
+    # so the amount is 0 * price = 0.
+    def create_zero_amount_dividend_trade(account:, security: create_portfolio_security, price: 100, date: Date.current)
       account.entries.create!(
         name: "Dividend #{security.ticker}",
         date: date,

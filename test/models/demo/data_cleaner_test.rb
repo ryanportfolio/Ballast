@@ -1,12 +1,6 @@
 require "test_helper"
 
 class Demo::DataCleanerTest < ActiveSupport::TestCase
-  setup do
-    # Fixture families hold Plaid items, and destroying one asks Plaid to
-    # remove it. That call is not what these tests are about.
-    Provider::Registry.stubs(:plaid_provider_for_region).returns(nil)
-  end
-
   # The generator gives its demo family a subscription row, and
   # `rake demo_data:default SKIP_CLEAR=0` must remove it with the family.
   test "clears a family with a subscription row" do

@@ -14,9 +14,8 @@ class AccountsController < ApplicationController
           .listable_manual
           .where(id: @accessible_account_ids)
           .with_attached_logo
-          .includes(:accountable, :account_providers, :plaid_account, :simplefin_account)
+          .includes(:accountable, :account_providers, :simplefin_account)
           .order(:name)
-    @plaid_items = visible_provider_items(family.plaid_items.ordered.with_attached_logo.includes(:plaid_accounts))
     @simplefin_items = visible_provider_items(family.simplefin_items.ordered.with_attached_logo)
 
     preload_latest_sync_metadata_for_index!
@@ -33,7 +32,6 @@ class AccountsController < ApplicationController
   end
 
   def sync_all
-    family.request_plaid_transactions_refreshes_later(source: "AccountsController#sync_all")
     family.sync_later
     redirect_to accounts_path, notice: t("accounts.sync_all.syncing")
   end
@@ -142,11 +140,7 @@ class AccountsController < ApplicationController
           item = account_provider.adapter&.item
           next unless item && !item.syncing?
 
-          if item.is_a?(PlaidItem)
-            item.sync_later_with_provider_refresh
-          else
-            item.sync_later
-          end
+          item.sync_later
         end
       else
         # Manual accounts just need balance materialization
@@ -264,11 +258,11 @@ class AccountsController < ApplicationController
 
         # Remove new system links (account_providers join table)
         # Provider account records are preserved (not destroyed) so users can relink later.
-        # This follows the Plaid pattern where the provider account survives as "unlinked".
+        # The provider account survives as "unlinked".
         @account.account_providers.reload.destroy_all
 
         # Remove legacy system links (foreign keys)
-        @account.update!(plaid_account_id: nil, simplefin_account_id: nil)
+        @account.update!(simplefin_account_id: nil)
 
         # Destroy the SimplefinAccount record so it doesn't cause stale account issues
         # This is safe because:
@@ -432,7 +426,6 @@ class AccountsController < ApplicationController
 
     def preload_latest_sync_metadata_for_index!
       items = [
-        @plaid_items,
         @simplefin_items
       ].flatten.compact
 
@@ -535,13 +528,6 @@ class AccountsController < ApplicationController
         @simplefin_sync_stats_map[item.id] = {}
         @simplefin_show_relink_map[item.id] = false
         @simplefin_duplicate_only_map[item.id] = false
-      end
-
-      # Plaid sync stats
-      @plaid_sync_stats_map = {}
-      @plaid_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @plaid_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
       end
     end
 end

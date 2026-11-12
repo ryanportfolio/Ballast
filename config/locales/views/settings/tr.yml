@@ -310,15 +310,6 @@ tr:
         sync_error: Senkronizasyon hatası
       not_authorized: Yetkiniz yok
       not_found: Sağlayıcı bulunamadı.
-      plaid_eu_panel:
-        step_1_html: "%{link} sayfasını açın ve AB İstemci ID'nizi ve Gizli Anahtarınızı
-          kopyalayın."
-      plaid_panel:
-        step_1_html: "%{link} sayfasını açın ve İstemci ID'nizi ve Gizli Anahtarınızı
-          kopyalayın."
-        step_2: Bir ortam seçin. Test için sandbox, gerçek hesaplar için production
-          kullanın.
-        step_3: Kimlik bilgilerinizi aşağıya yapıştırın ve bağlanın.
       provider_form:
         save_and_connect: Kaydet ve bağlan
       recently_synced: Yakın zamanda senkronize edildi. Biraz sonra tekrar deneyin.
@@ -351,9 +342,6 @@ tr:
       sync_provider_in_progress: Senkronizasyon başladı.
       sync_provider_no_items: Senkronize edilecek bağlantı yok.
       taglines:
-        plaid: Plaid üzerinden binlerce ABD finans kurumunu bağlayın.
-        plaid_eu: Plaid üzerinden (PSD2 / Açık Bankacılık) Avrupa finans kurumlarını
-          bağlayın.
         simplefin: Açık SimpleFIN protokolü üzerinden ABD banka hesaplarını bağlayın.
       update:
         no_changes: Herhangi bir değişiklik yapılmadı

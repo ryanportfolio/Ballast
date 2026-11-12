@@ -49,7 +49,7 @@ class PdfImportReconciliationTest < ActiveSupport::TestCase
 
   test "a provider-synced transaction counts as already recorded" do
     synced = create_transaction(
-      account: @account, date: @date, amount: 50, name: "COFFEE", external_id: "plaid-1", source: "plaid"
+      account: @account, date: @date, amount: 50, name: "COFFEE", external_id: "other-1", source: "other_provider"
     )
 
     @import.update!(extracted_data: { "transactions" => [ extracted(date: @date, amount: -50, name: "Coffee Shop") ] })

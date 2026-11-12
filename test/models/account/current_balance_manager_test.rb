@@ -5,12 +5,8 @@ class Account::CurrentBalanceManagerTest < ActiveSupport::TestCase
     @family = families(:empty)
     @linked_account = accounts(:connected)
 
-    # Create account_provider to make the account actually linked
-    # (The fixture has plaid_account but that's the legacy association)
-    @linked_account.account_providers.find_or_create_by!(
-      provider_type: "PlaidAccount",
-      provider_id: plaid_accounts(:one).id
-    )
+    # The fixture is a manual account; link it to a provider for these tests
+    link_account_to_simplefin!(@linked_account)
   end
 
   # -------------------------------------------------------------------------------------------------
@@ -180,7 +176,7 @@ class Account::CurrentBalanceManagerTest < ActiveSupport::TestCase
   #
   # Linked accounts manage "current balance" via the special `current_anchor` valuation.
   # This is NOT a user-facing feature, and is primarily used in "processors" while syncing
-  # linked account data (e.g. via Plaid)
+  # linked account data (e.g. via SimpleFIN)
   # -------------------------------------------------------------------------------------------------
 
   test "when no existing anchor for linked account, creates new anchor" do

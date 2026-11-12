@@ -933,7 +933,7 @@ class Family::DataExporterTest < ActiveSupport::TestCase
   end
 
   test "exports provider merchants referenced by transactions in NDJSON" do
-    provider_merchant = ProviderMerchant.create!(name: "AMZN MKTP", source: "plaid", provider_merchant_id: "plaid_amzn")
+    provider_merchant = ProviderMerchant.create!(name: "AMZN MKTP", source: "simplefin", provider_merchant_id: "simplefin_amzn")
     @account.entries.create!(
       date: Date.parse("2024-05-02"),
       amount: 42.50,
@@ -952,13 +952,13 @@ class Family::DataExporterTest < ActiveSupport::TestCase
 
       assert provider_merchant_data
       assert_equal "AMZN MKTP", provider_merchant_data["data"]["name"]
-      assert_equal "plaid", provider_merchant_data["data"]["source"]
-      assert_equal "plaid_amzn", provider_merchant_data["data"]["provider_merchant_id"]
+      assert_equal "simplefin", provider_merchant_data["data"]["source"]
+      assert_equal "simplefin_amzn", provider_merchant_data["data"]["provider_merchant_id"]
     end
   end
 
   test "does not export a color for a provider merchant" do
-    provider_merchant = ProviderMerchant.create!(name: "Colorless", source: "plaid")
+    provider_merchant = ProviderMerchant.create!(name: "Colorless", source: "simplefin")
     @account.entries.create!(
       date: Date.parse("2024-05-02"), amount: 5, name: "Colorless purchase", currency: "USD",
       entryable: Transaction.new(merchant: provider_merchant)
@@ -993,7 +993,7 @@ class Family::DataExporterTest < ActiveSupport::TestCase
   end
 
   test "excludes provider merchants not referenced by the family from NDJSON" do
-    unreferenced = ProviderMerchant.create!(name: "Unrelated Provider Merchant", source: "plaid")
+    unreferenced = ProviderMerchant.create!(name: "Unrelated Provider Merchant", source: "simplefin")
 
     zip_data = @exporter.generate_export
 

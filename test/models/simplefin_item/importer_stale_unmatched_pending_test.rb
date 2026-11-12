@@ -32,16 +32,16 @@ class SimplefinItem::ImporterStaleUnmatchedPendingTest < ActiveSupport::TestCase
     assert_equal 1, stats["stale_unmatched_pending"]
   end
 
-  test "counts a stale entry pending under any pending provider, not only SimpleFIN" do
-    stale_entry("plaid" => { "pending" => true })
+  test "does not count a stale entry flagged under a key that is not a pending provider" do
+    stale_entry("other_provider" => { "pending" => true })
 
     track
 
-    assert_equal 1, stats["stale_unmatched_pending"]
+    assert_nil stats["stale_unmatched_pending"]
   end
 
   test "does not count stale entries that are not pending" do
-    stale_entry("plaid" => { "pending" => "false" })
+    stale_entry("simplefin" => { "pending" => "false" })
     stale_entry({})
 
     track

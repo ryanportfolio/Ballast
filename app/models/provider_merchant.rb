@@ -1,8 +1,8 @@
 class ProviderMerchant < Merchant
   enum :source, { plaid: "plaid", simplefin: "simplefin", lunchflow: "lunchflow", akahu: "akahu", up: "up", monobank: "monobank", synth: "synth", ai: "ai", enable_banking: "enable_banking", coinstats: "coinstats", mercury: "mercury", brex: "brex", indexa_capital: "indexa_capital", sophtron: "sophtron", questrade: "questrade", redbark: "redbark", fio: "fio" }
 
-  # Unlike FamilyMerchant, only fill a blank logo: providers such as Plaid
-  # supply their own logo_url, which must not be replaced (issue #2925).
+  # Unlike FamilyMerchant, only fill a blank logo: a provider can
+  # supply its own logo_url, which must not be replaced (issue #2925).
   before_save :generate_logo_url_from_website, if: :should_generate_logo?
 
   validates :name, uniqueness: { scope: [ :source ] }
@@ -113,7 +113,7 @@ class ProviderMerchant < Merchant
 
   # Generate logo URL from website_url using BrandFetch, if configured.
   # Only refreshes or clears a logo generated here: a provider-supplied logo
-  # (such as Plaid's) must not be replaced (issue #2925), while a Brandfetch
+  # must not be replaced (issue #2925), while a Brandfetch
   # logo must follow the website it was derived from.
   def generate_logo_url_from_website!
     return unless logo_url.blank? || brandfetch_logo?

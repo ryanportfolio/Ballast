@@ -20,9 +20,6 @@ zh-TW:
       title: 自動規律辨識
       manual_description: 您可以使用上方的按鈕手動辨識規律，或清理失效的定期交易。
       automatic_description: 自動辨識也會在下列情況後執行：
-      triggers:
-      - CSV 匯入完成（包含交易、證券交易、帳戶等）
-      - 任何供應商同步完成（如 Plaid, SimpleFIN 等）
     identified: 已辨識出 %{count} 個定期交易規律
     cleaned_up: 已清理 %{count} 個失效的定期交易
     marked_inactive: 定期交易已標記為停用

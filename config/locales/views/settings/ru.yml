@@ -301,13 +301,6 @@ ru:
         sync_error: Ошибка синхронизации
       not_authorized: Не авторизован
       not_found: Провайдер не найден.
-      plaid_eu_panel:
-        step_1_html: Откройте %{link} и скопируйте ваш EU Client ID и секретный ключ.
-      plaid_panel:
-        step_1_html: Откройте %{link} и скопируйте ваш Client ID и секретный ключ.
-        step_2: Выберите среду. Используйте sandbox для тестирования и production
-          для реальных счетов.
-        step_3: Вставьте ваши учётные данные ниже и подключитесь.
       provider_form:
         save_and_connect: Сохранить и подключить
       recently_synced: Недавно синхронизировано. Попробуйте снова через мгновение.
@@ -340,9 +333,6 @@ ru:
       sync_provider_in_progress: Синхронизация начата.
       sync_provider_no_items: Нет доступных подключений для синхронизации.
       taglines:
-        plaid: Подключите тысячи финансовых учреждений США через Plaid.
-        plaid_eu: Подключите европейские финансовые учреждения через Plaid (PSD2 /
-          Open Banking).
         simplefin: Подключите банковские счета США через открытый протокол SimpleFIN.
       update:
         no_changes: Изменений не было

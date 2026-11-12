@@ -219,9 +219,6 @@ ca:
         auto_sync_time_description: Especifica l'hora del dia en què s'ha de produir
           la sincronització automàtica.
         auto_sync_time_label: Hora de sincronització (HH:MM)
-        env_configured_message: Aquesta configuració està desactivada perquè una variable
-          d'entorn del proveïdor (SIMPLEFIN_INCLUDE_PENDING o PLAID_INCLUDE_PENDING)
-          està establerta. Elimina-la per activar aquesta opció.
         include_pending_description: Quan està activat, les transaccions pendents
           (no liquidades) s'importaran i es conciliaran automàticament quan es comptabilitzin.
           Desactiva-ho si el teu banc proporciona dades pendents poc fiables.

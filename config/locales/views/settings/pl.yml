@@ -369,14 +369,6 @@ pl:
         sync_error: Błąd synchronizacji
       not_authorized: Brak autoryzacji
       not_found: Nie znaleziono dostawcy.
-      plaid_eu_panel:
-        step_1_html: Otwórz %{link} i skopiuj swój europejski Client ID oraz Secret
-          Key.
-      plaid_panel:
-        step_1_html: Otwórz %{link} i skopiuj swój Client ID oraz Secret Key.
-        step_2: Wybierz środowisko. Użyj sandbox do testów i production dla prawdziwych
-          kont.
-        step_3: Wklej poniżej swoje dane uwierzytelniające i połącz.
       provider_form:
         save_and_connect: Zapisz i połącz
       provider_setup_encryption_warning:
@@ -415,9 +407,6 @@ pl:
       sync_provider_in_progress: Synchronizacja rozpoczęta.
       sync_provider_no_items: Brak połączeń do synchronizacji.
       taglines:
-        plaid: Połącz tysiące amerykańskich instytucji finansowych przez Plaid.
-        plaid_eu: Połącz europejskie instytucje finansowe przez Plaid (PSD2 / otwarta
-          bankowość).
         simplefin: Połącz amerykańskie konta bankowe przez otwarty protokół SimpleFIN.
       update:
         no_changes: Nie wprowadzono żadnych zmian

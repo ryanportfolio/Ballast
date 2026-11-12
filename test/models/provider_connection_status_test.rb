@@ -20,8 +20,8 @@ class ProviderConnectionStatusTest < ActiveSupport::TestCase
   end
 
   test "status summary is computed without calling provider item summary" do
-    provider = ProviderConnectionStatus::PROVIDERS.find { |entry| entry[:association] == :plaid_items }
-    item = plaid_items(:one)
+    provider = ProviderConnectionStatus::PROVIDERS.find { |entry| entry[:association] == :simplefin_items }
+    item = SimplefinItem.create!(family: families(:dylan_family), name: "SimpleFIN", access_url: "https://example.com/access")
     completed_sync = item.syncs.create!(
       status: "completed",
       created_at: 1.hour.ago,

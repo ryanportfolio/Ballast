@@ -9,43 +9,43 @@
 # then falls back to defaults.
 #
 # Example usage in an adapter:
-#   class Provider::PlaidAdapter < Provider::Base
+#   class Provider::ExampleBankAdapter < Provider::Base
 #     include Provider::Configurable
 #
 #     configure do
 #       description <<~DESC
 #         Setup instructions:
-#         1. Visit [Plaid Dashboard](https://dashboard.plaid.com) to get your API credentials
+#         1. Visit the ExampleBank dashboard to get your API credentials
 #         2. Configure your Client ID and Secret Key below
 #       DESC
 #
 #       field :client_id,
 #             label: "Client ID",
 #             required: true,
-#             env_key: "PLAID_CLIENT_ID",
-#             description: "Your Plaid Client ID from the dashboard"
+#             env_key: "EXAMPLE_BANK_CLIENT_ID",
+#             description: "Your ExampleBank Client ID from the dashboard"
 #
 #       field :secret,
 #             label: "Secret Key",
 #             required: true,
 #             secret: true,
-#             env_key: "PLAID_SECRET",
-#             description: "Your Plaid Secret key"
+#             env_key: "EXAMPLE_BANK_SECRET",
+#             description: "Your ExampleBank Secret key"
 #
 #       field :environment,
 #             label: "Environment",
 #             required: false,
-#             env_key: "PLAID_ENV",
+#             env_key: "EXAMPLE_BANK_ENV",
 #             default: "sandbox",
-#             description: "Plaid environment: sandbox, development, or production"
+#             description: "ExampleBank environment: sandbox, development, or production"
 #     end
 #   end
 #
 # The provider_key is automatically derived from the class name:
-#   Provider::PlaidAdapter -> "plaid"
+#   Provider::ExampleBankAdapter -> "example_bank"
 #   Provider::SimplefinAdapter -> "simplefin"
 #
-# Fields are stored with keys like "plaid_client_id", "plaid_secret", etc.
+# Fields are stored with keys like "example_bank_client_id", "example_bank_secret", etc.
 # Access values via: configuration.get_value(:client_id) or field.value
 module Provider::Configurable
   extend ActiveSupport::Concern
@@ -64,7 +64,7 @@ module Provider::Configurable
     end
 
     # Get the provider key (derived from class name)
-    # Example: Provider::PlaidAdapter -> "plaid"
+    # Example: Provider::ExampleBankAdapter -> "example_bank"
     def provider_key
       name.demodulize.gsub(/Adapter$/, "").underscore
     end
@@ -200,7 +200,7 @@ module Provider::Configurable
     end
 
     # Get the setting key for this field
-    # Example: plaid_client_id
+    # Example: example_bank_client_id
     def setting_key
       "#{provider_key}_#{name}".to_sym
     end
@@ -266,42 +266,6 @@ module Provider::Configurable
         return nil if val.nil?
         normalized = val.to_s.strip
         normalized.empty? ? nil : normalized
-      end
-  end
-end
-
-# Registry to store all provider configurations
-module Provider::ConfigurationRegistry
-  class << self
-    def register(provider_key, configuration, adapter_class = nil)
-      registry[provider_key] = configuration
-      adapter_registry[provider_key] = adapter_class if adapter_class
-    end
-
-    def get(provider_key)
-      registry[provider_key]
-    end
-
-    def all
-      registry.values
-    end
-
-    def providers
-      registry.keys
-    end
-
-    # Get the adapter class for a provider key
-    def get_adapter_class(provider_key)
-      adapter_registry[provider_key]
-    end
-
-    private
-      def registry
-        @registry ||= {}
-      end
-
-      def adapter_registry
-        @adapter_registry ||= {}
       end
   end
 end

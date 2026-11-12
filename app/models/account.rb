@@ -55,7 +55,7 @@ class Account < ApplicationRecord
   scope :manual, -> {
     left_joins(:account_providers)
       .where(account_providers: { id: nil })
-      .where(plaid_account_id: nil, simplefin_account_id: nil)
+      .where(simplefin_account_id: nil)
   }
 
   scope :visible_manual, -> {
@@ -388,7 +388,6 @@ class Account < ApplicationRecord
   # `Account.manual` scope so per-instance checks don't drift from the query.
   def manual?
     account_providers.none? &&
-      plaid_account_id.blank? &&
       simplefin_account_id.blank?
   end
 

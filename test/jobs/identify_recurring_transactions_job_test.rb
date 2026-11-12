@@ -7,8 +7,8 @@ class IdentifyRecurringTransactionsJobTest < ActiveJob::TestCase
   end
 
   test "skips identification while a provider sync is in flight" do
-    plaid_item = plaid_items(:one)
-    Sync.create!(syncable: plaid_item, status: :pending)
+    simplefin_item = SimplefinItem.create!(family: @family, name: "SF Conn", access_url: "https://example.com/access")
+    Sync.create!(syncable: simplefin_item, status: :pending)
 
     RecurringTransaction::Identifier.any_instance.expects(:identify_recurring_patterns).never
 

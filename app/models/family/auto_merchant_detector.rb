@@ -102,7 +102,7 @@ class Family::AutoMerchantDetector
 
     def find_or_create_ai_merchant(auto_detection)
       # Strategy 1: Find an existing merchant by website_url (most reliable for
-      # deduplication). Provider-sourced merchants (Plaid etc.) are vetted
+      # deduplication). Provider-sourced merchants are vetted
       # shared data and stay reusable across families. AI-sourced ones were
       # created from some family's own transaction text (before #3842), so
       # they're only reused when already assigned to this family — otherwise

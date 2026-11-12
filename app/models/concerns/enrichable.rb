@@ -1,5 +1,5 @@
 # Enrichable models can have 1+ of their fields enriched by various
-# external sources (i.e. Plaid) or internal sources (i.e. Rules)
+# external sources (i.e. SimpleFIN) or internal sources (i.e. Rules)
 #
 # This module defines how models should, lock, unlock, and edit attributes
 # based on the source of the edit.  User edits always take highest precedence.

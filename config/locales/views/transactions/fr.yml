@@ -331,15 +331,11 @@ fr:
       one_time_description: Les transactions ponctuelles seront exclues de certains calculs budgétaires et rapports afin de vous aider à voir ce qui compte vraiment.
       one_time_title: Transaction ponctuelle (%{type})
       open_matcher: Ouvrir le matcheur
-      original_description: Libellé d'origine
       overview: Aperçu
       payee: Bénéficiaire
-      payment_channel: Canal de paiement
       pending_duplicate_merger_button: Ouvrir la fusion
       pending_duplicate_merger_description: Fusionnez manuellement cette transaction en attente avec sa version validée.
       pending_duplicate_merger_title: Doublon d'une transaction validée ?
-      plaid_counterparty_label: Contrepartie %{index}
-      plaid_payment_meta_label: Métadonnées de paiement · %{name}
       potential_duplicate_description: Cette transaction en attente peut être la même que la transaction validée ci-dessous. Si tel est le cas, fusionnez-les pour éviter un double comptage.
       potential_duplicate_title: Doublon possible détecté
       provider_extra_fields:
@@ -361,7 +357,6 @@ fr:
       tab_transactions: Transactions
       tab_upcoming: À venir
       tags_label: Étiquettes
-      transaction_code: Code de transaction
       transfer: Transfert
       transfer_matcher_description: Connectez cette transaction à sa contrepartie dans un autre compte.
       transfer_or_debt_payment: Transfert ou paiement de la dette ?

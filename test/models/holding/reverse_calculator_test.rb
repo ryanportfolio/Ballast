@@ -117,7 +117,7 @@ class Holding::ReverseCalculatorTest < ActiveSupport::TestCase
     end
   end
 
-  # For a reverse sync, Plaid will provide today's holdings + prices.  We need to match those exactly so balances match in net worth rollups.
+  # For a reverse sync, the provider supplies today's holdings + prices.  We need to match those exactly so balances match in net worth rollups.
   test "current day holdings always match provided holdings and prices" do
     # Provider gives us total value of $10,000 ($5,000 cash, $5,000 in holdings)
     @account.update!(balance: 10000, cash_balance: 5000)

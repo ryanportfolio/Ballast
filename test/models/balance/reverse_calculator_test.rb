@@ -685,8 +685,8 @@ class Balance::ReverseCalculatorTest < ActiveSupport::TestCase
     )
   end
 
-  # A common scenario with Plaid is they'll give us holding records for today, but no trade history for some of them.
-  # This is because they only supply 2 years worth of historical data.  Our system must properly handle this.
+  # A common provider scenario: holding records for today, but no trade history for some of them.
+  # Providers may only supply a limited window of historical data.  Our system must properly handle this.
   test "properly calculates balances when a holding has no trade history" do
     # Account starts with $20,000 total value, $19,000 cash, $1,000 in holdings ($500 AAPL, $500 MSFT)
     account = create_account_with_ledger(

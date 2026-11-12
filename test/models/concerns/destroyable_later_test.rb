@@ -4,7 +4,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
   include ActiveJob::TestHelper
 
   setup do
-    @item = plaid_items(:one)
+    @item = families(:dylan_family).simplefin_items.create!(name: "SimpleFIN Connection", access_url: "https://example.com/access")
   end
 
   test "flags the item and enqueues its destruction" do
@@ -13,7 +13,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
     end
 
     assert @item.reload.scheduled_for_deletion?
-    assert_not_includes PlaidItem.syncable, @item
+    assert_not_includes SimplefinItem.syncable, @item
   end
 
   # The adapter is stubbed rather than perform_later, so ActiveJob's own
@@ -25,7 +25,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
     assert_raises(RedisClient::CannotConnectError) { @item.destroy_later }
 
     assert_not @item.reload.scheduled_for_deletion?
-    assert_includes PlaidItem.syncable, @item
+    assert_includes SimplefinItem.syncable, @item
   end
 
   # An adapter raising ActiveJob::EnqueueError (or an enqueue callback aborting)
@@ -104,7 +104,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
     binance_items coinbase_items coinspot_items coinstats_items kraken_items onchain_wallet_items
     ibkr_items indexa_capital_items questrade_items snaptrade_items trade_republic_items trading212_items
     akahu_items fio_items lunchflow_items monobank_items redbark_items sophtron_items up_items
-    brex_items enable_banking_items mercury_items wise_items
+    brex_items enable_banking_items mercury_items plaid_accounts plaid_items wise_items
   ].freeze
 
   test "every model with a scheduled_for_deletion column uses the concern" do
@@ -113,7 +113,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
       .select { |table| connection.column_exists?(table, :scheduled_for_deletion) }
       .map { |table| table.classify.constantize }
 
-    assert_operator models.size, :>=, 2
+    assert_operator models.size, :>=, 1
 
     models.each do |model|
       assert_equal DestroyableLater, model.instance_method(:destroy_later).owner,

@@ -71,9 +71,9 @@ module PortfolioFlowTestHelper
     )
   end
 
-  # PlaidAccount::Investments::TransactionsProcessor routes a cash dividend
-  # through the trade path with quantity 0, so the amount is 0 * price = 0.
-  def create_plaid_dividend_trade(account:, security: create_portfolio_security, price: 100, date: Date.current)
+  # A cash dividend a provider routes through the trade path with quantity 0,
+  # so the amount is 0 * price = 0.
+  def create_zero_amount_dividend_trade(account:, security: create_portfolio_security, price: 100, date: Date.current)
     account.entries.create!(
       name: "Dividend #{security.ticker}",
       date: date,

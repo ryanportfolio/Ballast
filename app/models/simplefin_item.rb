@@ -509,7 +509,7 @@ class SimplefinItem < ApplicationRecord
     end
 
     def remove_simplefin_item
-      # SimpleFin doesn't require server-side cleanup like Plaid
+      # SimpleFin doesn't require server-side cleanup
       # The access URL just becomes inactive
     end
 end

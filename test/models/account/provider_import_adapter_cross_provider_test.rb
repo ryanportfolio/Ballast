@@ -8,15 +8,26 @@ class Account::ProviderImportAdapterCrossProviderTest < ActiveSupport::TestCase
     adapter = Account::ProviderImportAdapter.new(investment_account)
     security = securities(:aapl)
 
-    # Create two different account providers for the SAME account
-    # Provider A (e.g., Plaid)
+    # Two different account providers. An account can hold only one link per
+    # provider type and SimpleFIN is the only provider type left, so Provider A's
+    # link sits on another account; the adapter only compares account_provider_id.
+    item = SimplefinItem.create!(family: families(:dylan_family), name: "SF Conn", access_url: "https://example.com/access")
+
+    # Provider A
+    sfa_a = SimplefinAccount.create!(
+      simplefin_item: item,
+      name: "SF Other",
+      account_id: "sf_other_cross_provider",
+      currency: "USD",
+      account_type: "investment",
+      current_balance: 500
+    )
     ap_a = AccountProvider.create!(
-      account: investment_account,
-      provider: plaid_accounts(:one)
+      account: accounts(:depository),
+      provider: sfa_a
     )
 
-    # Provider B (e.g., SimpleFin)
-    item = SimplefinItem.create!(family: families(:dylan_family), name: "SF Conn", access_url: "https://example.com/access")
+    # Provider B
     sfa_b = SimplefinAccount.create!(
       simplefin_item: item,
       name: "SF Invest",

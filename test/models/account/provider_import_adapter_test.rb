@@ -12,17 +12,17 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     merchant = ProviderMerchant.create!(
       provider_merchant_id: "test_merchant_123",
       name: "Test Merchant",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_difference "@account.entries.count", 1 do
       entry = @adapter.import_transaction(
-        external_id: "plaid_test_123",
+        external_id: "sf_test_123",
         amount: 100.50,
         currency: "USD",
         date: Date.today,
         name: "Test Transaction",
-        source: "plaid",
+        source: "simplefin",
         category_id: category.id,
         merchant: merchant
       )
@@ -90,20 +90,20 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     loan_adapter = Account::ProviderImportAdapter.new(accounts(:loan))
 
     loan_entry = loan_adapter.import_transaction(
-      external_id: "plaid_loan_inflow_1",
+      external_id: "sf_loan_inflow_1",
       amount: -200.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment Received",
-      source: "plaid"
+      source: "simplefin"
     )
     checking_entry = @adapter.import_transaction(
-      external_id: "plaid_checking_outflow_1",
+      external_id: "sf_checking_outflow_1",
       amount: 200.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment",
-      source: "plaid"
+      source: "simplefin"
     )
 
     @family.auto_match_transfers!
@@ -118,12 +118,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     # would classify the leg as loan_payment again, which makes budgets and
     # reports count the same repayment as an expense on both legs.
     loan_adapter.import_transaction(
-      external_id: "plaid_loan_inflow_1",
+      external_id: "sf_loan_inflow_1",
       amount: -200.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment Received",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_equal "funds_movement", loan_entry.transaction.reload.kind
@@ -132,12 +132,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
   test "re-importing a contribution the user turned into a plain transfer keeps that choice" do
     checking_entry = @adapter.import_transaction(
-      external_id: "plaid_checking_to_broker",
+      external_id: "sf_checking_to_broker",
       amount: 300.00,
       currency: "USD",
       date: Date.current,
       name: "To broker",
-      source: "plaid"
+      source: "simplefin"
     )
     broker_entry = accounts(:investment).entries.create!(
       name: "From checking", date: Date.current, amount: -300, currency: "USD", entryable: Transaction.new
@@ -148,12 +148,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
     # A provider kind hint makes the adapter re-derive the leg from its transfer.
     @adapter.import_transaction(
-      external_id: "plaid_checking_to_broker",
+      external_id: "sf_checking_to_broker",
       amount: 300.00,
       currency: "USD",
       date: Date.current,
       name: "To broker",
-      source: "plaid",
+      source: "simplefin",
       kind: "standard"
     )
 
@@ -162,12 +162,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
   test "re-importing an unconfirmed auto-matched leg does not give it a transfer kind" do
     loan_entry = Account::ProviderImportAdapter.new(accounts(:loan)).import_transaction(
-      external_id: "plaid_loan_inflow_pending", amount: -200.00, currency: "USD",
-      date: Date.current, name: "Loan Repayment Received", source: "plaid"
+      external_id: "sf_loan_inflow_pending", amount: -200.00, currency: "USD",
+      date: Date.current, name: "Loan Repayment Received", source: "simplefin"
     )
     checking_entry = @adapter.import_transaction(
-      external_id: "plaid_checking_outflow_pending", amount: 200.00, currency: "USD",
-      date: Date.current, name: "Loan Repayment", source: "plaid"
+      external_id: "sf_checking_outflow_pending", amount: 200.00, currency: "USD",
+      date: Date.current, name: "Loan Repayment", source: "simplefin"
     )
 
     @family.auto_match_transfers!
@@ -176,8 +176,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     assert transfer.pending?
 
     @adapter.import_transaction(
-      external_id: "plaid_checking_outflow_pending", amount: 200.00, currency: "USD",
-      date: Date.current, name: "Loan Repayment", source: "plaid", kind: "funds_movement"
+      external_id: "sf_checking_outflow_pending", amount: 200.00, currency: "USD",
+      date: Date.current, name: "Loan Repayment", source: "simplefin", kind: "funds_movement"
     )
 
     assert_equal "funds_movement", checking_entry.transaction.reload.kind
@@ -225,20 +225,20 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   test "re-importing a matched leg repairs a kind an earlier sync overwrote" do
     loan_adapter = Account::ProviderImportAdapter.new(accounts(:loan))
     loan_entry = loan_adapter.import_transaction(
-      external_id: "plaid_loan_inflow_legacy",
+      external_id: "sf_loan_inflow_legacy",
       amount: -300.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment Received",
-      source: "plaid"
+      source: "simplefin"
     )
     @adapter.import_transaction(
-      external_id: "plaid_checking_outflow_legacy",
+      external_id: "sf_checking_outflow_legacy",
       amount: 300.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment",
-      source: "plaid"
+      source: "simplefin"
     )
     @family.auto_match_transfers!
     assert loan_entry.transaction.reload.transfer.present?, "expected the two legs to be auto-matched"
@@ -249,12 +249,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     loan_entry.transaction.update_columns(kind: "loan_payment")
 
     loan_adapter.import_transaction(
-      external_id: "plaid_loan_inflow_legacy",
+      external_id: "sf_loan_inflow_legacy",
       amount: -300.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment Received",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_equal "funds_movement", loan_entry.transaction.reload.kind
@@ -263,31 +263,31 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   test "a rejected match takes the account kind again on re-import" do
     loan_adapter = Account::ProviderImportAdapter.new(accounts(:loan))
     loan_entry = loan_adapter.import_transaction(
-      external_id: "plaid_loan_inflow_rejected",
+      external_id: "sf_loan_inflow_rejected",
       amount: -120.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment Received",
-      source: "plaid"
+      source: "simplefin"
     )
     @adapter.import_transaction(
-      external_id: "plaid_checking_outflow_rejected",
+      external_id: "sf_checking_outflow_rejected",
       amount: 120.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment",
-      source: "plaid"
+      source: "simplefin"
     )
     @family.auto_match_transfers!
     loan_entry.transaction.reload.transfer.reject!
 
     loan_adapter.import_transaction(
-      external_id: "plaid_loan_inflow_rejected",
+      external_id: "sf_loan_inflow_rejected",
       amount: -120.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment Received",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_nil loan_entry.transaction.reload.transfer
@@ -361,23 +361,23 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   test "updates existing transaction instead of creating duplicate" do
     # Create initial transaction
     entry = @adapter.import_transaction(
-      external_id: "plaid_duplicate_test",
+      external_id: "sf_duplicate_test",
       amount: 100.00,
       currency: "USD",
       date: Date.today,
       name: "Original Name",
-      source: "plaid"
+      source: "simplefin"
     )
 
     # Import again with different data - should update, not create new
     assert_no_difference "@account.entries.count" do
       updated_entry = @adapter.import_transaction(
-        external_id: "plaid_duplicate_test",
+        external_id: "sf_duplicate_test",
         amount: 200.00,
         currency: "USD",
         date: Date.today,
         name: "Updated Name",
-        source: "plaid"
+        source: "simplefin"
       )
 
       assert_equal entry.id, updated_entry.id
@@ -388,12 +388,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
   test "keeps a locked date and amount on re-import" do
     entry = @adapter.import_transaction(
-      external_id: "plaid_locked_financials",
+      external_id: "sf_locked_financials",
       amount: 100.00,
       currency: "USD",
       date: Date.current - 3.days,
       name: "Original Name",
-      source: "plaid"
+      source: "simplefin"
     )
 
     # A user edit that locks the fields without marking the entry user_modified,
@@ -403,12 +403,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     assert_not entry.reload.user_modified?
 
     updated_entry = @adapter.import_transaction(
-      external_id: "plaid_locked_financials",
+      external_id: "sf_locked_financials",
       amount: 100.00,
       currency: "EUR",
       date: Date.current - 3.days,
       name: "Provider Name",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_equal entry.id, updated_entry.id
@@ -421,12 +421,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   test "classifies a re-imported loan entry by its locked amount, not the provider's" do
     loan_adapter = Account::ProviderImportAdapter.new(accounts(:loan))
     entry = loan_adapter.import_transaction(
-      external_id: "plaid_loan_locked_amount",
+      external_id: "sf_loan_locked_amount",
       amount: -200.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment",
-      source: "plaid"
+      source: "simplefin"
     )
     assert_equal "loan_payment", entry.transaction.kind
 
@@ -435,12 +435,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     entry.transaction.update!(kind: "standard")
 
     loan_adapter.import_transaction(
-      external_id: "plaid_loan_locked_amount",
+      external_id: "sf_loan_locked_amount",
       amount: -200.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_equal 50.00, entry.reload.amount
@@ -449,24 +449,24 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
   test "updates an unlocked amount while keeping a locked date" do
     entry = @adapter.import_transaction(
-      external_id: "plaid_locked_date_only",
+      external_id: "sf_locked_date_only",
       amount: 100.00,
       currency: "USD",
       date: Date.current - 3.days,
       name: "Original Name",
-      source: "plaid"
+      source: "simplefin"
     )
 
     entry.update!(date: Date.current - 1.day)
     entry.lock_saved_attributes!
 
     updated_entry = @adapter.import_transaction(
-      external_id: "plaid_locked_date_only",
+      external_id: "sf_locked_date_only",
       amount: 120.00,
       currency: "USD",
       date: Date.current - 3.days,
       name: "Original Name",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_equal Date.current - 1.day, updated_entry.reload.date
@@ -484,24 +484,24 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       source: "simplefin"
     )
 
-    # Create transaction from Plaid with same ID "transaction_123" - should NOT collide
+    # Create transaction from another provider with same ID "transaction_123" - should NOT collide
     # because external_id is unique per (account, source) combination
     assert_difference "@account.entries.count", 1 do
-      plaid_entry = @adapter.import_transaction(
+      other_entry = @adapter.import_transaction(
         external_id: "transaction_123",
         amount: 200.00,
         currency: "USD",
         date: Date.today,
-        name: "Plaid Transaction",
-        source: "plaid"
+        name: "Other Provider Transaction",
+        source: "other_provider"
       )
 
       # Should be different entries
-      assert_not_equal simplefin_entry.id, plaid_entry.id
+      assert_not_equal simplefin_entry.id, other_entry.id
       assert_equal "simplefin", simplefin_entry.source
-      assert_equal "plaid", plaid_entry.source
+      assert_equal "other_provider", other_entry.source
       assert_equal "transaction_123", simplefin_entry.external_id
-      assert_equal "transaction_123", plaid_entry.external_id
+      assert_equal "transaction_123", other_entry.external_id
     end
   end
 
@@ -513,7 +513,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "USD",
         date: Date.today,
         name: "Test",
-        source: "plaid"
+        source: "simplefin"
       )
     end
 
@@ -538,16 +538,16 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   test "finds or creates merchant with all data" do
     assert_difference "ProviderMerchant.count", 1 do
       merchant = @adapter.find_or_create_merchant(
-        provider_merchant_id: "plaid_merchant_123",
+        provider_merchant_id: "sf_merchant_123",
         name: "Test Merchant",
-        source: "plaid",
+        source: "simplefin",
         website_url: "https://example.com",
         logo_url: "https://example.com/logo.png"
       )
 
       assert_equal "Test Merchant", merchant.name
-      assert_equal "plaid", merchant.source
-      assert_equal "plaid_merchant_123", merchant.provider_merchant_id
+      assert_equal "simplefin", merchant.source
+      assert_equal "sf_merchant_123", merchant.provider_merchant_id
       assert_equal "https://example.com", merchant.website_url
       assert_equal "https://example.com/logo.png", merchant.logo_url
     end
@@ -572,7 +572,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     merchant = @adapter.find_or_create_merchant(
       provider_merchant_id: "",
       name: "",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_nil merchant
@@ -582,14 +582,14 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     existing_merchant = ProviderMerchant.create!(
       provider_merchant_id: "existing_123",
       name: "Existing Merchant",
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_no_difference "ProviderMerchant.count" do
       merchant = @adapter.find_or_create_merchant(
         provider_merchant_id: "existing_123",
         name: "Existing Merchant",
-        source: "plaid"
+        source: "simplefin"
       )
 
       assert_equal existing_merchant.id, merchant.id
@@ -600,7 +600,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     @adapter.update_balance(
       balance: 5000.00,
       cash_balance: 4500.00,
-      source: "plaid"
+      source: "simplefin"
     )
 
     @account.reload
@@ -635,7 +635,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "USD",
         date: holding_date,
         price: 150.00,
-        source: "plaid"
+        source: "simplefin"
       )
 
       assert_equal security.id, holding.security_id
@@ -654,7 +654,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         amount: 1000,
         currency: "USD",
         date: Date.today,
-        source: "plaid"
+        source: "simplefin"
       )
     end
 
@@ -675,7 +675,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         fee: 4.95,
         currency: "USD",
         date: Date.today,
-        source: "plaid"
+        source: "simplefin"
       )
 
       assert_kind_of Trade, entry.entryable
@@ -699,7 +699,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       amount: 750.00,
       currency: "USD",
       date: Date.today,
-      source: "plaid",
+      source: "simplefin",
       exchange_rate: 0.91
     )
 
@@ -713,7 +713,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     aapl = securities(:aapl)
 
     entry = adapter.import_trade(
-      external_id: "plaid_trade_fee_preserved",
+      external_id: "sf_trade_fee_preserved",
       security: aapl,
       quantity: 5,
       price: 150.00,
@@ -721,18 +721,18 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       fee: 4.95,
       currency: "USD",
       date: Date.today,
-      source: "plaid"
+      source: "simplefin"
     )
 
     updated_entry = adapter.import_trade(
-      external_id: "plaid_trade_fee_preserved",
+      external_id: "sf_trade_fee_preserved",
       security: aapl,
       quantity: 5,
       price: 150.00,
       amount: 754.95,
       currency: "USD",
       date: Date.today,
-      source: "plaid"
+      source: "simplefin"
     )
 
     assert_equal entry.id, updated_entry.id
@@ -748,7 +748,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         amount: 500,
         currency: "USD",
         date: Date.today,
-        source: "plaid"
+        source: "simplefin"
       )
     end
 
@@ -759,10 +759,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     investment_account = accounts(:investment)
     adapter = Account::ProviderImportAdapter.new(investment_account)
     security = securities(:aapl)
-    account_provider = AccountProvider.create!(
-      account: investment_account,
-      provider: plaid_accounts(:one)
-    )
+    account_provider = link_account_to_simplefin!(investment_account, account_type: "investment").account_provider
 
     holding = adapter.import_holding(
       security: security,
@@ -771,7 +768,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today - 10.days,
       price: 150,
-      source: "plaid",
+      source: "simplefin",
       account_provider_id: account_provider.id
     )
 
@@ -890,7 +887,10 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     account, adapter, account_provider = provider_holding_setup
     simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
     simplefin_account = simplefin_item.simplefin_accounts.create!(name: "IRA", currency: "USD", account_type: "investment", current_balance: 0)
-    other_provider = AccountProvider.create!(account: account, provider: simplefin_account)
+    # An account holds one link per provider type and SimpleFIN is the only type
+    # left, so the other provider's link sits on another account; the adapter
+    # only compares account_provider_id.
+    other_provider = AccountProvider.create!(account: accounts(:depository), provider: simplefin_account)
     original = Security.create!(ticker: "MINE", name: "Provider Row")
     chosen = Security.create!(ticker: "MINE", name: "Chosen Row", exchange_operating_mic: "XNYS")
     others = account.holdings.create!(
@@ -953,7 +953,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       price: 150,
-      source: "plaid",
+      source: "simplefin",
       delete_future_holdings: true
     )
 
@@ -967,21 +967,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     security = securities(:aapl)
 
     # Create an account provider
-    plaid_account = PlaidAccount.create!(
-      current_balance: 1000,
-      available_balance: 1000,
-      currency: "USD",
-      name: "Test Plaid Account",
-      plaid_item: plaid_items(:one),
-      plaid_id: "acc_mock_test_1",
-      plaid_type: "investment",
-      plaid_subtype: "brokerage"
-    )
-
-    provider = AccountProvider.create!(
-      account: investment_account,
-      provider: plaid_account
-    )
+    provider = link_account_to_simplefin!(investment_account, account_type: "investment").account_provider
 
     # Create future holdings - one from the provider, one without a provider
     future_holding_with_provider = investment_account.holdings.create!(
@@ -1015,7 +1001,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today - 10.days,
       price: 150,
-      source: "plaid",
+      source: "simplefin",
       account_provider_id: provider.id,
       delete_future_holdings: true
     )
@@ -1060,7 +1046,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       price: 150,
-      source: "plaid",
+      source: "simplefin",
       delete_future_holdings: true
     )
 
@@ -1077,27 +1063,27 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
     # Create initial trade
     entry = adapter.import_trade(
-      external_id: "plaid_trade_123",
+      external_id: "sf_trade_123",
       security: aapl,
       quantity: 5,
       price: 150.00,
       amount: 750.00,
       currency: "USD",
       date: Date.today,
-      source: "plaid"
+      source: "simplefin"
     )
 
     # Import again with updated attributes - should update Trade, not keep stale data
     assert_no_difference "investment_account.entries.count" do
       updated_entry = adapter.import_trade(
-        external_id: "plaid_trade_123",
+        external_id: "sf_trade_123",
         security: msft,
         quantity: 10,
         price: 200.00,
         amount: 2000.00,
         currency: "USD",
         date: Date.today,
-        source: "plaid",
+        source: "simplefin",
         exchange_rate: 0.95
       )
 
@@ -1119,27 +1105,27 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     aapl = securities(:aapl)
 
     entry = adapter.import_trade(
-      external_id: "plaid_trade_exchange_rate_preserved",
+      external_id: "sf_trade_exchange_rate_preserved",
       security: aapl,
       quantity: 5,
       price: 150.00,
       amount: 750.00,
       currency: "USD",
       date: Date.today,
-      source: "plaid",
+      source: "simplefin",
       exchange_rate: 0.95
     )
 
     assert_no_difference "investment_account.entries.count" do
       updated_entry = adapter.import_trade(
-        external_id: "plaid_trade_exchange_rate_preserved",
+        external_id: "sf_trade_exchange_rate_preserved",
         security: aapl,
         quantity: 10,
         price: 200.00,
         amount: 2000.00,
         currency: "USD",
         date: Date.today,
-        source: "plaid"
+        source: "simplefin"
       )
 
       assert_equal entry.id, updated_entry.id
@@ -1161,7 +1147,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       amount: 750.00,
       currency: "USD",
       date: Date.today,
-      source: "plaid"
+      source: "simplefin"
     )
 
     # Try to create a transaction with the same external_id and source
@@ -1172,7 +1158,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "USD",
         date: Date.today,
         name: "Test Transaction",
-        source: "plaid"
+        source: "simplefin"
       )
     end
 
@@ -1191,7 +1177,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       name: "Test Transaction",
-      source: "plaid"
+      source: "simplefin"
     )
 
     # Try to create a trade with the same external_id and source
@@ -1204,7 +1190,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         amount: 750.00,
         currency: "USD",
         date: Date.today,
-        source: "plaid"
+        source: "simplefin"
       )
     end
 
@@ -1267,18 +1253,18 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     # Provider syncs a matching transaction - should claim the CSV entry
     assert_no_difference "@account.entries.count" do
       entry = @adapter.import_transaction(
-        external_id: "plaid_csv_match",
+        external_id: "sf_csv_match",
         amount: 125.00,
         currency: "USD",
         date: Date.today - 1.day,
-        name: "Grocery Store - Plaid",
-        source: "plaid"
+        name: "Grocery Store - SimpleFIN",
+        source: "simplefin"
       )
 
       # Should be the same entry, now claimed by the provider
       assert_equal csv_entry.id, entry.id
-      assert_equal "plaid_csv_match", entry.external_id
-      assert_equal "plaid", entry.source
+      assert_equal "sf_csv_match", entry.external_id
+      assert_equal "simplefin", entry.source
       assert_equal import.id, entry.import_id # Should preserve the import_id
     end
   end
@@ -1372,20 +1358,20 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       source: "simplefin"
     )
 
-    # Another provider (Plaid) syncs matching transaction - should create new entry, not claim SimpleFin's
+    # Another provider syncs matching transaction - should create new entry, not claim SimpleFin's
     assert_difference "@account.entries.count", 1 do
       entry = @adapter.import_transaction(
-        external_id: "plaid_gas",
+        external_id: "other_gas",
         amount: 30.00,
         currency: "USD",
         date: Date.today,
         name: "Gas Station",
-        source: "plaid"
+        source: "other_provider"
       )
 
       # Should be a different entry because SimpleFin already claimed it
       assert_not_equal simplefin_entry.id, entry.id
-      assert_equal "plaid", entry.source
+      assert_equal "other_provider", entry.source
       assert_equal "simplefin", simplefin_entry.reload.source
     end
   end
@@ -1480,8 +1466,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: pending_date,
       name: "Supermarket",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
 
     assert pending_entry.transaction.pending?, "should be pending before claim"
@@ -1493,7 +1479,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,   # booked date is later than pending date
         name: "Supermarket Posted",
-        source: "plaid",
+        source: "simplefin",
         extra: nil  # typical for simple booked transactions
       )
 
@@ -1529,8 +1515,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: pending_date,
       name: "Coffee Shop",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
 
     # First sync: claim the pending entry
@@ -1540,7 +1526,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: booked_date,
       name: "Coffee Shop Posted",
-      source: "plaid",
+      source: "simplefin",
       extra: nil
     )
 
@@ -1552,7 +1538,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: booked_date,
         name: "Coffee Shop Posted",
-        source: "plaid",
+        source: "simplefin",
         extra: nil
       )
 
@@ -1724,19 +1710,19 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       extra: { "simplefin" => { "pending" => true } }
     )
 
-    # Import from different source (plaid) - should NOT match SimpleFIN pending
+    # Import from a different source - should NOT match SimpleFIN pending
     assert_difference "@account.entries.count", 1 do
-      plaid_entry = @adapter.import_transaction(
-        external_id: "plaid_posted_source_test",
+      other_entry = @adapter.import_transaction(
+        external_id: "other_posted_source_test",
         amount: 30.00,
         currency: "USD",
         date: Date.today,
         name: "Pharmacy",
-        source: "plaid",
-        extra: { "plaid" => { "pending" => false } }
+        source: "other_provider",
+        extra: { "other_provider" => { "pending" => false } }
       )
 
-      assert_not_equal pending_entry.id, plaid_entry.id
+      assert_not_equal pending_entry.id, other_entry.id
     end
   end
 
@@ -2042,37 +2028,37 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   end
 
   # ============================================================================
-  # Plaid pending_transaction_id Tests
+  # Provider pending_transaction_id Tests
   # ============================================================================
 
-  test "reconciles pending via Plaid pending_transaction_id" do
+  test "reconciles pending via the provider pending_transaction_id" do
     # Import a pending transaction
     pending_entry = @adapter.import_transaction(
-      external_id: "plaid_pending_abc",
+      external_id: "sf_pending_abc",
       amount: 42.00,
       currency: "USD",
       date: Date.today - 2.days,
       name: "Coffee Shop",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
 
     # Import posted with pending_transaction_id linking to the pending
     assert_no_difference "@account.entries.count" do
       posted_entry = @adapter.import_transaction(
-        external_id: "plaid_posted_xyz",
+        external_id: "sf_posted_xyz",
         amount: 42.00,
         currency: "USD",
         date: Date.today,
         name: "Coffee Shop",
-        source: "plaid",
-        pending_transaction_id: "plaid_pending_abc", # Links to pending
-        extra: { "plaid" => { "pending" => false, "pending_transaction_id" => "plaid_pending_abc" } }
+        source: "simplefin",
+        pending_transaction_id: "sf_pending_abc", # Links to pending
+        extra: { "simplefin" => { "pending" => false, "pending_transaction_id" => "sf_pending_abc" } }
       )
 
       # Should claim the pending entry
       assert_equal pending_entry.id, posted_entry.id
-      assert_equal "plaid_posted_xyz", posted_entry.external_id
+      assert_equal "sf_posted_xyz", posted_entry.external_id
       assert_not posted_entry.transaction.pending?
     end
   end
@@ -2082,12 +2068,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
     # Create initial transaction
     entry = @adapter.import_transaction(
-      external_id: "plaid_tag_test",
+      external_id: "sf_tag_test",
       amount: 1000.00,
       currency: "USD",
       date: Date.today,
       name: "Paycheck",
-      source: "plaid"
+      source: "simplefin"
     )
 
     # Add tag to the transaction (simulating user or rule action)
@@ -2098,12 +2084,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     # Re-import the same transaction with updated data
     assert_no_difference "@account.entries.count" do
       updated_entry = @adapter.import_transaction(
-        external_id: "plaid_tag_test",
+        external_id: "sf_tag_test",
         amount: 1000.00,
         currency: "USD",
         date: Date.today,
         name: "Updated Paycheck Name",
-        source: "plaid"
+        source: "simplefin"
       )
 
       assert_equal entry.id, updated_entry.id
@@ -2112,49 +2098,49 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     end
   end
 
-  test "Plaid pending_transaction_id takes priority over amount matching" do
+  test "provider pending_transaction_id takes priority over amount matching" do
     # Create TWO pending transactions with same amount
     pending1 = @adapter.import_transaction(
-      external_id: "plaid_pending_1",
+      external_id: "sf_pending_1",
       amount: 25.00,
       currency: "USD",
       date: Date.today - 1.day,
       name: "Store A",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
 
     pending2 = @adapter.import_transaction(
-      external_id: "plaid_pending_2",
+      external_id: "sf_pending_2",
       amount: 25.00,
       currency: "USD",
       date: Date.today - 1.day,
       name: "Store B",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
 
     # Import posted that explicitly links to pending2 via pending_transaction_id
     assert_no_difference "@account.entries.count" do
       posted_entry = @adapter.import_transaction(
-        external_id: "plaid_posted_linked",
+        external_id: "sf_posted_linked",
         amount: 25.00,
         currency: "USD",
         date: Date.today,
         name: "Store B",
-        source: "plaid",
-        pending_transaction_id: "plaid_pending_2", # Explicitly links to pending2
-        extra: { "plaid" => { "pending" => false } }
+        source: "simplefin",
+        pending_transaction_id: "sf_pending_2", # Explicitly links to pending2
+        extra: { "simplefin" => { "pending" => false } }
       )
 
       # Should claim pending2 specifically (not pending1)
       assert_equal pending2.id, posted_entry.id
-      assert_equal "plaid_posted_linked", posted_entry.external_id
+      assert_equal "sf_posted_linked", posted_entry.external_id
     end
 
     # pending1 should still exist as pending
     pending1.reload
-    assert_equal "plaid_pending_1", pending1.external_id
+    assert_equal "sf_pending_1", pending1.external_id
   end
 
   # =========================================================================
@@ -2170,8 +2156,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today - 2.days,
       name: "Piero Fiorista",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
     assert pending_entry.transaction.pending?, "entry should start as pending"
 
@@ -2184,7 +2170,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,
         name: "Piero Fiorista",
-        source: "plaid",
+        source: "simplefin",
         extra: nil
       )
 
@@ -2201,8 +2187,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today - 3.days,
       name: "Clean Center",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
     assert pending_entry.transaction.pending?, "entry should start as pending"
 
@@ -2219,7 +2205,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,
         name: "Clean Center",
-        source: "plaid",
+        source: "simplefin",
         extra: nil
       )
 
@@ -2240,9 +2226,9 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       name: "Amazon",
-      source: "plaid",
-      extra: { "plaid" => { "payment_channel" => "online", "payment_meta" => { "payee" => "Amazon" } } },
-      replace_extra_namespaces: [ "plaid" ]
+      source: "simplefin",
+      extra: { "simplefin" => { "payment_channel" => "online", "payment_meta" => { "payee" => "Amazon" } } },
+      replace_extra_namespaces: [ "simplefin" ]
     )
 
     entry.transaction.lock_attr!(:category_id)
@@ -2254,14 +2240,14 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       name: "Amazon",
-      source: "plaid",
-      extra: { "plaid" => { "payment_channel" => "in store" } },
-      replace_extra_namespaces: [ "plaid" ]
+      source: "simplefin",
+      extra: { "simplefin" => { "payment_channel" => "in store" } },
+      replace_extra_namespaces: [ "simplefin" ]
     )
 
-    plaid_extra = entry.reload.transaction.extra.fetch("plaid")
-    assert_equal "in store", plaid_extra["payment_channel"]
-    assert_nil plaid_extra["payment_meta"], "a dropped field must not survive on a user-modified entry"
+    provider_extra = entry.reload.transaction.extra.fetch("simplefin")
+    assert_equal "in store", provider_extra["payment_channel"]
+    assert_nil provider_extra["payment_meta"], "a dropped field must not survive on a user-modified entry"
   end
 
   # determine_skip_reason reports "user_modified" before it checks import_locked?,
@@ -2273,9 +2259,9 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       name: "Amazon",
-      source: "plaid",
-      extra: { "plaid" => { "payment_channel" => "online" } },
-      replace_extra_namespaces: [ "plaid" ]
+      source: "simplefin",
+      extra: { "simplefin" => { "payment_channel" => "online" } },
+      replace_extra_namespaces: [ "simplefin" ]
     )
 
     entry.update!(import_locked: true)
@@ -2287,12 +2273,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       name: "Amazon",
-      source: "plaid",
-      extra: { "plaid" => { "payment_channel" => "in store" } },
-      replace_extra_namespaces: [ "plaid" ]
+      source: "simplefin",
+      extra: { "simplefin" => { "payment_channel" => "in store" } },
+      replace_extra_namespaces: [ "simplefin" ]
     )
 
-    assert_equal "online", entry.reload.transaction.extra.dig("plaid", "payment_channel")
+    assert_equal "online", entry.reload.transaction.extra.dig("simplefin", "payment_channel")
   end
 
   # extra is not uniformly provider-owned. Transaction#exchange_rate lives at
@@ -2306,9 +2292,9 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today,
       name: "Bank transfer",
-      source: "plaid",
-      extra: { "exchange_rate" => "1.05", "plaid" => { "status" => "pending" } },
-      replace_extra_namespaces: [ "plaid" ]
+      source: "simplefin",
+      extra: { "exchange_rate" => "1.05", "simplefin" => { "status" => "pending" } },
+      replace_extra_namespaces: [ "simplefin" ]
     )
 
     # The user corrects the rate by hand, which protects the entry.
@@ -2321,16 +2307,16 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today,
       name: "Bank transfer",
-      source: "plaid",
-      extra: { "exchange_rate" => "1.05", "plaid" => { "status" => "outgoing_payment_sent" } },
-      replace_extra_namespaces: [ "plaid" ]
+      source: "simplefin",
+      extra: { "exchange_rate" => "1.05", "simplefin" => { "status" => "outgoing_payment_sent" } },
+      replace_extra_namespaces: [ "simplefin" ]
     )
 
     refreshed = entry.reload.transaction
 
     assert_equal "1.23", refreshed.extra["exchange_rate"].to_s,
       "the provider must not overwrite a rate the user typed"
-    assert_equal "outgoing_payment_sent", refreshed.extra.dig("plaid", "status"),
+    assert_equal "outgoing_payment_sent", refreshed.extra.dig("simplefin", "status"),
       "the provider's own namespace should still refresh"
   end
 
@@ -2338,8 +2324,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   # provider, and Transaction.pending_extra? skips it the way pending_sql does.
   # Hash#dig raised TypeError on such a value instead, and these reads sit
   # inside Account.transaction with no rescue between them and the caller, so a
-  # single malformed namespace aborted the whole import. simplefin is first in
-  # PENDING_PROVIDERS, so the malformed key is always reached.
+  # single malformed namespace aborted the whole import. simplefin is the only
+  # pending provider, so the malformed key is always reached.
   test "a scalar provider value in an incoming payload does not abort the import" do
     entry = nil
 
@@ -2350,70 +2336,70 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,
         name: "Scalar Provider",
-        source: "plaid",
-        extra: { "simplefin" => "oops", "plaid" => { "pending" => true } }
+        source: "simplefin",
+        extra: { "simplefin" => "oops", "other_provider" => { "pending" => true } }
       )
     end
 
-    assert entry.transaction.pending?,
-      "the well-formed provider flag still decides when another namespace is malformed"
+    assert_not entry.transaction.pending?,
+      "a malformed namespace says nothing, and a flag outside the pending providers does not count"
   end
 
-  test "a scalar provider value in a stored flag does not abort clearing it" do
+  test "a scalar provider value in a stored flag does not abort the booked import" do
     pending_entry = @adapter.import_transaction(
-      external_id: "eb_scalar_stored",
+      external_id: "sf_scalar_stored",
       amount: 30.0,
       currency: "EUR",
       date: Date.today - 2.days,
       name: "Scalar Stored",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
-    pending_entry.transaction.update!(extra: { "simplefin" => "oops", "plaid" => { "pending" => true } })
-    assert pending_entry.transaction.reload.pending?, "entry should start as pending"
+    pending_entry.transaction.update!(extra: { "simplefin" => "oops" })
+    assert_not pending_entry.transaction.reload.pending?, "a malformed namespace is not pending"
 
     assert_no_difference "@account.entries.count" do
       booked_entry = @adapter.import_transaction(
-        external_id: "eb_scalar_stored",
+        external_id: "sf_scalar_stored",
         amount: 30.0,
         currency: "EUR",
         date: Date.today,
         name: "Scalar Stored",
-        source: "plaid",
+        source: "simplefin",
         extra: nil
       )
 
-      assert_not booked_entry.transaction.reload.pending?,
-        "the stale flag is cleared past the malformed namespace"
+      assert_equal pending_entry.id, booked_entry.id
+      assert_not booked_entry.transaction.reload.pending?
     end
   end
 
   test "a scalar provider value in a stored flag does not abort the user-modified path" do
     pending_entry = @adapter.import_transaction(
-      external_id: "eb_scalar_user_mod",
+      external_id: "sf_scalar_user_mod",
       amount: 50.0,
       currency: "EUR",
       date: Date.today - 3.days,
       name: "Scalar User Modified",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
-    pending_entry.transaction.update!(extra: { "simplefin" => "oops", "plaid" => { "pending" => true } })
+    pending_entry.transaction.update!(extra: { "simplefin" => "oops" })
     pending_entry.mark_user_modified!
 
     assert_no_difference "@account.entries.count" do
       booked_entry = @adapter.import_transaction(
-        external_id: "eb_scalar_user_mod",
+        external_id: "sf_scalar_user_mod",
         amount: 50.0,
         currency: "EUR",
         date: Date.today,
         name: "Scalar User Modified",
-        source: "plaid",
+        source: "simplefin",
         extra: nil
       )
 
-      assert_not booked_entry.transaction.reload.pending?,
-        "the stale flag is cleared for a user-modified entry past the malformed namespace"
+      assert_equal pending_entry.id, booked_entry.id
+      assert_not booked_entry.transaction.reload.pending?
     end
   end
 
@@ -2427,10 +2413,10 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today - 1.day,
       name: "False Flag",
-      source: "plaid",
-      extra: { "plaid" => { "pending" => true } }
+      source: "simplefin",
+      extra: { "simplefin" => { "pending" => true } }
     )
-    pending_entry.transaction.update!(extra: { "plaid" => { "pending" => "false" } })
+    pending_entry.transaction.update!(extra: { "simplefin" => { "pending" => "false" } })
     assert_not pending_entry.transaction.reload.pending?, "\"false\" does not mark a transaction pending"
 
     @adapter.import_transaction(
@@ -2439,11 +2425,11 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today,
       name: "False Flag",
-      source: "plaid",
+      source: "simplefin",
       extra: nil
     )
 
-    assert_equal "false", pending_entry.transaction.reload.extra.dig("plaid", "pending"),
+    assert_equal "false", pending_entry.transaction.reload.extra.dig("simplefin", "pending"),
       "a flag that does not mark the transaction pending is not cleared"
   end
 
@@ -2467,7 +2453,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
     def provider_holding_setup
       account = accounts(:investment)
-      account_provider = AccountProvider.create!(account: account, provider: plaid_accounts(:one))
+      account_provider = link_account_to_simplefin!(account, account_type: "investment").account_provider
       [ account, Account::ProviderImportAdapter.new(account), account_provider ]
     end
 
@@ -2483,12 +2469,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         price: 100,
         cost_basis: cost_basis,
         external_id: "provider_lot_#{date}",
-        source: "plaid",
+        source: "simplefin",
         account_provider_id: account_provider.id
       )
     end
 
-    # A provider that sends no external_id (Plaid securities): the row is keyed by security, date and currency.
+    # A provider that sends no external_id: the row is keyed by security, date and currency.
     def import_holding_without_external_id(adapter, account_provider, security, date, quantity: 10, cost_basis: nil)
       adapter.import_holding(
         security: security,
@@ -2498,7 +2484,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         date: date,
         price: 100,
         cost_basis: cost_basis,
-        source: "plaid",
+        source: "simplefin",
         account_provider_id: account_provider.id
       )
     end

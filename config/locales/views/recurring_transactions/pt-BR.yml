@@ -13,9 +13,6 @@ pt-BR:
       title: Detecção Automática de Padrões
       manual_description: Você pode identificar padrões manualmente ou limpar transações recorrentes obsoletas usando os botões acima.
       automatic_description: "A identificação automática também roda após:"
-      triggers:
-        - Importações de CSV concluídas (transações, negociações, contas, etc.)
-        - Sincronização de qualquer provedor concluída (Plaid, SimpleFIN, etc.)
     identified: Identificados %{count} padrões de transações recorrentes
     cleaned_up: Limpadas %{count} transações recorrentes obsoletas
     marked_inactive: Transação recorrente marcada como inativa

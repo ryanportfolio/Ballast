@@ -3,7 +3,7 @@ require "application_system_test_case"
 class Settings::ProvidersTest < ApplicationSystemTestCase
   setup do
     @user = users(:family_admin)
-    # Registry-driven provider forms (Plaid) edit instance-wide credentials and
+    # Registry-driven provider forms edit instance-wide credentials and
     # are only shown to a super admin; promote the fixture admin so the family
     # panels below keep using dylan_family.
     @user.update!(role: :super_admin)
@@ -100,16 +100,19 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
     find('[data-providers-filter-target="input"]').set("SimpleFIN")
 
     assert_selector "a[data-providers-filter-target='card']", text: /SimpleFIN/i
-    assert_no_selector "a[data-providers-filter-target='card']", text: /Plaid/i
+
+    find('[data-providers-filter-target="input"]').set("RentCast")
+
+    assert_no_selector "a[data-providers-filter-target='card']", text: /SimpleFIN/i
   end
 
-  test "kind chip narrows the grid to providers of that kind" do
+  test "kind chip keeps providers of that kind visible" do
     visit settings_providers_path
 
     click_on "Investment"
 
     assert_selector "a[data-providers-filter-target='card']", text: /SimpleFIN/i
-    assert_no_selector "a[data-providers-filter-target='card']", text: /Plaid/i
+    assert_no_selector '[data-providers-filter-target="empty"]', visible: true
   end
 
   test "search shows the empty filter message when no provider matches" do
@@ -139,18 +142,6 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
 
     assert_selector "dialog[open]"
     assert_text "Setup Token"
-  end
-
-  test "configured plaid_eu surfaces in Your connections instead of Available" do
-    Setting["plaid_eu_client_id"] = "test_eu_client"
-    Setting["plaid_eu_secret"] = "test_eu_secret"
-
-    visit settings_providers_path
-
-    assert_selector "details summary h3", text: "Plaid EU"
-    within available_provider_cards_container do
-      assert_no_text "Plaid EU"
-    end
   end
 
   test "clear filters button resets search input and chip state" do

@@ -35,8 +35,8 @@ class Portfolio::FlowClassifierTest < ActiveSupport::TestCase
     assert_equal :income, @family_scope.classify(bare)
   end
 
-  test "a Plaid-shaped zero-amount Dividend trade is income" do
-    entry = create_plaid_dividend_trade(account: @brokerage)
+  test "a zero-amount Dividend trade is income" do
+    entry = create_zero_amount_dividend_trade(account: @brokerage)
 
     assert_equal 0, entry.amount
     assert_equal :income, @family_scope.classify(entry),
@@ -250,7 +250,7 @@ class Portfolio::FlowClassifierTest < ActiveSupport::TestCase
     shapes = { "no" => nil, "maybe" => nil, "true" => nil, "false" => :income, "0" => :income, "" => :income }
 
     shapes.each do |flag, expected|
-      entry = create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -10, extra: { "plaid" => { "pending" => flag } })
+      entry = create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -10, extra: { "simplefin" => { "pending" => flag } })
 
       assert_equal expected, @family_scope.classify(entry.reload), "Ruby, pending=#{flag.inspect}"
       assert_equal expected, @family_scope.classify_ids([ entry.id ])[entry.id], "SQL, pending=#{flag.inspect}"
@@ -343,7 +343,7 @@ class Portfolio::FlowClassifierTest < ActiveSupport::TestCase
       entries << create_income_trade(account: @brokerage, label: "Dividend", amount: 50)
       entries << create_income_transaction(account: @brokerage, label: "Dividend", amount: 12, extra_shape: :flat)
       entries << create_income_transaction(account: @ira, label: "Dividend", amount: 12, extra_shape: :nested)
-      entries << create_plaid_dividend_trade(account: @brokerage)
+      entries << create_zero_amount_dividend_trade(account: @brokerage)
       entries << create_income_trade(account: @brokerage, label: "Interest", amount: 4)
       entries << create_income_transaction(account: @brokerage, label: "Interest", amount: 4, extra_shape: :none)
       entries << create_portfolio_trade(account: @brokerage, qty: 0, price: 0, label: "Fee").tap { |e| e.update!(amount: 9.95) }
@@ -384,14 +384,14 @@ class Portfolio::FlowClassifierTest < ActiveSupport::TestCase
       entries << create_labelled_transaction(account: @brokerage, label: "Other", amount: 75)
 
       entries << create_portfolio_trade(account: @brokerage, qty: 1, price: 10, excluded: true)
-      entries << create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -10, extra: { "plaid" => { "pending" => true } })
+      entries << create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -10, extra: { "simplefin" => { "pending" => true } })
       # Providers write real booleans, but the flag is whatever arrived. A
       # string PostgreSQL would read as a boolean and one it cannot read at
       # all both have to classify the same way in Ruby and in SQL -- the
       # second used to abort the whole query rather than one entry.
-      entries << create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -11, extra: { "plaid" => { "pending" => "no" } })
-      entries << create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -12, extra: { "plaid" => { "pending" => "maybe" } })
-      entries << create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -13, extra: { "plaid" => { "pending" => "false" } })
+      entries << create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -11, extra: { "simplefin" => { "pending" => "no" } })
+      entries << create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -12, extra: { "simplefin" => { "pending" => "maybe" } })
+      entries << create_labelled_transaction(account: @brokerage, label: "Dividend", amount: -13, extra: { "simplefin" => { "pending" => "false" } })
       entries << @brokerage.entries.create!(name: "Valuation", date: Date.current, amount: 1000, currency: "USD", entryable: Valuation.new(kind: "reconciliation"))
       entries
     end

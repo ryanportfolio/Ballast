@@ -39,15 +39,6 @@ fr:
         no_recent_sync: Synchronisation en retard
         sync_error: Erreur de synchronisation
       not_found: Fournisseur introuvable.
-      plaid_eu_panel:
-        step_1_html: Ouvrez le %{link} et copiez votre identifiant client européen
-          et votre clé secrète.
-      plaid_panel:
-        step_1_html: Ouvrez le %{link} et copiez votre identifiant client et votre
-          clé secrète.
-        step_2: Choisissez un environnement. Utilisez le bac à sable pour les tests
-          et la production de comptes réels.
-        step_3: Collez vos identifiants ci-dessous et connectez-vous.
       provider_form:
         save_and_connect: Enregistrez et connectez-vous
       recently_synced: Synchronisé récemment. Réessayez dans un instant.
@@ -78,9 +69,6 @@ fr:
       sync_provider_in_progress: La synchronisation a commencé.
       sync_provider_no_items: Aucune connexion disponible pour synchroniser.
       taglines:
-        plaid: Connectez des milliers d'institutions financières américaines via Plaid.
-        plaid_eu: Connectez les institutions financières européennes via Plaid (PSD2
-          / Open Banking).
         simplefin: Connectez les comptes bancaires américains via le protocole ouvert
           SimpleFIN.
   simplefin_items:

@@ -201,8 +201,8 @@ class EntryTest < ActiveSupport::TestCase
 
     entry = Entry.new(
       account: accounts(:depository),
-      external_id: "plaid_txn_123",
-      source: "plaid",
+      external_id: "other_txn_123",
+      source: "other_provider",
       name: "",
       date: Date.current,
       currency: "USD",

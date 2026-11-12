@@ -177,13 +177,9 @@ class Setting < RailsSettings::Base
     end
   end
 
-  # Sync settings - check both provider env vars for default
-  # Only defaults to true if neither provider explicitly disables pending
-  SYNCS_INCLUDE_PENDING_DEFAULT = begin
-    simplefin = ENV.fetch("SIMPLEFIN_INCLUDE_PENDING", "1") == "1"
-    plaid = ENV.fetch("PLAID_INCLUDE_PENDING", "1") == "1"
-    simplefin && plaid
-  end
+  # Sync settings - the SimpleFIN env var sets the default
+  # Only defaults to true unless it explicitly disables pending
+  SYNCS_INCLUDE_PENDING_DEFAULT = ENV.fetch("SIMPLEFIN_INCLUDE_PENDING", "1") == "1"
   field :syncs_include_pending, type: :boolean, default: SYNCS_INCLUDE_PENDING_DEFAULT
   field :auto_sync_enabled, type: :boolean, default: ENV.fetch("AUTO_SYNC_ENABLED", "1") == "1"
   field :auto_sync_time, type: :string, default: ENV.fetch("AUTO_SYNC_TIME", "02:22")

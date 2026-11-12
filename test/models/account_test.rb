@@ -1149,7 +1149,7 @@ class AccountTest < ActiveSupport::TestCase
       date: 10.days.ago.to_date,
       amount: 50,
       currency: "USD",
-      entryable: Transaction.new(extra: { "plaid" => { "pending" => true } })
+      entryable: Transaction.new(extra: { "simplefin" => { "pending" => true } })
     )
 
     assert_equal posted_date, account.history_start_date
@@ -1161,9 +1161,9 @@ class AccountTest < ActiveSupport::TestCase
       name: "Linked Investment Account",
       balance: 0,
       currency: "USD",
-      accountable: Investment.new,
-      plaid_account: plaid_accounts(:one)
+      accountable: Investment.new
     )
+    link_account_to_simplefin!(account, account_type: "investment")
     assert account.linked?
 
     default_anchor_date = 2.years.ago.to_date
@@ -1175,7 +1175,7 @@ class AccountTest < ActiveSupport::TestCase
       date: recent_trade_date,
       amount: 100,
       currency: "USD",
-      source: "plaid",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -1188,9 +1188,9 @@ class AccountTest < ActiveSupport::TestCase
       name: "Fresh Linked Investment",
       balance: 0,
       currency: "USD",
-      accountable: Investment.new,
-      plaid_account: plaid_accounts(:one)
+      accountable: Investment.new
     )
+    link_account_to_simplefin!(account, account_type: "investment")
     assert account.linked?
 
     default_anchor_date = 2.years.ago.to_date

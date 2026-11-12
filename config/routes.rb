@@ -535,17 +535,6 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :plaid_items, only: %i[new edit create destroy] do
-    collection do
-      get :select_existing_account
-      post :link_existing_account
-    end
-
-    member do
-      post :sync
-    end
-  end
-
   resources :simplefin_items, only: %i[index new create show edit update destroy] do
     collection do
       get :select_existing_account
@@ -559,11 +548,6 @@ Rails.application.routes.draw do
       post :complete_account_setup
       post :dismiss_replacement_suggestion
     end
-  end
-
-  namespace :webhooks do
-    post "plaid"
-    post "plaid_eu"
   end
 
   get "redis-configuration-error", to: "pages#redis_configuration_error"

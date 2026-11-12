@@ -441,7 +441,7 @@ class Api::V1::SplitsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "rejects a provider merchant the user has no transaction with" do
-    stranger = ProviderMerchant.create!(name: "Unseen Shop", source: "plaid", provider_merchant_id: "api-split-unseen")
+    stranger = ProviderMerchant.create!(name: "Unseen Shop", source: "simplefin", provider_merchant_id: "api-split-unseen")
     params = halves
     params[:split][:splits][0][:merchant_id] = stranger.id
 
@@ -477,7 +477,7 @@ class Api::V1::SplitsControllerTest < ActionDispatch::IntegrationTest
   test "names the current reason when the transaction stops being splittable under the lock" do
     # A provider sync marked the transaction pending after the controller's own splittable? check
     # passed (stubbed here); split_once! sees it under the lock.
-    Transaction.where(id: @transaction.id).update_all(extra: { "plaid" => { "pending" => true } })
+    Transaction.where(id: @transaction.id).update_all(extra: { "simplefin" => { "pending" => true } })
     Transaction.any_instance.stubs(:splittable?).returns(true)
 
     post api_v1_transaction_split_url(@transaction), params: halves, headers: api_headers(@api_key), as: :json

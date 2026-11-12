@@ -14,16 +14,16 @@ class Account::ProviderImportAdapter
 
   # Imports a transaction from a provider
   #
-  # @param external_id [String] Unique identifier from the provider (e.g., "plaid_12345", "simplefin_abc")
+  # @param external_id [String] Unique identifier from the provider (e.g., "simplefin_abc")
   # @param amount [BigDecimal, Numeric] Transaction amount
   # @param currency [String] Currency code (e.g., "USD")
   # @param date [Date, String] Transaction date
   # @param name [String] Transaction name/description
-  # @param source [String] Provider name (e.g., "plaid", "simplefin")
+  # @param source [String] Provider name (e.g., "simplefin")
   # @param category_id [Integer, nil] Optional category ID
   # @param merchant [Merchant, nil] Optional merchant object
   # @param notes [String, nil] Optional transaction notes/memo
-  # @param pending_transaction_id [String, nil] Plaid's linking ID for pending→posted reconciliation
+  # @param pending_transaction_id [String, nil] A provider's linking ID for pending→posted reconciliation
   # @param extra [Hash, nil] Optional provider-specific metadata to merge into transaction.extra
   # @param investment_activity_label [String, nil] Optional activity type label (e.g., "Buy", "Dividend")
   # @param allow_heuristic_matching [Boolean] Claim likely duplicates using amount/date matching
@@ -129,12 +129,12 @@ class Account::ProviderImportAdapter
       if entry.new_record? && !incoming_pending
         pending_match = nil
 
-        # PRIORITY 1: Use Plaid's pending_transaction_id if provided (most reliable)
-        # Plaid explicitly links pending→posted with this ID - no guessing required
+        # PRIORITY 1: Use the provider's pending_transaction_id if provided (most reliable)
+        # A provider that sends it links pending→posted explicitly - no guessing required
         if pending_transaction_id.present?
           pending_match = account.entries.find_by(external_id: pending_transaction_id, source: source)
           if pending_match
-            Rails.logger.info("Reconciling pending→posted via Plaid pending_transaction_id: claiming entry #{pending_match.id} (#{pending_match.name}) with new external_id #{external_id}")
+            Rails.logger.info("Reconciling pending→posted via pending_transaction_id: claiming entry #{pending_match.id} (#{pending_match.name}) with new external_id #{external_id}")
           end
         end
 
@@ -285,7 +285,7 @@ class Account::ProviderImportAdapter
       # index on transactions.extra->'goal'->>'pledge_id'.
       #
       # Short-circuit when the account isn't linked to any goal: a 2k-row
-      # historical Plaid import on an unlinked account otherwise pays one
+      # historical provider import on an unlinked account otherwise pays one
       # SELECT per row. goal_accounts membership is stable across a sync
       # batch, so memoize once per adapter instance (one query per account
       # synced, not per transaction).
@@ -354,7 +354,7 @@ class Account::ProviderImportAdapter
   #
   # @param provider_merchant_id [String] Provider's merchant ID
   # @param name [String] Merchant name
-  # @param source [String] Provider name (e.g., "plaid", "simplefin")
+  # @param source [String] Provider name (e.g., "simplefin")
   # @param website_url [String, nil] Optional merchant website
   # @param logo_url [String, nil] Optional merchant logo URL
   # @return [ProviderMerchant, nil] The merchant object or nil if data is insufficient
@@ -432,7 +432,7 @@ class Account::ProviderImportAdapter
     Account.transaction do
       # Two strategies for finding/creating holdings:
       # 1. By external_id (SimpleFin approach) - tracks each holding uniquely
-      # 2. By security+date+currency (Plaid approach) - overwrites holdings for same security/date
+      # 2. By security+date+currency - overwrites holdings for same security/date
       holding = nil
 
       if external_id.present?
@@ -638,7 +638,7 @@ class Account::ProviderImportAdapter
         end
       end
 
-      # Optionally delete future holdings for this security (Plaid behavior)
+      # Optionally delete future holdings for this security
       # Only delete if ALL providers allow deletion (cross-provider check)
       if delete_future_holdings
         unless account.can_delete_holdings?
@@ -1149,11 +1149,9 @@ class Account::ProviderImportAdapter
     end
 
     # A protected entry keeps its name, so the values that name was built from have
-    # to stay as well. Rule::ConditionFilter::TransactionName rebuilds a Plaid name
-    # from the stored original_description; refreshing that value while the name
-    # stays put would make the rebuilt name disagree with the real one, and flip
-    # `=` and `!=` rules on the entry. The drawer shows the kept value too, so it
-    # agrees with the name the user sees.
+    # to stay as well: refreshing them while the name stays put would leave the
+    # stored values disagreeing with the name. The drawer shows the kept value
+    # too, so it agrees with the name the user sees.
     #
     # A key with nothing stored yet takes the incoming value: a row imported before
     # the key existed was never combined, so there is nothing to keep in step.

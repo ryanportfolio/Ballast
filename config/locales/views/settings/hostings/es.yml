@@ -260,4 +260,3 @@ es:
         auto_sync_time_description: Especifica la hora del día en la que debe ocurrir la sincronización automática.
         include_pending_label: Incluir transacciones pendientes
         include_pending_description: Cuando está habilitado, las transacciones pendientes (no liquidadas) se importarán y se conciliarán automáticamente cuando se confirmen. Desactívalo si tu banco proporciona datos pendientes poco fiables.
-        env_configured_message: Este ajuste está desactivado porque hay una variable de entorno del proveedor (SIMPLEFIN_INCLUDE_PENDING o PLAID_INCLUDE_PENDING) definida. Elimínala para habilitar este ajuste aquí.

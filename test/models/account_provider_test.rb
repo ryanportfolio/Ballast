@@ -6,13 +6,6 @@ class AccountProviderTest < ActiveSupport::TestCase
     @family = families(:dylan_family)
 
     # Create provider items
-    @plaid_item = PlaidItem.create!(
-      family: @family,
-      plaid_id: "test_plaid_item",
-      access_token: "test_token",
-      name: "Test Bank"
-    )
-
     @simplefin_item = SimplefinItem.create!(
       family: @family,
       name: "Test SimpleFin Bank",
@@ -20,15 +13,6 @@ class AccountProviderTest < ActiveSupport::TestCase
     )
 
     # Create provider accounts
-    @plaid_account = PlaidAccount.create!(
-      plaid_item: @plaid_item,
-      name: "Plaid Checking",
-      plaid_id: "plaid_123",
-      plaid_type: "depository",
-      currency: "USD",
-      current_balance: 1000
-    )
-
     @simplefin_account = SimplefinAccount.create!(
       simplefin_item: @simplefin_item,
       name: "SimpleFin Checking",
@@ -39,44 +23,27 @@ class AccountProviderTest < ActiveSupport::TestCase
     )
   end
 
-  test "allows an account to have multiple different provider types" do
-    # Should be able to link both Plaid and SimpleFin to same account
-    plaid_provider = AccountProvider.create!(
-      account: @account,
-      provider: @plaid_account
-    )
-
-    simplefin_provider = AccountProvider.create!(
+  test "prevents duplicate provider type for same account" do
+    # Create first SimplefinAccount link
+    AccountProvider.create!(
       account: @account,
       provider: @simplefin_account
     )
 
-    assert_equal 2, @account.account_providers.count
-    assert_includes @account.account_providers, plaid_provider
-    assert_includes @account.account_providers, simplefin_provider
-  end
-
-  test "prevents duplicate provider type for same account" do
-    # Create first PlaidAccount link
-    AccountProvider.create!(
-      account: @account,
-      provider: @plaid_account
-    )
-
-    # Create another PlaidAccount
-    another_plaid_account = PlaidAccount.create!(
-      plaid_item: @plaid_item,
-      name: "Another Plaid Account",
-      plaid_id: "plaid_456",
-      plaid_type: "savings",
+    # Create another SimplefinAccount
+    another_simplefin_account = SimplefinAccount.create!(
+      simplefin_item: @simplefin_item,
+      name: "Another SimpleFin Account",
+      account_id: "sf_456",
+      account_type: "savings",
       currency: "USD",
       current_balance: 5000
     )
 
-    # Should not be able to link another PlaidAccount to same account
+    # Should not be able to link another SimplefinAccount to same account
     duplicate_provider = AccountProvider.new(
       account: @account,
-      provider: another_plaid_account
+      provider: another_simplefin_account
     )
 
     assert_not duplicate_provider.valid?
@@ -87,7 +54,7 @@ class AccountProviderTest < ActiveSupport::TestCase
     # Link provider to first account
     AccountProvider.create!(
       account: @account,
-      provider: @plaid_account
+      provider: @simplefin_account
     )
 
     # Try to link same provider to another account
@@ -95,7 +62,7 @@ class AccountProviderTest < ActiveSupport::TestCase
 
     duplicate_link = AccountProvider.new(
       account: another_account,
-      provider: @plaid_account
+      provider: @simplefin_account
     )
 
     assert_not duplicate_link.valid?
@@ -105,44 +72,38 @@ class AccountProviderTest < ActiveSupport::TestCase
   test "adapter method returns correct adapter" do
     provider = AccountProvider.create!(
       account: @account,
-      provider: @plaid_account
+      provider: @simplefin_account
     )
 
     adapter = provider.adapter
 
-    assert_kind_of Provider::PlaidAdapter, adapter
-    assert_equal "plaid", adapter.provider_name
+    assert_kind_of Provider::SimplefinAdapter, adapter
+    assert_equal "simplefin", adapter.provider_name
     assert_equal @account, adapter.account
   end
 
   test "provider_name delegates to adapter" do
-    plaid_provider = AccountProvider.create!(
-      account: @account,
-      provider: @plaid_account
-    )
-
     simplefin_provider = AccountProvider.create!(
       account: accounts(:investment),
       provider: @simplefin_account
     )
 
-    assert_equal "plaid", plaid_provider.provider_name
     assert_equal "simplefin", simplefin_provider.provider_name
   end
 
   test "destroying account_provider keeps the provider account" do
     provider = AccountProvider.create!(
       account: @account,
-      provider: @plaid_account
+      provider: @simplefin_account
     )
 
-    plaid_account_id = @plaid_account.id
+    simplefin_account_id = @simplefin_account.id
 
-    assert PlaidAccount.exists?(plaid_account_id)
+    assert SimplefinAccount.exists?(simplefin_account_id)
 
     provider.destroy!
 
     # Provider accounts remain (they can enter the "needs setup" state)
-    assert PlaidAccount.exists?(plaid_account_id)
+    assert SimplefinAccount.exists?(simplefin_account_id)
   end
 end

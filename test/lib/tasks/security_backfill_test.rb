@@ -16,10 +16,9 @@ class SecurityBackfillTest < ActiveSupport::TestCase
     Rake::Task["security:backfill_encryption"].reenable
   end
 
-  # SimpleFIN is a representative provider model, chosen arbitrarily: the bug
-  # this guards against applies identically to every json/jsonb encrypts
-  # column the task touches (the Plaid/SimpleFin/... raw
-  # payload columns), via the shared safe_read_field helper.
+  # SimpleFIN stands in for every json/jsonb encrypts column the task touches
+  # (the provider raw payload columns): the bug this guards against applies
+  # to all of them identically, via the shared safe_read_field helper.
   test "backfill preserves jsonb payload structure and string fields" do
     item = SimplefinItem.new(family: families(:dylan_family), name: "Backfill Test", access_url: "seed")
     item.save!(validate: false)

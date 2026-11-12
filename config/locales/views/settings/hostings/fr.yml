@@ -282,7 +282,6 @@ fr:
         auto_sync_label: Activer la synchronisation automatique
         auto_sync_time_description: Spécifiez l'heure à laquelle la synchronisation automatique doit se produire.
         auto_sync_time_label: Heure de synchronisation (HH:MM)
-        env_configured_message: Ce paramètre est désactivé car une variable d'environnement du fournisseur (SIMPLEFIN_INCLUDE_PENDING ou PLAID_INCLUDE_PENDING) est définie. Supprimez-la pour activer ce paramètre.
         include_pending_description: Lorsque cette option est activée, les transactions en attente (non confirmées) seront importées et automatiquement réconciliées lors de leur validation. Désactivez si votre banque fournit des données de transactions en attente peu fiables.
         include_pending_label: Inclure les transactions en attente
         market_data_sync_description: Lorsque cette option est activée, les cours des titres sont importés automatiquement une fois par jour (du lundi au vendredi) à l'heure indiquée.
