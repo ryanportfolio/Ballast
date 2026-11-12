@@ -27,7 +27,7 @@ protocol apply to that external project, not to every change in this repository.
 
 ## Instruction maintenance
 
-[Harness adapters](harness-adapters.md) documents discovery, supported imports,
-scoped loading and legacy helpers. The [preservation map](instruction-preservation-map.md)
+[Harness adapters](harness-adapters.md) documents the supported entry points,
+guidance maintenance and legacy helpers. The [preservation map](instruction-preservation-map.md)
 records the inventory, history, dispositions and intentional policy decisions for
 the consolidation; it is an audit record rather than additional coding policy.

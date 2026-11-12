@@ -23,7 +23,8 @@ class SecurityBackfillTest < ActiveSupport::TestCase
     item = SimplefinItem.new(family: families(:dylan_family), name: "Backfill Test", access_url: "seed")
     item.save!(validate: false)
     account = item.simplefin_accounts.create!(
-      name: "Backfill Test Account", currency: "GBP", account_type: "depository", account_id: "backfill-test-1")
+      name: "Backfill Test Account", currency: "GBP", account_type: "depository", account_id: "backfill-test-1",
+      current_balance: 100)
 
     payload = [ { "id" => "tx-1", "amount" => -4.5, "currency" => "GBP", "date" => "2026-07-01" } ]
 
@@ -55,7 +56,8 @@ class SecurityBackfillTest < ActiveSupport::TestCase
     item = SimplefinItem.new(family: families(:dylan_family), name: "Backfill Empty Test", access_url: "seed")
     item.save!(validate: false)
     account = item.simplefin_accounts.create!(
-      name: "Backfill Empty Test Account", currency: "GBP", account_type: "depository", account_id: "backfill-test-2")
+      name: "Backfill Empty Test Account", currency: "GBP", account_type: "depository", account_id: "backfill-test-2",
+      current_balance: 100)
 
     # Plaintext empty payload, as left by a pre-encryption install
     ActiveRecord::Base.connection.execute(ActiveRecord::Base.sanitize_sql([

@@ -123,11 +123,11 @@ class Admin::SystemHealthTest < ApplicationSystemTestCase
     assert_selector "h2", text: "Email (SMTP)"
     within "[data-testid='optional-services']" do
       assert_selector "h2", text: "Optional services"
-      assert_selector "details:not([open])", count: 6
+      assert_selector "details:not([open])", count: 5
       find("summary", text: "Langfuse").click
       assert_text "LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY"
       find("summary", text: "Langfuse").click
-      assert_selector "details:not([open])", count: 6
+      assert_selector "details:not([open])", count: 5
     end
     page.current_window.resize_to(390, 844)
     %w[exchange_rates storage].each do |key|

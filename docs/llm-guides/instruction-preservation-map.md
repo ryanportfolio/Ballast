@@ -35,7 +35,7 @@ instructions outside this repository are outside the consolidation.
 | `docs/llm-guides/wealth-agent-harness.md` | Preserve in place | Product integration boundary, read-only tools, provenance and monthly runbook. Not repository-wide coding policy. |
 | `docs/llm-guides/wealth-blueprint.md` | Preserve in place | Reference architecture for an external wealth/tax project, including its own operating protocol. Its working-memory instructions do not redefine this repository's root files. |
 | `CONTRIBUTING.md` | Update entry links | House rules, contribution workflow and CI review gate remain; replace vendor-specific convention link. |
-| `bin/update_structure.sh` and ignored `.cursor/rules/structure.mdc` | Preserve, document legacy status | Optional generated tree helper, not a policy source. Existing generator defects are separate from this consolidation. |
+| `bin/update_structure.sh` and ignored `.cursor/rules/structure.mdc` | Deleted in Ballast | The script wrote its tree into the `.cursor/` folder, which is gone, so both were removed. See `.claude/reference/strip-log.md`. |
 | `bin/codex-env` | Preserve, document legacy status | Linux environment bootstrap, not repo guidance or a skill; it changes system auth and can mask Ruby-version mismatches. Do not promote it as the standard setup. |
 | Ignored editor, agent, MCP and generated-workflow paths in `.gitignore` | Preserve exclusions | Local/generated context, not tracked shared policy; complete categories are listed below. |
 | `test/api_endpoint_consistency_rule_test.rb`, `test/support/verify_api_endpoint_consistency.rb` | Update existing checks | Check the shared API guide and adapter reference/scopes instead of requiring full policy prose inside Cursor. Keep compliance scanning. |

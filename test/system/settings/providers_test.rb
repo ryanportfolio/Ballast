@@ -16,7 +16,11 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
 
     visit settings_providers_path
 
-    within("details", text: "SimpleFIN") do
+    # A lone connection renders open, and the header pill hides while open;
+    # collapse it so the summary row shows its status pill.
+    find("details[open]", text: "SimpleFIN").find("summary").click
+
+    within("details:not([open])", text: "SimpleFIN") do
       assert_text "Connected"
     end
   end
@@ -49,10 +53,15 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
     assert_operator page.find("details", text: "SimpleFIN").native.location.y, :<, available_y
   end
 
-  test "expanding a section still works as expected" do
+  test "collapsing and expanding a section still works as expected" do
     SimplefinItem.create!(family: @family, name: "Test SimpleFIN", access_url: "https://bridge.simplefin.org/simplefin/access")
 
     visit settings_providers_path
+
+    # The only connection on the page opens automatically.
+    assert_selector "details[open]", text: "SimpleFIN"
+
+    find("details", text: "SimpleFIN").find("summary").click
 
     assert_selector "details:not([open])", text: "SimpleFIN"
 
@@ -81,8 +90,10 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
     assert_operator connections_y, :<, simplefin_y, "Your connections heading should appear above SimpleFIN section"
     assert_operator simplefin_y, :<, available_y, "SimpleFIN should appear above Available heading"
 
-    available_grid_top = available_provider_cards_container.native.location.y
-    assert_operator available_y, :<, available_grid_top, "Available heading should appear above the card grid"
+    # SimpleFIN is the only provider, so once connected the Available group is empty.
+    assert_selector "#available"
+    empty_message = find("p", text: I18n.t("settings.providers.groups.empty_available"))
+    assert_operator available_y, :<, empty_message.native.location.y, "Available heading should appear above its empty message"
   end
 
   test "action needed group is absent when no providers have issues" do
@@ -109,7 +120,8 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
   test "kind chip keeps providers of that kind visible" do
     visit settings_providers_path
 
-    click_on "Investment"
+    # The SimpleFIN card lists "Investment" among its kinds, so target the chip itself.
+    find("[data-providers-filter-target='chip'][data-kind='investment']").click
 
     assert_selector "a[data-providers-filter-target='card']", text: /SimpleFIN/i
     assert_no_selector '[data-providers-filter-target="empty"]', visible: true
