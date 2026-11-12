@@ -14,5 +14,5 @@
   "remoteEnv": {
     "PATH": "/workspace/bin:${containerEnv:PATH}"
   },
-  "postCreateCommand": "bundle install && npm install"
+  "postCreateCommand": "bundle install && npm install && git config core.hooksPath .githooks"
 }

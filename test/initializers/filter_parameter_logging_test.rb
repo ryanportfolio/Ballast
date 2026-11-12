@@ -21,6 +21,16 @@ class FilterParameterLoggingTest < ActiveSupport::TestCase
     assert_equal "[FILTERED]", filtered.dig(:simplefin_item, :access_url)
   end
 
+  test "filters WebAuthn credential payloads but keeps credential ids readable" do
+    filtered = @filter.filter(
+      credential: { id: "abc", response: { signature: "sig" } },
+      credential_id: "abc"
+    )
+
+    assert_equal "[FILTERED]", filtered[:credential]
+    assert_equal "abc", filtered[:credential_id]
+  end
+
   test "keeps descriptive codes readable" do
     filtered = @filter.filter(currency_code: "EUR", country_code: "DE", postal_code: "10115")
 

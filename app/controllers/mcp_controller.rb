@@ -143,6 +143,11 @@ class McpController < ApplicationController
         return false
       end
 
+      unless user.active?
+        Rails.logger.warn "[MCP] MCP_USER_EMAIL belongs to a deactivated user — refusing access"
+        return false
+      end
+
       setup_mcp_session(user)
       true
     end

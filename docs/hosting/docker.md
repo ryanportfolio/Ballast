@@ -95,6 +95,8 @@ SECRET_KEY_BASE="replacemewiththegeneratedstringfromthepriorstep"
 POSTGRES_PASSWORD="replacemewithyourdesireddatabasepassword"
 ```
 
+Both are required. The compose file has no defaults for them, so `docker compose up` stops with an error until they are set.
+
 #### Using HTTPS
 
 Assuming you want to access your instance from the internet, you should have secured your URL address with an SSL certificate.  

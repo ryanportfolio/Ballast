@@ -3,8 +3,11 @@
 // Ballast is a public repo that handles bank data, so this runs as a git
 // pre-commit / pre-merge-commit hook (.githooks/) and in CI (secrets-guard.yml).
 //
-//   node scripts/check-secrets.mjs --staged   files in the index (hook mode)
-//   node scripts/check-secrets.mjs --all      every tracked file (CI mode)
+//   node scripts/check-secrets.mjs --staged         files in the index (hook mode)
+//   node scripts/check-secrets.mjs --all            every tracked file (CI mode)
+//   node scripts/check-secrets.mjs --range A..B     every file version added or
+//       modified by each commit in A..B, so a secret committed and then deleted
+//       in a later commit is still caught (CI mode; history stays public).
 //
 // Reviewed false positives go in .secrets-guard-allow, one per line:
 //   <rule-id> <path-glob>
@@ -14,14 +17,14 @@ import { execFileSync, spawn } from "node:child_process";
 
 // Path rules: files that must never be committed, whatever they contain.
 const PATH_RULES = [
-  { id: "env-file", re: /(^|\/)\.env(\.[^/]*)?$/i, allow: /\.(example|erb)$/i,
+  { id: "env-file", re: /(^|\/)\.env(rc|\.[^/]*)?$/i, allow: /\.(example|erb)$/i,
     why: "environment file (holds credentials)" },
-  { id: "db-dump", re: /\.(sql|dump|pgdump|backup|bak|sqlite3?|db)(\.(gz|zst|bz2|xz|zip))?$/i,
-    why: "database dump or database file" },
+  { id: "db-dump", re: /\.(sql|dump|pgdump|backup|bak|sqlite3?|db|tar|tgz)(\.(gz|zst|bz2|xz|zip))?$/i,
+    why: "database dump, database file or archive" },
   { id: "db-dump", re: /(^|\/)dump\.rdb$/i, why: "Redis dump" },
   { id: "bank-export", re: /\.(ofx|qfx|qif|qbo)$/i, why: "bank export file" },
-  { id: "bank-export", re: /\.csv$/i, allow: /^test\/fixtures\//,
-    why: "CSV outside test/fixtures (bank exports are personal data)" },
+  { id: "bank-export", re: /\.(csv|tsv|pdf|xlsx?)$/i, allow: /^test\/fixtures\//,
+    why: "CSV, TSV, PDF or spreadsheet outside test/fixtures (bank statements are personal data)" },
   { id: "key-file", re: /\.(pem|key|p12|pfx|jks)$/i, why: "key or certificate file" },
   { id: "key-file", re: /(^|\/)config\/(master\.key|credentials\/[^/]+\.key)$/, why: "Rails master key" },
   { id: "screenshot", re: /(screen.?shot|capture)[^/]*\.(png|jpe?g|webp|gif|bmp)$|(^|\/)\.playwright-mcp\//i,
@@ -43,11 +46,15 @@ const CONTENT_RULES = [
 ];
 
 // SimpleFIN setup tokens are base64 of a claim URL; decode long base64 runs.
-const B64_RUN = /[A-Za-z0-9+/]{40,}={0,2}/g;
+// The run can start mid-token (`path=/tmp/<token>`, `x+<token>`), so decode
+// from each of the 4 alignments. Node's base64 decoder also takes base64url.
+const B64_RUN = /[A-Za-z0-9+/_-]{40,}={0,2}/g;
 function hasEncodedSimplefin(text) {
   for (const m of text.matchAll(B64_RUN)) {
-    const decoded = Buffer.from(m[0], "base64").toString("latin1");
-    if (/simplefin/i.test(decoded)) return true;
+    for (let off = 0; off < 4; off++) {
+      const decoded = Buffer.from(m[0].slice(off), "base64").toString("latin1");
+      if (/simplefin/i.test(decoded)) return true;
+    }
   }
   return false;
 }
@@ -74,9 +81,13 @@ function decodeText(buf) {
   return null;
 }
 
+// `*` = within one folder, `**` = any depth; a leading `**/` (or `/**/`) also
+// matches zero folders, so `**/name` covers a root-level `name`.
 function globToRe(glob) {
   const esc = glob.replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*\*/g, "\0").replace(/\*/g, "[^/]*").replace(/\0/g, ".*").replace(/\?/g, "[^/]");
+    .replace(/^\*\*\//, "\u0001").replace(/\/\*\*\//g, "/\u0001")
+    .replace(/\*\*/g, "\0").replace(/\*/g, "[^/]*").replace(/\0/g, ".*").replace(/\?/g, "[^/]")
+    .replace(/\u0001/g, "(?:.*/)?");
   return new RegExp(`^${esc}$`);
 }
 
@@ -94,25 +105,63 @@ function loadAllowlist() {
     .map((l) => {
       const [rule, glob] = l.split(/\s+/);
       if (!rule || !glob) throw new Error(`bad .secrets-guard-allow line: ${l}`);
+      // A glob made only of wildcards and slashes turns the rule off everywhere.
+      if (/^[*?/]+$/.test(glob)) {
+        throw new Error(`.secrets-guard-allow line "${l}" names no file: a pattern made only of *, ** , ? and / would switch the ${rule} rule off for every path. Name the reviewed file or folder.`);
+      }
       return { rule, re: globToRe(glob) };
     });
 }
 
+function git(args) {
+  return execFileSync("git", args, { maxBuffer: 1 << 30 }).toString();
+}
+
+// { sha, path, commit? } for each file version to scan.
 function listIndexEntries() {
   // mode, sha, stage, path for every file in the index (or staged changes only).
-  const out = execFileSync("git", ["ls-files", "-s", "-z"], { maxBuffer: 1 << 28 }).toString();
-  let entries = out.split("\0").filter(Boolean).map((line) => {
+  let entries = git(["ls-files", "-s", "-z"]).split("\0").filter(Boolean).map((line) => {
     const tab = line.indexOf("\t");
     const [fmode, sha] = line.slice(0, tab).split(" ");
     return { fmode, sha, path: line.slice(tab + 1) };
   }).filter((e) => e.fmode !== "160000"); // skip submodules
   if (mode === "--staged") {
-    const changed = new Set(execFileSync("git",
-      ["diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"], { maxBuffer: 1 << 28 })
-      .toString().split("\0").filter(Boolean));
+    const changed = new Set(git(["diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"])
+      .split("\0").filter(Boolean));
     entries = entries.filter((e) => changed.has(e.path));
   }
   return entries;
+}
+
+// Every blob a commit in the range added or modified. Merges use the combined
+// diff (-c): only paths whose result differs from every parent, i.e. what the
+// merge itself introduced; the parents' own changes come from their commits.
+function listRangeEntries(range) {
+  const commits = git(["rev-list", "--end-of-options", range]);
+  const out = execFileSync("git",
+    ["diff-tree", "--stdin", "-z", "-r", "-c", "--root", "--no-renames", "--no-abbrev"],
+    { input: commits, maxBuffer: 1 << 30 }).toString();
+  const seen = new Set();
+  const entries = [];
+  let commit = null;
+  const tokens = out.split("\0");
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i].trim();
+    if (!t) continue;
+    if (!t.startsWith(":")) { commit = t; continue; }
+    const path = tokens[++i];
+    const parents = t.match(/^:+/)[0].length;
+    const fields = t.slice(parents).split(" ");
+    const fmode = fields[parents];
+    const sha = fields[2 * parents + 1];
+    if (!/^[0-9a-f]{40,64}$/.test(sha ?? "")) throw new Error(`git diff-tree: unexpected line ${t}`);
+    if (/^0+$/.test(sha) || fmode === "160000") continue; // deleted, or a submodule
+    const key = `${sha}\0${path}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    entries.push({ sha, path, commit });
+  }
+  return { entries, commitCount: commits.split("\n").filter(Boolean).length };
 }
 
 // Stream blob contents through one `git cat-file --batch` process.
@@ -127,59 +176,89 @@ function readBlobs(shas) {
       const buf = Buffer.concat(chunks);
       const blobs = new Map();
       let pos = 0;
-      while (pos < buf.length) {
-        const nl = buf.indexOf(10, pos);
-        const [sha, , size] = buf.slice(pos, nl).toString().split(" ");
-        const len = Number(size);
-        blobs.set(sha, buf.subarray(nl + 1, nl + 1 + len));
-        pos = nl + 1 + len + 1;
+      try {
+        while (pos < buf.length) {
+          const nl = buf.indexOf(10, pos);
+          const header = buf.subarray(pos, nl === -1 ? buf.length : nl).toString();
+          const [sha, , size] = header.split(" ");
+          // A missing object prints "<sha> missing" with no size; stop rather
+          // than skip every file after it and report clean.
+          if (nl === -1 || !/^\d+$/.test(size ?? "")) throw new Error(`git cat-file: cannot read object: ${header}`);
+          const len = Number(size);
+          blobs.set(sha, buf.subarray(nl + 1, nl + 1 + len));
+          pos = nl + 1 + len + 1;
+        }
+        for (const sha of shas) if (!blobs.has(sha)) throw new Error(`git cat-file: no content returned for ${sha}`);
+      } catch (err) {
+        return reject(err);
       }
       resolve(blobs);
     });
-    proc.stdin.end([...new Set(shas)].join("\n") + "\n");
+    proc.stdin.end(shas.join("\n") + "\n");
   });
 }
 
 async function main() {
   const allow = loadAllowlist();
   const allowed = (rule, path) => allow.some((a) => a.rule === rule && a.re.test(path));
-  const entries = listIndexEntries();
-  const findings = [];
+  let entries, label = mode;
+  if (mode === "--range") {
+    const r = listRangeEntries(rangeArg);
+    entries = r.entries;
+    label = `--range ${rangeArg}, ${r.commitCount} commit(s)`;
+  } else {
+    entries = listIndexEntries();
+  }
+  const where = (e) => (e.commit ? `${e.commit.slice(0, 12)} ${e.path}` : e.path);
+  const findings = new Set();
 
   for (const e of entries) {
     for (const r of PATH_RULES) {
       if (r.re.test(e.path) && !(r.allow && r.allow.test(e.path)) && !allowed(r.id, e.path)) {
-        findings.push(`${e.path}: [${r.id}] ${r.why}`);
+        findings.add(`${where(e)}: [${r.id}] ${r.why}`);
       }
     }
   }
 
-  const blobs = await readBlobs(entries.map((e) => e.sha));
-  for (const e of entries) {
-    const data = blobs.get(e.sha);
-    const text = data && decodeText(data);
-    if (text === null || text === undefined) continue; // binary
-    for (const r of CONTENT_RULES) {
-      if (r.re.test(text) && !allowed(r.id, e.path)) findings.push(`${e.path}: [${r.id}] ${r.why}`);
+  // Content hits per blob, computed once; batches bound memory on long ranges.
+  const hitsBySha = new Map();
+  const shas = [...new Set(entries.map((e) => e.sha))];
+  for (let i = 0; i < shas.length; i += 2000) {
+    const batch = shas.slice(i, i + 2000);
+    const blobs = await readBlobs(batch);
+    for (const sha of batch) {
+      const text = decodeText(blobs.get(sha));
+      if (text === null) { hitsBySha.set(sha, []); continue; } // binary
+      const hits = CONTENT_RULES.filter((r) => r.re.test(text));
+      if (hasEncodedSimplefin(text)) hits.push({ id: "simplefin-token", why: "base64 SimpleFIN setup token" });
+      hitsBySha.set(sha, hits);
     }
-    if (hasEncodedSimplefin(text) && !allowed("simplefin-token", e.path)) {
-      findings.push(`${e.path}: [simplefin-token] base64 SimpleFIN setup token`);
+  }
+  for (const e of entries) {
+    for (const r of hitsBySha.get(e.sha)) {
+      if (!allowed(r.id, e.path)) findings.add(`${where(e)}: [${r.id}] ${r.why}`);
     }
   }
 
-  if (findings.length) {
+  if (findings.size) {
     console.error("check-secrets: blocked. These files look like secrets or personal data:");
     for (const f of findings) console.error(`  ${f}`);
     console.error("Unstage them. If one is a reviewed false positive, add `<rule-id> <path>` to .secrets-guard-allow.");
+    if (mode === "--range") {
+      console.error("A file in an earlier commit stays public after it is deleted: rewrite that history before pushing.");
+    }
     process.exitCode = 1;
   } else {
-    console.log(`check-secrets: ${entries.length} file(s) clean (${mode}).`);
+    console.log(`check-secrets: ${entries.length} file(s) clean (${label}).`);
   }
 }
 
 const mode = process.argv[2] ?? "--staged";
-if (!["--staged", "--all"].includes(mode)) {
-  console.error(`check-secrets: unknown mode ${mode} (use --staged or --all)`);
+const rangeArg = process.argv[3];
+const extra = process.argv.slice(mode === "--range" ? 4 : 3);
+if (!["--staged", "--all", "--range"].includes(mode) || extra.length
+    || (mode === "--range" && (!rangeArg || rangeArg.startsWith("-") || !rangeArg.includes("..")))) {
+  console.error(`check-secrets: bad arguments ${process.argv.slice(2).join(" ")} (use --staged, --all, or --range A..B)`);
   process.exitCode = 2;
 } else {
   main().catch((err) => {

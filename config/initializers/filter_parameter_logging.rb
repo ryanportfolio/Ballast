@@ -16,5 +16,8 @@ Rails.application.config.filter_parameters += [
   # A device code redeems into tokens on its own, so it is a bearer credential in
   # transit; verification_uri_complete embeds the user code, hence all three.
   :device_code, :user_code, :verification_uri_complete,
+  # WebAuthn passkey assertions and registrations (WebauthnRelyingParty). Anchored:
+  # an unanchored :credential also hides credential_id and has_*_credentials.
+  /\Acredential\z/i,
   :bank_username, :bank_password, :security_answers, :captcha_input
 ]

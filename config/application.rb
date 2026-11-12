@@ -46,13 +46,13 @@ module Sure
       theme: [ "light", "dark" ] # available in view as params[:theme]
     }
 
-    # Enable Skylight instrumentation for ActiveJob (background workers)
-    # Developers can opt-in to Skylight locally by setting SKYLIGHT_ENABLED=true
+    # Ballast sends no telemetry: the skylight gem loads in production (Gemfile),
+    # but its agent starts only in config.skylight.environments, so that is
+    # empty. Clearing SKYLIGHT_AUTHENTICATION alone is not enough, because the
+    # gem also reads the token from SK_AUTHENTICATION.
     if defined?(Skylight) && config.respond_to?(:skylight)
       config.skylight.probes << "active_job"
-      if ENV["SKYLIGHT_ENABLED"] == "true"
-        config.skylight.environments += [ "development" ]
-      end
+      config.skylight.environments = []
     end
 
     # Rack::Attack's own Railtie (lib/rack/attack/railtie.rb in the gem)

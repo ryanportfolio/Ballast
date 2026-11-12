@@ -2,8 +2,8 @@
 
 # CORS configuration for API access from external apps.
 #
-# This enables Cross-Origin Resource Sharing for the /api and /sessions endpoints,
-# allowing authorized clients to communicate with the Rails backend.
+# This enables Cross-Origin Resource Sharing for the /api endpoints, allowing
+# authorized clients to communicate with the Rails backend.
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
@@ -15,13 +15,6 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
     resource "/api/*",
       headers: :any,
       methods: %i[get post put patch delete options head],
-      expose: %w[X-Request-Id X-Runtime],
-      max_age: 86400
-
-    # Session endpoints for webview-based authentication
-    resource "/sessions/*",
-      headers: :any,
-      methods: %i[get post delete options head],
       expose: %w[X-Request-Id X-Runtime],
       max_age: 86400
   end

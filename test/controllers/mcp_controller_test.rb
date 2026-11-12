@@ -47,6 +47,19 @@ class McpControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "returns 401 and warns when MCP_USER_EMAIL belongs to a deactivated user" do
+    @user.update_column(:active, false)
+
+    with_mcp_env do
+      Rails.logger.expects(:warn).with(regexp_matches(/deactivated/)).once
+
+      post "/mcp", params: jsonrpc_request("initialize").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :unauthorized
+    end
+  end
+
   # -- JSON-RPC protocol --
 
   test "returns parse error for invalid JSON" do

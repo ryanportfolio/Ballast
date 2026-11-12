@@ -256,9 +256,8 @@ class AccountsController < ApplicationController
         # Capture provider accounts before clearing links (so we can destroy them)
         simplefin_account_to_destroy = @account.simplefin_account
 
-        # Remove new system links (account_providers join table)
-        # Provider account records are preserved (not destroyed) so users can relink later.
-        # The provider account survives as "unlinked".
+        # Remove new system links (account_providers join table).
+        # The SimplefinAccount record is destroyed below; a reconnect creates a new one.
         @account.account_providers.reload.destroy_all
 
         # Remove legacy system links (foreign keys)

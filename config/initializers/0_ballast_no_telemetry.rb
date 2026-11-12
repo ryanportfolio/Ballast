@@ -10,8 +10,12 @@
 # Logtail: config/environments/production.rb always logs to STDOUT. Its keys are
 # removed here too, so the system health page doesn't report Logtail as set up.
 #
-# SKYLIGHT_ENABLED is also read by Gemfile and config/application.rb before this
-# runs; that only moves the gem between groups (require: false), it starts nothing.
+# Skylight is not switched off here: deleting its keys does not stop the agent
+# (it also reads SK_AUTHENTICATION). config/application.rb sets
+# config.skylight.environments to [], which keeps it from starting. The keys are
+# still removed so the system health page doesn't report Skylight as set up.
+# SKYLIGHT_ENABLED is also read by Gemfile before this runs; that only moves the
+# gem between groups, it starts nothing.
 
 BALLAST_TELEMETRY_ENV = %w[
   SENTRY_DSN

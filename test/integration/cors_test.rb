@@ -29,24 +29,4 @@ class CorsTest < ActionDispatch::IntegrationTest
     assert response.headers["Access-Control-Allow-Methods"].present?
     assert_includes response.headers["Access-Control-Allow-Methods"], "POST"
   end
-
-  test "cors headers are returned for session endpoints" do
-    post "/sessions",
-      params: { email: "test@example.com", password: "password" },
-      headers: { "Origin" => "http://localhost:3000" }
-
-    assert_equal "*", response.headers["Access-Control-Allow-Origin"]
-  end
-
-  test "cors preflight request is handled for session endpoints" do
-    options "/sessions/new",
-      headers: {
-        "Origin" => "http://localhost:3000",
-        "Access-Control-Request-Method" => "GET",
-        "Access-Control-Request-Headers" => "Content-Type"
-      }
-
-    assert_response :ok
-    assert_equal "*", response.headers["Access-Control-Allow-Origin"]
-  end
 end

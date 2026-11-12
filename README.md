@@ -6,7 +6,14 @@ It tracks bank accounts through [SimpleFIN Bridge](https://www.simplefin.org/), 
 
 ## Status
 
-Early. The code is currently Sure v0.7.6, unmodified, merged in with its full history. Removal of the unused parts has not started yet.
+Ballast is Sure v0.7.6, merged in with its full history, with the parts one household does not need taken out:
+
+- Bank sync goes only through SimpleFIN. Plaid, Enable Banking, the crypto exchanges and wallets, the brokerages and every other sync provider are removed.
+- Imports are CSV only (transactions, trades, accounts, categories, rules and merchants). The Mint, Actual Budget, YNAB, Quicken, AI PDF statement and Sure backup importers are removed.
+- Also removed: the mobile and desktop apps and their login API, the OAuth server, single sign-on, push notifications, Stripe billing and the subscription pages, cloud file storage, and the Helm chart.
+- Telemetry is off by configuration: Sentry, PostHog, Langfuse, Skylight and Logtail send nothing, even when their settings are present.
+
+Each removal, and how it is handled when Sure's releases are merged in, is recorded in [`.claude/reference/strip-log.md`](.claude/reference/strip-log.md).
 
 ## Where the code comes from
 
