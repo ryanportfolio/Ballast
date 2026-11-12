@@ -160,7 +160,7 @@ a new call site.
 divided by three. The query joins `entries` with `transactions`
 (valuations excluded by join shape), drops excluded entries, and drops
 pending provider transactions via `Transaction.excluding_pending`. This
-last filter matters: a pending Plaid deposit that later reverses would
+last filter matters: a pending provider deposit that later reverses would
 otherwise quietly reshape pace.
 
 `Goal#monthly_target_amount` is `(remaining_amount / months_remaining).ceil(2)`.
@@ -209,8 +209,7 @@ would otherwise touch `updated_at` on every matched pledge and reset the
 ## Connected vs manual accounts
 
 `Account#manual?` returns true when the account has no
-`account_providers` association rows, no `plaid_account_id`, and no
-`simplefin_account_id`. This mirrors the `Account.manual` query scope.
+`account_providers` association rows and no `simplefin_account_id`. This mirrors the `Account.manual` query scope.
 
 `Goal#any_connected_account?` returns true when *any* linked account is
 not manual. It drives the modal-title copy: connected accounts get
@@ -293,7 +292,7 @@ calls it. Things to watch:
 
 - The outer `rescue StandardError` is protective: an unexpected raise
   here would break the importer for every account. Keep the rescue, but
-  forward to Sentry so the underlying bug stays visible.
+  log it at error level so the underlying bug stays visible.
 - The inner rescue catches `NotOpenError`, `RecordInvalid`, and
   `RecordNotUnique`. These cover the known race conditions (another
   worker claimed the pledge first; another pledge claimed the
@@ -326,10 +325,11 @@ Light-mode contrast on pale palette entries is weak against
 feature. The distribution bar segments and the goal-card ring are the
 visible surfaces.
 
-`Goal#balance_series_values` rescues `StandardError` and logs to Sentry
+`Goal#balance_series_values` rescues `StandardError` and logs an error
 when `Balance::ChartSeriesBuilder` raises. The chart degrades to
 target-line-only rather than 500ing. If you're debugging "why is the
-projection saved-line empty," check Sentry first.
+projection saved-line empty," check the Rails log for
+`balance series failed` first.
 
 ## Demo data
 
@@ -368,7 +368,6 @@ the clear step has known issues with the `trades` constraint so the
 flips matching rows to `expired`.
 
 `GoalPledge::Reconciler` runs synchronously inside the existing import
-pipeline; it is not a separate job. Any provider sync (Plaid,
-SimpleFIN, Lunchflow, Enable Banking, Brex, IBKR, Kraken, SnapTrade) and
+pipeline; it is not a separate job. A SimpleFIN sync and
 any manual balance reconciliation feeds through `Account::ProviderImportAdapter`
 or `Account::ReconciliationManager` and trips the reconciler hook.

@@ -96,13 +96,13 @@ excluded from income/expense reporting.
 
 ## Ingestion and background work
 
-Provider connections such as [PlaidItem](../../app/models/plaid_item.rb) hold
+Provider connections such as [SimplefinItem](../../app/models/simplefin_item.rb) hold
 connection metadata and provider account payloads; processors normalize them into
 internal accounts and entries through [Account::ProviderImportAdapter](../../app/models/account/provider_import_adapter.rb).
 [AccountProvider](../../app/models/account_provider.rb) connects accounts to
 provider records. [Import](../../app/models/import.rb) supports manual import
-sessions, including CSV mapping and transformations. Plaid is one of many supported
-provider integrations.
+sessions, including CSV mapping and transformations. SimpleFIN is the only bank
+sync provider Ballast keeps.
 
 [Syncable](../../app/models/concerns/syncable.rb) schedules background syncs and
 [Sync](../../app/models/sync.rb) records their state, hierarchy and errors.
@@ -140,10 +140,9 @@ converts failures into the response contract. See [provider guidance](providers.
 and [adding a securities provider](adding-a-securities-provider.md) for details.
 
 Web interaction uses Turbo/Stimulus with server-rendered views. External
-`/api/v1` endpoints support separate Doorkeeper OAuth and `X-Api-Key`
-authentication; API keys are opaque keys, not JWTs. The [API base controller](../../app/controllers/api/v1/base_controller.rb)
+`/api/v1` endpoints accept only `X-Api-Key` authentication; API keys are opaque
+keys, not JWTs. The [API base controller](../../app/controllers/api/v1/base_controller.rb)
 sets current context, skips session CSRF checks and applies API-key rate limits.
 Preserve the existing authentication, scope and strong-parameter behavior. Follow
 the [API consistency guide](api-endpoint-consistency.md) for behavioral tests and
-documentation-only rswag specs; its API-key convention does not remove runtime
-OAuth support.
+documentation-only rswag specs.

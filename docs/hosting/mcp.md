@@ -1,6 +1,6 @@
 # MCP Server for External AI Assistants
 
-Sure includes a Model Context Protocol (MCP) server endpoint that allows external AI assistants like Claude.ai, Claude Desktop, GPT agents, or custom AI clients to query and act on your financial data.
+Sure includes a Model Context Protocol (MCP) server endpoint that allows external AI assistants like Claude Desktop, GPT agents, or custom AI clients to query and act on your financial data.
 
 ## What is MCP?
 
@@ -11,23 +11,9 @@ This is useful when:
 - You prefer to keep your LLM provider separate from Sure
 - You're building custom AI agents that need access to financial tools
 
-## Authentication Modes
+## Authentication
 
-Sure supports two ways to authenticate MCP clients:
-
-### 1. OAuth 2.0 / dynamic client registration (recommended)
-
-This is the best option for Claude.ai and other MCP clients that support OAuth. Sure exposes:
-
-- `/.well-known/oauth-protected-resource`
-- `/.well-known/oauth-authorization-server`
-- `POST /register` for dynamic client registration
-
-These endpoints let compatible MCP clients register a public OAuth client, redirect you back to Sure for sign-in, and receive a bearer token with the `read_write` scope.
-
-### 2. Static bearer token via environment variables
-
-This is the simpler fallback for custom agents, scripts, and deployments where you want to pin the MCP server to a specific Sure user.
+MCP clients authenticate with one static bearer token, which pins the MCP server to a specific Sure user. Ballast has no OAuth sign-in or dynamic client registration for MCP clients.
 
 Set these environment variables:
 
@@ -36,8 +22,7 @@ Set these environment variables:
 | `MCP_API_TOKEN` | Bearer token for authentication | `your-secret-token-here` |
 | `MCP_USER_EMAIL` | Email of the Sure user whose data the assistant can access | `user@example.com` |
 
-Both variables are required for the legacy token flow. OAuth clients using the
-MCP discovery and dynamic registration endpoints do not need these variables.
+Both variables are required; without them `/mcp` rejects every request.
 
 ### Generating a secure token
 
@@ -50,12 +35,12 @@ openssl rand -base64 32
 # Or use any secure password generator
 ```
 
-### Choosing the user for static-token auth
+### Choosing the user
 
 The `MCP_USER_EMAIL` must match an existing Sure user's email address. The AI assistant will have access to all financial data for that user's family.
 
 > [!CAUTION]
-> The AI assistant can call the MCP tools available to the specified user. This includes reading financial data and write-capable tools such as statement import, goal/category/tag changes, transaction updates, and budget updates. Only set this for users you trust with your AI provider.
+> The AI assistant can call the MCP tools available to the specified user. This includes reading financial data and write-capable tools such as account statement uploads, goal/category/tag changes, transaction updates, and budget updates. Only set this for users you trust with your AI provider.
 
 ## Configuration
 
@@ -71,24 +56,6 @@ x-rails-env: &rails_env
 
 Both `web` and `worker` services inherit this configuration.
 
-### Kubernetes (Helm)
-
-Add the variables to your `values.yaml` or set them via Secrets:
-
-```yaml
-env:
-  MCP_API_TOKEN: your-secret-token-here
-  MCP_USER_EMAIL: user@example.com
-```
-
-Or create a Secret and reference it:
-
-```yaml
-envFrom:
-  - secretRef:
-      name: sure-mcp-credentials
-```
-
 ## Protocol Details
 
 The MCP endpoint is available at:
@@ -99,23 +66,11 @@ POST /mcp
 
 ### Authentication
 
-MCP supports OAuth authorization-code flow for clients such as Claude Code.
-Clients should discover the protected-resource metadata, register dynamically,
-request the advertised `read_write` scope, and send the resulting access token
-as a Bearer token. Dynamically registered clients are assigned this scope so
-their tokens can authenticate to MCP.
-
-For self-hosted deployments or clients without OAuth support, requests may use
-the legacy `MCP_API_TOKEN` as a Bearer token:
+Every request sends the `MCP_API_TOKEN` value as a Bearer token:
 
 ```
 Authorization: Bearer <token>
 ```
-
-That token can come from either:
-
-- an OAuth authorization flow handled by the MCP client, or
-- the static `MCP_API_TOKEN` environment variable described above.
 
 ### Supported Methods
 
@@ -160,8 +115,7 @@ At the time of writing, `tools/list` includes:
 | `preview_rule` | Match count and a sample of matching transactions for a saved rule or an unsaved definition, without changing anything |
 | `create_rule` / `update_rule` | Save a rule definition. Rules are always saved inactive, and changing an active rule's conditions or actions deactivates it. AI-backed actions are not available |
 | `apply_rule` | Activate a rule and apply it. Requires the `preview_token` from `preview_rule`, `create_rule` or `update_rule` (never `get_rules`; it expires after 30 minutes) and refuses if the rule or its matches have changed; keeps hand-set values unless `override_locked: true` |
-| `import_bank_statement` | Import bank statement data |
-| `search_family_files` | Search documents uploaded through the import flow. Note this is the vector-store document index, not the Statement Vault — statements archived via `upload_account_statement` are not searchable through it |
+| `search_family_files` | Search the family's vector-store document index. Ballast adds nothing new to it: documents only reached it through Sure's AI statement importer for PDFs, which Ballast removed. Note this is the vector-store document index, not the Statement Vault — statements archived via `upload_account_statement` are not searchable through it |
 
 ### Preview Tools
 
@@ -252,22 +206,6 @@ curl -X POST https://your-sure-instance/mcp \
 
 Response includes tool names, descriptions, and JSON schemas for parameters.
 
-### OAuth discovery
-
-MCP clients that support OAuth can discover Sure's metadata automatically:
-
-```bash
-curl https://your-sure-instance/.well-known/oauth-protected-resource
-curl https://your-sure-instance/.well-known/oauth-authorization-server
-```
-
-The authorization-server metadata includes:
-
-- `authorization_endpoint`: `https://your-sure-instance/oauth/authorize`
-- `token_endpoint`: `https://your-sure-instance/oauth/token`
-- `registration_endpoint`: `https://your-sure-instance/register`
-- `scopes_supported`: `["read_write"]`
-
 ### Call a Tool
 
 Execute a tool to get transactions:
@@ -347,7 +285,6 @@ The `/mcp` endpoint is exposed on the same port as the web UI (default 3000). Fo
 **Kubernetes:**
 - Use NetworkPolicies to restrict access to the MCP endpoint
 - Route external agents through Pipelock's MCP reverse proxy
-- See the [Helm chart documentation](../../charts/sure/README.md) for Pipelock ingress setup
 
 ## Production Deployment
 
@@ -383,38 +320,12 @@ The Pipelock proxy (port 8889) scans all MCP traffic before forwarding to Sure's
 
 ## Connecting AI Assistants
 
-### Claude.ai
+### MCP clients (Claude Desktop, Claude Code, Cursor, VS Code)
 
-Sure's Settings UI is already geared toward Claude.ai OAuth integrations:
-
-1. Open **Settings -> Integrations** in Claude.ai
-2. Click **Add integration**
-3. Paste your Sure MCP URL
-4. Claude redirects you to Sure to sign in and authorize access
-
-If you are using Pipelock, use the reverse-proxy URL on port `8889`. Otherwise use the app URL ending in `/mcp`.
-
-### Claude Desktop
-
-If your Claude Desktop build expects a raw MCP endpoint instead of an OAuth integration flow, point it at:
+Use a client that can send a custom `Authorization: Bearer <MCP_API_TOKEN>` header. Clients that only connect through an OAuth sign-in (such as Claude.ai integrations) cannot connect to Ballast. Point the client at:
 
 - `http://your-server:8889` when using Pipelock, or
 - `http://your-server:3000/mcp` for direct access
-
-Use either the client's OAuth support or a bearer token, depending on what that build supports.
-
-### Cursor and other native MCP clients
-
-Desktop MCP clients such as Cursor and VS Code authenticate with OAuth Dynamic Client Registration (`POST /register`) and then open a browser for consent. Native clients register a private-use redirect URI rather than an `https://` callback, for example:
-
-- Cursor desktop: `cursor://anysphere.cursor-mcp/oauth/callback`
-- Newer Cursor IDE/CLI builds: `http://localhost:8787/callback`
-- Cursor web: `https://www.cursor.com/agents/mcp/oauth/callback`
-- VS Code extensions: `vscode://...`
-
-Sure accepts those native-app URI schemes, loopback `http://` callbacks, and `https://` callbacks. After you authorize in the browser, the client exchanges the authorization code (PKCE) for a bearer token and calls `/mcp`.
-
-If OAuth is inconvenient (CI, scripts, or a client that cannot complete the browser flow), use the static `MCP_API_TOKEN` bearer token instead.
 
 ### Custom Agents
 
@@ -427,7 +338,7 @@ Any AI agent that supports JSON-RPC 2.0 can connect to the MCP endpoint. The age
 
 ### Using MCP without the in-app chat
 
-MCP does not depend on the in-app assistant. To use only your own agent, set the assistant type to **None in app (connect your own agent via MCP)** in **Settings -> Self-Hosting**, or set `ASSISTANT_TYPE=mcp_only` for the whole instance. The chat sidebar and its entry points disappear; `/mcp`, OAuth, and **Settings -> MCP** keep working.
+MCP does not depend on the in-app assistant. To use only your own agent, set the assistant type to **None in app (connect your own agent via MCP)** in **Settings -> Self-Hosting**, or set `ASSISTANT_TYPE=mcp_only` for the whole instance. The chat sidebar and its entry points disappear; `/mcp` and **Settings -> MCP** keep working.
 
 ## Troubleshooting
 
@@ -435,11 +346,10 @@ MCP does not depend on the in-app assistant. To use only your own agent, set the
 
 **Symptom:** Requests return HTTP 401 with "unauthorized"
 
-**Fix:** Verify one of these is true:
+**Fix:** Verify both are true:
 
-- The OAuth flow completed successfully and the client is sending the issued bearer token
-- The static token matches `MCP_API_TOKEN`
-- If you are using the static-token flow, `MCP_USER_EMAIL` matches an existing Sure user
+- The bearer token matches `MCP_API_TOKEN`
+- `MCP_USER_EMAIL` matches an existing Sure user
 
 ### Static token works, but the user still gets rejected
 

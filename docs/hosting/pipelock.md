@@ -100,131 +100,9 @@ To use `compose.example.ai.yml` without Pipelock, remove the `pipelock` service 
 
 Or use the standard `compose.example.yml` which does not include Pipelock.
 
-## Helm (Kubernetes) setup
-
-Enable Pipelock in your Helm values:
-
-```yaml
-pipelock:
-  enabled: true
-  image:
-    tag: "3.4.0@sha256:2e6caa43967a5ef19cacbce00188d829c1b5de1eb0ad304a51d2085f32c5694c"
-  mode: balanced
-```
-
-This creates a separate Deployment, Service, and ConfigMap. The chart auto-injects `HTTPS_PROXY`/`HTTP_PROXY`/`NO_PROXY` into web and worker pods.
-
-Sure pins Pipelock 3.4.0 by tag and multi-architecture image digest. Read the [Pipelock release notes](https://github.com/luckyPipewrench/pipelock/releases/tag/v3.4.0) before overriding that pin.
-
-### Signed action receipts
-
-Pipelock can write hash-chained, Ed25519-signed receipts for proxied decisions. This is the audit trail that proves what crossed the Pipelock boundary and what policy verdict was applied.
-
-The chart exposes `pipelock.flightRecorder`, but recording is inert until you mount both storage and a signing key:
-
-```bash
-# --out must be an absolute path; "$PWD/..." writes the key into the current directory.
-pipelock signing key generate --purpose receipt-signing --out "$PWD/flight-recorder-signing.key" --id sure-k8s
-kubectl create namespace sure
-kubectl create secret generic sure-pipelock-receipts \
-  --namespace sure \
-  --from-file=flight-recorder-signing.key=./flight-recorder-signing.key
-```
-
-If you don't have the `pipelock` binary installed, generate the key with the pinned image instead: `docker run --rm -v "$PWD:/out" ghcr.io/luckypipewrench/pipelock:3.4.0@sha256:2e6caa43967a5ef19cacbce00188d829c1b5de1eb0ad304a51d2085f32c5694c signing key generate --purpose receipt-signing --out /out/flight-recorder-signing.key --id sure-k8s`.
-
-Example Helm values using an existing PVC named `sure-pipelock-evidence`:
-
-```yaml
-pipelock:
-  enabled: true
-  flightRecorder:
-    enabled: true
-    dir: /var/lib/pipelock/evidence
-    signingKeyPath: /run/secrets/pipelock/flight-recorder-signing.key
-    requireReceipts: false
-    redact: true
-  extraVolumes:
-    - name: pipelock-evidence
-      persistentVolumeClaim:
-        claimName: sure-pipelock-evidence
-    - name: pipelock-receipt-key
-      secret:
-        secretName: sure-pipelock-receipts
-        # 0440 (group-read), not 0400: the chart runs Pipelock as uid 1000 with
-        # fsGroup 1000, so the secret file is owned root:1000. A 0400 file would
-        # be unreadable by the non-root process and Pipelock would crash on
-        # startup with a key-load error. 0440 lets the fsGroup read it.
-        defaultMode: 0440
-  extraVolumeMounts:
-    - name: pipelock-evidence
-      mountPath: /var/lib/pipelock/evidence
-    - name: pipelock-receipt-key
-      # Do not mount this under /etc/pipelock; the chart already mounts the
-      # Pipelock ConfigMap there.
-      mountPath: /run/secrets/pipelock
-      readOnly: true
-```
-
-Keep `requireReceipts: false` until you have confirmed receipts are being written. Turning it on makes allow-path receipt emission fail closed: if Pipelock cannot sign or write the receipt, the request is blocked before egress.
-
-### Exposing MCP to external agents (Kubernetes)
-
-In Kubernetes, external agents cannot reach the MCP port by default. Enable the Pipelock Ingress:
-
-```yaml
-pipelock:
-  enabled: true
-  ingress:
-    enabled: true
-    className: nginx
-    hosts:
-      - host: pipelock.example.com
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - hosts: [pipelock.example.com]
-        secretName: pipelock-tls
-```
-
-Or port-forward for testing:
-
-```bash
-kubectl port-forward svc/sure-pipelock 8889:8889 -n sure
-```
-
-### Monitoring
-
-Enable the ServiceMonitor for Prometheus scraping:
-
-```yaml
-pipelock:
-  serviceMonitor:
-    enabled: true
-    interval: 30s
-    additionalLabels:
-      release: prometheus
-```
-
-Metrics are available at `/metrics` on the forward proxy port (8888).
-
-### Eviction protection
-
-For production, enable the PodDisruptionBudget:
-
-```yaml
-pipelock:
-  pdb:
-    enabled: true
-    maxUnavailable: 1
-```
-
-See the [Helm chart README](../../charts/sure/README.md#pipelock-ai-agent-security-proxy) for all configuration options.
-
 ## Pipelock configuration file
 
-The `pipelock.example.yaml` file (Docker Compose) or ConfigMap (Helm) controls scanning behavior. Key sections:
+The `pipelock.example.yaml` file controls scanning behavior. Key sections:
 
 | Section | What it controls |
 |---------|-----------------|
@@ -243,16 +121,6 @@ The `pipelock.example.yaml` file (Docker Compose) or ConfigMap (Helm) controls s
 | `health_watchdog` | Wedge-detection on subsystem heartbeats, returns 503 on stall (pipelock 2.4+) |
 | `flight_recorder` | Signed action receipts and hash-chained evidence (inert until storage + signing key are mounted) |
 | `logging` | Output format (json/text), verbosity |
-
-For the Helm chart, most sections are configurable via `values.yaml`. For additional sections not covered by structured values (session profiling, data budgets, kill switch, sandbox, reverse proxy, adaptive enforcement, request policy, redaction), use the `extraConfig` escape hatch:
-
-```yaml
-pipelock:
-  extraConfig:
-    session_profiling:
-      enabled: true
-      max_sessions: 1000
-```
 
 ## Modes
 

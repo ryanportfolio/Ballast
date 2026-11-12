@@ -21,7 +21,7 @@ The interactive chat where users ask questions about their finances. Routes thro
 
 - **Builtin** (default): Uses the LLM provider selected by `LLM_PROVIDER`: the OpenAI-compatible provider (`OPENAI_ACCESS_TOKEN` / `OPENAI_URI_BASE` / `OPENAI_MODEL`, the default) or the [native Anthropic provider](#anthropic-native). Calls Sure's function tools directly (get_accounts, get_transactions, etc.).
 - **External**: Delegates the entire conversation to a remote AI agent. The agent calls back to Sure via MCP to access financial data. Set `ASSISTANT_TYPE=external` as a global override, or configure each family's assistant type in Settings.
-- **None in app** (`mcp_only`): Removes the in-app chat for the household: the right-hand chat sidebar and its toggle, the mobile Assistant tab, and the buttons that start a chat. Bring your own agent and connect it through [MCP](mcp.md), which keeps working. Set `ASSISTANT_TYPE=mcp_only` to remove the chat for every family.
+- **None in app** (`mcp_only`): Removes the in-app chat for the household: the right-hand chat sidebar and its toggle, and the buttons that start a chat. Bring your own agent and connect it through [MCP](mcp.md), which keeps working. Set `ASSISTANT_TYPE=mcp_only` to remove the chat for every family.
 
 ### 2. Auto-Categorization and Merchant Detection (background)
 
@@ -46,14 +46,14 @@ AI work runs in the Sidekiq `worker`, in its own capsule ("lane"), so a slow mod
 | Lane | Queues | Threads | Jobs |
 |------|--------|---------|------|
 | default | `scheduled`, `high_priority`, `medium_priority`, `low_priority`, `default` | `RAILS_MAX_THREADS - RAILS_AI_MAX_THREADS` (3 - 1 = 2) | syncs, balances, rules, imports, scheduled jobs |
-| ai | `ai_high_priority`, then `ai_low_priority` (strict order) | `RAILS_AI_MAX_THREADS` (default `1`) | chat (`ai_high_priority`); auto-categorization, merchant detection and enhancement, PDF processing (`ai_low_priority`) |
+| ai | `ai_high_priority`, then `ai_low_priority` (strict order) | `RAILS_AI_MAX_THREADS` (default `1`) | chat (`ai_high_priority`); auto-categorization, merchant detection and enhancement (`ai_low_priority`) |
 
 - `RAILS_MAX_THREADS` is the worker's total thread count, as before, and also sizes its database pool. It must be greater than `RAILS_AI_MAX_THREADS` (so at least `2` by default): a lane with 0 threads stops the worker from starting ("Concurrency of 0 is not supported"). Puma reads the same variable, so if you lower it for the web service to save memory, set the worker's separately.
-- **Strict order:** a waiting chat runs next, but it doesn't interrupt the AI job already running. Auto-categorization, merchant-detection and merchant-enhancement jobs make one LLM call each, of `LLM_MAX_ITEMS_PER_CALL` items (default `25`), or more if the batch doesn't fit the context window; PDF import and chat jobs can make several. With one AI thread, a PDF import or other `ai_low_priority` job waits behind earlier ones, and continuous chat use pauses background AI work.
+- **Strict order:** a waiting chat runs next, but it doesn't interrupt the AI job already running. Auto-categorization, merchant-detection and merchant-enhancement jobs make one LLM call each, of `LLM_MAX_ITEMS_PER_CALL` items (default `25`), or more if the batch doesn't fit the context window; chat jobs can make several. With one AI thread, an `ai_low_priority` job waits behind earlier ones, and continuous chat use pauses background AI work.
 - **Busy notice:** with one AI thread in a single worker process running the AI queues, while another AI job (a background job or another chat) is running, a chat's "Thinking" bubble says the system is busy until the chat's job starts. `AI_RESPONSE_TIMEOUT` includes that wait.
 - **Chat reservation:** with one AI thread, clicking into or typing in the chat box, and each finished reply, hold back new background AI jobs for 60 seconds, so the message runs next. This applies when a single worker process runs the AI queues; with several, a chat can run on one while another runs background jobs, so nothing is held. Back-to-back holds stop after 15 minutes and resume 60 seconds later, so background AI work gets a turn. When you click into or type in the chat box while background AI jobs wait, a bubble above it shows the countdown, or says one is still finishing. A job that is already running is not interrupted.
 - **One AI thread suits a model that serves one request at a time,** such as a local model on CPU: a chat turn's calls then run back to back, keeping the model's prompt cache warm. If your provider serves requests in parallel (hosted APIs, or a local server with several slots), raise `RAILS_AI_MAX_THREADS`, and `RAILS_MAX_THREADS` by the same amount so the default lane keeps its threads.
-- **The worker must load `config/sidekiq.yml`,** as `bundle exec sidekiq` does by default. A worker started with its own queue list (`sidekiq -q …`, a custom Helm `worker.command`) doesn't get the AI lane. If no worker polls `ai_high_priority` and `ai_low_priority`, **System health** (`/admin/system_health`) and the site-wide banner report "No worker is processing the AI queues", and the chat page warns that responses may not be delivered. Keep `-C config/sidekiq.yml`; adding `-q ai_high_priority -q ai_low_priority` also works, but AI jobs then share that worker's threads, and the chat reservation doesn't hold them, since a chat can usually take another thread.
+- **The worker must load `config/sidekiq.yml`,** as `bundle exec sidekiq` does by default. A worker started with its own queue list (`sidekiq -q …`) doesn't get the AI lane. If no worker polls `ai_high_priority` and `ai_low_priority`, **System health** (`/admin/system_health`) and the site-wide banner report "No worker is processing the AI queues", and the chat page warns that responses may not be delivered. Keep `-C config/sidekiq.yml`; adding `-q ai_high_priority -q ai_low_priority` also works, but AI jobs then share that worker's threads, and the chat reservation doesn't hold them, since a chat can usually take another thread.
 - **System health:** AI backlog doesn't count towards "queue backed up" (a large merchant-detection run can queue for hours), but "Oldest job age" still includes it. Check the queue table or `/sidekiq` to see which queue is waiting.
 - **Upgrading:** AI jobs moved from `high_priority` (chat), `medium_priority` and `scheduled` to the AI queues. Jobs already queued under the old names still run once, in the default lane.
 - **Large batches:** Sure doesn't limit `LLM_MAX_ITEMS_PER_CALL`. OpenAI-compatible providers split a batch that doesn't fit the context window; with the native Anthropic provider, raise `ANTHROPIC_MAX_TOKENS` (default `4096`) along with it, or replies are cut off.
@@ -170,7 +170,7 @@ reasoning models; the default 2048-token context is intended for small local mod
 
 ### Anthropic (native)
 
-Sure talks to Anthropic's Messages API directly. It serves chat (streamed), auto-categorization, merchant detection and enhancement, bill setup suggestions, and PDF imports (Claude reads the PDF itself; no vision setting needed).
+Sure talks to Anthropic's Messages API directly. It serves chat (streamed), auto-categorization, merchant detection and enhancement, and bill setup suggestions.
 
 ```bash
 LLM_PROVIDER=anthropic
@@ -200,7 +200,7 @@ How it differs from the OpenAI-compatible provider:
   - **Every provider:** below `4096`, the chat's system prompt lists accounts and categories only as counts, and the model fetches them with tools.
   - **OpenAI-compatible:** it is also the budget, with `LLM_MAX_RESPONSE_TOKENS` and `LLM_SYSTEM_PROMPT_RESERVE`, for splitting auto-categorization and merchant batches, and for trimming chat history on Chat Completions endpoints (`LLM_MAX_HISTORY_TOKENS`). The native OpenAI Responses API keeps history on OpenAI's side, so nothing is trimmed there.
   - **Native Anthropic:** only the system-prompt check applies. History is sent whole, batches aren't split, and `LLM_MAX_RESPONSE_TOKENS`, `LLM_MAX_HISTORY_TOKENS` and `LLM_SYSTEM_PROMPT_RESERVE` are ignored. Set `LLM_CONTEXT_WINDOW` by env (e.g. `200000`) so the prompt lists accounts and categories; its UI field is in the OpenAI panel.
-- **The reply limit is always sent.** A reply that needs more than `ANTHROPIC_MAX_TOKENS` is cut off, and on Claude 5 models the model's thinking counts toward it. Only bank statement extraction detects this (it logs a warning). Raise the limit if long answers or batch results come back incomplete.
+- **The reply limit is always sent.** A reply that needs more than `ANTHROPIC_MAX_TOKENS` is cut off, and on Claude 5 models the model's thinking counts toward it. Raise the limit if long answers or batch results come back incomplete.
 - **Batch size.** Auto-categorization, merchant detection and merchant enhancement send `LLM_MAX_ITEMS_PER_CALL` items per request (default `25`), with no splitting to fit the context window. Raise `ANTHROPIC_MAX_TOKENS` along with it, or replies are cut off (see [Where AI jobs run](#where-ai-jobs-run-sidekiq-lanes)).
 - **Its own timeout.** `ANTHROPIC_REQUEST_TIMEOUT` replaces `OPENAI_REQUEST_TIMEOUT`. `AI_RESPONSE_TIMEOUT` still covers the whole chat turn. `OPENAI_EXTRA_HEADERS`, `LLM_JSON_MODE` and `OPENAI_SUPPORTS_*` don't apply.
 
@@ -280,14 +280,14 @@ to a JSON object mapping header names to values:
 OPENAI_EXTRA_HEADERS='{"x-opencode-session":"{session_id}"}'
 
 # Static value instead — sent on every OpenAI-provider request, including
-# batch jobs (auto-categorize, merchant detection, PDF processing):
+# batch jobs (auto-categorize, merchant detection):
 OPENAI_EXTRA_HEADERS='{"x-opencode-session":"b3f1c2d4-0000-0000-0000-000000000000"}'
 ```
 
 Behavior:
 
 - A value containing the literal `{session_id}` is substituted with the chat's UUID on each chat request, so requests are attributable per conversation. Batch flows only receive static (non-`{session_id}`) headers, because a session only exists for a chat. If your gateway requires the header on every endpoint, use a static value.
-- Extra headers are attached to **chat requests** made by the OpenAI-compatible provider. Batch flows (auto-categorize, merchant detection, PDF processing) only receive static headers.
+- Extra headers are attached to **chat requests** made by the OpenAI-compatible provider. Batch flows (auto-categorize, merchant detection) only receive static headers.
 - Values are stringified: nested JSON objects/arrays become Ruby inspect-style strings, not valid JSON. Header values must be plain strings.
 - User headers merge over the client's managed headers — setting `Authorization` here would override the access token.
 - Unset, blank, malformed, or non-object JSON is ignored with an error in the logs; chat keeps working. The raw value is never logged.
@@ -490,7 +490,7 @@ This is useful when:
 1. User sends a message in the Sure chat UI
 2. Sure sends the conversation to your agent's API endpoint (OpenAI chat completions format)
 3. Your agent processes it using whatever LLM, tools, or context it needs
-4. Your agent can call Sure's `/mcp` endpoint for financial data and actions (accounts, transactions, balance sheet, budgets, file search, statement import, goals)
+4. Your agent can call Sure's `/mcp` endpoint for financial data and actions (accounts, transactions, balance sheet, budgets, file search, account statements, goals)
 5. Your agent streams the response back to Sure via Server-Sent Events (SSE)
 
 The agent's API must be **OpenAI chat completions compatible**: accept `POST` with a `messages` array, return SSE with `delta.content` chunks.
@@ -525,12 +525,7 @@ Sure exposes a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) 
 
 **Authentication:** Bearer token via `Authorization` header
 
-Sure supports both:
-
-- OAuth bearer tokens issued through its discovery and registration endpoints (`/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, `POST /register`)
-- Static bearer tokens configured with `MCP_API_TOKEN` and `MCP_USER_EMAIL`
-
-**Static-token environment variables:**
+The only accepted token is the static bearer token configured with `MCP_API_TOKEN` and `MCP_USER_EMAIL`:
 ```bash
 MCP_API_TOKEN=your-secret-token    # Bearer token the agent sends to authenticate
 MCP_USER_EMAIL=user@example.com    # Email of the Sure user the agent acts as
@@ -542,7 +537,7 @@ Authorization: Bearer <access-token>
 Content-Type: application/json
 ```
 
-For OAuth clients, `<access-token>` is the issued Doorkeeper bearer token. For static-token clients, it is the configured `MCP_API_TOKEN`.
+`<access-token>` is the configured `MCP_API_TOKEN`.
 
 **Supported methods:**
 
@@ -611,30 +606,16 @@ it implements.
 
 ### Security with Pipelock
 
-When [Pipelock](https://github.com/luckyPipewrench/pipelock) is enabled (`pipelock.enabled=true` in Helm, or the `pipelock` service in Docker Compose), Sure configures two mediated routes:
+When [Pipelock](https://github.com/luckyPipewrench/pipelock) is enabled (the `pipelock` service in Docker Compose), Sure configures two mediated routes:
 
 - **Outbound** (Sure -> agent): routed through Pipelock's forward proxy via `HTTPS_PROXY`
 - **Inbound** (agent -> Sure /mcp): routed through Pipelock's MCP reverse proxy (port 8889)
 
 The MCP reverse proxy scans readable MCP traffic for prompt injection, DLP violations, and tool poisoning. The forward proxy applies tunnel-level controls to HTTPS, but the default examples don't enable TLS interception and can't scan encrypted bodies. The external agent doesn't need Pipelock installed.
 
-If you need audit evidence, configure Pipelock's flight recorder as described in [Pipelock signed action receipts](pipelock.md#signed-action-receipts). Enabling Pipelock adds the mediated routes, while receipts require mounted evidence storage plus a receipt-signing key.
+If you need audit evidence, configure Pipelock's flight recorder as described in [Pipelock's Docker Compose setup](pipelock.md#docker-compose-setup) (step 4, signed action receipts). Enabling Pipelock adds the mediated routes, while receipts require mounted evidence storage plus a receipt-signing key.
 
-**`NO_PROXY` behavior (Helm/Kubernetes only):** The Helm chart's env template sets `NO_PROXY` to include `.svc.cluster.local` and other internal domains. This means in-cluster agent URLs (like `http://agent.namespace.svc.cluster.local:18789`) bypass the forward proxy and go directly. If your agent is in-cluster, its traffic won't be forward-proxy scanned (but MCP callbacks from the agent are still scanned by the reverse proxy). Docker Compose deployments use a different `NO_PROXY` set; check your compose file for the exact values.
-
-**`mcpToolPolicy` note:** The Helm chart's `pipelock.mcpToolPolicy.enabled` defaults to `false`. Pipelock rejects an enabled tool policy with no rules, so the chart ships it off by default. To turn it on, define at least one rule and set `enabled: true`:
-
-```yaml
-# Helm values
-pipelock:
-  mcpToolPolicy:
-    enabled: true
-    action: warn
-    rules:
-      - name: example
-        toolPattern: "^shell$"
-        action: block
-```
+**`NO_PROXY` behavior:** hosts listed in `NO_PROXY` bypass the forward proxy and are not scanned (MCP callbacks from the agent are still scanned by the reverse proxy). Check your compose file for the exact values.
 
 See the [Pipelock documentation](https://github.com/luckyPipewrench/pipelock) for tool policy configuration details.
 
@@ -1002,79 +983,6 @@ Before resetting the cache, consider:
 - Reset cache only when necessary
 - Consider using local LLMs for bulk re-processing
 
-## Observability with Langfuse
-
-Sure includes built-in support for [Langfuse](https://langfuse.com/), an open-source LLM observability platform.
-
-### What is Langfuse?
-
-Langfuse helps you:
-- Track all LLM requests and responses
-- Monitor costs per request
-- Measure response latency
-- Debug failed requests
-- Analyze usage patterns
-- Optimize prompts based on real data
-
-### Setup
-
-1. Create a free account at [Langfuse Cloud](https://cloud.langfuse.com/) or [self-host Langfuse](https://langfuse.com/docs/deployment/self-host)
-
-2. Get your API keys from the Langfuse dashboard
-
-3. Configure Sure:
-   ```bash
-   LANGFUSE_PUBLIC_KEY=pk-lf-...
-   LANGFUSE_SECRET_KEY=sk-lf-...
-   LANGFUSE_HOST=https://cloud.langfuse.com  # or your self-hosted URL
-   ```
-
-4. Restart Sure
-
-Sure sends completed observations through Langfuse's v4 OpenTelemetry ingestion path. Existing keys and host settings still apply. See the [Langfuse migration and validation notes](langfuse.md#langfuse-v4) before upgrading an existing project.
-
-All LLM operations will now be logged to Langfuse, including:
-- Chat messages and responses
-- Auto-categorization requests
-- Merchant detection
-- Token usage and costs
-- Response times
-
-### Langfuse Features in Sure
-
-- **Automatic tracing:** Every LLM call is automatically traced
-- **Session tracking:** Chat sessions are tracked with a unique session ID
-- **User anonymization:** User IDs are hashed before sending to Langfuse
-- **Cost tracking:** Token usage is logged for cost analysis
-- **Error tracking:** Failed requests are logged with error details
-
-### Viewing Traces
-
-1. Go to your Langfuse dashboard
-2. Navigate to **Traces**
-3. You'll see traces for:
-   - `openai.chat_response` - Chat assistant interactions
-   - `openai.auto_categorize` - Transaction categorization
-   - `openai.auto_detect_merchants` - Merchant detection
-
-### Privacy Considerations
-
-**What's sent to Langfuse:**
-- Prompts and responses
-- Model names
-- Token counts
-- Timestamps
-- Session IDs
-- Hashed user IDs (not actual user data)
-
-**What's NOT sent:**
-- User email addresses
-- User names
-- Unhashed user IDs
-- Account credentials
-
-**For maximum privacy:** Self-host Langfuse on your own infrastructure.
-
 ## Testing and Evaluation
 
 ### Manual Testing
@@ -1094,12 +1002,12 @@ Test your AI configuration:
 
 ### Automated Evaluation
 
-Sure doesn't currently include automated evals, but you can build them using Langfuse:
+Sure doesn't currently include automated evals, but you can build your own:
 
 1. **Collect baseline responses:** Run test prompts and save responses
-2. **Create evaluation dataset:** Use Langfuse datasets feature
+2. **Create an evaluation dataset** from those prompts and responses
 3. **Run evaluations:** Test new models/prompts against the dataset
-4. **Compare results:** Use Langfuse's comparison tools
+4. **Compare results** against the baseline
 
 ### Benchmarking Models
 
@@ -1206,9 +1114,8 @@ and GPT-4o mini is $0.15 / $0.60.
 
 **Optimization tips:**
 1. Use `gpt-4o-mini` for categorization
-2. Use Langfuse to identify expensive prompts
-3. Cache results when possible
-4. Consider local LLMs for high-volume operations
+2. Cache results when possible
+3. Consider local LLMs for high-volume operations
 
 ### Local Costs
 
@@ -1428,7 +1335,7 @@ Restart `web` and `worker` after changing the environment variables, and make su
 **Symptom:** Unexpected bills from cloud provider
 
 **Analysis:**
-1. Check Langfuse for usage patterns
+1. Check your provider's usage dashboard for usage patterns
 2. Look for unusually long conversations
 3. Check if you're using an expensive model
 
@@ -1536,7 +1443,6 @@ Write:
 - `create_tag` / `update_tag`, `create_category` / `update_category` / `delete_category`
 
 Documents:
-- `import_bank_statement` - Import bank statement data
 - `search_family_files` - Search uploaded documents (vector store)
 
 These are defined in `app/models/assistant/function/`. Preview tools
@@ -1702,7 +1608,7 @@ checks are written as system-wide entries in **Settings → Debug logs** and to
 #### Verifying Worker Configuration
 
 The checks above all run from the `web` process. Most AI work — assistant
-responses, PDF processing, embeddings, auto-categorization, and merchant
+responses, embeddings, auto-categorization, and merchant
 detection — actually executes in a Sidekiq `worker` process, which can differ
 from `web` in network access, DNS, proxy rules, or even which credentials it
 loaded, especially in Kubernetes deployments using workload-specific overrides
@@ -1873,7 +1779,6 @@ Upgrading: deployments that set only the URL and token keep working. When no age
 - [OpenAI Documentation](https://platform.openai.com/docs)
 - [Ollama Documentation](https://github.com/ollama/ollama)
 - [OpenRouter Documentation](https://openrouter.ai/docs)
-- [Langfuse Documentation](https://langfuse.com/docs)
 - [Sure GitHub Repository](https://github.com/we-promise/sure)
 
 ## Support

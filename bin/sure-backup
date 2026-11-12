@@ -212,15 +212,6 @@ cmd_create() {
   log "Dumping database ${POSTGRES_DB}..."
   (umask 077 && pg_dump -Fc -d "$POSTGRES_DB" -f "${tmp_dir}/db.dump")
 
-  storage_service=""
-  if [ -f "${CONFIG_DIR}/.env" ]; then
-    storage_service=$(sed -n 's/^ACTIVE_STORAGE_SERVICE=//p' "${CONFIG_DIR}/.env" | tail -n 1 | tr -d '"'"'"' ')
-  fi
-  case "$storage_service" in
-    "" | local) ;;
-    *) warn "uploaded files are stored in '${storage_service}' (ACTIVE_STORAGE_SERVICE), not in this backup" ;;
-  esac
-
   if storage_mounted; then
     log "Archiving file storage..."
     (umask 077 && tar -C "$STORAGE_DIR" --numeric-owner --exclude=./.sure-runtime -czf "${tmp_dir}/storage.tar.gz" .)

@@ -1,13 +1,13 @@
 # API endpoint consistency (post-commit checklist)
 
-When adding or modifying API v1 endpoints, follow this checklist after every API endpoint commit so behavior, docs, and auth stay consistent. Runtime endpoints also support OAuth; the API-key-only requirement below applies to the behavioral test and documentation patterns.
+When adding or modifying API v1 endpoints, follow this checklist after every API endpoint commit so behavior, docs, and auth stay consistent. Runtime endpoints accept only API keys.
 
 ## 1. Minitest behavioral coverage
 
 - **Location**: `test/controllers/api/v1/{resource}_controller_test.rb`
 - **Scope**: All new or changed actions must have Minitest coverage here. Do not rely on rswag specs for behavioral assertions.
 - **Pattern**:
-  - Use `ApiKey.create!` (read and read_write scopes) and `api_headers(api_key)` → `{ "X-Api-Key" => api_key.display_key }`. Do not use OAuth/Bearer in these tests.
+  - Use `ApiKey.create!` (read and read_write scopes) and `api_headers(api_key)` → `{ "X-Api-Key" => api_key.display_key }`. Do not use Bearer tokens in these tests.
   - Cover: index/show (and create/update/destroy for write endpoints), read-only key blocking writes (403), invalid params (422), invalid date (422), not found (404), missing auth (401).
   - Follow existing API v1 test style: see [valuations_controller_test.rb](../../test/controllers/api/v1/valuations_controller_test.rb) and [transactions_controller_test.rb](../../test/controllers/api/v1/transactions_controller_test.rb).
 
@@ -37,7 +37,7 @@ When adding or modifying API v1 endpoints, follow this checklist after every API
   let(:'X-Api-Key') { api_key.plain_key }
   ```
 
-- Do not use Doorkeeper/OAuth in these specs (no `Doorkeeper::Application`, `Doorkeeper::AccessToken`, or `Authorization: "Bearer ..."`). Use API key only.
+- Do not use `Authorization: "Bearer ..."` in these specs. Use API key only.
 
 ## OpenAPI schemas and verification
 

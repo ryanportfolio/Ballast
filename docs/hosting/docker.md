@@ -120,7 +120,6 @@ On a self-hosted instance, Sure sends these emails:
 - Password reset links, when password sign-in is enabled.
 - A confirmation link when a user changes their email address, but only when **Require email confirmation** is on under Settings > Self-Hosting. When it is off, the new address is saved straight away and nothing is sent.
 - Rule notifications, from rules with a "Send email notification" action.
-- The follow-up email after a PDF import is processed.
 - A daily summary to every super admin after the demo family is refreshed, but only when **Enable daily demo family refresh** is on under Settings > Self-Hosting and a demo family has been selected for it. It is off by default.
 
 Invitations are never emailed on a self-hosted instance, even with SMTP set up. After you add a member, copy the invitation link from Settings > Profile Info and send it to them yourself.
@@ -201,7 +200,7 @@ services:
       - ./my-ca.crt:/certs/my-ca.crt:ro
 ```
 
-The worker is the service that sends email, so it is the one that must have the file. The same setting is also used for other outbound HTTPS connections; see [Self-signed certificate support](oidc.md#self-signed-certificate-support) for the certificate format and troubleshooting.
+The worker is the service that sends email, so it is the one that must have the file. The same setting is also used for other outbound HTTPS connections. The file must be the PEM-format certificate (starting with `-----BEGIN CERTIFICATE-----`) of the CA that signed the server's certificate. To diagnose certificate errors, set `SSL_DEBUG=true`: the log then shows which CA file is used, the verification mode and the full error. `SSL_VERIFY=false` turns verification off entirely; use it only for testing, since it removes protection against man-in-the-middle attacks.
 
 Pull request [#2811](https://github.com/we-promise/sure/pull/2811), which is still open, would pass `.env` to both services directly. If it is merged, listing the keys in the anchor is no longer needed.
 
@@ -456,7 +455,7 @@ docker compose up -d # Restart on the new version; database migrations run autom
 
 ### Upgrade note: instance-wide settings need a super admin
 
-Provider credentials (such as Plaid), the shared AI connection settings (LLM provider, endpoints, API keys and models), sync settings, and the external assistant connection are stored once for the whole instance and apply to every family. On an instance with more than one family, only a `super_admin` can change them. When there is a single family, its admins keep access. Family-scoped choices, such as which assistant a family uses, stay with that family's admins.
+Provider credentials, the shared AI connection settings (LLM provider, endpoints, API keys and models), sync settings, and the external assistant connection are stored once for the whole instance and apply to every family. On an instance with more than one family, only a `super_admin` can change them. When there is a single family, its admins keep access. Family-scoped choices, such as which assistant a family uses, stay with that family's admins.
 
 Installs created before the first user was automatically made `super_admin` may have no super admin at all. If your instance has more than one family (for example, because someone else signed up), these instance-wide settings are hidden after the update and saving them returns "not authorized". Promote your own user once:
 
@@ -464,7 +463,7 @@ Installs created before the first user was automatically made `super_admin` may 
 docker compose exec web bin/rails runner 'User.find_by!(email: "you@example.com").update!(role: :super_admin)'
 ```
 
-After that, you can promote other users at `/admin/users`. See section 3.5 of the [OIDC guide](oidc.md) for the console variant.
+After that, you can promote other users at `/admin/users`.
 
 ## How to change which updates your app receives
 
@@ -518,7 +517,7 @@ Each backup is a folder under `backups/<version>/<date>-<manual|scheduled>/` wit
 
 `db.dump` is written with the PostgreSQL tools in the Sure image (version 17), which older tools can't read. Restore it with `sure-backup` (`restore`, `recover` or `restore.sh`), not with `pg_restore` from the `db` container.
 
-Uploaded files are backed up from the `app-storage` volume. If you store them in S3, Cloudflare R2, Google Cloud Storage or another bucket (`ACTIVE_STORAGE_SERVICE`), they are not in the backup; use your provider's versioning or replication for those.
+Uploaded files are always stored on local disk in the `app-storage` volume, and the backup includes them.
 
 The version comes from the running app: every time `web` starts it records its version, and a backup is refused if the database schema no longer matches it.
 

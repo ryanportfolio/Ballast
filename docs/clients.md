@@ -2,8 +2,8 @@
 
 Sure is centered on a Rails server. Every client connects to that server and
 uses the same accounts, users, authentication rules, and financial data. A
-client can be a browser, a native app, a mobile app, an automation script, or an
-LLM agent using Sure's MCP endpoint.
+client can be a browser, an automation script, or an LLM agent using Sure's MCP
+endpoint. Ballast has no mobile or desktop app.
 
 Use this guide to choose the right entry point for a person, device, or
 integration.
@@ -13,8 +13,6 @@ integration.
 | Client | Best for | Status | Entry point |
 | --- | --- | --- | --- |
 | Web app | Full everyday use, administration, and self-hosted access from any modern browser. | Primary client | Run the Rails app and visit the server URL. For local development, use `bin/dev` and open `http://localhost:3000`. |
-| macOS desktop app | People who want Sure in a native Mac window with system app chrome and deep-link handling. | Native shell around the web app | See [Sure Desktop](../desktop/README.md). |
-| Mobile app | Basic mobile access on iOS and Android, currently focused on login and account balances. | Flutter companion app | See [Sure Mobile](../mobile/README.md). |
 | LLM agents and assistants | Claude Desktop, GPT agents, local agents, or custom tools that need structured access to Sure data. | MCP endpoint for external AI clients | See [MCP Server for External AI Assistants](hosting/mcp.md). |
 | Custom API clients | Scripts, services, importer experiments, dashboards, or other integrations. | HTTP API | See the OpenAPI spec at [docs/api/openapi.yaml](api/openapi.yaml) and endpoint guides such as [docs/api/transactions.md](api/transactions.md). |
 
@@ -22,8 +20,7 @@ integration.
 
 The web app is the complete Sure experience. It is the right default when a
 person wants to use Sure directly, manage settings, connect providers, review
-transactions, or work with features that may not yet be available in native
-clients.
+transactions, or work with features that the API and MCP do not cover.
 
 For self-hosting, start with the [Docker hosting guide](hosting/docker.md). For
 local development, run the Rails app and visit the local server URL:
@@ -35,35 +32,6 @@ bin/dev
 ```text
 http://localhost:3000
 ```
-
-The web app also serves as the surface rendered by the macOS desktop app.
-
-## macOS desktop app
-
-The macOS desktop app is a Tauri 2 shell that renders the full Sure web app in a
-native Mac window. On first launch, it asks for the Sure server URL, checks the
-server health endpoint, and then loads the normal sign-in flow.
-
-Use it when someone wants a desktop app experience without a separate desktop
-data model. It uses the same server, authentication, MFA, and permissions as the
-browser.
-
-See [desktop/README.md](../desktop/README.md) for development, release, unsigned
-install, deep link, and notarization notes.
-
-## Mobile app
-
-The mobile app is a Flutter companion app for iOS and Android. It connects to a
-Sure server through the API and currently focuses on core mobile flows such as
-authentication and viewing account balances.
-
-Use it when someone needs phone access and the feature set they need is
-available in the mobile client. For the full application surface, use the web
-app.
-
-See [mobile/README.md](../mobile/README.md) for setup and
-[mobile/docs/TECHNICAL_GUIDE.md](../mobile/docs/TECHNICAL_GUIDE.md) for deeper
-implementation notes.
 
 ## LLM agents and MCP clients
 
@@ -88,9 +56,7 @@ Custom clients can call Sure's HTTP API directly. This is the right path for
 scripts, services, import experiments, dashboards, and integrations that do not
 need an MCP-compatible agent interface.
 
-API requests can authenticate with a user-generated `X-Api-Key` header, or with
-OAuth2 bearer tokens from Sure's Doorkeeper authorization server for registered
-app clients.
+API requests authenticate with a user-generated `X-Api-Key` header.
 
 Start with the OpenAPI spec at [docs/api/openapi.yaml](api/openapi.yaml) and
 endpoint guides such as [docs/api/transactions.md](api/transactions.md).
@@ -98,20 +64,16 @@ endpoint guides such as [docs/api/transactions.md](api/transactions.md).
 ## Choosing a client
 
 - Start with the web app when a person needs the complete Sure experience.
-- Use the macOS desktop app when they want the web app wrapped in a native Mac
-  application.
-- Use the mobile app for iOS or Android access to supported mobile flows.
 - Use MCP for LLM agents and assistant runtimes.
 - Use the HTTP API for custom software integrations.
 
-All clients should connect to a Sure server the user controls or trusts. Native,
-mobile, API, and MCP clients do not replace the server; they are different ways
-to access it.
+All clients should connect to a Sure server the user controls or trusts. API and
+MCP clients do not replace the server; they are different ways to access it.
 
-## Native reporting and device continuity
+## Cash flow reporting through the API
 
 Read monthly server-calculated totals and the daily spending comparison using
-[`GET /api/v1/cash_flow`](api/openapi.yaml). Native clients should
+[`GET /api/v1/cash_flow`](api/openapi.yaml). API clients should
 use these values instead of rebuilding Sure's reporting rules from transactions.
 
 Structural node `name` values are fallback labels; clients should localize
@@ -132,9 +94,8 @@ spending can therefore differ from the gross monthly figures, while net savings
 agrees. Surplus and deficit nodes balance the central flow. Clients own layout,
 formatting, and structural colors; all financial aggregation stays on Sure.
 
-The public endpoint uses the standard OAuth/API-key authentication and does not
-accept browser sessions. Responses are private and not HTTP-cacheable; native
-clients retain their own authenticated, identity-scoped offline cache.
+The public endpoint uses the standard API-key authentication and does not
+accept browser sessions. Responses are private and not HTTP-cacheable.
 
 The Turbo dashboard fetches `/dashboard/cash_flow` through a normal web controller,
 with session authentication, onboarding checks, and the current user's preview
@@ -144,20 +105,4 @@ the graph representation and aggregation without sharing authentication paths.
 
 The web dashboard keeps its original Sankey unchanged and renders the new
 server-calculated chart directly below it only for users with preview features
-enabled. See
-[Preview surveys and event capture](hosting/preview-feedback.md) for deployment
-configuration, survey behavior, and event definitions. Sankey is the first
-implementation of this feedback pattern.
-
-Push registration accepts an optional `device_key`: 32 securely random bytes
-encoded as 64 lowercase hex characters, generated independently per server and
-stored only in secure device storage. Preserve it across user logout. The server
-stores only its SHA-256 digest. If the APNs token already belongs to another user,
-a matching key allows atomic replacement with a **new subscription ID**, making
-old queued deliveries and deletes harmless. A missing or wrong proof returns 422.
-An existing registration without a digest must first be enrolled by its original
-owner or removed by that owner; knowing the APNs token alone never authorizes transfer.
-
-## FinanceKit device publisher
-
-The native Apple client can enroll as a FinanceKit device publisher, map explicitly selected Wallet accounts, and upload an ordered local outbox during foreground or iOS-granted background execution. Setup and repair use normal Sure authentication; uploads use a revocable one-purpose credential that cannot read Sure data. Stable server-issued account lineages preserve identity across publisher replacement. See the [OpenAPI reference](api/openapi.yaml) and [operator guide](hosting/financekit.md).
+enabled.
