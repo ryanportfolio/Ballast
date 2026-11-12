@@ -1,0 +1,32 @@
+<%# locals: (assistant_message:) %>
+
+<div id="<%= dom_id(assistant_message) %>">
+  <% if assistant_message.pending? %>
+    <div class="flex items-start gap-3 mb-6"
+         data-chat-target="pendingResponse"
+         data-pending-response-created-at="<%= assistant_message.created_at&.iso8601 %>"
+         data-pending-response-timeout-url="<%= report_timeout_chat_message_path(assistant_message.chat, assistant_message) %>">
+      <%= render "chats/ai_avatar" %>
+      <p id="<%= dom_id(assistant_message, :status) %>" class="text-sm text-secondary animate-pulse"><%= t("chats.thinking") %></p>
+    </div>
+  <% elsif assistant_message.reasoning? %>
+    <details class="group mb-1">
+      <summary class="flex items-center gap-2">
+        <p class="text-secondary text-sm"><%= t(".assistant_reasoning") %></p>
+        <%= icon("chevron-down", class: "group-open:transform group-open:rotate-180") %>
+      </summary>
+
+      <div class="prose prose--ai-chat"><%= markdown(assistant_message.content) %></div>
+    </details>
+  <% else %>
+    <% if assistant_message.chat.debug_mode? && assistant_message.tool_calls.any? %>
+      <%= render "assistant_messages/tool_calls", message: assistant_message %>
+    <% end %>
+
+    <div class="flex items-start gap-3 mb-6">
+      <%= render "chats/ai_avatar" %>
+
+      <div class="prose prose--ai-chat"><%= markdown(assistant_message.content) %></div>
+    </div>
+  <% end %>
+</div>

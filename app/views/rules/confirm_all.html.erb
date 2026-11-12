@@ -1,0 +1,44 @@
+<%= render DS::Dialog.new do |dialog| %>
+  <% dialog.with_header(title: t("rules.apply_all.confirm_title")) %>
+
+  <% dialog.with_body do %>
+    <p class="text-secondary text-sm mb-4">
+      <%= t("rules.apply_all.confirm_message",
+            count: @rules.count,
+            transactions: @total_affected_count) %>
+    </p>
+
+    <% if @rules.any? { |r| r.actions.any? { |a| a.action_type == "auto_categorize" } } %>
+      <div class="mb-4">
+        <%= render DS::Alert.new(title: t("rules.apply_all.ai_cost_title"), variant: :info) do %>
+          <% if @estimated_cost.present? %>
+            <p>
+              <%= t("rules.apply_all.ai_cost_message", transactions: @total_affected_count) %>
+              <%= t("rules.apply_all.estimated_cost", cost: sprintf("%.4f", @estimated_cost)) %>
+            </p>
+          <% else %>
+            <p>
+              <%= t("rules.apply_all.ai_cost_message", transactions: @total_affected_count) %>
+              <% if @selected_model.present? %>
+                <span class="font-semibold"><%= t("rules.apply_all.cost_unavailable_model", model: @selected_model) %></span>
+              <% else %>
+                <span class="font-semibold"><%= t("rules.apply_all.cost_unavailable_no_provider") %></span>
+              <% end %>
+              <%= t("rules.apply_all.cost_warning") %>
+            </p>
+          <% end %>
+          <p>
+            <%= link_to t("rules.apply_all.view_usage"), settings_llm_usage_path, class: "text-link underline" %>
+          </p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%= render DS::Button.new(
+      text: t("rules.apply_all.confirm_button"),
+      href: apply_all_rules_path,
+      method: :post,
+      full_width: true,
+      data: { turbo_frame: "_top" }) %>
+  <% end %>
+<% end %>

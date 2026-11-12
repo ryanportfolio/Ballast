@@ -1,0 +1,319 @@
+class Settings::ProvidersController < ApplicationController
+  layout -> { turbo_frame_request? ? "turbo_rails/frame" : "settings" }
+
+  before_action :ensure_admin, only: [ :show, :update, :sync_all, :sync, :connect_form ]
+  before_action :ensure_instance_settings_manager, only: :update
+  before_action :set_encryption_warning_context, only: [ :show, :connect_form ]
+
+  def show
+    @breadcrumbs = [
+      [ t("breadcrumbs.home"), root_path ],
+      [ t("breadcrumbs.bank_sync"), nil ]
+    ]
+
+    prepare_show_context
+  rescue ActiveRecord::Encryption::Errors::Configuration => e
+    Rails.logger.error("Active Record Encryption not configured: #{e.message}")
+    @encryption_error = true
+  end
+
+  def update
+    # Build index of valid configurable fields with their metadata
+    Provider::Factory.ensure_adapters_loaded
+    valid_fields = {}
+    Provider::ConfigurationRegistry.all.each do |config|
+      config.fields.each do |field|
+        valid_fields[field.setting_key.to_s] = field
+      end
+    end
+
+    updated_fields = []
+
+    # Perform all updates within a transaction for consistency
+    Setting.transaction do
+      provider_params.each do |param_key, param_value|
+        # Only process keys that exist in the configuration registry
+        field = valid_fields[param_key.to_s]
+        next unless field
+
+        # Clean the value and convert blank/empty strings to nil
+        value = param_value.to_s.strip
+        value = nil if value.empty?
+
+        # For secret fields only, skip placeholder values to prevent accidental overwrite
+        if field.secret && value == "********"
+          next
+        end
+
+        key_str = field.setting_key.to_s
+
+        # Check if the setting is a declared field in setting.rb
+        # Use method_defined? to check if the setter actually exists on the singleton class,
+        # not just respond_to? which returns true for dynamic fields due to respond_to_missing?
+        if Setting.singleton_class.method_defined?("#{key_str}=")
+          # If it's a declared field (e.g., openai_model), set it directly.
+          # This is safe and uses the proper setter.
+          Setting.public_send("#{key_str}=", value)
+        else
+          # If it's a dynamic field, set it as an individual entry
+          # Each field is stored independently, preventing race conditions
+          Setting[key_str] = value
+        end
+
+        updated_fields << param_key
+      end
+    end
+
+    if updated_fields.any?
+      # Reload provider configurations if needed
+      reload_provider_configs(updated_fields)
+
+      redirect_to settings_providers_path, notice: t(".updated_successfully")
+    else
+      redirect_to settings_providers_path, notice: t(".no_changes")
+    end
+  rescue => error
+    Rails.logger.error("Failed to update provider settings: #{error.class} - #{error.message}")
+    flash.now[:alert] = "Failed to update provider settings. Please try again."
+    prepare_show_context
+    render :show, status: :unprocessable_entity
+  end
+
+  def sync_all
+    family = Current.family
+    now = Time.current
+
+    updated_count = Family
+      .where(id: family.id)
+      .where("last_sync_all_attempted_at IS NULL OR last_sync_all_attempted_at <= ?", 30.seconds.ago)
+      .update_all(last_sync_all_attempted_at: now, updated_at: now)
+
+    if updated_count.zero?
+      return redirect_to settings_providers_path, notice: t("settings.providers.sync_all_recently")
+    end
+
+    SyncAllProvidersJob.perform_later(family.id)
+    redirect_to settings_providers_path, notice: t("settings.providers.sync_all_in_progress")
+  end
+
+  def sync
+    provider_key  = params[:provider_key]
+    syncable_type = PANEL_SYNCABLE_TYPES[provider_key]
+    return redirect_to settings_providers_path unless syncable_type
+
+    items = syncable_type.constantize.where(family: Current.family).syncable
+    scheduled = items.reject(&:syncing?)
+    scheduled.each(&:sync_later)
+
+    notice_key = scheduled.any? ? "settings.providers.sync_provider_in_progress" : "settings.providers.sync_provider_no_items"
+    redirect_to settings_providers_path, notice: t(notice_key)
+  end
+
+  def connect_form
+    provider_key = params[:provider_key]
+
+    # Not FAMILY_PANELS_BY_KEY[provider_key]: Brakeman reads that as the param
+    # choosing the partial to render.
+    panel = FAMILY_PANELS.find { |p| p[:key] == provider_key }
+    if panel
+      @panel_key     = panel[:key]
+      @panel_partial = panel[:partial]
+      @panel_title   = panel[:title]
+      load_provider_items(provider_key)
+      return render :connect_form
+    end
+
+    Provider::Factory.ensure_adapters_loaded
+    config = Provider::ConfigurationRegistry.all.find { |c| c.provider_key.to_s == provider_key }
+    if config
+      unless Current.user.manages_instance_settings?
+        return redirect_to settings_providers_path, alert: t("settings.providers.not_authorized")
+      end
+
+      @panel_title           = Provider::Metadata.for(provider_key)[:name] || provider_key.titleize
+      @provider_configuration = config
+      return render :connect_form
+    end
+
+    redirect_to settings_providers_path, alert: t("settings.providers.not_found")
+  rescue ActiveRecord::Encryption::Errors::Configuration
+    redirect_to settings_providers_path, alert: t("settings.providers.encryption_error.title")
+  end
+
+  private
+    def provider_params
+      # Dynamically permit all provider configuration fields
+      Provider::Factory.ensure_adapters_loaded
+      permitted_fields = []
+
+      Provider::ConfigurationRegistry.all.each do |config|
+        config.fields.each do |field|
+          permitted_fields << field.setting_key
+        end
+      end
+
+      params.require(:setting).permit(*permitted_fields)
+    end
+
+    def ensure_admin
+      return if Current.user.admin?
+
+      redirect_to root_path, alert: t("settings.providers.not_authorized")
+    end
+
+    # Registry-driven configurations (e.g. a provider:global adapter) are stored in the global
+    # Setting and apply to every family on the instance.
+    def ensure_instance_settings_manager
+      return if Current.user.manages_instance_settings?
+
+      redirect_to settings_providers_path, alert: t("settings.providers.not_authorized")
+    end
+
+    def set_encryption_warning_context
+      @provider_setup_encryption_warning = Rails.configuration.app_mode.self_hosted? &&
+        !ActiveRecordEncryptionConfig.explicitly_configured?
+    end
+
+    # Reload provider configurations after settings update
+    def reload_provider_configs(updated_fields)
+      # Build a set of provider keys that had fields updated
+      updated_provider_keys = Set.new
+
+      # Look up the provider key directly from the configuration registry
+      updated_fields.each do |field_key|
+        Provider::ConfigurationRegistry.all.each do |config|
+          field = config.fields.find { |f| f.setting_key.to_s == field_key.to_s }
+          if field
+            updated_provider_keys.add(field.provider_key)
+            break
+          end
+        end
+      end
+
+      # Reload configuration for each updated provider
+      updated_provider_keys.each do |provider_key|
+        adapter_class = Provider::ConfigurationRegistry.get_adapter_class(provider_key)
+        adapter_class&.reload_configuration
+      end
+    end
+
+    # Hardcoded family-scoped panels — provider connections are managed through
+    # their own models (such as SimplefinItem) rather than global
+    # settings, so they need custom UI per-provider for connection management,
+    # status display, and sync actions. The configuration registry excludes
+    # them (see prepare_show_context).
+    FAMILY_PANELS = [
+      { key: "simplefin",      title: "SimpleFIN",       turbo_id: "simplefin",      partial: "simplefin_panel" }
+    ].freeze
+
+    FAMILY_PANEL_KEYS = FAMILY_PANELS.map { |p| p[:key] }.freeze
+    FAMILY_PANELS_BY_KEY = FAMILY_PANELS.index_by { |p| p[:key] }.freeze
+
+    # Maps panel key → ActiveRecord model name for sync health queries
+    PANEL_SYNCABLE_TYPES = {
+      "simplefin"      => "SimplefinItem"
+    }.freeze
+
+    def load_provider_items(provider_key)
+      case provider_key
+      when "simplefin"
+        @simplefin_items = Current.family.simplefin_items.ordered
+      end
+    end
+
+    # Prepares instance vars needed by the show view and partials
+    def prepare_show_context
+      # Load all provider configurations (exclude family-scoped panels, which have their own UI below).
+      # They edit instance-wide credentials, so only those who may change them see them.
+      Provider::Factory.ensure_adapters_loaded
+      @provider_configurations = Provider::ConfigurationRegistry.all.reject do |config|
+        FAMILY_PANEL_KEYS.any? { |key| config.provider_key.to_s.casecmp(key).zero? }
+      end
+      @provider_configurations = [] unless Current.user.manages_instance_settings?
+
+      # Providers page only needs to know whether any SimpleFIN connections exist with valid credentials
+      @simplefin_items = Current.family.simplefin_items.where.not(access_url: [ nil, "" ]).ordered.select(:id)
+
+      @provider_sync_health = compute_provider_sync_health(family_panel_items)
+
+      entries = build_provider_entries
+
+      @connected        = entries.select { |e| e[:summary][:status] == :ok }
+      @needs_attention  = entries.select { |e| [ :warn, :err ].include?(e[:summary][:status]) }
+      @available        = entries.select { |e| e[:summary][:status] == :off }
+      @can_sync_all = (@connected + @needs_attention).any? { |entry| entry[:sync_supported] != false }
+
+      @health = view_context.provider_health_strip(connected: @connected, needs_attention: @needs_attention)
+    end
+
+    # Maps each family panel key to the loaded item collection. Used by
+    # compute_provider_sync_health and build_provider_entries to avoid relying
+    # on instance_variable_get for control flow.
+    def family_panel_items
+      {
+        "simplefin"      => @simplefin_items
+      }
+    end
+
+    # Returns a hash mapping provider key → { error:, last_synced_at:, stale: }
+    # by querying the latest sync per item for each family panel provider.
+    def compute_provider_sync_health(items_map)
+      PANEL_SYNCABLE_TYPES.each_with_object({}) do |(key, syncable_type), health|
+        ids = items_map[key]&.map(&:id)&.compact
+        next if ids.blank?
+
+        health[key] = sync_health_for(syncable_type, ids)
+      end
+    end
+
+    # Determines error/stale status and last successful sync time for a set of items.
+    def sync_health_for(syncable_type, item_ids)
+      # Use window function to get the single latest sync per item (same pattern as ProviderConnectionStatus)
+      ranked_subq = Sync
+        .where(syncable_type: syncable_type, syncable_id: item_ids)
+        .select("syncs.*, ROW_NUMBER() OVER (PARTITION BY syncable_id ORDER BY created_at DESC, id DESC) AS sync_rank")
+
+      latest_per_item = Sync.from(ranked_subq, :syncs).where("sync_rank = 1").to_a
+
+      has_error = latest_per_item.any? { |s| s.failed? || s.stale? }
+
+      last_synced = Sync
+        .where(syncable_type: syncable_type, syncable_id: item_ids, status: "completed")
+        .maximum(:completed_at)
+
+      stale = !has_error && last_synced.present? && last_synced < 24.hours.ago
+
+      { error: has_error, last_synced_at: last_synced, stale: stale }
+    end
+
+    # Builds a unified list of provider entries (registry-driven configurations
+    # and hardcoded family panels) with pre-computed status, sorted
+    # alphabetically by display title. Each entry carries enough data for the
+    # view to render either a provider_form or a family panel partial.
+    def build_provider_entries
+      configuration_entries = @provider_configurations.map do |config|
+        meta = Provider::Metadata.for(config.provider_key)
+        {
+          provider_key: config.provider_key.to_s,
+          title: meta[:name] || config.provider_key.to_s.titleize,
+          configuration: config,
+          maturity: meta[:maturity],
+          summary: view_context.provider_summary(config.provider_key)
+        }
+      end
+
+      family_entries = FAMILY_PANELS.map do |panel|
+        {
+          provider_key: panel[:key],
+          title: panel[:title],
+          turbo_id: panel[:turbo_id],
+          partial: panel[:partial],
+          auto_open_param: panel[:auto_open],
+          maturity: Provider::Metadata.for(panel[:key])[:maturity],
+          summary: view_context.provider_summary(panel[:key])
+        }
+      end
+
+      (configuration_entries + family_entries).sort_by { |entry| entry[:title].downcase }
+    end
+end

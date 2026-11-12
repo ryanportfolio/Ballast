@@ -1,0 +1,20 @@
+---
+hu:
+  sessions:
+    create:
+      invalid_credentials: Érvénytelen e-mail cím vagy jelszó.
+      local_login_disabled: A helyi jelszavas bejelentkezés le van tiltva.
+    destroy:
+      logout_successful: Sikeresen kijelentkeztél.
+    new:
+      email: E-mail cím
+      email_placeholder: te@pelda.hu
+      forgot_password: Elfelejtetted a jelszavadat?
+      password: Jelszó
+      submit: Bejelentkezés
+      title: Sure
+      password_placeholder: Add meg a jelszavadat
+      local_login_admin_only: A helyi bejelentkezés csak rendszergazdák számára elérhető.
+      no_auth_methods_enabled: Jelenleg nincs engedélyezett hitelesítési módszer. Kérjük, lépj kapcsolatba egy rendszergazdával.
+      demo_banner_title: "Demó mód aktív"
+      demo_banner_message: "Ez egy bemutató környezet. A bejelentkezési adatok előre ki vannak töltve a kényelmed érdekében. Kérjük, ne adj meg valódi vagy érzékeny adatokat."

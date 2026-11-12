@@ -1,0 +1,59 @@
+@layer base {
+  /* Bind CSS color-scheme to Sure's data-theme attribute so the CSS
+     `light-dark()` function resolves to the side that matches the active
+     theme (used by DS::Pill and any future tokens that opt in). */
+  :root {
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  button {
+    @apply cursor-pointer;
+
+    /* Canonical keyboard-focus indicator (#2136) — the same recipe as
+       `.focus-ring` in components.css, applied here so every <button> gets
+       it by default. This used to be a `ring-2 ring-offset-2` box-shadow,
+       which double-painted alongside the `.focus-ring` outline on DS
+       primitives (Buttonish, tabs, popover, tooltip): box-shadow and
+       outline are independent properties, so the components-layer class
+       could never clear it. Transparent resting outline for the same
+       transition reasoning as `.focus-ring`. */
+    outline: 2px solid transparent;
+    outline-offset: 0;
+
+    &:focus-visible {
+      outline-color: var(--color-focus-ring);
+    }
+  }
+
+  hr {
+    @apply text-gray-200;
+  }
+
+  /* We control the sizing through DialogComponent, so reset this value */
+  dialog:modal {
+    max-width: 100dvw;
+    max-height: 100dvh;
+  }
+
+  details>summary::-webkit-details-marker {
+    @apply hidden;
+  }
+
+  details>summary {
+    @apply list-none;
+  }
+
+  input[type='radio'] {
+    @apply border-gray-300 text-indigo-600 focus:ring-indigo-600;
+    /* Default light mode */
+
+    @variant theme-dark {
+      /* Dark mode radio button base and checked styles */
+      @apply border-gray-600 bg-gray-700 checked:bg-blue-500 focus:ring-blue-500 focus:ring-offset-gray-800;
+    }
+  }
+}

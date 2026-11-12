@@ -1,0 +1,20 @@
+---
+es:
+  sessions:
+    create:
+      invalid_credentials: Correo electrónico o contraseña no válidos.
+      local_login_disabled: El inicio de sesión con contraseña local está desactivado.
+    destroy:
+      logout_successful: Has cerrado sesión correctamente.
+    new:
+      email: Dirección de correo electrónico
+      email_placeholder: tu@ejemplo.com
+      forgot_password: ¿Has olvidado tu contraseña?
+      password: Contraseña
+      submit: Iniciar sesión
+      title: Sure
+      password_placeholder: Introduce tu contraseña
+      local_login_admin_only: El inicio de sesión local está restringido a administradores.
+      no_auth_methods_enabled: No hay métodos de autenticación habilitados actualmente. Por favor, contacta con un administrador.
+      demo_banner_title: Modo de demostración activo
+      demo_banner_message: Este es un entorno de demostración. Las credenciales de acceso se han rellenado automáticamente para tu comodidad. Por favor, no introduzcas información real o sensible.

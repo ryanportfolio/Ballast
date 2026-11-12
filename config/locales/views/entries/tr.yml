@@ -1,0 +1,26 @@
+---
+tr:
+  entries:
+    create:
+      success: Kayıt oluşturuldu
+    destroy:
+      success: Kayıt silindi
+    empty:
+      description: Bir kayıt eklemeyi, filtreleri düzenlemeyi veya aramanızı geliştirmeyi
+        deneyin
+      title: Kayıt bulunamadı
+    loading:
+      loading: Kayıtlar yükleniyor...
+    protection:
+      description: Bu kayıttaki düzenlemeleriniz sağlayıcı senkronizasyonu tarafından
+        üzerine yazılmayacaktır.
+      locked_fields_label: 'Kilitli alanlar:'
+      title: Senkronizasyondan korunuyor
+      tooltip: Senkronizasyondan korunuyor
+      unlock_button: Senkronizasyonun güncellemesine izin ver
+      unlock_confirm: Senkronizasyonun bu kaydı güncellemesine izin verilsin mi? Değişiklikleriniz
+        bir sonraki senkronizasyonda üzerine yazılabilir.
+    unlock:
+      success: Kayıt kilidi açıldı. Bir sonraki senkronizasyonda güncellenebilir.
+    update:
+      success: Kayıt güncellendi

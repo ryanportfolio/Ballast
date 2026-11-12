@@ -1,0 +1,178 @@
+module SettingsHelper
+  SETTINGS_ORDER = [
+    # General section
+    { name: -> { t("settings.settings_nav.accounts_label") }, path: :accounts_path },
+    { name: -> { t("settings.settings_nav.bank_sync_label") }, path: :settings_providers_path, condition: :admin_user? },
+    { name: -> { t("settings.settings_nav.preferences_label") }, path: :settings_preferences_path },
+    { name: -> { t("settings.settings_nav.appearance_label") }, path: :settings_appearance_path },
+    { name: -> { t("settings.settings_nav.profile_label") }, path: :settings_profile_path },
+    { name: -> { t("settings.settings_nav.security_label") }, path: :settings_security_path },
+    # Transactions section
+    { name: -> { t("settings.settings_nav.categories_label") }, path: :categories_path },
+    { name: -> { t("settings.settings_nav.tags_label") }, path: :tags_path },
+    { name: -> { t("settings.settings_nav.rules_label") }, path: :rules_path },
+    { name: -> { t("settings.settings_nav.merchants_label") }, path: :family_merchants_path },
+    { name: -> { t("settings.settings_nav.recurring_transactions_label") }, path: :recurring_transactions_path },
+    { name: -> { t("settings.settings_nav.statement_vault_label") }, path: :account_statements_path, condition: :admin_user? },
+    # Advanced section
+    { name: -> { t("settings.settings_nav.ai_prompts_label") }, path: :settings_ai_prompts_path, condition: :admin_user? },
+    { name: -> { t("settings.settings_nav.classifier_label") }, path: :settings_classifier_path, condition: :admin_user? },
+    { name: -> { t("settings.settings_nav.llm_usage_label") }, path: :settings_llm_usage_path, condition: :admin_user? },
+    { name: -> { t("settings.settings_nav.api_key_label") }, path: :settings_api_keys_path, condition: :admin_user? },
+    { name: -> { t("settings.settings_nav.self_hosting_label") }, path: :settings_hosting_path, condition: :self_hosted_and_admin? },
+    { name: -> { t("settings.settings_nav.imports_label") }, path: :imports_path, condition: :admin_user? },
+    { name: -> { t("settings.settings_nav.exports_label") }, path: :family_exports_path, condition: :admin_user? },
+    # More section
+    { name: -> { t("settings.settings_nav.guides_label") }, path: :settings_guides_path },
+    { name: -> { t("settings.settings_nav.whats_new_label") }, path: :changelog_path },
+    { name: -> { t("settings.settings_nav.feedback_label") }, path: :feedback_path }
+  ]
+
+  def adjacent_setting(current_path, offset)
+    visible_settings = SETTINGS_ORDER.select { |setting| setting[:condition].nil? || send(setting[:condition]) }
+    current_index = visible_settings.index { |setting| send(setting[:path]) == current_path }
+    return nil unless current_index
+
+    adjacent_index = current_index + offset
+    return nil if adjacent_index < 0 || adjacent_index >= visible_settings.size
+
+    adjacent = visible_settings[adjacent_index]
+
+    render partial: "settings/settings_nav_link_large", locals: {
+      path: send(adjacent[:path]),
+      direction: offset > 0 ? "next" : "previous",
+      title: setting_name(adjacent)
+    }
+  end
+
+  def settings_section(title: nil, subtitle: nil, collapsible: false, open: true, auto_open_param: nil, status: nil, meta: nil, actions: nil, badge: nil, &block)
+    content = capture(&block)
+    render partial: "settings/section", locals: { title: title, subtitle: subtitle, content: content, collapsible: collapsible, open: open, auto_open_param: auto_open_param, status: status, meta: meta, actions: actions, badge: badge }
+  end
+
+  def provider_summary(provider_key)
+    key = provider_key.to_s.downcase
+
+    case key
+    when "simplefin"
+      return { status: :off } unless @simplefin_items&.any?
+      sync_based_summary(key)
+    else
+      { status: :off }
+    end
+  end
+
+  def settings_nav_footer
+    previous_setting = adjacent_setting(request.path, -1)
+    next_setting = adjacent_setting(request.path, 1)
+
+    content_tag :div, class: "hidden md:flex flex-row justify-between gap-4" do
+      concat(previous_setting)
+      concat(next_setting)
+    end
+  end
+
+  def settings_nav_footer_mobile
+    previous_setting = adjacent_setting(request.path, -1)
+    next_setting = adjacent_setting(request.path, 1)
+
+    content_tag :div, class: "md:hidden flex flex-col gap-4 pb-[env(safe-area-inset-bottom)]" do
+      concat(previous_setting)
+      concat(next_setting)
+    end
+  end
+
+  def yahoo_finance_health_presentation(status)
+    status = status.to_sym if status.respond_to?(:to_sym)
+    status = :unknown unless %i[healthy rate_limited unavailable unknown].include?(status)
+
+    presentation = {
+      status_class: {
+        healthy: "bg-success",
+        rate_limited: "bg-warning",
+        unavailable: "bg-destructive",
+        unknown: "bg-surface-inset"
+      }.fetch(status),
+      status_text: t("settings.hostings.yahoo_finance_settings.status_#{status}")
+    }
+
+    presentation[:alert] = case status
+    when :rate_limited
+      {
+        title: t("settings.hostings.yahoo_finance_settings.rate_limited_title"),
+        message: t("settings.hostings.yahoo_finance_settings.rate_limited_message"),
+        variant: :warning
+      }
+    when :unavailable
+      {
+        title: t("settings.hostings.yahoo_finance_settings.unavailable_title"),
+        message: t("settings.hostings.yahoo_finance_settings.unavailable_message"),
+        variant: :warning
+      }
+    end
+
+    presentation
+  end
+
+  # Below this many synced accounts, the per-row pills already give the user
+  # enough at-a-glance signal and the strip is redundant chrome.
+  HEALTH_STRIP_MIN_ACCOUNTS = 10
+
+  # Slim health-strip data for the providers index. Pulls counts from the
+  # already-resolved entry summaries plus the family's distinct synced-account
+  # count for the trailing stat. Returns a hash consumed by the
+  # `settings/providers/_health_strip` partial, or nil when the family has
+  # fewer than HEALTH_STRIP_MIN_ACCOUNTS connected accounts.
+  def provider_health_strip(connected:, needs_attention:)
+    accounts_count = Current.family.accounts.joins(:account_providers).distinct.count
+    return nil if accounts_count < HEALTH_STRIP_MIN_ACCOUNTS
+
+    active_entries = connected + needs_attention
+    last_synced_at = active_entries.map { |e| e[:summary][:last_synced_at] }.compact.max
+
+    {
+      connected:        active_entries.size,
+      needs_attention:  needs_attention.size,
+      accounts_syncing: accounts_count,
+      last_synced_at:   last_synced_at
+    }
+  end
+
+  # Strips the leading "about " from `time_ago_in_words` so copy reads as
+  # "Synced 6 hours ago" instead of "Synced about 6 hours ago".
+  def concise_time_ago(time)
+    time_ago_in_words(time).sub(/\Aabout /, "")
+  end
+
+  private
+    def sync_based_summary(provider_key)
+      health = @provider_sync_health&.dig(provider_key) || {}
+      last_synced_at = health[:last_synced_at]
+
+      base = if health[:error]
+        { status: :err, meta: t("settings.providers.meta.sync_error") }
+      elsif health[:stale]
+        { status: :warn, meta: t("settings.providers.meta.no_recent_sync") }
+      elsif last_synced_at.present?
+        { status: :ok, meta: t("settings.providers.meta.last_synced", time: concise_time_ago(last_synced_at)) }
+      else
+        { status: :ok }
+      end
+
+      base.merge(last_synced_at: last_synced_at)
+    end
+
+    def setting_name(setting)
+      name = setting[:name]
+      name.respond_to?(:call) ? instance_exec(&name) : name
+    end
+
+    # Helper used by SETTINGS_ORDER conditions
+    def admin_user?
+      Current.user&.admin?
+    end
+
+    def self_hosted_and_admin?
+      self_hosted? && admin_user?
+    end
+end

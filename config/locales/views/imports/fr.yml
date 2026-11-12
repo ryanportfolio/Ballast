@@ -1,0 +1,284 @@
+---
+fr:
+  import:
+    cleans:
+      show:
+        all_rows: Toutes les lignes
+        data_cleaned: Vos données ont été nettoyées
+        description: Modifiez vos données dans le tableau ci-dessous. Les cellules rouges sont invalides.
+        error_rows: Lignes d'erreur
+        errors_notice: Vous avez des erreurs dans vos données. Survolez l'erreur pour voir les détails.
+        errors_notice_mobile: Vous avez des erreurs dans vos données. Cliquez sur l'icône d'aide de l'erreur pour voir les détails.
+        next_step: Étape suivante
+        not_configured: Veuillez configurer votre importation avant de continuer.
+        title: Nettoyez vos données
+    configurations:
+      account_import:
+        apply_configuration: Appliquer la configuration
+        balance: Solde
+        balance_date: Date du solde
+        currency: Devise
+        date_format: Format des dates
+        default: Par défaut
+        entity_type: Type d'entité
+        leave_empty: Laisser vide
+        name: Nom
+        select_format: Sélectionnez le format
+      category_import:
+        button_label: Continuer
+        description: Téléversez un fichier CSV simple (comme celui que nous générons lorsque vous exportez vos données). Nous mapperons automatiquement les colonnes pour vous.
+        instructions: Sélectionnez continuer pour analyser votre CSV et passer à l'étape de nettoyage.
+      merchant_import:
+        button_label: Continuer
+        description: Téléversez un fichier CSV avec vos commerçants. Nous mapperons automatiquement les colonnes pour vous.
+        instructions: Sélectionnez continuer pour analyser votre CSV et passer à l'étape de nettoyage.
+      rule_import:
+        description: Configurez votre importation de règles. Les règles seront créées ou mises à jour en fonction des données CSV.
+        process_button: Traiter les règles
+        process_help: Cliquez sur le bouton ci-dessous pour traiter votre CSV et générer les lignes de règles.
+      show:
+        apply_template: Appliquer le modèle
+        description: Sélectionnez les colonnes qui correspondent à chaque champ dans votre CSV.
+        manually_configure: Configurer manuellement
+        sample_caption: Exemple de données issues de votre CSV importé
+        template_description: Nous avons trouvé la configuration d'un import précédent pour ce compte. Voulez-vous l'appliquer à cet import ?
+        template_found: Configuration modèle trouvée
+        title: Configurez votre importation
+      trade_import:
+        account_label: Compte
+        apply_configuration: Appliquer la configuration
+        buys_are_negative: Les achats sont en quantité négative
+        buys_are_positive: Les achats sont en quantité positive
+        currency_label: Devise
+        date_format_label: Format de date
+        date_label: Date
+        default: Par défaut
+        format_label: Formater
+        leave_empty: Laisser vide
+        name_label: Nom
+        no_security_provider_warning: Le fournisseur de prix des titres n'est pas configuré. Vos importations de transactions boursières fonctionneront, mais Sure ne remplira pas l'historique des prix. Veuillez accéder à vos paramètres pour configurer cela.
+        note_label: Remarque
+        price_label: Prix
+        quantity_label: Quantité
+        select_column: Sélectionner une colonne
+        select_format: Sélectionnez le format
+        stock_exchange_code_label: Code de bourse
+        ticker_label: Ticker
+      transaction_import:
+        account_label: Compte
+        amount_label: Montant
+        amount_type_label: Type de montant
+        amount_type_strategy_label: Stratégie de type de montant
+        apply_configuration: Appliquer la configuration
+        as_amount_type_column: comme colonne de type de montant
+        as_identifier_value: comme valeur d'identifiant
+        category_label: Catégorie
+        currency_label: Devise
+        date_format_label: Format de date
+        date_label: Date
+        default: Par défaut
+        expense_outflow: Dépense (sortie)
+        format_label: Formater
+        income_inflow: Revenu (entrée)
+        incomes_are_negative: Les revenus sont négatifs
+        incomes_are_positive: Les revenus sont positifs
+        leave_empty: Laisser vide
+        name_label: Nom
+        notes_label: Remarques
+        rows_to_skip_label: Ignorer les n premières lignes
+        select_column: Sélectionner une colonne
+        select_convention: Sélectionnez une convention
+        select_format: Sélectionnez le format
+        select_strategy: Sélectionnez une stratégie
+        select_type: Sélectionnez le type
+        select_value: Sélectionner une valeur
+        set: Ensemble
+        tags_label: Balises
+        treat_as_html: Traitez "<span class="font-medium">%{value}</span>" comme
+      update:
+        success: Importation configurée avec succès.
+    confirms:
+      mappings:
+        create_account: Créer un compte
+        csv_mapping_label: "%{mapping} dans le CSV"
+        next: Suivant
+        no_accounts: Vous n'avez pas encore de comptes. Veuillez créer un compte que nous pouvons utiliser pour les lignes non affectées de votre CSV ou retournez à l'étape Nettoyer et fournissez un nom de compte que nous pouvons utiliser.
+        rows_label: Lignes
+        sure_mapping_label: "%{mapping} dans %{product_name}"
+        unassigned_account: Avez-vous besoin de créer un nouveau compte pour les lignes non affectées ?
+      show:
+        account_mapping_description: Affectez tous les comptes de votre fichier importé aux comptes existants. Vous pouvez également ajouter de nouveaux comptes ou les laisser sans catégorie.
+        account_mapping_title: Attribuez vos comptes
+        account_type_mapping_description: Affectez tous les types de comptes importés dans votre fichier
+        account_type_mapping_title: Attribuez vos types de comptes
+        category_mapping_description: Affectez toutes les catégories importées dans votre fichier aux catégories existantes. Vous pouvez également ajouter de nouvelles catégories ou les laisser non catégorisées.
+        category_mapping_title: Attribuez vos catégories
+        invalid_data: Vous avez des données invalides, veuillez les modifier jusqu'à ce que toutes les erreurs soient résolues
+        tag_mapping_description: Affectez toutes les étiquettes importées dans votre fichier aux étiquettes existantes. Vous pouvez également ajouter de nouvelles étiquettes ou les laisser non catégorisées.
+        tag_mapping_title: Attribuez vos étiquettes
+    uploads:
+      show:
+        account_optional_label: Compte (facultatif)
+        browse: Parcourir
+        copy_paste_tab: Copier et coller
+        csv_file_prompt: pour ajouter votre fichier CSV ici
+        csv_invalid: Doit être un CSV valide avec des en-têtes et au moins une ligne de données
+        description: Collez ou téléversez votre fichier CSV ci-dessous. Veuillez examiner les instructions dans le tableau ci-dessous avant de commencer.
+        download_sample_csv: Téléchargez un exemple de fichier CSV
+        drop_csv_subtitle: Votre fichier sera téléchargé automatiquement
+        drop_csv_title: Déposez le CSV pour télécharger
+        instructions_1: Voici un exemple de CSV avec des colonnes disponibles pour l'importation.
+        instructions_2: Votre CSV doit avoir une ligne d'en-tête
+        instructions_3: Vous pouvez nommer vos colonnes comme vous le souhaitez. Vous les associerez à un stade ultérieur.
+        instructions_4: Les colonnes marquées avec une étoile (*) sont des données requises.
+        instructions_5: Pas de virgules, pas de symboles monétaires et pas de parenthèses dans les nombres.
+        multi_account_import: Importation multi-comptes
+        paste_csv_placeholder: Collez le contenu de votre fichier CSV ici
+        title: Importez vos données
+        to_see_format: pour voir le format CSV requis
+        upload_csv_button: Télécharger CSV
+        upload_csv_tab: Télécharger CSV
+  imports:
+    apply_template:
+      no_template_found: Aucun modèle trouvé, veuillez configurer manuellement votre importation.
+      template_applied: Modèle appliqué.
+    cancel:
+      cancelled: Import marqué en échec. Vous pouvez réessayer depuis la page d'import.
+      not_cancellable: Cet import ne peut pas être marqué en échec pour l'instant, sa tâche est peut-être encore en cours. Réessayez après une heure d'inactivité.
+    column_labels:
+      account: Compte
+      amount: Montant
+      category: Catégorie
+      category_color: Couleur
+      category_icon: Icône Lucide
+      category_parent: Catégorie parente
+      currency: Devise
+      date: Date
+      entity_type: Type
+      exchange: Échange
+      merchant_color: Couleur
+      merchant_website: URL du site web
+      name: Nom
+      notes: Remarques
+      price: Prix
+      qty: Quantité
+      tags: Balises
+      ticker: Ticker
+    create:
+      csv_uploaded: CSV téléversé avec succès.
+      file_too_large: Le fichier est trop volumineux. La taille maximale est de %{max_size} Mo.
+      invalid_file_type: Type de fichier invalide. Veuillez téléverser un fichier CSV.
+      missing_upload: Nous n'avons pas reçu votre fichier. Veuillez réessayer de le téléverser.
+    destroy:
+      deleted: Votre importation a été supprimée.
+    dry_run_resources:
+      accounts: Comptes
+      categories: Catégories
+      merchants: Marchands
+      rules: Règles
+      tags: Balises
+      transactions: Opérations
+    empty:
+      message: Aucune importation trouvée.
+    errors:
+      custom_column_requires_inflow: Les importations de colonnes personnalisées nécessitent la sélection d'une colonne d'entrée
+      interrupted: 'Le worker en arrière-plan a été interrompu avant la fin de l''opération. Les données importées ont été annulées : vous pouvez réessayer sans risque.'
+      presumed_lost: 'Marqué en échec après que la tâche en arrière-plan a été présumée perdue. Les données importées ont été annulées : vous pouvez réessayer sans risque.'
+    failure:
+      description: Veuillez vérifier le format de votre fichier, détecter d'éventuelles erreurs et que tous les champs obligatoires sont remplis, puis revenez et réessayez.
+      title: Échec de l'importation
+      try_again: Réessayez
+    importing:
+      back_to_dashboard: Retour au tableau de bord
+      check_status: Vérifier l'état
+      description: Votre importation est en cours. Consultez le menu des importations pour les mises à jour de statut ou cliquez sur « Vérifier le statut » pour actualiser la page pour les mises à jour. N'hésitez pas à continuer à utiliser l'application.
+      title: Importation en cours
+    index:
+      new: Nouvelle importation
+      title: Importations
+    mapping_labels:
+      account: Compte
+      account_type: Type de compte
+      category: Catégorie
+      tag: Étiquette
+    new:
+      description: Importez depuis un outil financier ou téléversez des fichiers de données bruts.
+      import_accounts: Importer les comptes
+      import_categories: Importer les catégories
+      import_merchants: Importer des commerçants
+      import_portfolio: Importer les investissements
+      import_rules: Importer les règles
+      import_transactions: Importer les transactions
+      requires_account: Importez d'abord des comptes pour débloquer cette option.
+      resume: Reprendre %{type}
+      sources: Sources
+      title: Nouvelle importation
+    publish:
+      guest_new_categories_or_tags: Les invités ne peuvent pas créer de catégories ni d'étiquettes. Associez-les à des catégories ou étiquettes existantes, ou laissez-les vides.
+      max_rows_exceeded: Votre importation dépasse le nombre maximal de lignes de %{max}.
+      started: Votre importation a démarré en arrière-plan.
+    ready:
+      back_to_imports: Retour aux importations
+      description: Voici un résumé des nouveaux éléments qui seront ajoutés à votre compte une fois que vous aurez publié cette importation.
+      publish_import: Publier l'importation
+      summary_count_label: Nombre
+      summary_item_label: Élément
+      title: Confirmez vos données d'importation
+    revert:
+      started: L'importation est rétablie en arrière-plan.
+    revert_failure:
+      description: Veuillez réessayer
+      title: L'annulation de l'importation a échoué
+      try_again: Réessayez
+    show:
+      finalize_mappings: Veuillez finaliser vos correspondances avant de continuer.
+      finalize_upload: Veuillez finaliser le téléversement de votre fichier.
+    steps:
+      clean: Nettoyer
+      configure: Configurer
+      confirm: Confirmer
+      label: Étape %{step}
+      map: Mapper
+      progress: Étape %{step} de %{total}
+      upload: Téléverser
+    success:
+      back_to_dashboard: Retour au tableau de bord
+      description: Vos données importées ont été ajoutées avec succès à l'application et sont maintenant prêtes à être utilisées.
+      title: Importation réussie
+    table:
+      empty: Aucune importation pour l'instant.
+      header:
+        actions: Actions
+        date: Date
+        operation: Opération
+        status: Statut
+      row:
+        actions:
+          confirm_mark_failed: Cet import est inactif depuis un moment et sa tâche en arrière-plan a probablement été interrompue. Des données peuvent avoir été partiellement enregistrées. Le marquer en échec pour pouvoir réessayer peut entraîner des doublons.
+          confirm_revert: Cette opération supprimera les transactions importées, mais vous pourrez toujours consulter et réimporter vos données à tout moment.
+          delete: Supprimer
+          mark_failed: Marquer en échec
+          revert: Revenir
+          view: Afficher
+        status:
+          complete: Terminé
+          failed: Échoué
+          in_progress: En cours
+          revert_failed: Annulation échouée
+          reverting: Annulation en cours
+          uploading: Traitement des lignes
+        type_labels:
+          account_import: Compte
+          category_import: Catégorie
+          merchant_import: Commerçant
+          rule_import: Règle
+          trade_import: Transaction boursière
+          transaction_import: Transaction
+      title: Imports
+    type_labels:
+      account_import: Import de comptes
+      category_import: Import de catégories
+      merchant_import: Importation de commerçants
+      rule_import: Import de règles
+      trade_import: Import de transactions boursières
+      transaction_import: Import de transactions

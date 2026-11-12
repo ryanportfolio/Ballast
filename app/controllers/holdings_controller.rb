@@ -1,0 +1,170 @@
+class HoldingsController < ApplicationController
+  include StreamExtensions
+
+  before_action :set_holding, only: %i[show update destroy unlock_cost_basis remap_security reset_security sync_prices]
+  before_action :require_holding_write_permission!, only: %i[update destroy unlock_cost_basis remap_security reset_security sync_prices]
+
+  def index
+    @account = accessible_accounts.find(params[:account_id])
+    @current_holdings = @account.current_holdings.includes(:security)
+  end
+
+  def show
+    @last_price_updated = @holding.security.prices.maximum(:updated_at)
+  end
+
+  def update
+    # The editor sends the per-share cost, which is what cost_basis stores, so a
+    # price below a cent is not lost to a total rounded to cents. A total is still
+    # accepted and divided by the quantity. Zero is valid for gifted/inherited shares,
+    # an empty field is not: it would lock an unknown basis as 0.
+    per_share_cost = if holding_params.key?(:per_share_cost_basis)
+      holding_params[:per_share_cost_basis].presence&.to_d
+    elsif @holding.qty.positive? && (total_cost_basis = holding_params[:cost_basis].presence)
+      total_cost_basis.to_d / @holding.qty
+    end
+
+    if per_share_cost && per_share_cost >= 0 && @holding.qty.positive?
+      @holding.set_manual_cost_basis!(per_share_cost)
+      flash[:notice] = t(".success")
+    else
+      flash[:alert] = t(".error")
+    end
+
+    # Redirect to account page holdings tab to refresh list and close drawer
+    redirect_to account_path(@holding.account, tab: "holdings")
+  end
+
+  def unlock_cost_basis
+    @holding.unlock_cost_basis!
+    flash[:notice] = t(".success")
+
+    # Redirect to account page holdings tab to refresh list and close drawer
+    redirect_to account_path(@holding.account, tab: "holdings")
+  end
+
+  def destroy
+    if @holding.account.can_delete_holdings?
+      @holding.destroy_holding_and_entries!
+      flash[:notice] = t(".success")
+    else
+      flash[:alert] = t(".cannot_delete")
+    end
+
+    respond_to do |format|
+      format.html { redirect_back_or_to account_path(@holding.account) }
+      format.turbo_stream { render turbo_stream: turbo_stream.action(:redirect, account_path(@holding.account)) }
+    end
+  end
+
+  def remap_security
+    # Combobox returns "TICKER|EXCHANGE|PROVIDER" format
+    parsed = Security.parse_combobox_id(params[:security_id])
+
+    # Validate ticker is present (form has required: true, but can be bypassed)
+    if parsed[:ticker].blank?
+      flash[:alert] = t(".security_not_found")
+      redirect_to account_path(@holding.account, tab: "holdings")
+      return
+    end
+
+    # The user explicitly selected this security from provider search results,
+    # so we use the combobox data directly — no need to re-resolve via provider APIs.
+    new_security = Security.find_or_initialize_by(
+      ticker: parsed[:ticker],
+      exchange_operating_mic: parsed[:exchange_operating_mic]
+    )
+
+    # Honor the user's provider choice (validated by model inclusion check on save)
+    new_security.price_provider = parsed[:price_provider] if parsed[:price_provider].present?
+
+    # Bring it online — user explicitly selected it from provider search results,
+    # so we know the provider can handle it.
+    new_security.offline = false
+    new_security.failed_fetch_count = 0
+    new_security.failed_fetch_at = nil
+
+    new_security.save!
+
+    @holding.remap_security!(new_security)
+
+    # Re-materialize holdings with the new security's prices.
+    # Reload account to avoid stale associations from remap_security!.
+    # The around_action :switch_timezone already sets the family timezone
+    # for this request, so Date.current is correct here.
+    account = Account.find(@holding.account_id)
+    strategy = account.linked? ? :reverse : :forward
+    Balance::Materializer.new(account, strategy: strategy, security_ids: [ new_security.id ]).materialize_balances
+
+    flash[:notice] = t(".success")
+
+    respond_to do |format|
+      format.html { redirect_to account_path(@holding.account, tab: "holdings") }
+      format.turbo_stream { render turbo_stream: turbo_stream.action(:redirect, account_path(@holding.account, tab: "holdings")) }
+    end
+  end
+
+  def sync_prices
+    security = @holding.security
+
+    if security.offline?
+      redirect_to account_path(@holding.account, tab: "holdings"),
+                  alert: t("holdings.sync_prices.unavailable")
+      return
+    end
+
+    prices_updated, @provider_error = security.import_provider_prices(
+      start_date: 31.days.ago.to_date,
+      end_date: Date.current,
+      clear_cache: true
+    )
+    security.import_provider_details
+
+    @last_price_updated = @holding.security.prices.maximum(:updated_at)
+
+    if prices_updated == 0
+      @provider_error = @provider_error.presence || t("holdings.sync_prices.provider_error")
+      respond_to do |format|
+        format.html { redirect_to account_path(@holding.account, tab: "holdings"), alert: @provider_error }
+        format.turbo_stream
+      end
+      return
+    end
+
+    strategy = @holding.account.linked? ? :reverse : :forward
+    Balance::Materializer.new(@holding.account, strategy: strategy, security_ids: [ @holding.security_id ]).materialize_balances
+    @holding.reload
+    @last_price_updated = @holding.security.prices.maximum(:updated_at)
+
+    respond_to do |format|
+      format.html { redirect_to account_path(@holding.account, tab: "holdings"), notice: t("holdings.sync_prices.success") }
+      format.turbo_stream
+    end
+  end
+
+  def reset_security
+    @holding.reset_security_to_provider!
+    flash[:notice] = t(".success")
+
+    respond_to do |format|
+      format.html { redirect_to account_path(@holding.account, tab: "holdings") }
+      format.turbo_stream { render turbo_stream: turbo_stream.action(:redirect, account_path(@holding.account, tab: "holdings")) }
+    end
+  end
+
+  private
+    def set_holding
+      @holding = Current.family.holdings
+                   .joins(:account)
+                   .merge(Account.accessible_by(Current.user))
+                   .find(params[:id])
+    end
+
+    def require_holding_write_permission!
+      require_account_permission!(@holding.account)
+    end
+
+    def holding_params
+      params.require(:holding).permit(:cost_basis, :per_share_cost_basis)
+    end
+end

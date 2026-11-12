@@ -1,0 +1,283 @@
+---
+de:
+  import:
+    cleans:
+      show:
+        description: Bearbeite deine Daten in der Tabelle unten. Rote Zellen sind ungültig.
+        errors_notice: Deine Daten enthalten Fehler. Fahre mit der Maus über den Fehler, um Details zu sehen.
+        errors_notice_mobile: Deine Daten enthalten Fehler. Tippe auf den Fehler-Tooltip, um Details zu sehen.
+        title: Daten bereinigen
+        all_rows: Alle Zeilen
+        data_cleaned: Deine Daten sind bereinigt
+        error_rows: Fehlerhafte Zeilen
+        next_step: Nächster Schritt
+        not_configured: Richte deinen Import ein, bevor du fortfährst.
+    configurations:
+      update:
+        success: Import wurde erfolgreich konfiguriert.
+      category_import:
+        button_label: Weiter
+        description: Lade eine einfache CSV-Datei hoch (z. B. wie bei einem Export). Die Spalten werden automatisch zugeordnet.
+        instructions: Wähle Weiter, um die CSV zu parsen und zum Bereinigungsschritt zu gelangen.
+      rule_import:
+        description: Richte den Regel-Import ein. Regeln werden anhand der CSV-Daten erstellt oder aktualisiert.
+        process_button: Regeln verarbeiten
+        process_help: Klick unten, um deine CSV zu verarbeiten und Regelzeilen zu erzeugen.
+      show:
+        description: Wähle die Spalten aus, die den jeweiligen Feldern in deiner CSV entsprechen.
+        title: Import konfigurieren
+        template_found: Importvorlage gefunden
+        template_description: Wir haben eine Konfiguration aus einem früheren Import für dieses Konto gefunden. Möchtest du sie für diesen Import übernehmen?
+        manually_configure: Manuell konfigurieren
+        apply_template: Vorlage übernehmen
+        sample_caption: Beispieldaten aus deiner hochgeladenen CSV-Datei
+      trade_import:
+        date_format_label: Datumsformat
+        account_label: Konto
+        apply_configuration: Konfiguration übernehmen
+        buys_are_negative: Käufe haben negative Stückzahl
+        buys_are_positive: Käufe haben positive Stückzahl
+        currency_label: Währung
+        date_label: Datum
+        default: Standard
+        format_label: Format
+        leave_empty: Leer lassen
+        name_label: Name
+        no_security_provider_warning: Der Anbieter für Wertpapierkurse ist nicht eingerichtet. Deine Trade-Importe funktionieren trotzdem, Sure ergänzt aber keine Kurshistorie. Richte den Anbieter in den Einstellungen ein.
+        note_label: Notiz
+        price_label: Kurs
+        quantity_label: Stückzahl
+        select_column: Spalte wählen
+        select_format: Format wählen
+        stock_exchange_code_label: Börsenkürzel
+        ticker_label: Ticker
+      transaction_import:
+        date_format_label: Datumsformat
+        rows_to_skip_label: Erste n Zeilen überspringen
+        account_label: Konto
+        amount_label: Betrag
+        amount_type_label: Betragstyp
+        amount_type_strategy_label: Vorgehen bei Betragsvorzeichen
+        apply_configuration: Konfiguration übernehmen
+        as_amount_type_column: als Spalte für den Betragstyp
+        as_identifier_value: als Kennwert
+        category_label: Kategorie
+        currency_label: Währung
+        date_label: Datum
+        default: Standard
+        expense_outflow: Ausgabe (Abfluss)
+        format_label: Format
+        income_inflow: Einnahme (Zufluss)
+        incomes_are_negative: Einnahmen sind negativ
+        incomes_are_positive: Einnahmen sind positiv
+        leave_empty: Leer lassen
+        name_label: Name
+        notes_label: Notizen
+        select_column: Spalte wählen
+        select_convention: Konvention wählen
+        select_format: Format wählen
+        select_strategy: Vorgehen wählen
+        select_type: Typ wählen
+        select_value: Wert wählen
+        set: Setze
+        tags_label: Tags
+        treat_as_html: '„<span class="font-medium">%{value}</span>“ behandeln als'
+      account_import:
+        apply_configuration: Konfiguration übernehmen
+        balance: Saldo
+        balance_date: Saldodatum
+        currency: Währung
+        date_format: Datumsformat
+        default: Standard
+        entity_type: Objekttyp
+        leave_empty: Leer lassen
+        name: Name
+        select_format: Format wählen
+      merchant_import:
+        button_label: Weiter
+        description: Lad eine CSV-Datei mit deinen Händlern hoch. Wir ordnen die Spalten automatisch zu.
+        instructions: Klick auf Weiter, um deine CSV einzulesen und zum Bereinigen zu gehen.
+    confirms:
+      mappings:
+        create_account: Konto erstellen
+        csv_mapping_label: "%{mapping} in CSV"
+        sure_mapping_label: "%{mapping} in %{product_name}"
+        no_accounts: Du hast noch keine Konten. Bitte erstelle ein Konto, das wir für nicht zugewiesene Zeilen in deiner CSV verwenden können, oder gehe zurück zum Bereinigungsschritt und gib dort einen Kontonamen an.
+        rows_label: Zeilen
+        unassigned_account: Neues Konto für nicht zugewiesene Zeilen erstellen?
+        next: Weiter
+      show:
+        account_mapping_description: Weise alle Konten aus deiner importierten Datei den bestehenden Konten in %{product_name} zu. Du kannst auch neue Konten hinzufügen oder sie ohne Kategorie lassen.
+        account_mapping_title: Konten zuweisen
+        account_type_mapping_description: Weise alle Kontotypen aus deiner importierten Datei den Kontotypen in %{product_name} zu.
+        account_type_mapping_title: Kontotypen zuweisen
+        category_mapping_description: Weise alle Kategorien aus deiner importierten Datei den bestehenden Kategorien in %{product_name} zu. Du kannst auch neue Kategorien hinzufügen oder sie ohne Kategorie lassen.
+        category_mapping_title: Kategorien zuweisen
+        tag_mapping_description: Weise alle Tags aus deiner importierten Datei den bestehenden Tags in %{product_name} zu. Du kannst auch neue Tags hinzufügen oder sie ohne Kategorie lassen.
+        tag_mapping_title: Tags zuweisen
+        invalid_data: Deine Daten enthalten Fehler. Korrigier sie, bis keine Fehler mehr übrig sind.
+    uploads:
+      show:
+        browse: Durchsuchen
+        csv_file_prompt: um deine CSV-Datei hier hinzuzufügen
+        description: Füge unten deine CSV-Datei ein oder lade sie hoch. Bitte lies die Anweisungen in der Tabelle unten, bevor du beginnst.
+        instructions_1: Unten siehst du ein Beispiel einer CSV-Datei mit verfügbaren Spalten für den Import.
+        instructions_2: Deine CSV muss eine Kopfzeile enthalten.
+        instructions_3: Du kannst deine Spalten beliebig benennen. Die Zuordnung erfolgt in einem späteren Schritt.
+        instructions_4: Spalten mit einem Sternchen (*) sind Pflichtfelder.
+        instructions_5: Keine Kommas, Währungssymbole oder Klammern in Zahlen verwenden.
+        title: Daten importieren
+        account_optional_label: Konto (optional)
+        copy_paste_tab: Einfügen
+        csv_invalid: Die Datei muss eine gültige CSV mit Kopfzeile und mindestens einer Datenzeile sein
+        download_sample_csv: Beispiel-CSV herunterladen
+        drop_csv_subtitle: Deine Datei wird automatisch hochgeladen
+        drop_csv_title: CSV zum Hochladen ablegen
+        multi_account_import: Import über mehrere Konten
+        paste_csv_placeholder: Füg hier den Inhalt deiner CSV-Datei ein
+        to_see_format: um das benötigte CSV-Format zu sehen
+        upload_csv_button: CSV hochladen
+        upload_csv_tab: CSV hochladen
+  imports:
+    steps:
+      upload: Hochladen
+      configure: Konfigurieren
+      clean: Bereinigen
+      map: Zuordnen
+      confirm: Bestätigen
+      label: Schritt %{step}
+      progress: Schritt %{step} von %{total}
+    index:
+      title: Importe
+      new: Neuer Import
+    table:
+      title: Importe
+      header:
+        date: Datum
+        operation: Operation
+        status: Status
+        actions: Aktionen
+      row:
+        status:
+          in_progress: Wird ausgeführt
+          uploading: Zeilen werden verarbeitet
+          reverting: Wird rückgängig gemacht
+          revert_failed: Rückgängig machen fehlgeschlagen
+          complete: Abgeschlossen
+          failed: Fehlgeschlagen
+        actions:
+          revert: Zurücksetzen
+          confirm_revert: Dadurch werden importierte Transaktionen gelöscht. Du kannst deine Daten aber jederzeit wieder einsehen und erneut importieren.
+          delete: Löschen
+          view: Anzeigen
+          confirm_mark_failed: Der Import steht still, sein Job wurde wohl unterbrochen. Als fehlgeschlagen markieren? Es bleiben keine Daten zurück.
+          mark_failed: Als fehlgeschlagen markieren
+        type_labels:
+          account_import: Konto
+          category_import: Kategorie
+          merchant_import: Händler
+          rule_import: Regel
+          trade_import: Trade
+          transaction_import: Transaktion
+      empty: Noch keine Importe vorhanden.
+    new:
+      description: Du kannst verschiedene Datentypen manuell über CSV importieren oder eine unserer Importvorlagen wie Mint verwenden.
+      import_accounts: Konten importieren
+      import_categories: Kategorien importieren
+      import_portfolio: Investments importieren
+      import_rules: Regeln importieren
+      import_transactions: Transaktionen importieren
+      requires_account: Importiere zuerst Konten, um diese Option zu nutzen.
+      resume: "%{type} fortsetzen"
+      sources: Quellen
+      title: Neuer CSV-Import
+      import_merchants: Händler importieren
+    create:
+      file_too_large: Datei ist zu groß. Maximale Größe %{max_size} MB.
+      invalid_file_type: Ungültiger Dateityp. Lad eine CSV-Datei hoch.
+      csv_uploaded: CSV wurde erfolgreich hochgeladen.
+    show:
+      finalize_upload: Schließ den Datei-Upload ab.
+      finalize_mappings: Schließ die Zuordnungen ab, bevor du fortfährst.
+    errors:
+      custom_column_requires_inflow: "Bei benutzerdefinierten Spalten muss eine Einnahmen-Spalte ausgewählt werden."
+      interrupted: Der Hintergrundprozess wurde unterbrochen, bevor das hier fertig war. Die importierten Daten wurden zurückgenommen, du kannst es gefahrlos erneut versuchen.
+      presumed_lost: Als fehlgeschlagen markiert, nachdem der Hintergrundjob als verloren galt. Die importierten Daten wurden zurückgenommen, du kannst es gefahrlos erneut versuchen.
+    ready:
+      description: Hier ist eine Zusammenfassung der neuen Elemente, die deinem Konto hinzugefügt werden, sobald du diesen Import veröffentlichst.
+      title: Importdaten bestätigen
+      summary_item_label: Eintrag
+      summary_count_label: Anzahl
+      publish_import: Import veröffentlichen
+      back_to_imports: Zurück zu Importen
+    apply_template:
+      no_template_found: Keine Vorlage gefunden, richte deinen Import selbst ein.
+      template_applied: Vorlage übernommen.
+    cancel:
+      cancelled: Import als fehlgeschlagen markiert. Du kannst es auf der Import-Seite erneut versuchen.
+      not_cancellable: Der Import lässt sich gerade nicht als fehlgeschlagen markieren, sein Job läuft noch. Versuch es in einer Stunde erneut.
+    column_labels:
+      account: Konto
+      amount: Betrag
+      category: Kategorie
+      category_color: Farbe
+      category_icon: Lucide-Symbol
+      category_parent: Oberkategorie
+      currency: Währung
+      date: Datum
+      entity_type: Typ
+      exchange: Börse
+      merchant_color: Farbe
+      merchant_website: Website-URL
+      name: Name
+      notes: Notizen
+      price: Kurs
+      qty: Stückzahl
+      tags: Tags
+      ticker: Ticker
+    destroy:
+      deleted: Dein Import wurde gelöscht.
+    dry_run_resources:
+      accounts: Konten
+      categories: Kategorien
+      merchants: Händler
+      rules: Regeln
+      tags: Tags
+      transactions: Transaktionen
+    empty:
+      message: Keine Importe vorhanden.
+    failure:
+      description: Prüf das Dateiformat auf Fehler und ob alle Pflichtfelder gefüllt sind, dann versuch es noch einmal.
+      title: Import fehlgeschlagen
+      try_again: Erneut versuchen
+    importing:
+      back_to_dashboard: Zurück zum Dashboard
+      check_status: Status prüfen
+      description: Dein Import läuft. Den Stand siehst du im Import-Menü, oder du klickst auf „Status prüfen“, um die Seite zu aktualisieren. Du kannst die App währenddessen normal weiternutzen.
+      title: Import läuft
+    mapping_labels:
+      account: Konto
+      account_type: Kontoart
+      category: Kategorie
+      tag: Tag
+    publish:
+      guest_new_categories_or_tags: Gäste können keine Kategorien oder Tags anlegen. Ordne sie bestehenden zu oder lass sie leer.
+      max_rows_exceeded: Dein Import überschreitet die Höchstzahl von %{max} Zeilen.
+      started: Dein Import läuft jetzt im Hintergrund.
+    revert:
+      started: Der Import wird im Hintergrund zurückgenommen.
+    revert_failure:
+      description: Versuch es noch einmal
+      title: Zurücknehmen fehlgeschlagen
+      try_again: Erneut versuchen
+    success:
+      back_to_dashboard: Zurück zum Dashboard
+      description: Deine importierten Daten sind in der App angekommen und einsatzbereit.
+      title: Import erfolgreich
+    type_labels:
+      account_import: Kontenimport
+      category_import: Kategorienimport
+      merchant_import: Händlerimport
+      rule_import: Regelimport
+      trade_import: Trade-Import
+      transaction_import: Transaktionsimport

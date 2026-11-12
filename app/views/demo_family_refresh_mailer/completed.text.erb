@@ -1,0 +1,15 @@
+<%= t(".subject") %>
+
+<%= t(".activity_heading") %>
+- <%= t(".sessions_label") %>: <%= number_with_delimiter(@old_family_session_count) %>
+- <%= t(".families_label") %>: <%= number_with_delimiter(@newly_created_families_count) %>
+
+<%= t(".period_heading") %>
+<%= t(".from_label") %> <%= l(@period_start, format: t(".time_format")) %>
+<%= t(".to_label") %> <%= l(@period_end, format: t(".time_format")) %>
+
+<%= t(".family_heading") %>
+<%= @old_family_name.presence || t(".family_not_found") %>
+<% if @old_family_id %>
+<%= t(".id_label") %> <%= @old_family_id %>
+<% end %>

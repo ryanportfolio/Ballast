@@ -1,0 +1,76 @@
+---
+fr:
+  number:
+    currency:
+      format:
+        delimiter: " "
+        format: "%n %u"
+        precision: 2
+        separator: ","
+        unit: "€"
+  settings:
+    hostings:
+      ensure_admin:
+        not_authorized: Aucun
+    providers:
+      clear_filter: Effacer les filtres
+      connect: Se connecter
+      drawer_trust_statement: Accès en lecture seule. Sure ne pourra jamais
+        transférer d’argent et vos informations d’identification sont stockées cryptées.
+      empty_filter: Aucun fournisseur ne correspond à votre filtre.
+      groups:
+        available: Disponible
+        empty_available: Tous les fournisseurs disponibles sont connectés.
+        your_connections: Vos connexions
+      health_strip:
+        accounts_syncing: synchronisation des comptes
+        connected: connecté
+        last_synced: Dernière synchronisation il y a %{time}
+        needs_attention: a besoin d'attention
+      maturity:
+        alpha: Alpha
+        beta: Bêta
+      meta:
+        last_synced: Synchronisé il y a %{time}
+        no_recent_sync: Synchronisation en retard
+        sync_error: Erreur de synchronisation
+      not_found: Fournisseur introuvable.
+      provider_form:
+        save_and_connect: Enregistrez et connectez-vous
+      recently_synced: Synchronisé récemment. Réessayez dans un instant.
+      search_filters:
+        aria_label: Fournisseurs de recherche
+        chips:
+          all: Tout
+          bank: Banques
+          crypto: Cryptomonnaie
+          investment: Investissements
+        placeholder: Fournisseurs de recherche
+      setup_steps:
+        eyebrow: Configuration
+        need_help: Besoin d'aide ?
+      simplefin_panel:
+        save_and_connect: Enregistrez et connectez-vous
+        setup_token_label: Jeton de configuration
+        setup_token_placeholder: Coller le jeton de configuration SimpleFIN
+        step_1_html: Accédez à %{link} pour un jeton de configuration unique.
+        step_2: Collez le jeton ci-dessous et connectez-vous.
+        step_3: Dirigez-vous ensuite vers Comptes pour lier vos comptes synchronisés.
+      status:
+        'false': Non configuré
+      sync_all: Synchroniser tout
+      sync_all_in_progress: Synchronisation de tous les fournisseurs connectés…
+      sync_all_recently: Synchronisation déjà en cours. Réessayez dans un instant.
+      sync_provider: Synchronisez maintenant
+      sync_provider_in_progress: La synchronisation a commencé.
+      sync_provider_no_items: Aucune connexion disponible pour synchroniser.
+      taglines:
+        simplefin: Connectez les comptes bancaires américains via le protocole ouvert
+          SimpleFIN.
+  simplefin_items:
+    select_existing_account:
+      check_provider_health: Aucun
+  valuations:
+    new:
+      amount: Aucun
+      submit: Aucun

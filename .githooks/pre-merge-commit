@@ -1,0 +1,4 @@
+#!/bin/sh
+# Blocks secrets and personal financial data. Enable once per clone:
+#   git config core.hooksPath .githooks
+exec node scripts/check-secrets.mjs --staged

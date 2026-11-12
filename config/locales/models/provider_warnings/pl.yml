@@ -1,0 +1,6 @@
+---
+pl:
+  provider_warnings:
+    limited_investment_data: Dane inwestycyjne od tego dostawcy są ograniczone. Etykiety
+      transakcji (Kupno, Sprzedaż, Dywidenda) są niedostępne, co może wpłynąć na dokładność
+      budżetu. Rozważ tworzenie reguł wykluczenia lub kategoryzacji transakcji inwestycyjnych.

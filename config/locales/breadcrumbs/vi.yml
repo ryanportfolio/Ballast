@@ -1,0 +1,69 @@
+---
+vi:
+  breadcrumbs:
+    account_sharings: Chia sẻ tài khoản
+    account_statements: Kho sao kê
+    accounts: Tài khoản
+    ai_prompts: Câu lệnh AI
+    api_key: Khóa API
+    api_keys: Khóa API
+    appearance: Giao diện
+    appearances: Giao diện
+    bank_sync: Đồng bộ ngân hàng
+    budget_categories: Danh mục ngân sách
+    budgets: Ngân sách
+    categories: Danh mục
+    categorize: Phân loại
+    chats: Trò chuyện
+    credit_cards: Thẻ tín dụng
+    cryptos: Tiền mã hóa
+    dashboard: Bảng điều khiển
+    debug: Gỡ lỗi
+    debugs: Gỡ lỗi
+    depositories: Tài khoản tiền mặt
+    exports: Xuất dữ liệu
+    family_exports: Xuất dữ liệu
+    family_merchants: Nhà cung cấp
+    guides: Hướng dẫn
+    holdings: Danh mục nắm giữ
+    home: Trang chủ
+    hostings: Tự lưu trữ
+    impersonation_sessions: Mạo danh
+    imports: Nhập dữ liệu
+    intro: Giới thiệu
+    investments: Đầu tư
+    invitations: Lời mời
+    invite_codes: Mã mời
+    llm_usage: Sử dụng LLM
+    llm_usages: Sử dụng LLM
+    loans: Khoản vay
+    merchants: Nhà cung cấp
+    messages: Tin nhắn
+    mfa: Xác thực hai yếu tố
+    onboardings: Khởi đầu
+    other_assets: Tài sản khác
+    other_liabilities: Nợ khác
+    pending_duplicate_merges: Xem xét trùng lặp
+    preferences: Tùy chọn
+    profile: Thông tin hồ sơ
+    profiles: Thông tin hồ sơ
+    properties: Bất động sản
+    providers: Nhà cung cấp dịch vụ
+    recurring_transactions: Định kỳ
+    registrations: Đăng ký
+    reports: Báo cáo
+    rules: Quy tắc
+    securities: Chứng khoán
+    security: Bảo mật
+    self_hosting: Tự lưu trữ
+    sessions: Đăng nhập
+    simplefin_items: SimpleFIN
+    splits: Phân chia
+    tags: Nhãn
+    trades: Giao dịch chứng khoán
+    transactions: Giao dịch
+    transfer_matches: Khớp chuyển khoản
+    transfers: Chuyển khoản
+    users: Người dùng
+    valuations: Định giá
+    vehicles: Phương tiện

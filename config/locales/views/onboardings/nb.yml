@@ -1,0 +1,46 @@
+---
+nb:
+  onboardings:
+    header:
+      sign_out: Logg ut
+      setup: Oppsett
+      preferences: Innstillinger
+      goals: Mål
+    logout:
+      sign_out: Logg ut
+    show:
+      title: La oss sette opp kontoen din
+      subtitle: Først, la oss fullføre profilen din.
+      first_name: Fornavn
+      first_name_placeholder: Fornavn
+      last_name: Etternavn
+      last_name_placeholder: Etternavn
+      household_name: Husholdningsnavn
+      household_name_placeholder: Husholdningsnavn
+      country: Land
+      submit: Fortsett
+    preferences:
+      title: Konfigurer innstillingene dine
+      subtitle: La oss konfigurere innstillingene dine.
+      example: Eksempelkonto
+      preview: Forhåndsvisning av hvordan data vises basert på innstillinger.
+      color_theme: Fargetema
+      theme_system: System
+      theme_light: Lys
+      theme_dark: Mørk
+      locale: Språk
+      currency: Valuta
+      date_format: Datoformat
+      submit: Fullfør
+    goals:
+      title: Hva bringer deg hit?
+      subtitle: Velg ett eller flere mål du har med %{product_name} som ditt personlige økonomverktøy.
+      unified_accounts: Se alle kontoene mine på ett sted
+      cashflow: Forstå kontantstrøm og utgifter
+      budgeting: Administrere økonomiplaner og budsjetter
+      partner: Administrere økonomi med en partner
+      investments: Følge investeringer
+      ai_insights: La AI hjelpe meg å forstå økonomien min
+      optimization: Analysere og optimalisere kontoer
+      reduce_stress: Redusere økonomisk stress eller angst
+      submit: Neste

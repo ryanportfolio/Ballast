@@ -1,0 +1,14 @@
+---
+ca:
+  password_resets:
+    edit:
+      title: Restableix la contrasenya
+    new:
+      back: Enrere
+      requested: Revisa el teu correu electrònic; hi trobaràs un enllaç per restablir
+        la contrasenya.
+      submit: Restableix la contrasenya
+      title: Restableix la contrasenya
+    update:
+      invalid_token: El token no és vàlid.
+      success: La teva contrasenya s'ha restablert.

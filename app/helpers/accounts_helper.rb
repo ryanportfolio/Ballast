@@ -1,0 +1,78 @@
+module AccountsHelper
+  def summary_card(title:, &block)
+    content = capture(&block)
+    render "accounts/summary_card", title: title, content: content
+  end
+
+  def sync_path_for(account)
+    # Always use the account sync path, which handles syncing all providers
+    sync_account_path(account)
+  end
+
+  # How long a sidebar sparkline frame may spend fetching before
+  # `turbo_frame_timeout_controller` replaces it with a warning badge.
+  SPARKLINE_FRAME_TIMEOUT_MS = 10_000
+
+  # Shared by the group-level and the per-account sparkline frames so the two
+  # call sites cannot drift apart.
+  #
+  # Those frames are `loading: "lazy"`: Turbo fetches them when they scroll
+  # into view, which can be long after they render, or never, so the countdown
+  # has to time the request rather than the element. The frames declare when it
+  # starts and when it stops.
+  def sparkline_frame_data
+    {
+      controller: "turbo-frame-timeout",
+      action: "turbo:before-fetch-request->turbo-frame-timeout#startTimeout " \
+              "turbo:frame-load->turbo-frame-timeout#clearTimeout",
+      turbo_frame_timeout_timeout_value: SPARKLINE_FRAME_TIMEOUT_MS
+    }
+  end
+
+  # Returns the account id segment from `/accounts/<id>(/...)?`, or nil.
+  # Used as a cache-key component so the sidebar's active-link styling is
+  # correct without busting the cache for every unrelated path change.
+  def sidebar_active_account_id
+    match = request.path.match(%r{\A/accounts/([\w-]+)})
+    match && match[1]
+  end
+
+  # Cache key for `accounts/_account_sidebar_tabs.html.erb`.
+  # Kept here (not in the ERB) so the partial stays render-only.
+  #
+  # `shares_version` includes both row count and `max(updated_at)` because
+  # deleting a non-most-recent share would not move `max(updated_at)` and
+  # could otherwise serve stale fragments to a user who lost access.
+  # Both are pulled in a single SQL round-trip via `pick`. Note: Rails
+  # returns the values as Strings for raw SQL fragments — that's fine
+  # since they only feed into a cache key (concat-stable, never coerced).
+  def account_sidebar_tabs_cache_key(family:, active_tab:, mobile:)
+    shares_version =
+      if Current.user
+        count, max_at = AccountShare
+          .where(user_id: Current.user.id)
+          .pick(Arel.sql("count(*)"), Arel.sql("max(updated_at)"))
+        "#{count}-#{max_at}"
+      end
+
+    [
+      family.build_cache_key("account_sidebar_tabs_v5", invalidate_on_data_updates: true),
+      Current.user&.id,
+      shares_version,
+      active_tab,
+      mobile,
+      I18n.locale,
+      sidebar_active_account_id,
+      # Fold the per-user "start expanded by default" preference into the key
+      # so toggling it in Settings busts the 12h fragment cache immediately
+      # (this partial renders with skip_digest: true, so the template digest
+      # would not otherwise reflect the change).
+      Current.user&.always_expanded_account_groups&.sort,
+      # Changing the account order, or dragging an account in the manual
+      # order, must re-render the sidebar right away rather than after the
+      # 12h expiry.
+      Current.user&.default_account_order,
+      Current.user&.account_order&.manual? ? Digest::SHA256.hexdigest(Current.user.manual_account_order.to_json) : nil
+    ]
+  end
+end

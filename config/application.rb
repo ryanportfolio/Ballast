@@ -1,0 +1,76 @@
+require_relative "boot"
+
+require "rails/all"
+
+# Require the gems listed in Gemfile, including any gems
+# you've limited to :test, :development, or :production.
+Bundler.require(*Rails.groups)
+
+module Sure
+  # Matches Rails::Application::Finisher#setup_default_session_store for Sure::Application
+  # ("_#{railtie_name.chomp("_application")}_session" → "_sure_session").
+  SESSION_COOKIE_KEY = "_sure_session"
+
+  class Application < Rails::Application
+    # Initialize configuration defaults for originally generated Rails version.
+    config.load_defaults 8.1
+
+    # Please, add to the `ignore` list any other `lib` subdirectories that do
+    # not contain `.rb` files, or that should not be reloaded or eager loaded.
+    # Common ones are `templates`, `generators`, or `middleware`, for example.
+    config.autoload_lib(ignore: %w[assets tasks generators])
+
+    # Configuration for the application, engines, and railties goes here.
+    #
+    # These settings can be overridden in specific environments using the files
+    # in config/environments, which are processed later.
+    #
+    # config.time_zone = "Central Time (US & Canada)"
+    # config.eager_load_paths << Rails.root.join("extras")
+
+    # Explicit source of truth for the session cookie name (also used by Codespaces).
+    config.session_store :cookie_store, key: SESSION_COOKIE_KEY
+
+    # TODO: This is here for incremental adoption of localization.  This can be removed when all translations are implemented.
+    config.i18n.fallbacks = true
+
+    config.app_mode = (ENV["SELF_HOSTED"] == "true" || ENV["SELF_HOSTING_ENABLED"] == "true" ? "self_hosted" : "managed").inquiry
+
+    # Self hosters can optionally set their own encryption keys if they want to use ActiveRecord encryption.
+    if Rails.application.credentials.active_record_encryption.present?
+      config.active_record.encryption = Rails.application.credentials.active_record_encryption
+    end
+
+    config.view_component.previews.controller = "LookbooksController"
+    config.lookbook.preview_display_options = {
+      theme: [ "light", "dark" ] # available in view as params[:theme]
+    }
+
+    # Ballast sends no telemetry: the skylight gem loads in production (Gemfile),
+    # but its agent starts only in config.skylight.environments, so that is
+    # empty. Clearing SKYLIGHT_AUTHENTICATION alone is not enough, because the
+    # gem also reads the token from SK_AUTHENTICATION.
+    if defined?(Skylight) && config.respond_to?(:skylight)
+      config.skylight.probes << "active_job"
+      config.skylight.environments = []
+    end
+
+    # Rack::Attack's own Railtie (lib/rack/attack/railtie.rb in the gem)
+    # already inserts it into the middleware stack — this explicit `use` was
+    # a second, redundant insertion (confirmed via `bin/rails middleware`,
+    # which listed Rack::Attack twice). Since Rack::Attack's counters
+    # increment once per middleware pass, every throttle in
+    # config/initializers/rack_attack.rb was silently firing at half its
+    # documented limit. Removed rather than kept as a second layer, since
+    # nothing in the app relies on it running twice and the halved limits
+    # were undocumented/accidental, not a deliberate stricter policy.
+
+    config.x.ui = ActiveSupport::OrderedOptions.new
+    default_layout = ENV.fetch("DEFAULT_UI_LAYOUT", "dashboard")
+    config.x.ui.default_layout = default_layout.in?(%w[dashboard intro]) ? default_layout : "dashboard"
+
+    config.x.debug_log = ActiveSupport::OrderedOptions.new
+    retention_days = ENV.fetch("DEBUG_LOG_RETENTION_DAYS", "90").to_i
+    config.x.debug_log.retention_days = retention_days.positive? ? retention_days : 90
+  end
+end

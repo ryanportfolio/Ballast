@@ -1,0 +1,756 @@
+class Entry < ApplicationRecord
+  include Monetizable, Enrichable
+
+  TRUTHY_VALUES = [ true, "true", "1", 1 ].freeze
+  private_constant :TRUTHY_VALUES
+
+  # Attributes that only describe an entry. Balance materialization and
+  # transfer matching never read them, so an edit limited to them doesn't need
+  # an account sync. Reports and budgets pick such edits up through
+  # Family#entries_cache_version, which the save itself bumps.
+  DESCRIPTIVE_ATTRIBUTES = %w[name notes updated_at].freeze
+  DESCRIPTIVE_TRANSACTION_ATTRIBUTES = %w[category_id merchant_id updated_at].freeze
+
+  attr_accessor :unsplitting
+
+  monetize :amount
+
+  belongs_to :account
+  belongs_to :transfer, optional: true
+  belongs_to :import, optional: true
+  belongs_to :parent_entry, class_name: "Entry", optional: true
+  belongs_to :reconciled_by_statement, class_name: "AccountStatement", optional: true
+
+  # Mirrors chk_entries_reconciled_at_present_when_statement_set so a direct
+  # assignment surfaces a validation error rather than a StatementInvalid.
+  validates :reconciled_at, presence: true, if: -> { reconciled_by_statement_id.present? }
+
+  has_many :child_entries, class_name: "Entry", foreign_key: :parent_entry_id, dependent: :destroy
+  # Read side only, so a transaction can say which bills it paid. The foreign key
+  # already nullifies on delete, so this adds no lifecycle behaviour.
+  has_many :recurring_allocations, dependent: nil, inverse_of: :entry
+
+  delegated_type :entryable, types: Entryable::TYPES, dependent: :destroy
+  accepts_nested_attributes_for :entryable
+
+  validates :date, :name, :amount, :currency, presence: true
+  validates :date, uniqueness: { scope: [ :account_id, :entryable_type ] }, if: -> { valuation? }
+  validates :date, comparison: { greater_than: -> { min_supported_date } }
+  validates :external_id, uniqueness: { scope: [ :account_id, :source ] }, if: -> { external_id.present? && source.present? }
+
+  validate :cannot_unexclude_split_parent
+  validate :split_child_date_matches_parent
+
+  # new_record? && import_id.blank? keeps this to genuinely new manual
+  # entries -- excludes CSV imports (which have their own, separately
+  # decided blank-name handling) and any unrelated re-validation of an
+  # already-persisted entry (background jobs, resaves) that happens to see
+  # a blank name for some other reason. external_id/source are also excluded
+  # (via !cleared?) because Account::ProviderImportAdapter sets both at
+  # find_or_initialize_by time, before this callback runs -- without that
+  # guard, a first-time sync of a provider transaction with no name (e.g.
+  # a provider sending neither a merchant nor a description) would get a
+  # synthetic "Category - Merchant" name instead of surfacing the blank-name
+  # presence error the same way a manual blank submission would.
+  before_validation :set_default_name, if: -> {
+    new_record? && import_id.blank? && name.blank? && !cleared? &&
+      entryable_type == "Transaction" && account&.family&.auto_generate_transaction_names?
+  }
+
+  before_destroy :prevent_individual_child_deletion, if: :split_child?
+  after_save :track_earliest_saved_date, if: :saved_change_to_date?
+
+  scope :visible, -> {
+    joins(:account).where(accounts: { status: [ "draft", "active" ] })
+  }
+
+  scope :chronological, -> {
+    order(
+      date: :asc,
+      Arel.sql("CASE WHEN entries.entryable_type = 'Valuation' THEN 1 ELSE 0 END") => :asc,
+      created_at: :asc,
+      id: :asc
+    )
+  }
+
+  scope :reverse_chronological, -> {
+    order(
+      date: :desc,
+      Arel.sql("CASE WHEN entries.entryable_type = 'Valuation' THEN 1 ELSE 0 END") => :desc,
+      created_at: :desc,
+      id: :desc
+    )
+  }
+
+  # Reconciliation scopes - see AddReconciliationToEntries
+  scope :reconciled, -> { where.not(reconciled_at: nil) }
+  scope :unreconciled, -> { where(reconciled_at: nil) }
+  scope :reconciled_by, ->(statement) { where(reconciled_by_statement_id: statement) }
+
+  # Pending transaction scopes - check Transaction.extra for provider pending flags
+  # Works with any provider that stores pending status in extra["provider_name"]["pending"]
+  scope :pending, -> {
+    joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
+      .where(Transaction.pending_sql)
+  }
+
+  scope :excluding_pending, -> {
+    # For non-Transaction entries (Trade, Valuation), always include
+    # For Transaction entries, exclude if any provider marks it pending
+    where(<<~SQL.squish)
+      entries.entryable_type != 'Transaction'
+      OR NOT EXISTS (
+        SELECT 1 FROM transactions t
+        WHERE t.id = entries.entryable_id
+        AND (#{Transaction::PENDING_CHECK_SQL})
+      )
+    SQL
+  }
+
+  scope :excluding_split_parents, -> {
+    where(<<~SQL.squish)
+      NOT EXISTS (
+        SELECT 1 FROM entries ce WHERE ce.parent_entry_id = entries.id
+      )
+    SQL
+  }
+
+  # Find stale pending transactions (pending for more than X days with no matching posted version)
+  scope :stale_pending, ->(days: 8) {
+    pending.where("entries.date < ?", days.days.ago.to_date)
+  }
+
+  # Ids among `entry_ids` that have split children, as a Set, in one query that
+  # loads no child rows. Shared by the web and API list views to avoid N+1.
+  def self.split_parent_ids_among(entry_ids)
+    return Set.new if entry_ids.blank?
+
+    where(parent_entry_id: entry_ids).distinct.pluck(:parent_entry_id).to_set
+  end
+
+  # Family-scoped query for Enrichable#clear_ai_cache
+  def self.family_scope(family)
+    joins(:account).where(accounts: { family_id: family.id })
+  end
+
+  # Uncategorized transaction entries on draft or active accounts.
+  # Caller is responsible for scoping to accessible entries before applying this scope.
+  #
+  # Uses Transaction::UNCATEGORIZED_EXCLUDED_KINDS rather than TRANSFER_KINDS so
+  # the badge count and Quick Categorize wizard cover exactly what the
+  # Transactions "Uncategorized" filter lists — notably the budget-tracked
+  # loan_payment / investment_contribution transfers the dashboard already
+  # counts, which were previously uncategorizable from any surface (#2592).
+  scope :uncategorized_transactions, -> {
+    joins(:account)
+      .joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
+      .where(accounts: { status: %w[draft active] })
+      .where(transactions: { category_id: nil })
+      .where.not(transactions: { kind: Transaction::UNCATEGORIZED_EXCLUDED_KINDS })
+      .where(entries: { excluded: false })
+  }
+
+  # Returns uncategorized entries whose name matches the given filter string.
+  # Used by the Quick Categorize Wizard to preview which transactions a rule would affect.
+  # @param entries [ActiveRecord::Relation] pre-scoped entries (caller controls authorization)
+  def self.uncategorized_matching(entries, filter, transaction_type = nil)
+    sanitized = sanitize_sql_like(filter.gsub(/\s+/, " ").strip)
+    scope = entries
+              .uncategorized_transactions
+              .where("BTRIM(REGEXP_REPLACE(entries.name, '[[:space:]]+', ' ', 'g')) ILIKE ?", "%#{sanitized}%")
+
+    scope = case transaction_type
+    when "income"  then scope.where("entries.amount < 0")
+    when "expense" then scope.where("entries.amount >= 0")
+    else scope
+    end
+
+    scope.includes(entryable: :merchant).order(entries: { date: :desc }).to_a
+  end
+
+  # Auto-exclude stale pending transactions for an account
+  # Called during sync to clean up pending transactions that never posted
+  # @param account [Account] The account to clean up
+  # @param days [Integer] Number of days after which pending is considered stale (default: 8)
+  # @return [Integer] Number of entries excluded
+  def self.auto_exclude_stale_pending(account:, days: 8)
+    stale_entries = account.entries.stale_pending(days: days).where(excluded: false)
+    count = stale_entries.count
+
+    if count > 0
+      stale_entries.update_all(excluded: true, updated_at: Time.current)
+      Rails.logger.info("Auto-excluded #{count} stale pending transaction(s) for account #{account.id} (#{account.name})")
+    end
+
+    count
+  end
+
+  # Retroactively reconcile pending transactions that have a matching posted version
+  # This handles duplicates created before reconciliation code was deployed
+  #
+  # @param account [Account, nil] Specific account to clean up, or nil for all accounts
+  # @param dry_run [Boolean] If true, only report what would be done without making changes
+  # @param date_window [Integer] Days to search forward for posted matches (default: 8)
+  # @param amount_tolerance [Float] Percentage difference allowed for fuzzy matching (default: 0.25)
+  # @return [Hash] Stats about what was reconciled
+  def self.reconcile_pending_duplicates(account: nil, dry_run: false, date_window: 8, amount_tolerance: 0.25)
+    stats = { checked: 0, reconciled: 0, details: [] }
+
+    not_pending_sql = Transaction.not_pending_sql
+
+    # Get pending entries to check
+    scope = Entry.pending.where(excluded: false)
+    scope = scope.where(account: account) if account
+
+    scope.includes(:account, :entryable).find_each do |pending_entry|
+      stats[:checked] += 1
+      acct = pending_entry.account
+
+      # PRIORITY 1: Look for posted transaction with EXACT amount match
+      # CRITICAL: Only search forward in time - posted date must be >= pending date
+      exact_candidates = acct.entries
+        .joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
+        .where.not(id: pending_entry.id)
+        .where(currency: pending_entry.currency)
+        .where(amount: pending_entry.amount)
+        .where(date: pending_entry.date..(pending_entry.date + date_window.days)) # Posted must be ON or AFTER pending date
+        .where(not_pending_sql)
+        .limit(2) # Only need to know if 0, 1, or 2+ candidates
+        .to_a # Load limited records to avoid COUNT(*) on .size
+
+      # Handle exact match - auto-exclude only if exactly ONE candidate (high confidence)
+      # Multiple candidates = ambiguous = skip to avoid excluding wrong entry
+      if exact_candidates.size == 1
+        posted_match = exact_candidates.first
+        detail = {
+          pending_id: pending_entry.id,
+          pending_name: pending_entry.name,
+          pending_amount: pending_entry.amount.to_f,
+          pending_date: pending_entry.date,
+          posted_id: posted_match.id,
+          posted_name: posted_match.name,
+          posted_amount: posted_match.amount.to_f,
+          posted_date: posted_match.date,
+          account: acct.name,
+          match_type: "exact"
+        }
+        stats[:details] << detail
+        stats[:reconciled] += 1
+
+        unless dry_run
+          pending_entry.update!(excluded: true)
+          Rails.logger.info("Reconciled pending→posted duplicate: excluded entry #{pending_entry.id} (#{pending_entry.name}) matched to #{posted_match.id}")
+        end
+        next
+      end
+
+      # PRIORITY 2: If no exact match, try fuzzy amount match for tip adjustments
+      # Store as SUGGESTION instead of auto-excluding (medium confidence)
+      pending_amount = pending_entry.amount.abs
+      min_amount = pending_amount
+      max_amount = pending_amount * (1 + amount_tolerance)
+
+      fuzzy_date_window = 3
+      candidates = acct.entries
+        .joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
+        .where.not(id: pending_entry.id)
+        .where(currency: pending_entry.currency)
+        .where(date: pending_entry.date..(pending_entry.date + fuzzy_date_window.days)) # Posted ON or AFTER pending
+        .where("ABS(entries.amount) BETWEEN ? AND ?", min_amount, max_amount)
+        .where(not_pending_sql)
+
+      # Match by name similarity (first 3 words)
+      name_words = pending_entry.name.downcase.gsub(/[^a-z0-9\s]/, "").split.first(3).join(" ")
+      if name_words.present?
+        matching_candidates = candidates.select do |c|
+          c_words = c.name.downcase.gsub(/[^a-z0-9\s]/, "").split.first(3).join(" ")
+          name_words == c_words
+        end
+
+        # Only suggest if there's exactly ONE matching candidate
+        # Multiple matches = ambiguous (e.g., recurring gas station visits) = skip
+        if matching_candidates.size == 1
+          fuzzy_match = matching_candidates.first
+
+          detail = {
+            pending_id: pending_entry.id,
+            pending_name: pending_entry.name,
+            pending_amount: pending_entry.amount.to_f,
+            pending_date: pending_entry.date,
+            posted_id: fuzzy_match.id,
+            posted_name: fuzzy_match.name,
+            posted_amount: fuzzy_match.amount.to_f,
+            posted_date: fuzzy_match.date,
+            account: acct.name,
+            match_type: "fuzzy_suggestion"
+          }
+          stats[:details] << detail
+
+          unless dry_run
+            # Store suggestion on the pending entry instead of auto-excluding
+            pending_transaction = pending_entry.entryable
+            if pending_transaction.is_a?(Transaction)
+              existing_extra = pending_transaction.extra || {}
+              unless existing_extra["potential_posted_match"].present?
+                pending_transaction.update!(
+                  extra: existing_extra.merge(
+                    "potential_posted_match" => {
+                      "entry_id"      => fuzzy_match.id,
+                      "reason"        => "fuzzy_amount_match",
+                      "posted_amount" => fuzzy_match.amount.to_s,
+                      "confidence"    => "medium",
+                      "dismissed"     => false,
+                      "detected_at"   => Date.current.to_s
+                    }
+                  )
+                )
+                Rails.logger.info("Stored duplicate suggestion for entry #{pending_entry.id} (#{pending_entry.name}) → #{fuzzy_match.id}")
+              end
+            end
+          end
+        elsif matching_candidates.size > 1
+          Rails.logger.info("Skipping fuzzy reconciliation for #{pending_entry.id} (#{pending_entry.name}): #{matching_candidates.size} ambiguous candidates")
+        end
+      end
+    end
+
+    stats
+  end
+
+  def classification
+    amount.negative? ? "income" : "expense"
+  end
+
+  def lock_saved_attributes!
+    super
+    entryable.lock_saved_attributes!
+  end
+
+  # Enqueues an account sync whose window starts at the earliest date this
+  # entry has occupied since it was loaded, so balances are recomputed from
+  # wherever the entry used to sit.
+  #
+  # Later saves (lock_saved_attributes!, mark_user_modified!) reset
+  # date_previously_was, so the earliest date tracked across saves is used too.
+  # Starting the window after the old date would seed the incremental balance
+  # calculation from a balance that still includes this entry.
+  #
+  # @return [void]
+  def sync_account_later
+    sync_start_date = [ @earliest_saved_date, date_previously_was, date ].compact.min unless destroyed?
+    @earliest_saved_date = nil
+    account.sync_later(window_start_date: sync_start_date)
+  end
+
+  # Whether the last save changed anything a sync depends on. Call it right
+  # after the save, before any follow-up write resets saved_changes.
+  def saved_changes_affect_balances?
+    return true if (saved_changes.keys - DESCRIPTIVE_ATTRIBUTES).any?
+
+    descriptive = entryable.is_a?(Transaction) ? DESCRIPTIVE_TRANSACTION_ATTRIBUTES : %w[updated_at]
+    (entryable.saved_changes.keys - descriptive).any?
+  end
+
+  def entryable_name_short
+    entryable_type.demodulize.underscore
+  end
+
+  # True when this entry's name isn't distinguishing on its own -- either it's
+  # the auto-generated fallback label, or it just repeats the entryable's own
+  # category name. Used to keep name-based grouping/matching (Quick Categorize,
+  # recurring smart-fill evidence) from treating unrelated transactions that
+  # happen to share a generic name as if they were the same thing.
+  def generic_name?
+    return false if name.blank?
+
+    normalized = name.strip
+    # Checked across every supported locale, not just the current one -- a
+    # name generated (or saved by a background job) under one locale must
+    # still read as generic when this is later checked under another.
+    return true if LanguagesHelper::SUPPORTED_LOCALES.any? { |locale| normalized.casecmp?(I18n.t("transactions.unknown_name", locale: locale)) }
+    return false unless entryable_type == "Transaction"
+
+    category = entryable&.category
+    category.present? && category.any_locale_display_name_matches?(normalized)
+  end
+
+  def balance_trend(entries, balances)
+    Balance::TrendCalculator.new(self, entries, balances).trend
+  end
+
+  def linked?
+    external_id.present?
+  end
+
+  # Reconciliation state, following the Quicken uncleared / cleared / reconciled
+  # model. Only the last state is stored -- see AddReconciliationToEntries.
+  #
+  # @return [Symbol] :uncleared, :cleared or :reconciled
+  def reconciliation_state
+    return :reconciled if reconciled?
+    return :cleared if cleared?
+
+    :uncleared
+  end
+
+  # The institution has acknowledged this transaction: it either arrived from a
+  # provider, or was entered by hand and later claimed by one (which stamps
+  # external_id and source -- see Account::ProviderImportAdapter). Derived rather
+  # than stored so it cannot drift, and deliberately not user-settable: this is a
+  # fact about where the entry came from, not an opinion about it.
+  def cleared?
+    external_id.present? || source.present?
+  end
+
+  # A statement has been matched against this transaction. Unlike cleared?, this
+  # is a judgement -- made by a statement import, or by the user directly -- so
+  # it is stored and can be undone.
+  def reconciled?
+    reconciled_at.present?
+  end
+
+  # @param statement [AccountStatement, nil] the statement providing the evidence
+  def mark_reconciled!(statement: nil, at: Time.current)
+    update!(reconciled_at: at, reconciled_by_statement: statement)
+  end
+
+  def unmark_reconciled!
+    update!(reconciled_at: nil, reconciled_by_statement: nil)
+  end
+
+  # Checks if entry should be protected from provider sync overwrites.
+  # This does NOT prevent user from editing - only protects from automated sync.
+  #
+  # @return [Boolean] true if entry should be skipped during provider sync
+  def protected_from_sync?
+    excluded? || user_modified? || import_locked?
+  end
+
+  # Bulk-marks the entries of the given transactions as user-modified so a
+  # later provider sync won't overwrite them (issue #1977). Used by merchant
+  # merge/convert/unlink flows, which reassign merchant_id directly on
+  # transactions and must protect that manual change from being reverted.
+  #
+  # Accepts a Transaction relation (preferred — the selection runs as a
+  # subquery so large merges/unlinks don't materialize ids or hit SQL
+  # parameter limits) or an explicit array of ids.
+  #
+  # @param transactions [ActiveRecord::Relation, Array<String>] Transactions or their ids
+  # @return [void]
+  def self.mark_user_modified_for_transactions!(transactions)
+    entryable_ids =
+      if transactions.is_a?(ActiveRecord::Relation)
+        transactions.select(:id)
+      else
+        ids = Array(transactions).compact.uniq
+        return if ids.empty?
+        ids
+      end
+
+    where(entryable_type: "Transaction", entryable_id: entryable_ids).update_all(user_modified: true)
+  end
+
+  # Marks entry as user-modified after manual edit.
+  # Called when user edits any field to prevent provider sync from overwriting.
+  #
+  # @return [Boolean] true if successfully marked
+  def mark_user_modified!
+    return true if user_modified?
+    update!(user_modified: true)
+  end
+
+  # Returns the reason this entry is protected from sync, or nil if not protected.
+  # Priority: excluded > user_modified > import_locked
+  #
+  # @return [Symbol, nil] :excluded, :user_modified, :import_locked, or nil
+  def protection_reason
+    return :excluded if excluded?
+    return :user_modified if user_modified?
+    return :import_locked if import_locked?
+    nil
+  end
+
+  # Returns array of field names that are locked on entry and entryable.
+  #
+  # @return [Array<String>] locked field names
+  def locked_field_names
+    entry_keys = locked_attributes&.keys || []
+    entryable_keys = entryable&.locked_attributes&.keys || []
+    (entry_keys + entryable_keys).uniq
+  end
+
+  # Returns hash of locked field names to their lock timestamps.
+  # Combines locked_attributes from both entry and entryable.
+  # Parses ISO8601 timestamps stored in locked_attributes.
+  #
+  # @return [Hash{String => Time}] field name to lock timestamp
+  def locked_fields_with_timestamps
+    combined = (locked_attributes || {}).merge(entryable&.locked_attributes || {})
+    combined.transform_values do |timestamp|
+      Time.zone.parse(timestamp.to_s) rescue timestamp
+    end
+  end
+
+  # Clears protection flags so provider sync can update this entry again.
+  # Clears user_modified, import_locked flags, and all locked_attributes
+  # on both the entry and its entryable.
+  #
+  # @return [void]
+  def unlock_for_sync!
+    self.class.transaction do
+      update!(user_modified: false, import_locked: false, locked_attributes: {})
+      entryable&.update!(locked_attributes: {})
+    end
+  end
+
+  def split_parent?
+    child_entries.exists?
+  end
+
+  # Splits this entry unless it stopped being splittable. Two callers (the split dialog, two
+  # split rules, a rule and an API request) can both pass a splittable? check before either
+  # inserts children, and split! only validates its own amounts, so without the lock both sets
+  # of children would land and the amount would count twice. A provider sync can also mark the
+  # transaction pending or a transfer in between, so those are re-checked too. Returns true
+  # when it split.
+  def split_once!(splits, lock_attributes: false)
+    with_split_lock do |txn|
+      next false if split_parent? || excluded? || txn&.transfer? || txn&.pending?
+
+      split!(splits, lock_attributes: lock_attributes)
+      true
+    end
+  end
+
+  # Replaces the children of a split under the same lock, so a concurrent unsplit can't be undone
+  # and two edits can't both insert children. Returns false when the entry is no longer a split
+  # parent. Editing an existing split doesn't re-check pending/transfer: it creates no new split.
+  def resplit!(splits)
+    with_split_lock do
+      next false unless split_parent?
+
+      unsplit!
+      split!(splits)
+      true
+    end
+  end
+
+  # Unsplits under the same lock. Returns false when another caller already did.
+  def unsplit_once!
+    with_split_lock do
+      next false unless split_parent?
+
+      unsplit!
+      true
+    end
+  end
+
+  def split_child?
+    parent_entry_id.present?
+  end
+
+  # Splits this entry into child entries. Marks parent as excluded.
+  #
+  # @param splits [Array<Hash>] array of { name:, amount:, category_id:, merchant_id:, tag_ids:, excluded: } hashes.
+  #   merchant_id and tag_ids are optional per split and fall back to the parent's merchant / no tags.
+  # @param lock_attributes [Boolean] locks the category and merchant each split sets on its child, so
+  #   rules further down (or a later run) don't overwrite them. Tags are only ever added by rules.
+  # @return [Array<Entry>] the created child entries
+  def split!(splits, lock_attributes: false)
+    total = splits.sum { |s| s[:amount].to_d }
+    unless total == amount
+      raise ActiveRecord::RecordInvalid.new(self), "Split amounts must sum to parent amount (expected #{amount}, got #{total})"
+    end
+
+    self.class.transaction do
+      children = splits.map do |split_attrs|
+        child_transaction = Transaction.new(
+          category_id: split_attrs[:category_id],
+          merchant_id: split_attrs[:merchant_id].presence || entryable.try(:merchant_id),
+          tag_ids: split_attrs[:tag_ids] || [],
+          kind: entryable.try(:kind)
+        )
+        if lock_attributes
+          locked_at = Time.current
+          child_transaction.locked_attributes = split_attrs.slice(:category_id, :merchant_id).compact_blank.keys.index_with { locked_at }
+        end
+
+        child_entries.create!(
+          account: account,
+          date: date,
+          name: split_attrs[:name],
+          amount: split_attrs[:amount],
+          currency: currency,
+          notes: split_attrs[:notes],
+          import: import,
+          import_locked: import_locked,
+          excluded: TRUTHY_VALUES.include?(split_attrs[:excluded]),
+          entryable: child_transaction
+        )
+      end
+
+      update!(excluded: true)
+      mark_user_modified!
+
+      children
+    end
+  end
+
+  # Removes split children and restores parent entry.
+  def unsplit!
+    self.class.transaction do
+      child_entries.each do |child|
+        child.unsplitting = true
+        child.destroy!
+      end
+      update!(excluded: false)
+    end
+  end
+
+  class << self
+    # `family` is positional (not a keyword) on purpose: several callers pass
+    # the filters as a bare keyword-style hash (`search(status: [...])`), and
+    # a keyword parameter here would capture those as kwargs instead.
+    def search(params, family = nil)
+      EntrySearch.new(params, family: family).build_query(all)
+    end
+
+    # arbitrary cutoff date to avoid expensive sync operations
+    def min_supported_date
+      30.years.ago.to_date
+    end
+
+    # Bulk update entries with the given parameters.
+    #
+    # No authorization happens here: callers must scope the relation to entries
+    # the user may change (e.g. Current.annotatable_entries, Account.writable_by)
+    # and pass only the fields that permission allows
+    # (AccountShare::ANNOTATE_* for annotate-only shares), and must resolve
+    # category, merchant and tag IDs through the family.
+    #
+    # Tags are handled separately from other entryable attributes because they use
+    # a join table (taggings) rather than a direct column. This means:
+    # - category_id: nil means "no category" (column value)
+    # - tag_ids: [] means "delete all taggings" (join table operation)
+    #
+    # To avoid accidentally clearing tags when only updating other fields,
+    # tags are only modified when explicitly requested via update_tags: true.
+    #
+    # @param bulk_update_params [Hash] The parameters to update
+    # @param update_tags [Boolean] Whether to update tags (default: false)
+    def bulk_update!(bulk_update_params, update_tags: false)
+      bulk_attributes = {
+        date: bulk_update_params[:date],
+        notes: bulk_update_params[:notes],
+        name: bulk_update_params[:name],
+        entryable_attributes: {
+          category_id: bulk_update_params[:category_id],
+          merchant_id: bulk_update_params[:merchant_id]
+        }.compact_blank
+      }.compact_blank
+
+      tag_ids = Array.wrap(bulk_update_params[:tag_ids]).reject(&:blank?)
+      has_updates = bulk_attributes.present? || update_tags
+
+      return 0 unless has_updates
+
+      transaction do
+        all.each do |entry|
+          changed = false
+
+          # Update standard attributes
+          if bulk_attributes.present?
+            attrs = bulk_attributes.dup
+            attrs.delete(:date) if entry.split_child?
+            attrs.delete(:entryable_attributes) unless entry.transaction?
+
+            if attrs.present?
+              attrs[:entryable_attributes] = attrs[:entryable_attributes].dup if attrs[:entryable_attributes].present?
+              attrs[:entryable_attributes][:id] = entry.entryable_id if attrs[:entryable_attributes].present?
+              entry.update! attrs
+              entry.transaction.record_category_usage! if entry.transaction?
+              changed = true
+            end
+          end
+
+          # Handle tags separately - only when explicitly requested
+          if update_tags && entry.transaction?
+            entry.transaction.tag_ids = tag_ids
+            entry.transaction.save!
+            entry.entryable.lock_attr!(:tag_ids) if entry.transaction.tags.any?
+            changed = true
+          end
+
+          if changed
+            entry.lock_saved_attributes!
+            entry.mark_user_modified!
+          end
+        end
+      end
+
+      all.size
+    end
+  end
+
+  private
+    # Takes FOR UPDATE on the transaction row, then on this entry (lock! also reloads both), always
+    # in that order so the split methods can't deadlock each other. Yields the transaction, or nil
+    # for other entryables.
+    #
+    # Explicit transaction + lock!, not with_lock: Entry#transaction is the delegated_type
+    # accessor for the Transaction entryable, so with_lock silently never yields.
+    def with_split_lock
+      self.class.transaction do
+        txn = entryable if entryable.is_a?(Transaction)
+        txn&.lock!
+        lock!
+        yield txn
+      end
+    end
+
+    # Remembers the earliest date this entry had before any save that changed
+    # it, for sync_account_later to use as the sync window start.
+    #
+    # @return [Date]
+    def track_earliest_saved_date
+      @earliest_saved_date = [ @earliest_saved_date, date_before_last_save ].compact.min
+    end
+
+    def cannot_unexclude_split_parent
+      return unless excluded_changed?(from: true, to: false) && split_parent?
+
+      errors.add(:excluded, "cannot be toggled off for a split transaction")
+    end
+
+    def split_child_date_matches_parent
+      return unless split_child? && date_changed?
+      return unless parent_entry.present?
+      return if date == parent_entry.date
+
+      errors.add(:date, "must match the parent transaction date for split children")
+    end
+
+    def prevent_individual_child_deletion
+      return if destroyed_by_association || unsplitting
+
+      throw :abort
+    end
+
+    # Deliberately does not fall back to a generic label like "Unknown
+    # transaction" when neither is set -- leaving the name blank with no
+    # category or merchant selected either still fails the presence
+    # validation below, so a transaction can never end up with no
+    # information distinguishing it from any other.
+    def set_default_name
+      # Category#display_name, not #name -- default categories store the
+      # translated label in the `name` column itself (see Category#display_name),
+      # so using the raw column here would save whatever locale the category
+      # happened to be created under instead of the one the user just picked
+      # it in.
+      # entryable can be unset if entryable_type was assigned without the
+      # nested entryable_attributes that would normally build it (e.g. a
+      # malformed API request) -- guard the dereference instead of raising.
+      parts = [ entryable&.category&.display_name.presence, entryable&.merchant&.name.presence ].compact
+      self.name = parts.join(" - ") if parts.any?
+    end
+end

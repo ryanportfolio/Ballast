@@ -1,0 +1,322 @@
+# Welcome to Sure!
+
+This guide aims to assist new users through:
+
+1. Creating a Sure account
+2. Adding your first accounts
+3. Recording transactions
+
+This guide also covers the differences between **asset** and **liability** accounts, a key concept for using and understanding balances in Sure!
+
+> **Important:** Sure is evolving quickly. If you find something inaccurate while following this guide, please:
+> 
+> - Ask in the [Discord](https://discord.gg/36ZGBsxYEK)
+> - Open an [issue](https://github.com/we-promise/sure/issues/new/choose)
+> - Or if you know the answer, open a [PR](https://github.com/we-promise/sure/compare)!
+
+
+## 1. Creating your Sure Account
+
+Once Sure is installed, open a browser and navigate to [localhost:3000](http://localhost:3000).<br />
+On a fresh install you will land directly on the **Create account** page (pictured below) - there is no separate sign-up step.
+
+<img width="1280" height="713" alt="Landing page on a fresh install." src="assets/guide-create-account.png" />
+<br />
+<br />
+
+You'll be guided through a short series of screens to set your **login details**, **personal information**, and **preferences**.<br />
+When you arrive at the main dashboard, showing **No accounts yet**, you're all set up!
+
+<img width="1280" height="713" alt="Blank home screen of Sure, with no accounts yet." src="assets/guide-empty-dashboard.png" />
+<br />
+<br />
+
+> **Note:** The next sections of this guide cover how to **manually add accounts and transactions** in Sure.<br />
+> If you'd rather connect your bank, Ballast syncs through [**SimpleFIN**](https://beta-bridge.simplefin.org/), the only bank sync provider it keeps.
+>
+> See **Settings > Bank sync** in your instance for its setup options. Only **admin** users can connect a provider.
+>
+> Even if you use an integration, we still recommend reading through this guide to understand **account types** and how they work in Sure.
+
+
+## 2. Account Types in Sure
+
+Sure supports several account types, which are grouped into **Assets** (things you own) and **Debts/Liabilities** (things you owe):
+
+| Assets      | Debts/Liabilities |
+| ----------- | ----------------- |
+| Cash        | Credit Card       |
+| Investment  | Loan              |
+| Crypto      | Other Liability   |
+| Property    |                   |
+| Vehicle     |                   |
+| Other Asset |                   |
+
+
+## 3. How Asset Accounts Work
+
+Cash, checking and savings accounts **increase** when you add money and **decrease** when you spend money.
+
+Example:
+
+- Starting balance: $500
+- Add an expense of $20 -> balance is now $480
+- Add an income of $100 -> balance is now $580
+
+
+## 4. How Debt Accounts Work (Liabilities)
+
+Liability accounts track how much money you **owe**, so the math can feel *backwards* compared to an asset account.
+
+**Key rule:**
+
+- **Positive Balances** = you owe money
+- **Negative balances** = the bank owes *you* (e.g. overpayment or refund)
+
+**Transactions behave like this:**
+
+- **Expenses** (e.g. purchases) => increase your debt (you owe more)
+- **Payments or refunds** => decrease your debt (you owe less)
+
+Credit Card example:
+
+1. Balance: **$200 owed**
+2. Spend $20 => You now owe $220 (balance goes *up* in red)
+3. Pay off $50 => You now owe $170 (balance goes *down* in green)
+
+Overpayment Example:
+
+1. Balance: -$44 (bank owes you $44)
+2. Spend $1 => Bank now owes you **$43** (balance shown as -$43, moving towards zero)
+
+> **Tip:** Why does it work this way? This matches standard accounting and what your credit card provider shows online. Think of a liability balance as "**Amount Owed**", not "available cash."
+
+
+## 5. Quick Reference: Assets vs. Liability Behavior
+
+| Action           | Asset Account (e.g. Checking) | Liability Account (e.g. Credit Card) |
+| ---------------- | ----------------------------- | ------------------------------------ |
+| Spend $20        | Balance ↓ $20                 | Balance ↑ $20 (more debt)            |
+| Receive $50      | Balance ↑ $50                 | Balance ↓ $50 (less debt)            |
+| Negative Balance | Overdraft                     | Bank owes *you* money                |
+
+
+## 6. Adding Accounts
+
+For this example we'll add a **Savings Account**.<br />
+
+> **Tip:** If you're adding a **credit card**, **loan**, or any other **debt**, be sure to select a **Credit Card** or **Liability** account type instead of **Cash**. This will ensure balances update correctly and match what your bank shows.
+
+Most bank accounts (checking, savings, money market) are **Cash Accounts**
+1. Click **Add account** (on the dashboard) or **New account** (on the Accounts page), then choose **Cash**
+2. Choose **Enter account balance** to add the account manually. (If bank sync is configured, admins also see **Link with ...** provider options here.)
+3. Fill in the details:
+   - **Account name**
+   - **Balance on date** (the balance as of the **Opening balance date** below - that date defaults to two years ago, so set it to today if you're entering your current balance)
+   - **Opening balance date**
+   - **Subtype** (this is where you specify checking, savings, or another type)
+4. Click **Create Account** when you are ready to proceed.
+
+<img width="570" height="455" alt="Cash Account creation menu" src="assets/guide-account-modal.png" />
+<br />
+<br />
+
+Once created, you'll return to the **Home** screen.<br />
+You'll now see:
+- Your new cash account in the **Accounts** list (left side)
+- An overview of your accounts in the center, under the net worth bar.
+
+To get this bar moving let's add some transactions!
+
+<img width="1280" height="713" alt="Home screen of Sure, showing one account and no transactions." src="assets/guide-dashboard-one-account.png" />
+
+## 7. Adding Transactions
+
+To add a transaction:
+1. Go to the **Transactions** page (left sidebar, just under **Home**)
+2. Click **New transaction** (top right; a round **+** button on mobile)
+3. Choose the transaction type:
+   - **Expense** → Spending money
+   - **Income** → Receiving money
+   - **Transfer** → Move money between accounts
+4. Enter the details, then click **Add transaction**
+
+You will now see the transaction you added in your **transaction history**, as well as the **net worth chart** updating accordingly.
+
+<img width="566" height="587" alt="Filled-out expense form" src="assets/guide-expense-form.png" />
+
+### Uploading statements
+
+You can keep your bank's statements next to an account and let Sure check its balances against them. Open an account and upload the PDF, CSV or XLSX files in **Statements**, or use **Settings → Statement Vault** to upload first and link later.
+
+Sure needs each statement's **period** to show which months are covered and to compare balances. It finds the period in this order:
+
+1. **Inside the PDF**, when the statement states its period: as a date range, e.g. `01 Apr 2026 - 30 Apr 2026` or `01.04.2026 – 30.04.2026`, or as the dates of its opening and closing balance, e.g. "Saldo iniziale al 01.07.2025" and "Saldo finale al 30.09.2025". Sure also reads the opening and closing balance when the statement shows them in a balance summary or next to labels such as "Opening balance" and "Closing balance". Month names and labels are recognised in English, Italian, German, French, Spanish, Dutch and Portuguese. A file name without a date, like Trade Republic's `Account statement.pdf`, then doesn't matter.
+2. **Dates in the filename**, for everything else, e.g. `2026-04`, `2026-04-30` or `Apr 2026`.
+3. **Manually**: open the statement and enter the period and balances yourself.
+
+If your bank names every file the same way, add the month to the filename before uploading, e.g. `Statement 2026-04.pdf`.
+
+## 8. Managing Investment Accounts
+
+If you're tracking investments in Sure, there are additional features to help you manage your portfolio accurately.
+
+### Cost Basis Tracking
+
+Cost basis tracking helps you understand the original purchase price of your investments, which is essential for calculating returns and tax reporting.
+
+#### Cost Basis Sources
+
+Sure tracks cost basis from three sources:
+
+| Source | Description |
+| --- | --- |
+| **Manual** | User-entered values that you set directly |
+| **Calculated** | Computed from your buy trades and transaction history |
+| **Provider** | Imported from your financial institution through SimpleFIN |
+
+#### Priority Hierarchy
+
+When multiple sources provide cost basis data, Sure uses this priority:
+
+**Manual > Calculated > Provider**
+
+This means:
+- Manual values always take precedence
+- Calculated values override provider data
+- Provider data is used when no other source is available
+
+#### Lock Protection
+
+When you manually set a cost basis, Sure automatically locks it to prevent automatic updates from overwriting your value. This ensures your manual entries remain intact during account syncs.
+
+#### Setting Cost Basis Manually
+
+You can set cost basis in two ways:
+
+**From the Holdings List:**
+
+1. Navigate to your investment account
+2. Find the holding in your portfolio
+3. Click the average cost value (a pencil icon appears on hover)
+4. Enter either:
+   - **Total cost basis**: The total amount you paid for all shares
+   - **Per-share cost**: The average price per share
+5. The form automatically converts between total and per-share values
+6. Click **Save**
+
+The system will show a confirmation if you're overwriting an existing cost basis.
+
+<img width="570" height="713" alt="Holding drawer with the cost basis editor for AAPL." src="assets/guide-cost-basis-editor.png" />
+
+
+**From the Holding Drawer:**
+
+1. Click on a holding to open its detail drawer
+2. In the Overview section, click the pencil icon next to "Average Cost"
+3. Enter the cost basis (total or per-share)
+4. Click **Save**
+
+After saving, you'll see:
+- A lock icon indicating the value is protected
+- A source label showing "(manual)"
+
+#### Unlocking Cost Basis
+
+If you want to allow automatic updates to recalculate your cost basis:
+
+1. Open the holding drawer
+2. Scroll to the **Settings** section
+3. Find "Cost basis locked"
+4. Click **Unlock**
+
+After unlocking:
+- The lock icon disappears
+- Future syncs can update the cost basis
+- Calculated values (from trades) will replace the manual value
+
+<img width="570" height="713" alt="Holding settings showing the locked cost basis with the Unlock option." src="assets/guide-cost-basis-unlock.png" />
+
+#### Bidirectional Conversion
+
+The cost basis editor provides real-time conversion between total and per-share values:
+
+- Enter total cost → automatically calculates per-share cost
+- Enter per-share cost → automatically calculates total cost
+
+This makes it easy to enter cost basis in whichever format you have available.
+
+### Investment Activity Labels
+
+Activity labels help you classify and understand investment transactions. They appear as badges in your transaction list and can be used to organize and filter your investment activity.
+
+#### Available Activity Types
+
+Sure supports these investment activity labels:
+
+| Label | Description |
+| --- | --- |
+| **Buy** | Purchase of securities |
+| **Sell** | Sale of securities |
+| **Contribution** | Money added to the investment account |
+| **Withdrawal** | Money removed from the investment account |
+| **Dividend** | Dividend payments received |
+| **Interest** | Interest earned |
+| **Reinvestment** | Dividends or distributions reinvested |
+| **Sweep In** | Cash swept into the account |
+| **Sweep Out** | Cash swept out of the account |
+| **Fee** | Account or transaction fees |
+| **Exchange** | Currency or security exchanges |
+| **Transfer** | Transfers between accounts |
+| **Other** | Miscellaneous transactions |
+
+#### Setting Activity Labels
+
+You can set activity labels in two ways:
+
+**Manually for Individual Transactions:**
+
+1. Open a transaction from an investment or crypto account
+2. Scroll to the **Settings** section
+3. Find "Activity type"
+4. Select a label from the dropdown
+5. The change saves automatically
+
+**Automatically with Rules:**
+
+Create rules to automatically label transactions based on patterns:
+
+1. Go to **Settings > Rules**
+2. Create a new rule
+3. Set conditions (e.g., "IF transaction name contains 'DIVIDEND'")
+4. Add action: "Set investment activity label"
+5. Choose the label (e.g., "Dividend")
+6. Save the rule
+
+<img width="554" height="708" alt="New rule form that sets the investment activity label to Dividend when the transaction name contains DIVIDEND." src="assets/guide-rule-activity-label.png" />
+
+Example rules:
+- IF name contains "DIVIDEND" THEN set label to "Dividend"
+- IF name contains "INTEREST" THEN set label to "Interest"
+- IF name contains "FEE" THEN set label to "Fee"
+
+Rules apply automatically to new transactions and can be run on existing transactions.
+
+#### Viewing Activity Labels
+
+Activity labels appear as badges in:
+- Transaction lists
+- Transaction detail drawers
+- Account activity views
+
+They help you quickly identify the nature of each investment transaction without reading the full transaction name.
+
+## 9. Next Steps
+
+Now that you have one account and your first transaction:
+- Explore the other account types that Sure offers, adding ones relevant to your finances.
+- **Categorize** and **Tag** transactions for better searching and reporting.
+- Experiment with **Budgets** to track your spending habits.
+- If you have many historical transactions, use **Import** (the Import button on the Transactions page, or **Settings > Imports**) to load them in.
+
+More detailed user guides for these features are coming soon™.

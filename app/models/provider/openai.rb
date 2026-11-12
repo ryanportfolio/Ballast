@@ -1,0 +1,939 @@
+class Provider::Openai < Provider
+  include LlmConcept
+  include LangfuseTraceable
+
+  # Subclass so errors caught in this provider are raised as Provider::Openai::Error
+  Error = Class.new(Provider::Error)
+
+  # Raised when a successful HTTP response can't be parsed into the expected
+  # structure; used by Auto JSON mode to decide whether to retry without
+  # response_format.
+  ResponseFormatError = Class.new(Error)
+
+  DEFAULT_MODEL = "gpt-4.1".freeze
+  DEFAULT_REQUEST_TIMEOUT = 60
+  MIN_REQUEST_TIMEOUT = 1
+  SUPPORTED_MODELS = %w[gpt-4 gpt-5 gpt-6 o1 o3].freeze
+  VISION_CAPABLE_MODEL_PREFIXES = %w[gpt-4o gpt-4-turbo gpt-4.1 gpt-5 gpt-6 o1 o3].freeze
+  PDF_COMPLETION_LIMIT_MODEL_PREFIXES = %w[gpt-6 o1 o3].freeze
+
+  # Keep the provider's response budget and the PDF request parameter in sync.
+  # @return [Boolean] whether native PDF vision uses max_completion_tokens
+  def self.native_pdf_completion_limit?(model:, custom_provider:)
+    !custom_provider && PDF_COMPLETION_LIMIT_MODEL_PREFIXES.any? { |prefix| model.to_s.start_with?(prefix) }
+  end
+
+  # Returns the effective model that would be used by the provider.
+  # Priority: explicit ENV > Setting > DEFAULT_MODEL. A blank ENV value is
+  # treated as unset and falls through to the Setting.
+  def self.effective_model
+    configured_model = ENV["OPENAI_MODEL"].presence || Setting.openai_model
+    configured_model.presence || DEFAULT_MODEL
+  end
+
+  def self.configured?
+    ENV["OPENAI_ACCESS_TOKEN"].present? || Setting.openai_access_token.present?
+  end
+
+  # Effective per-request HTTP timeout for OpenAI-compatible calls.
+  # Precedence matches other self-hosting settings: ENV > Setting > default.
+  #
+  # @return [Integer] timeout in seconds, at least MIN_REQUEST_TIMEOUT
+  def self.request_timeout
+    configured = ENV["OPENAI_REQUEST_TIMEOUT"].to_s.strip.to_i
+    configured = Setting.openai_request_timeout.to_i unless configured.positive?
+    return DEFAULT_REQUEST_TIMEOUT unless configured.positive?
+
+    [ configured, MIN_REQUEST_TIMEOUT ].max
+  end
+
+  # Extra HTTP headers for OpenAI-compatible requests, parsed from the
+  # OPENAI_EXTRA_HEADERS env var (a JSON object). ENV-only: no Setting
+  # fallback. Keys and values are stringified for Faraday; blank values are
+  # dropped. Nested JSON values are Ruby-inspect-stringified, not
+  # JSON-serialized. Fail-closed: any parse problem yields {} plus an error
+  # log (raw value never logged) so chat never breaks from bad config.
+  #
+  # @return [Hash<String, String>] parsed headers, {} when unset or invalid
+  def self.extra_headers
+    raw = ENV["OPENAI_EXTRA_HEADERS"].presence
+    return {} unless raw
+
+    parsed = JSON.parse(raw)
+    unless parsed.is_a?(Hash)
+      Rails.logger.error("OPENAI_EXTRA_HEADERS must be a JSON object; ignoring")
+      return {}
+    end
+    parsed.transform_keys(&:to_s).transform_values(&:to_s).compact_blank
+  rescue JSON::ParserError, TypeError
+    Rails.logger.error("OPENAI_EXTRA_HEADERS is not valid JSON; ignoring")
+    {}
+  end
+
+  # Builds a client that uses the effective request timeout for every OpenAI call.
+  # Static extra headers from OPENAI_EXTRA_HEADERS are attached at construction;
+  # session-valued headers are withheld for per-request resolution.
+  #
+  # @param access_token [String] API token for the OpenAI-compatible endpoint
+  # @param uri_base [String, nil] custom endpoint base URL (OpenAI when nil)
+  # @param model [String, nil] default model; required when uri_base is set
+  # @return [void]
+  def initialize(access_token, uri_base: nil, model: nil)
+    client_options = { access_token: access_token }
+    llm_uri_base = uri_base.presence
+    llm_model = model.presence
+    client_options[:uri_base] = llm_uri_base if llm_uri_base.present?
+    client_options[:request_timeout] = self.class.request_timeout
+    parsed_headers = self.class.extra_headers
+    @session_extra_headers = parsed_headers.select { |_, value| value.include?("{session_id}") }
+    static_headers = parsed_headers.except(*@session_extra_headers.keys)
+    client_options[:extra_headers] = static_headers if static_headers.present?
+
+    @client = ::OpenAI::Client.new(**client_options)
+    @uri_base = llm_uri_base
+    if custom_provider? && llm_model.blank?
+      raise Error, "Model is required when using a custom OpenAI‑compatible provider"
+    end
+    @default_model = llm_model.presence || self.class.effective_model
+  end
+
+  def supports_model?(model)
+    # If using custom uri_base, support any model
+    return true if custom_provider?
+
+    # Otherwise, check if model starts with any supported OpenAI prefix
+    SUPPORTED_MODELS.any? { |prefix| model.start_with?(prefix) }
+  end
+
+  def supports_responses_endpoint?
+    return @supports_responses_endpoint if defined?(@supports_responses_endpoint)
+
+    env_override = ENV["OPENAI_SUPPORTS_RESPONSES_ENDPOINT"]
+    if env_override.to_s.present?
+      return @supports_responses_endpoint = ActiveModel::Type::Boolean.new.cast(env_override)
+    end
+
+    @supports_responses_endpoint = !custom_provider?
+  end
+
+  def provider_name
+    custom_provider? ? "Custom OpenAI-compatible (#{@uri_base})" : "OpenAI"
+  end
+
+  def supported_models_description
+    if custom_provider?
+      @default_model.present? ? "configured model: #{@default_model}" : "any model"
+    else
+      "models starting with: #{SUPPORTED_MODELS.join(", ")}"
+    end
+  end
+
+  def custom_provider?
+    @uri_base.present?
+  end
+
+  # Token-budget knobs. Precedence: ENV > Setting > default. Defaults match
+  # Ollama's historical 2048-token baseline so local small-context models work
+  # out of the box. Users on larger-context cloud models can raise via ENV or
+  # via the Self-Hosting settings page.
+  def context_window
+    # Single source of truth shared with prompt assembly, so the assistant's
+    # collapse-to-counts decision always agrees with the window used here.
+    Assistant::TokenBudget.context_window
+  end
+
+  def max_response_tokens
+    positive_budget(ENV["LLM_MAX_RESPONSE_TOKENS"], Setting.llm_max_response_tokens, 512)
+  end
+
+  # The response cap is only sent to the provider when someone explicitly
+  # configured it (ENV or a stored Setting). The 512 fallback above exists for
+  # budget math and must not silently truncate replies on stock installs.
+  def explicit_max_response_tokens
+    explicit = ENV["LLM_MAX_RESPONSE_TOKENS"].to_s.strip.to_i
+    return explicit if explicit.positive?
+
+    from_setting = Setting.llm_max_response_tokens.to_i
+    return from_setting if from_setting.positive?
+
+    nil
+  end
+
+  def system_prompt_reserve
+    positive_budget(ENV["LLM_SYSTEM_PROMPT_RESERVE"], nil, 256)
+  end
+
+  def max_history_tokens(instructions: nil)
+    explicit = ENV["LLM_MAX_HISTORY_TOKENS"].presence&.to_i
+    return explicit if explicit&.positive?
+
+    # When the actual instructions are in hand, budget against their real
+    # estimated size instead of the flat reserve; the prompt with session
+    # context routinely exceeds the historical 256-token figure.
+    prompt_reserve =
+      if instructions.present?
+        Assistant::TokenEstimator.estimate(instructions.to_s)
+      else
+        system_prompt_reserve
+      end
+
+    [ context_window - max_response_tokens - prompt_reserve, 256 ].max
+  end
+
+  # Budget available for a one-shot (non-chat) request's full input,
+  # excluding reserved response tokens AND the system/instructions prompt.
+  # Drives the batch slicer for the auto_categorize / auto_detect_merchants /
+  # enhance_provider_merchants calls — each ships ~200–400 tokens of
+  # instructions + JSON schema that aren't counted in `fixed_tokens`.
+  def max_input_tokens
+    [ context_window - max_response_tokens - system_prompt_reserve, 256 ].max
+  end
+
+  def auto_categorize(transactions: [], user_categories: [], model: "", family: nil, json_mode: nil)
+    with_provider_response do
+      if user_categories.blank?
+        family_id = family&.id || "unknown"
+        Rails.logger.error("Cannot auto-categorize transactions for family #{family_id}: no categories available")
+        raise Error, "No categories available for auto-categorization"
+      end
+
+      effective_model = model.presence || @default_model
+
+      trace = create_langfuse_trace(
+        name: "openai.auto_categorize",
+        input: { transactions: transactions, user_categories: user_categories }
+      )
+
+      batches = slice_for_context(transactions, fixed: user_categories)
+
+      result = batches.flat_map do |batch|
+        AutoCategorizer.new(
+          client,
+          model: effective_model,
+          transactions: batch,
+          user_categories: user_categories,
+          custom_provider: custom_provider?,
+          langfuse_trace: trace,
+          family: family,
+          json_mode: json_mode
+        ).auto_categorize
+      end
+
+      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
+
+      result
+    rescue => error
+      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
+      raise
+    end
+  end
+
+  def suggest_bill_setup(charges: [], categories: [], current_config: nil, model: "", family: nil)
+    with_provider_response do
+      effective_model = model.presence || @default_model
+
+      trace = create_langfuse_trace(
+        name: "openai.suggest_bill_setup",
+        input: { charges: charges, configure_mode: current_config.present? }
+      )
+
+      result = BillSetupSuggester.new(
+        client,
+        model: effective_model,
+        charges: charges,
+        categories: categories,
+        current_config: current_config,
+        langfuse_trace: trace,
+        family: family
+      ).suggest
+
+      finish_langfuse_trace(trace: trace, output: result.to_h)
+
+      result
+    rescue => error
+      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
+      raise
+    end
+  end
+
+  def auto_detect_merchants(transactions: [], user_merchants: [], model: "", family: nil, json_mode: nil)
+    with_provider_response do
+      effective_model = model.presence || @default_model
+
+      trace = create_langfuse_trace(
+        name: "openai.auto_detect_merchants",
+        input: { transactions: transactions, user_merchants: user_merchants }
+      )
+
+      batches = slice_for_context(transactions, fixed: user_merchants)
+
+      result = batches.flat_map do |batch|
+        AutoMerchantDetector.new(
+          client,
+          model: effective_model,
+          transactions: batch,
+          user_merchants: user_merchants,
+          custom_provider: custom_provider?,
+          langfuse_trace: trace,
+          family: family,
+          json_mode: json_mode
+        ).auto_detect_merchants
+      end
+
+      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
+
+      result
+    rescue => error
+      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
+      raise
+    end
+  end
+
+  def enhance_provider_merchants(merchants: [], model: "", family: nil, json_mode: nil)
+    with_provider_response do
+      effective_model = model.presence || @default_model
+
+      trace = create_langfuse_trace(
+        name: "openai.enhance_provider_merchants",
+        input: { merchants: merchants }
+      )
+
+      batches = slice_for_context(merchants)
+
+      result = batches.flat_map do |batch|
+        ProviderMerchantEnhancer.new(
+          client,
+          model: effective_model,
+          merchants: batch,
+          custom_provider: custom_provider?,
+          langfuse_trace: trace,
+          family: family,
+          json_mode: json_mode
+        ).enhance_merchants
+      end
+
+      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
+
+      result
+    rescue => error
+      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
+      raise
+    end
+  end
+
+  # Can be disabled via ENV for OpenAI-compatible endpoints that don't support vision
+  # Only vision-capable models (gpt-4o, gpt-4-turbo, gpt-4.1, etc.) support PDF input
+  def supports_pdf_processing?(model: @default_model)
+    return false unless ENV.fetch("OPENAI_SUPPORTS_PDF_PROCESSING", "true").to_s.downcase.in?(%w[true 1 yes])
+
+    # Custom providers manage their own model capabilities
+    return true if custom_provider?
+
+    # Check if the specified model supports vision/PDF input
+    VISION_CAPABLE_MODEL_PREFIXES.any? { |prefix| model.start_with?(prefix) }
+  end
+
+  # Analyze PDF bytes with the selected model and attribute usage to the family.
+  # @param pdf_content [String] PDF bytes
+  # @param model [String] optional override of the configured model
+  # @param family [Family, nil] usage attribution
+  # @return [Provider::Response] structured result or provider failure
+  def process_pdf(pdf_content:, model: "", family: nil, json_mode: nil)
+    with_provider_response do
+      effective_model = model.presence || @default_model
+      raise Error, "Model does not support PDF/vision processing: #{effective_model}" unless supports_pdf_processing?(model: effective_model)
+
+      trace = create_langfuse_trace(
+        name: "openai.process_pdf",
+        input: { pdf_size: pdf_content&.bytesize }
+      )
+
+      # Reasoning-model completion limits include reasoning; the fallback is a budget reserve.
+      response_limit =
+        if self.class.native_pdf_completion_limit?(model: effective_model, custom_provider: custom_provider?)
+          explicit_max_response_tokens
+        else
+          max_response_tokens
+        end
+
+      result = PdfProcessor.new(
+        client,
+        model: effective_model,
+        pdf_content: pdf_content,
+        custom_provider: custom_provider?,
+        langfuse_trace: trace,
+        family: family,
+        max_response_tokens: response_limit,
+        json_mode: json_mode
+      ).process
+
+      finish_langfuse_trace(trace: trace, output: result.to_h)
+
+      result
+    rescue => error
+      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
+      raise
+    end
+  end
+
+  def extract_bank_statement(pdf_content:, model: "", family: nil, json_mode: nil)
+    with_provider_response do
+      effective_model = model.presence || @default_model
+
+      trace = create_langfuse_trace(
+        name: "openai.extract_bank_statement",
+        input: { pdf_size: pdf_content&.bytesize }
+      )
+
+      result = BankStatementExtractor.new(
+        client: client,
+        pdf_content: pdf_content,
+        model: effective_model,
+        json_mode: json_mode
+      ).extract
+
+      finish_langfuse_trace(trace: trace, output: { transaction_count: result[:transactions].size })
+
+      result
+    rescue => error
+      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
+      raise
+    end
+  end
+
+  def chat_response(
+    prompt,
+    model:,
+    instructions: nil,
+    functions: [],
+    function_results: [],
+    tool_choice: nil,
+    messages: nil,
+    conversation_history: [],
+    streamer: nil,
+    previous_response_id: nil,
+    session_id: nil,
+    user_identifier: nil,
+    family: nil
+  )
+    if supports_responses_endpoint?
+      # Native path uses the Responses API which chains history via
+      # `previous_response_id`; it does NOT need (and must not receive)
+      # inline message history in the input payload.
+      native_chat_response(
+        prompt: prompt,
+        model: model,
+        instructions: instructions,
+        functions: functions,
+        function_results: function_results,
+        tool_choice: tool_choice,
+        streamer: streamer,
+        previous_response_id: previous_response_id,
+        session_id: session_id,
+        user_identifier: user_identifier,
+        family: family
+      )
+    else
+      generic_chat_response(
+        prompt: prompt,
+        model: model,
+        instructions: instructions,
+        functions: functions,
+        function_results: function_results,
+        tool_choice: tool_choice,
+        messages: messages,
+        streamer: streamer,
+        session_id: session_id,
+        user_identifier: user_identifier,
+        family: family
+      )
+    end
+  end
+
+  private
+    attr_reader :client
+
+    # Substitutes {session_id} into session-valued extra headers for this chat
+    # request. Static headers were already set at construction; a session
+    # header without a session_id is simply never applied. Returns a
+    # request-scoped client copy carrying the resolved headers — session
+    # headers must not persist on the shared client, so later batch requests
+    # (which reuse this provider instance's client) never see them.
+    #
+    # @param session_id [String, nil] chat session UUID to substitute
+    # @return [OpenAI::Client] scoped copy when session headers apply, otherwise
+    #   the shared client
+    def with_session_headers(session_id:)
+      return client if @session_extra_headers.blank? || session_id.blank?
+
+      session_client = client.dup
+      session_client.add_headers(
+        @session_extra_headers.transform_values { |value| value.gsub("{session_id}") { session_id } }
+      )
+      session_client
+    end
+
+    # Returns the first positive integer among env, setting, default. Treats
+    # zero or negative values as "unset" and falls through — a 0-token budget
+    # is never what the user meant.
+    def positive_budget(env_value, setting_value, default)
+      from_env = env_value.to_s.strip.to_i
+      return from_env if from_env.positive?
+      return setting_value.to_i if setting_value.to_i.positive?
+      default
+    end
+
+    # Routes one-shot (non-chat) inputs through the BatchSlicer so large
+    # caller batches are split to fit the model's context window. `fixed` is
+    # the portion of the prompt that stays constant across every sub-batch
+    # (e.g. user_categories, user_merchants), used for fixed-tokens accounting.
+    def slice_for_context(items, fixed: nil)
+      BatchSlicer.call(
+        Array(items),
+        max_tokens: max_input_tokens,
+        fixed_tokens: fixed ? Assistant::TokenEstimator.estimate(fixed) : 0
+      )
+    end
+
+    def native_chat_response(
+      prompt:,
+      model:,
+      instructions: nil,
+      functions: [],
+      function_results: [],
+      tool_choice: nil,
+      streamer: nil,
+      previous_response_id: nil,
+      session_id: nil,
+      user_identifier: nil,
+      family: nil
+    )
+      with_provider_response do
+        session_client = with_session_headers(session_id: session_id)
+
+        chat_config = ChatConfig.new(
+          functions: functions,
+          function_results: function_results
+        )
+
+        collected_chunks = []
+
+        # Proxy that converts raw stream to "LLM Provider concept" stream
+        stream_proxy = if streamer.present?
+          proc do |chunk|
+            parsed_chunk = ChatStreamParser.new(chunk).parsed
+
+            unless parsed_chunk.nil?
+              streamer.call(parsed_chunk)
+              collected_chunks << parsed_chunk
+            end
+          end
+        else
+          nil
+        end
+
+        input_payload = chat_config.build_input(prompt: prompt)
+
+        start_time = Time.current
+
+        begin
+          request_params = {
+            model: model,
+            input: input_payload,
+            instructions: instructions,
+            tools: chat_config.tools,
+            previous_response_id: previous_response_id,
+            stream: stream_proxy
+          }
+          request_params[:tool_choice] = "none" if tool_choice == :none && chat_config.tools.present?
+          request_params[:max_output_tokens] = explicit_max_response_tokens if explicit_max_response_tokens
+
+          raw_response = session_client.responses.create(parameters: request_params)
+
+          # If streaming, Ruby OpenAI does not return anything, so to normalize this method's API, we search
+          # for the "response chunk" in the stream and return it (it is already parsed)
+          if stream_proxy.present?
+            error_chunk = collected_chunks.find { |chunk| chunk.type == "error" }
+            response_chunk = collected_chunks.find { |chunk| chunk.type == "response" }
+
+            if response_chunk.nil?
+              raise Error.new(
+                build_stream_error_message(error_chunk),
+                details: error_chunk&.data&.details
+              )
+            end
+
+            response = response_chunk.data
+            usage = response_chunk.usage
+            Rails.logger.debug("Stream response usage: #{usage.inspect}")
+            log_langfuse_generation(
+              name: "chat_response",
+              model: model,
+              input: input_payload,
+              output: response.messages.map(&:output_text).join("\n"),
+              usage: usage,
+              session_id: session_id,
+              user_identifier: user_identifier,
+              start_time: start_time
+            )
+            record_llm_usage(family: family, model: model, operation: "chat", usage: usage)
+            response
+          else
+            parsed = ChatParser.new(raw_response).parsed
+            Rails.logger.debug("Non-stream raw_response['usage']: #{raw_response['usage'].inspect}")
+            log_langfuse_generation(
+              name: "chat_response",
+              model: model,
+              input: input_payload,
+              output: parsed.messages.map(&:output_text).join("\n"),
+              usage: raw_response["usage"],
+              session_id: session_id,
+              user_identifier: user_identifier,
+              start_time: start_time
+            )
+            record_llm_usage(family: family, model: model, operation: "chat", usage: raw_response["usage"])
+            parsed
+          end
+        rescue => e
+          log_langfuse_generation(
+            name: "chat_response",
+            model: model,
+            input: input_payload,
+            error: e,
+            session_id: session_id,
+            user_identifier: user_identifier,
+            start_time: start_time
+          )
+          record_llm_usage(family: family, model: model, operation: "chat", error: e)
+          raise
+        end
+      end
+    end
+
+    def generic_chat_response(
+      prompt:,
+      model:,
+      instructions: nil,
+      functions: [],
+      function_results: [],
+      tool_choice: nil,
+      messages: nil,
+      streamer: nil,
+      session_id: nil,
+      user_identifier: nil,
+      family: nil
+    )
+      with_provider_response do
+        session_client = with_session_headers(session_id: session_id)
+
+        messages = build_generic_messages(
+          prompt: prompt,
+          instructions: instructions,
+          function_results: function_results,
+          messages: messages
+        )
+
+        tools = build_generic_tools(functions)
+
+        # Force synchronous calls for generic chat (streaming not supported for custom providers)
+        params = {
+          model: model,
+          messages: messages
+        }
+        params[:tools] = tools if tools.present?
+        params[:tool_choice] = "none" if tool_choice == :none && tools.present?
+        params[:max_tokens] = explicit_max_response_tokens if explicit_max_response_tokens
+
+        start_time = Time.current
+
+        begin
+          raw_response = session_client.chat(parameters: params)
+
+          parsed = GenericChatParser.new(raw_response).parsed
+
+          log_langfuse_generation(
+            name: "chat_response",
+            model: model,
+            input: messages,
+            output: parsed.messages.map(&:output_text).join("\n"),
+            usage: raw_response["usage"],
+            session_id: session_id,
+            user_identifier: user_identifier,
+            start_time: start_time
+          )
+
+          record_llm_usage(family: family, model: model, operation: "chat", usage: raw_response["usage"])
+
+          # If a streamer was provided, manually call it with the parsed response
+          # to maintain the same contract as the streaming version
+          if streamer.present?
+            # Emit output_text chunks for each message
+            parsed.messages.each do |message|
+              if message.output_text.present?
+                streamer.call(Provider::LlmConcept::ChatStreamChunk.new(type: "output_text", data: message.output_text, usage: nil))
+              end
+            end
+
+            # Emit response chunk
+            streamer.call(Provider::LlmConcept::ChatStreamChunk.new(type: "response", data: parsed, usage: raw_response["usage"]))
+          end
+
+          parsed
+        rescue => e
+          log_langfuse_generation(
+            name: "chat_response",
+            model: model,
+            input: messages,
+            error: e,
+            session_id: session_id,
+            user_identifier: user_identifier,
+            start_time: start_time
+          )
+          record_llm_usage(family: family, model: model, operation: "chat", error: e)
+          raise
+        end
+      end
+    end
+
+    def build_generic_messages(prompt:, instructions: nil, function_results: [], messages: nil)
+      payload = []
+
+      # Add system message if instructions present
+      if instructions.present?
+        payload << { role: "system", content: instructions }
+      end
+
+      # Add conversation history or user prompt. History is trimmed to fit the
+      # configured token budget so small-context local models (Ollama, LM Studio,
+      # LocalAI) don't silently truncate. tool_call/tool_result pairs are
+      # preserved atomically by HistoryTrimmer.
+      if messages.present?
+        trimmed = Assistant::HistoryTrimmer.new(messages, max_tokens: max_history_tokens(instructions: instructions)).call
+        payload.concat(trimmed)
+      elsif prompt.present?
+        payload << { role: "user", content: prompt }
+      end
+
+      # For each tool round, add the assistant message that made the tool calls
+      # followed by the tool messages with the results, in order, so each
+      # follow-up request extends the previous one and prefix caches stay valid.
+      Assistant::Responder.group_by_round(function_results).each do |round_results|
+        # Build assistant message with tool_calls
+        tool_calls = round_results.map do |fn_result|
+          # Shared with ToolCall::Function.serialize_arguments so history and
+          # follow-up payloads stay in sync for strict OpenAI-compatible endpoints.
+          arguments_str = ToolCall::Function.serialize_arguments(fn_result[:arguments])
+
+          call = {
+            id: fn_result[:call_id],
+            type: "function",
+            function: {
+              name: fn_result[:name],
+              arguments: arguments_str
+            }
+          }
+          call[:extra_content] = fn_result[:extra_content] if fn_result[:extra_content].present?
+          call
+        end
+
+        payload << {
+          role: "assistant",
+          content: "",  # Some OpenAI-compatible APIs require string, not null
+          tool_calls: tool_calls
+        }
+
+        # Add function results as tool messages
+        round_results.each do |fn_result|
+          # Convert output to JSON string if it's not already a string
+          # OpenAI API requires content to be either a string or array of objects
+          # Handle nil explicitly to avoid serializing to "null"
+          output = fn_result[:output]
+          content = if output.nil?
+            ""
+          elsif output.is_a?(String)
+            output
+          else
+            output.to_json
+          end
+
+          payload << {
+            role: "tool",
+            tool_call_id: fn_result[:call_id],
+            content: content
+          }
+        end
+      end
+
+      payload
+    end
+
+    def build_generic_tools(functions)
+      return [] if functions.blank?
+
+      functions.map do |fn|
+        {
+          type: "function",
+          function: {
+            name: fn[:name],
+            description: fn[:description],
+            parameters: fn[:params_schema],
+            strict: fn[:strict]
+          }
+        }
+      end
+    end
+
+    def log_langfuse_generation(name:, model:, input:, output: nil, usage: nil, error: nil, session_id: nil, user_identifier: nil, start_time: nil)
+      return unless langfuse_client
+
+      trace = create_langfuse_trace(
+        name: "openai.#{name}",
+        input: input,
+        session_id: session_id,
+        user_identifier: user_identifier,
+        start_time: start_time
+      )
+
+      generation = trace&.generation(
+        name: name,
+        model: model,
+        input: input,
+        start_time: start_time
+      )
+
+      if error
+        generation&.end(
+          output: { error: error.message, details: error.respond_to?(:details) ? error.details : nil },
+          level: "ERROR"
+        )
+        finish_langfuse_trace(
+          trace: trace,
+          output: { error: error.message },
+          level: "ERROR"
+        )
+      else
+        generation&.end(output: output, usage: usage)
+        finish_langfuse_trace(trace: trace, output: output)
+      end
+    rescue => e
+      Rails.logger.warn("Langfuse logging failed: #{e.message}\n#{e.full_message}")
+    end
+
+    def record_llm_usage(family:, model:, operation:, usage: nil, error: nil)
+      return unless family
+
+      # For error cases, record with zero tokens
+      if error.present?
+        Rails.logger.info("Recording failed LLM usage - Error: #{safe_error_message(error)}")
+
+        # Extract HTTP status code if available from the error
+        http_status_code = extract_http_status_code(error)
+
+        inferred_provider = LlmUsage.infer_provider(model)
+        family.llm_usages.create!(
+          provider: inferred_provider,
+          model: model,
+          operation: operation,
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          estimated_cost: nil,
+          metadata: {
+            error: safe_error_message(error),
+            http_status_code: http_status_code
+          }
+        )
+
+        Rails.logger.info("Failed LLM usage recorded successfully - Status: #{http_status_code}")
+        return
+      end
+
+      return unless usage
+
+      Rails.logger.info("Recording LLM usage - Raw usage data: #{usage.inspect}")
+
+      # Handle both old and new OpenAI API response formats
+      # Old format: prompt_tokens, completion_tokens, total_tokens
+      # New format: input_tokens, output_tokens, total_tokens
+      prompt_tokens = usage["prompt_tokens"] || usage["input_tokens"] || 0
+      completion_tokens = usage["completion_tokens"] || usage["output_tokens"] || 0
+      total_tokens = usage["total_tokens"] || 0
+
+      Rails.logger.info("Extracted tokens - prompt: #{prompt_tokens}, completion: #{completion_tokens}, total: #{total_tokens}")
+
+      estimated_cost = LlmUsage.calculate_cost(
+        model: model,
+        prompt_tokens: prompt_tokens,
+        completion_tokens: completion_tokens
+      )
+
+      # Log when we can't estimate the cost (e.g., custom/self-hosted models)
+      if estimated_cost.nil?
+        Rails.logger.info("Recording LLM usage without cost estimate for unknown model: #{model} (custom provider: #{custom_provider?})")
+      end
+
+      inferred_provider = LlmUsage.infer_provider(model)
+      family.llm_usages.create!(
+        provider: inferred_provider,
+        model: model,
+        operation: operation,
+        prompt_tokens: prompt_tokens,
+        completion_tokens: completion_tokens,
+        total_tokens: total_tokens,
+        estimated_cost: estimated_cost,
+        metadata: {}
+      )
+
+      Rails.logger.info("LLM usage recorded successfully - Cost: #{estimated_cost.inspect}")
+    rescue => e
+      Rails.logger.error("Failed to record LLM usage: #{e.message}")
+    end
+
+    def extract_http_status_code(error)
+      # Try to extract HTTP status code from various error types
+      # OpenAI gem errors may have status codes in different formats
+      if error.respond_to?(:code)
+        error.code
+      elsif error.respond_to?(:http_status)
+        error.http_status
+      elsif error.respond_to?(:status_code)
+        error.status_code
+      elsif error.respond_to?(:response) && error.response.respond_to?(:code)
+        error.response.code.to_i
+      elsif safe_error_message(error) =~ /(\d{3})/
+        # Extract 3-digit HTTP status code from error message
+        $1.to_i
+      else
+        nil
+      end
+    end
+
+    def safe_error_message(error)
+      error&.message
+    rescue => e
+      "(message unavailable: #{e.class})"
+    end
+
+    # Builds a useful error message when the OpenAI Responses stream ended
+    # without delivering a `response.completed` event. Uses upstream details
+    # when present (e.g. `response.failed`, `response.incomplete`, top-level
+    # `error`) and falls back to a generic message that hints at the most
+    # common causes.
+    def build_stream_error_message(error_chunk)
+      if error_chunk&.data&.message.present?
+        upstream = error_chunk.data
+        prefix = case upstream.event
+        when "response.incomplete" then "OpenAI response was incomplete"
+        when "response.failed"     then "OpenAI response failed"
+        else                            "OpenAI returned an error"
+        end
+        code_suffix = upstream.code.present? ? " [#{upstream.code}]" : ""
+        "#{prefix}#{code_suffix}: #{upstream.message}"
+      else
+        "OpenAI stream ended without a completion event. " \
+        "This usually means the upstream call was cut short — common causes: " \
+        "expired previous_response_id (Responses API state TTL), context-length overflow, " \
+        "or a transient OpenAI error."
+      end
+    end
+end

@@ -1,0 +1,14 @@
+<%# locals: (label:) %>
+<%# Simple non-interactive badge for displaying activity labels. %>
+<%
+  tone = case label
+         when "Buy", "Reinvestment"                                then :indigo  # was raw blue
+         when "Sell"                                               then :red
+         when "Dividend", "Interest"                               then :green
+         when "Contribution"                                       then :violet  # was raw purple
+         when "Withdrawal"                                         then :amber   # was raw orange
+         when "Fee", "Transfer", "Sweep In", "Sweep Out", "Exchange" then :gray
+         else                                                           :gray
+         end
+%>
+<%= render DS::Pill.new(label: label, tone: tone, marker: false, show_dot: false) %>

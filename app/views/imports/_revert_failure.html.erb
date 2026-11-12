@@ -1,0 +1,23 @@
+<%# locals: (import:) %>
+
+<div class="h-full flex flex-col justify-center items-center">
+  <div class="space-y-6 max-w-sm">
+    <div class="mx-auto bg-red-500/5 h-8 w-8 rounded-full flex items-center justify-center">
+      <%= icon "alert-octagon", color: "destructive" %>
+    </div>
+
+    <div class="text-center space-y-2">
+      <h1 class="font-medium text-primary text-center text-3xl"><%= t(".title") %></h1>
+      <p class="text-sm text-secondary"><%= t(".description") %></p>
+    </div>
+
+    <% unless Current.user&.guest? && import.family_config? %>
+      <%= render DS::Button.new(
+        text: t(".try_again"),
+        full_width: true,
+        href: revert_import_path(import),
+        method: :put
+      ) %>
+    <% end %>
+  </div>
+</div>

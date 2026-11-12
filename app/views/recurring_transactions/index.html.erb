@@ -1,0 +1,77 @@
+<%= content_for :page_title, t("recurring_transactions.title") %>
+<%= content_for :page_actions do %>
+  <% unless @family.recurring_transactions_disabled? %>
+    <%= render DS::Menu.new do |menu| %>
+      <% menu.with_item(
+          variant: "button",
+          text: t("recurring_transactions.cleanup_stale"),
+          href: cleanup_recurring_transactions_path,
+          method: :post,
+          icon: "trash-2") %>
+    <% end %>
+
+    <%= render DS::Link.new(
+      text: t("recurring_transactions.identify_patterns"),
+      icon: "search",
+      variant: "outline",
+      href: identify_recurring_transactions_path,
+      method: :post
+    ) %>
+  <% end %>
+<% end %>
+
+<div class="space-y-4 flex flex-col">
+  <div class="bg-container rounded-xl shadow-border-xs p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-primary"><%= t("recurring_transactions.settings.enable_label") %></p>
+        <p class="text-xs text-secondary"><%= t("recurring_transactions.settings.enable_description") %></p>
+      </div>
+      <%= form_with url: update_settings_recurring_transactions_path, method: :patch, data: { turbo_frame: "_top", controller: "auto-submit-form" } do |f| %>
+        <%= f.hidden_field :recurring_transactions_disabled, value: @family.recurring_transactions_disabled? ? "false" : "true" %>
+        <%= render DS::Toggle.new(
+          id: "recurring_transactions_enabled",
+          name: "toggle_display",
+          checked: !@family.recurring_transactions_disabled?,
+          data: { auto_submit_form_target: "auto" }
+        ) %>
+      <% end %>
+    </div>
+  </div>
+
+  <% unless @family.recurring_transactions_disabled? %>
+    <%= render DS::Alert.new(title: t("recurring_transactions.info.title"), variant: :info) do %>
+      <p><%= t("recurring_transactions.info.manual_description") %></p>
+      <p><%= t("recurring_transactions.info.automatic_description") %></p>
+      <ul class="list-disc list-inside space-y-0.5">
+        <% t("recurring_transactions.info.triggers").each do |trigger| %>
+          <li><%= trigger %></li>
+        <% end %>
+      </ul>
+    <% end %>
+
+      <% if @suggested_bills.any? %>
+        <%= render "recurring_transactions/suggested_series", suggested: @suggested_bills %>
+      <% end %>
+      <% if @suggested_income.any? %>
+        <%= render "recurring_transactions/suggested_series", suggested: @suggested_income, income: true %>
+      <% end %>
+
+      <%# The Bills workspace is preview-gated, so the card that leads into it
+          only renders for opted-in users. %>
+      <% if preview_features_enabled? %>
+        <div class="bg-container rounded-xl shadow-border-xs p-4 flex items-center justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-primary"><%= t("recurring_transactions.manage.title") %></p>
+            <p class="text-xs text-secondary"><%= t("recurring_transactions.manage.description") %></p>
+          </div>
+          <%= render DS::Link.new(
+                text: t("recurring_transactions.manage.cta"),
+                icon: "receipt",
+                variant: "outline",
+                href: bills_path(view: "all")
+              ) %>
+        </div>
+      <% end %>
+  <% end %>
+</div>

@@ -1,0 +1,53 @@
+<%= render DS::Dialog.new(reload_on_close: params[:reload_on_close].present?) do |dialog| %>
+  <%
+    title = if @rule.name.present?
+              t(".title_with_name", name: @rule.name)
+            else
+              t(".title")
+            end
+  %>
+  <% dialog.with_header(title: title) %>
+
+  <% dialog.with_body do %>
+    <p class="text-secondary text-sm mb-4">
+      <%= t(".apply_notice_html", count: @rule.affected_resource_count, resource: @rule.resource_type.pluralize) %>
+    </p>
+
+    <% if @active_rules_above_count.positive? %>
+      <p class="text-secondary text-sm mb-4">
+        <%= t(".rules_above_notice", count: @active_rules_above_count) %>
+      </p>
+    <% end %>
+
+    <% if @rule.actions.any? { |a| a.action_type == "auto_categorize" } %>
+      <% affected_count = @rule.affected_resource_count %>
+      <div class="mb-4">
+        <%= render DS::Alert.new(title: t(".ai_cost_title"), variant: :info) do %>
+          <% if @estimated_cost.present? %>
+            <p><%= t(".ai_cost_with_estimate_html", count: affected_count, cost: sprintf("%.4f", @estimated_cost)) %></p>
+          <% else %>
+            <p>
+              <%= t(".ai_cost_no_estimate_html", count: affected_count) %>
+              <% if @selected_model.present? %>
+                <span class="font-semibold"><%= t(".cost_unavailable_model", model: @selected_model) %></span>
+              <% else %>
+                <span class="font-semibold"><%= t(".cost_unavailable_no_provider") %></span>
+              <% end %>
+              <%= t(".cost_warning") %>
+            </p>
+          <% end %>
+          <p>
+            <%= link_to t(".view_usage_history"), settings_llm_usage_path, class: "text-link underline" %>
+          </p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%= render DS::Button.new(
+      text: t(".confirm_changes"),
+      href: apply_rule_path(@rule),
+      method: :post,
+      full_width: true,
+      data: { turbo_frame: "_top" }) %>
+  <% end %>
+<% end %>

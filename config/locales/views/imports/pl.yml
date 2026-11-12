@@ -1,0 +1,318 @@
+---
+pl:
+  import:
+    cleans:
+      show:
+        all_rows: Wszystkie wiersze
+        data_cleaned: Twoje dane zostały wyczyszczone
+        description: Edytuj swoje dane w tabeli poniżej. Czerwone komórki są nieprawidłowe.
+        error_rows: Wiersze z błędami
+        errors_notice: Masz błędy w danych. Najedź na błąd, aby zobaczyć szczegóły.
+        errors_notice_mobile: Masz błędy w danych. Dotknij dymku błędu, aby zobaczyć
+          szczegóły.
+        next_step: Następny krok
+        not_configured: Skonfiguruj import, zanim przejdziesz dalej.
+        title: Wyczyść dane
+    configurations:
+      account_import:
+        apply_configuration: Zastosuj konfigurację
+        balance: Saldo
+        balance_date: Data salda
+        currency: Waluta
+        date_format: Format daty
+        default: Domyślne
+        entity_type: Typ encji
+        leave_empty: Zostaw puste
+        name: Nazwa
+        select_format: Wybierz format
+      category_import:
+        button_label: Dalej
+        description: Prześlij prosty plik CSV, taki jak ten generowany podczas eksportu
+          danych. Kolumny zostaną automatycznie zmapowane.
+        instructions: Wybierz Dalej, aby przeanalizować plik CSV i przejść do etapu
+          czyszczenia.
+      merchant_import:
+        button_label: Kontynuuj
+        description: Prześlij plik CSV z kontrahentami. Kolumny zmapujemy automatycznie.
+        instructions: Wybierz Kontynuuj, aby przetworzyć plik CSV i przejść do czyszczenia
+          danych.
+      rule_import:
+        description: Skonfiguruj import reguł. Reguły zostaną utworzone lub zaktualizowane
+          na podstawie danych z CSV.
+        process_button: Przetwórz reguły
+        process_help: Kliknij poniższy przycisk, aby przetworzyć CSV i wygenerować
+          wiersze reguł.
+      show:
+        apply_template: Zastosuj szablon
+        description: Wybierz kolumny odpowiadające poszczególnym polom w pliku CSV.
+        manually_configure: Skonfiguruj ręcznie
+        sample_caption: Przykładowe dane z przesłanego pliku CSV
+        template_description: Znaleźliśmy konfigurację z poprzedniego importu dla
+          tego konta. Czy chcesz zastosować ją do tego importu?
+        template_found: Znaleziono konfigurację szablonu
+        title: Skonfiguruj import
+      trade_import:
+        account_label: Konto
+        apply_configuration: Zastosuj konfigurację
+        buys_are_negative: Kupno ma ujemną ilość
+        buys_are_positive: Kupno ma dodatnią ilość
+        currency_label: Waluta
+        date_format_label: Format daty
+        date_label: Data
+        default: Domyślne
+        format_label: Format
+        leave_empty: Zostaw puste
+        name_label: Nazwa
+        no_security_provider_warning: Dostawca cen papierów wartościowych nie jest
+          skonfigurowany. Import transakcji zadziała, ale Sure nie uzupełni historii
+          cen. Skonfiguruj to w ustawieniach.
+        note_label: Notatka
+        price_label: Cena
+        quantity_label: Ilość
+        select_column: Wybierz kolumnę
+        select_format: Wybierz format
+        stock_exchange_code_label: Kod giełdy
+        ticker_label: Ticker
+      transaction_import:
+        account_label: Konto
+        amount_label: Kwota
+        amount_type_label: Typ kwoty
+        amount_type_strategy_label: Strategia typu kwoty
+        apply_configuration: Zastosuj konfigurację
+        as_amount_type_column: jako kolumna typu kwoty
+        as_identifier_value: jako wartość identyfikująca
+        category_label: Kategoria
+        currency_label: Waluta
+        date_format_label: Format daty
+        date_label: Data
+        default: Domyślne
+        expense_outflow: Wydatek (odpływ)
+        format_label: Format
+        income_inflow: Przychód (wpływ)
+        incomes_are_negative: Przychody są ujemne
+        incomes_are_positive: Przychody są dodatnie
+        leave_empty: Zostaw puste
+        name_label: Nazwa
+        notes_label: Notatki
+        rows_to_skip_label: Pomiń pierwsze n wierszy
+        select_column: Wybierz kolumnę
+        select_convention: Wybierz konwencję
+        select_format: Wybierz format
+        select_strategy: Wybierz strategię
+        select_type: Wybierz typ
+        select_value: Wybierz wartość
+        set: Ustaw
+        tags_label: Tagi
+        treat_as_html: Traktuj "<span class="font-medium">%{value}</span>" jako
+      update:
+        success: Import został pomyślnie skonfigurowany.
+    confirms:
+      mappings:
+        create_account: Utwórz konto
+        csv_mapping_label: "%{mapping} w CSV"
+        next: Dalej
+        no_accounts: Nie masz jeszcze żadnych kont. Utwórz konto, którego można użyć
+          dla nieprzypisanych wierszy w CSV, albo wróć do etapu czyszczenia i podaj
+          nazwę konta, której można użyć.
+        rows_label: Wiersze
+        sure_mapping_label: "%{mapping} w %{product_name}"
+        unassigned_account: Chcesz utworzyć nowe konto dla nieprzypisanych wierszy?
+      show:
+        account_mapping_description: Przypisz wszystkie konta z importowanego pliku
+          do istniejących kont %{product_name}. Możesz też dodać nowe konta lub zostawić
+          je bez przypisania.
+        account_mapping_title: Przypisz konta
+        account_type_mapping_description: Przypisz wszystkie typy kont z importowanego
+          pliku do typów używanych w %{product_name}.
+        account_type_mapping_title: Przypisz typy kont
+        category_mapping_description: Przypisz wszystkie kategorie z importowanego
+          pliku do istniejących kategorii %{product_name}. Możesz też dodać nowe kategorie
+          lub zostawić je bez przypisania.
+        category_mapping_title: Przypisz kategorie
+        invalid_data: Masz nieprawidłowe dane, popraw je, aż wszystkie błędy znikną
+        tag_mapping_description: Przypisz wszystkie tagi z importowanego pliku do
+          istniejących tagów %{product_name}. Możesz też dodać nowe tagi lub zostawić
+          je bez przypisania.
+        tag_mapping_title: Przypisz tagi
+    uploads:
+      show:
+        account_optional_label: Konto (opcjonalnie)
+        browse: Przeglądaj
+        copy_paste_tab: Kopiuj i wklej
+        csv_file_prompt: aby dodać tutaj plik CSV
+        csv_invalid: Musi być prawidłowym CSV z nagłówkami i co najmniej jednym wierszem
+          danych
+        description: Wklej lub prześlij poniżej swój plik CSV. Przed rozpoczęciem
+          zapoznaj się z instrukcjami w tabeli poniżej.
+        download_sample_csv: Pobierz przykładowy CSV
+        drop_csv_subtitle: Twój plik zostanie przesłany automatycznie
+        drop_csv_title: Upuść CSV, aby przesłać
+        instructions_1: Poniżej znajduje się przykładowy plik CSV z kolumnami dostępnymi
+          do importu.
+        instructions_2: Twój plik CSV musi zawierać wiersz nagłówka.
+        instructions_3: Możesz nazwać kolumny dowolnie. Zmapujesz je na późniejszym
+          etapie.
+        instructions_4: Kolumny oznaczone gwiazdką (*) są wymagane.
+        instructions_5: W liczbach nie używaj przecinków, symboli walut ani nawiasów.
+        multi_account_import: Import wielu kont
+        paste_csv_placeholder: Wklej tutaj zawartość pliku CSV
+        title: Zaimportuj dane
+        to_see_format: aby zobaczyć wymagany format CSV
+        upload_csv_button: Prześlij CSV
+        upload_csv_tab: Prześlij CSV
+  imports:
+    apply_template:
+      no_template_found: Nie znaleziono szablonu. Skonfiguruj import ręcznie.
+      template_applied: Zastosowano szablon.
+    cancel:
+      cancelled: Import oznaczony jako nieudany. Możesz spróbować ponownie ze strony
+        importu.
+      not_cancellable: Tego importu nie można teraz oznaczyć jako nieudany, jego zadanie
+        może wciąż działać. Spróbuj ponownie, gdy będzie nieaktywny przez godzinę.
+    column_labels:
+      account: Konto
+      amount: Kwota
+      category: Kategoria
+      category_color: Kolor
+      category_icon: Ikona Lucide
+      category_parent: Kategoria nadrzędna
+      currency: Waluta
+      date: Data
+      entity_type: Typ
+      exchange: Giełda
+      merchant_color: Kolor
+      merchant_website: Adres URL strony
+      name: Nazwa
+      notes: Notatki
+      price: Cena
+      qty: Ilość
+      tags: Tagi
+      ticker: Ticker
+    create:
+      csv_uploaded: Plik CSV został pomyślnie przesłany.
+      file_too_large: Plik jest zbyt duży. Maksymalny rozmiar to %{max_size} MB.
+      invalid_file_type: Nieprawidłowy typ pliku. Prześlij plik CSV.
+    destroy:
+      deleted: Import został usunięty.
+    dry_run_resources:
+      accounts: Konta
+      categories: Kategorie
+      merchants: Kontrahenci
+      rules: Reguły
+      tags: Tagi
+      transactions: Transakcje
+    empty:
+      message: Nie znaleziono importów.
+    errors:
+      custom_column_requires_inflow: Import niestandardowych kolumn wymaga wybrania
+        kolumny wpływu
+      interrupted: Proces w tle został przerwany, zanim się zakończył. Zaimportowane
+        dane wycofano, możesz bezpiecznie spróbować ponownie.
+      presumed_lost: Oznaczono jako nieudany, ponieważ zadanie w tle uznano za utracone.
+        Zaimportowane dane wycofano, możesz bezpiecznie spróbować ponownie.
+    failure:
+      description: Sprawdź format pliku, ewentualne błędy oraz czy wszystkie wymagane
+        pola są wypełnione, a potem spróbuj ponownie.
+      title: Import nieudany
+      try_again: Spróbuj ponownie
+    importing:
+      back_to_dashboard: Wróć do pulpitu
+      check_status: Sprawdź status
+      description: Twój import jest w toku. Sprawdź status w menu importów albo kliknij
+        "Sprawdź status", aby odświeżyć stronę. Możesz spokojnie korzystać dalej z
+        aplikacji.
+      title: Import w toku
+    index:
+      new: Nowy import
+      title: Importy
+    mapping_labels:
+      account: Konto
+      account_type: Typ konta
+      category: Kategoria
+      tag: Tag
+    new:
+      description: Importuj dane z narzędzia finansowego lub prześlij surowe pliki
+        danych.
+      import_accounts: Importuj konta
+      import_categories: Importuj kategorie
+      import_merchants: Importuj kontrahentów
+      import_portfolio: Importuj inwestycje
+      import_rules: Importuj reguły
+      import_transactions: Importuj transakcje
+      requires_account: Najpierw zaimportuj konta, aby odblokować tę opcję.
+      resume: Wznów %{type}
+      sources: Źródła
+      title: Nowy import
+    publish:
+      max_rows_exceeded: 'Twój import przekracza maksymalną liczbę wierszy: %{max}.'
+      started: Import rozpoczął się w tle.
+    ready:
+      back_to_imports: Wróć do importów
+      description: Oto podsumowanie nowych elementów, które zostaną dodane do konta
+        po opublikowaniu tego importu.
+      publish_import: Opublikuj import
+      summary_count_label: Liczba
+      summary_item_label: Element
+      title: Potwierdź dane importu
+    revert:
+      started: Cofanie importu trwa w tle.
+    revert_failure:
+      description: Spróbuj ponownie
+      title: Cofnięcie importu nie powiodło się
+      try_again: Spróbuj ponownie
+    show:
+      finalize_mappings: Dokończ mapowanie przed przejściem dalej.
+      finalize_upload: Dokończ przesyłanie pliku.
+    steps:
+      clean: Czyszczenie
+      configure: Konfiguracja
+      confirm: Potwierdzenie
+      label: Krok %{step}
+      map: Mapowanie
+      progress: Krok %{step} z %{total}
+      upload: Przesyłanie
+    success:
+      back_to_dashboard: Wróć do pulpitu
+      description: Zaimportowane dane zostały pomyślnie dodane do aplikacji i są gotowe
+        do użycia.
+      title: Import zakończony powodzeniem
+    table:
+      empty: Brak importów.
+      header:
+        actions: Akcje
+        date: Data
+        operation: Operacja
+        status: Status
+      row:
+        actions:
+          confirm_mark_failed: Ten import jest nieaktywny od jakiegoś czasu, a jego
+            zadanie w tle prawdopodobnie zostało przerwane. Oznaczyć go jako nieudany,
+            aby móc spróbować ponownie? Żadne zaimportowane dane nie zostaną zachowane.
+          confirm_revert: To usunie zaimportowane transakcje, ale nadal będzie można
+            w każdej chwili przejrzeć i ponownie zaimportować dane.
+          delete: Usuń
+          mark_failed: Oznacz jako nieudany
+          revert: Cofnij
+          view: Zobacz
+        status:
+          complete: Zakończono
+          failed: Niepowodzenie
+          in_progress: W toku
+          revert_failed: Nie udało się cofnąć
+          reverting: Cofanie
+          uploading: Przetwarzanie wierszy
+        type_labels:
+          account_import: Konto
+          category_import: Kategoria
+          merchant_import: Kontrahent
+          rule_import: Reguła
+          trade_import: Transakcja giełdowa
+          transaction_import: Transakcja
+      title: Importy
+    type_labels:
+      account_import: Import kont
+      category_import: Import kategorii
+      merchant_import: Import kontrahentów
+      rule_import: Import reguł
+      trade_import: Import transakcji giełdowych
+      transaction_import: Import transakcji

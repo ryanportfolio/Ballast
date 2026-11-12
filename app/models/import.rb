@@ -1,0 +1,765 @@
+class Import < ApplicationRecord
+  MaxRowCountExceededError = Class.new(StandardError)
+  MappingError = Class.new(StandardError)
+
+  # A hard-killed worker (OOM, SIGKILL during deploy) loses its in-flight job
+  # permanently, wedging the record in importing/reverting with no UI recourse.
+  # After this idle window the job is presumed lost and the user may force the
+  # record into a retryable terminal status. Imports finish in minutes, so an
+  # hour of silence dwarfs any legitimate run.
+  PRESUMED_LOST_AFTER = 1.hour
+
+  # The automated counterpart to the manual escape hatch above: SyncCleanerJob
+  # reaps records stuck past this longer window (see Import.clean).
+  STUCK_AFTER = 6.hours
+
+  # User-facing (shown as the import's error in the UI), so resolved through
+  # i18n at call time rather than frozen at boot.
+  def self.lost_error_message
+    I18n.t(
+      "imports.errors.presumed_lost",
+      default: "Marked as failed after the background job was presumed lost. The imported data was rolled back — you can safely try again."
+    )
+  end
+
+  # User-facing (shown as the import's error in the UI). Resolved at reap
+  # time; the sweep runs from cron so this snapshots the default locale.
+  def self.interrupted_error_message
+    I18n.t(
+      "imports.errors.interrupted",
+      default: "The background worker was interrupted before this finished. Imported data was rolled back — you can safely try again."
+    )
+  end
+
+  # Shared CSV upload/content limit for web and API imports, including preflight.
+  MAX_CSV_SIZE = 10.megabytes
+  ALLOWED_CSV_MIME_TYPES = %w[text/csv text/plain application/vnd.ms-excel application/csv].freeze
+
+  # Document categories the AI providers' PDF processors classify into.
+  DOCUMENT_TYPES = %w[bank_statement credit_card_statement investment_statement financial_document contract other].freeze
+
+  TYPES = %w[TransactionImport TradeImport AccountImport CategoryImport RuleImport MerchantImport].freeze
+  # Imports that write family-wide configuration (categories, tags, rules,
+  # merchants), which guests may view but not change.
+  FAMILY_CONFIG_TYPES = %w[CategoryImport MerchantImport RuleImport].freeze
+  SIGNAGE_CONVENTIONS = %w[inflows_positive inflows_negative]
+  SEPARATORS = [ [ "Comma (,)", "," ], [ "Semicolon (;)", ";" ] ].freeze
+
+  def self.separator_options
+    [
+      [ I18n.t("activerecord.attributes.import.col_seps.comma"), "," ],
+      [ I18n.t("activerecord.attributes.import.col_seps.semicolon"), ";" ]
+    ]
+  end
+
+  NUMBER_FORMATS = {
+    "1,234.56" => { separator: ".", delimiter: "," },  # US/UK/Asia
+    "1.234,56" => { separator: ",", delimiter: "." },  # Most of Europe
+    "1 234,56" => { separator: ",", delimiter: " " },  # French/Scandinavian
+    "1,234"    => { separator: "",  delimiter: "," }   # Zero-decimal currencies like JPY
+  }.freeze
+
+  # 2-digit years are ambiguous (Ruby's %y assumes 1969-2068), so this is kept
+  # out of Family::DATE_FORMATS (the global preference) and only offered when
+  # mapping a CSV file, where the user can see and verify a preview against
+  # their own data (maintainer decision on PR #531).
+  CSV_ONLY_DATE_FORMATS = [
+    [ "DD/MM/YY", "%d/%m/%y" ]
+  ].freeze
+
+  def self.reasonable_date_range
+    Date.new(1970, 1, 1)..Date.today.next_year(5)
+  end
+
+  def self.max_csv_size
+    MAX_CSV_SIZE
+  end
+
+  AMOUNT_TYPE_STRATEGIES = %w[signed_amount custom_column].freeze
+
+  belongs_to :family
+  belongs_to :account, optional: true
+
+  before_validation :set_default_number_format
+  before_validation :ensure_utf8_encoding
+  before_save :ensure_utf8_encoding
+
+  scope :ordered, -> { order(created_at: :desc) }
+
+  enum :status, {
+    pending: "pending",
+    complete: "complete",
+    importing: "importing",
+    reverting: "reverting",
+    revert_failed: "revert_failed",
+    failed: "failed"
+  }, validate: true, default: "pending"
+
+  validates :type, inclusion: { in: TYPES }
+  validates :amount_type_strategy, inclusion: { in: AMOUNT_TYPE_STRATEGIES }
+  validates :col_sep, inclusion: { in: SEPARATORS.map(&:last) }
+  validates :signage_convention, inclusion: { in: SIGNAGE_CONVENTIONS }, allow_nil: true
+  validates :number_format, presence: true, inclusion: { in: NUMBER_FORMATS.keys }
+  validate :custom_column_import_requires_identifier
+  validates :rows_to_skip, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validate :account_belongs_to_family
+  validate :payloads_are_json_objects
+  validate :rows_to_skip_within_file_bounds
+
+  has_many :rows, dependent: :destroy
+  has_many :mappings, dependent: :destroy
+  has_many :accounts, dependent: :destroy
+  has_many :entries, dependent: :destroy
+
+  class << self
+    # Reaps imports whose job died mid-flight. import! runs in a single DB
+    # transaction, so which side of its commit the worker died on is
+    # observable: no rows attached → the data rolled back, failing the record
+    # re-enables the "Try again" path; rows attached → the job died between
+    # the commit and the status write, so the truthful terminal state is
+    # complete (re-enabling retry there would double-import types without row
+    # dedup, e.g. TradeImport). Reverts that died the same way go to
+    # revert_failed so the revert can be retried. Only the CSV types in TYPES
+    # are swept: rows of import types Ballast removed can't be loaded.
+    def clean
+      where(status: [ :importing, :reverting ])
+        .where(type: TYPES)
+        .where("updated_at < ?", STUCK_AFTER.ago)
+        .includes(:family)
+        .find_each do |import|
+          reap_stuck!(import)
+        rescue => e
+          # One bad record must not abort the sweep for every other stuck
+          # import this hour.
+          Rails.logger.error("Import.clean failed for #{import.type} #{import.id}: #{e.class}: #{e.message}")
+          Sentry.capture_exception(e) { |scope| scope.set_tags(record_type: import.type, record_id: import.id) } if defined?(Sentry)
+        end
+    end
+
+    def reap_stuck!(import)
+      needs_sync = false
+      # Read before the lock: with_lock reloads the row and drops the
+      # association cache, which would turn the sweep's preload into an N+1.
+      family = import.family
+
+      # Same guard Sync#perform gained in #2680: between the sweep query
+      # and this row the owning job may have finished (or another sweep
+      # won), so re-check staleness under a row lock before mutating.
+      import.with_lock do
+        next unless import.reapable_since?(STUCK_AFTER.ago)
+
+        previous_status = import.status
+        if previous_status == "reverting"
+          import.update!(status: :revert_failed, error: interrupted_error_message)
+        elsif import.data_committed?
+          import.update!(status: :complete, error: nil)
+          needs_sync = true
+        else
+          import.update!(status: :failed, error: interrupted_error_message)
+        end
+
+        DebugLogEntry.capture(
+          category: "background_jobs",
+          level: "warn",
+          message: "Reaped #{import.type} stuck in #{previous_status} for over #{STUCK_AFTER.inspect} (→ #{import.status})",
+          source: name,
+          family: family,
+          metadata: { record_type: import.type, record_id: import.id, previous_status: previous_status, new_status: import.status }
+        )
+      end
+
+      # Outside the row-lock transaction: Rails doesn't defer enqueues to
+      # after-commit by default, so enqueuing inside the lock could hand
+      # Sidekiq a job before the status write is visible.
+      family.sync_later if needs_sync
+    end
+
+    def parse_csv_str(csv_str, col_sep: ",")
+      CSV.parse(
+        (csv_str || "").strip,
+        headers: true,
+        col_sep: col_sep,
+        converters: [ ->(str) { str&.strip } ],
+        liberal_parsing: true
+      )
+    end
+
+    # Attempts to identify the best-matching date format from a list of candidates
+    # by trying to parse sample date strings with each format.
+    #
+    # Returns the strptime format string (e.g. "%m-%d-%Y") that best matches the
+    # samples, or the +fallback+ when no candidate can parse any sample.
+    #
+    # Scoring:
+    #   1. Formats that parse ALL samples beat those that only parse some.
+    #   2. Among equal parse counts, formats whose parsed dates fall within a
+    #      reasonable range (1970..today+5y) score higher.
+    def detect_date_format(samples, candidates: Family::DATE_FORMATS.map(&:last), fallback: "%Y-%m-%d")
+      return fallback if samples.blank?
+
+      cleaned = samples.map(&:to_s).reject(&:blank?).uniq.first(50)
+      return fallback if cleaned.empty?
+
+      reasonable_range = reasonable_date_range
+
+      scored = candidates.map do |fmt|
+        parsed_count     = 0
+        reasonable_count = 0
+
+        cleaned.each do |s|
+          begin
+            date = Date.strptime(s, fmt)
+          rescue Date::Error, ArgumentError
+            next
+          end
+          next unless date
+
+          parsed_count += 1
+          reasonable_count += 1 if reasonable_range.cover?(date)
+        end
+
+        { format: fmt, parsed: parsed_count, reasonable: reasonable_count }
+      end
+
+      # Filter to candidates that parsed at least one sample
+      viable = scored.select { |s| s[:parsed] > 0 }
+      return fallback if viable.empty?
+
+      best = viable.max_by { |s| [ s[:parsed], s[:reasonable] ] }
+      best[:format]
+    end
+  end
+
+  def publish_later
+    raise MaxRowCountExceededError if row_count_exceeded?
+    raise "Import is not publishable" unless publishable?
+
+    update! status: :importing
+
+    ImportJob.perform_later(self)
+  end
+
+  # Whether import! already committed rows for this import. Distinguishes a
+  # job that died mid-import (single transaction → rolled back, nothing
+  # attached) from one that died after the data landed but before the status
+  # write. Covers entry-producing imports and account-producing ones
+  # (AccountImport creates accounts, not entries).
+  def data_committed?
+    entries.exists? || accounts.exists?
+  end
+
+  # Reaper guard: still wedged in a job-owned status and untouched since the
+  # sweep's cutoff. Called under the record's row lock (fresh read).
+  def reapable_since?(cutoff)
+    %w[importing reverting].include?(status) && updated_at < cutoff
+  end
+
+  def publish
+    # A redelivered or stray ImportJob must not re-import data that already
+    # committed (types without row dedup would double-apply), and must not
+    # race a revert that owns the record. A failed import is deliberately NOT
+    # blocked: its transaction rolled back, so a re-run is a safe retry.
+    if complete? || reverting? || revert_failed?
+      DebugLogEntry.capture(
+        category: "background_jobs",
+        level: "warn",
+        message: "Import publish skipped: job redelivered while record was #{status}",
+        source: self.class.name,
+        family: family,
+        metadata: { record_type: type, record_id: id, status: status }
+      )
+      return
+    end
+
+    raise MaxRowCountExceededError if row_count_exceeded?
+
+    import!
+
+    family.sync_later
+
+    update! status: :complete
+  rescue => error
+    update! status: :failed, error: error.message
+  end
+
+  def revert_later
+    raise "Import is not revertable" unless revertable?
+
+    update! status: :reverting
+
+    RevertImportJob.perform_later(self)
+  end
+
+  def presumed_lost?
+    (importing? || reverting?) && updated_at < PRESUMED_LOST_AFTER.ago
+  end
+
+  # Escape hatch for imports whose background job died mid-flight. Only
+  # allowed once the record has been idle past PRESUMED_LOST_AFTER, and the
+  # with_lock re-check means a job finishing between page render and button
+  # click wins. Every import! runs in a single DB transaction, so a lost job
+  # rolled its data back — failing the record is safe and re-enables the
+  # existing "Try again" (failed) / revert-retry (revert_failed) paths.
+  def force_fail!(error_message = self.class.lost_error_message)
+    with_lock do
+      return false unless presumed_lost?
+
+      update!(
+        status: reverting? ? :revert_failed : :failed,
+        error: error_message
+      )
+    end
+
+    true
+  end
+
+  def revert
+    Import.transaction do
+      accounts.destroy_all
+      entries.destroy_all
+    end
+
+    family.sync_later
+
+    update! status: :pending
+  rescue => error
+    update! status: :revert_failed, error: error.message
+  end
+
+  def csv_rows
+    @csv_rows ||= parsed_csv
+  end
+
+  def csv_headers
+    parsed_csv.headers
+  end
+
+  def csv_sample
+    @csv_sample ||= parsed_csv.first(2)
+  end
+
+  def dry_run
+    mappings = {
+      transactions: rows_count,
+      categories: Import::CategoryMapping.for_import(self).creational.count,
+      tags: Import::TagMapping.for_import(self).creational.count
+    }
+
+    mappings.merge(
+      accounts: Import::AccountMapping.for_import(self).creational.count,
+    ) if account.nil?
+
+    mappings
+  end
+
+  def required_column_keys
+    []
+  end
+
+  # Every import type must override this.
+  def column_keys
+    raise NotImplementedError, "Subclass must implement column_keys"
+  end
+
+  def generate_rows_from_csv
+    rows.destroy_all
+
+    mapped_rows = csv_rows.map.with_index(1) do |row, index|
+      {
+        source_row_number: index,
+        account: csv_value(row, account_col_label, "account", "account_name").to_s,
+        date: csv_value(row, date_col_label, "date").to_s,
+        qty: sanitize_number(csv_value(row, qty_col_label, "qty", "quantity")).to_s,
+        ticker: csv_value(row, ticker_col_label, "ticker").to_s,
+        exchange_operating_mic: csv_value(row, exchange_operating_mic_col_label, "exchange_operating_mic").to_s,
+        price: sanitize_number(csv_value(row, price_col_label, "price")).to_s,
+        amount: sanitize_number(csv_value(row, amount_col_label, "amount", "balance")).to_s,
+        currency: (csv_value(row, currency_col_label, "currency") || default_currency).to_s,
+        name: (csv_value(row, name_col_label, "name") || default_row_name).to_s,
+        category: csv_value(row, category_col_label, "category").to_s,
+        tags: csv_value(row, tags_col_label, "tags").to_s,
+        entity_type: csv_value(row, entity_type_col_label, "entity_type", "account_type", "type").to_s,
+        notes: csv_value(row, notes_col_label, "notes").to_s
+      }
+    end
+
+    rows.insert_all!(mapped_rows)
+    update_column(:rows_count, rows.count)
+  end
+
+  def sync_mappings
+    transaction do
+      mapping_steps.each do |mapping_class|
+        mappables_by_key = mapping_class.mappables_by_key(self)
+
+        updated_mappings = mappables_by_key.map do |key, mappable|
+          mapping = mappings.find_or_initialize_by(key: key, import: self, type: mapping_class.name)
+          mapping.mappable = mappable
+          mapping.create_when_empty = key.present? && mappable.nil?
+          mapping
+        end
+
+        updated_mappings.each { |m| m.save(validate: false) }
+        mapping_class.where.not(id: updated_mappings.map(&:id)).destroy_all
+      end
+    end
+  end
+
+  def mapping_steps
+    []
+  end
+
+  def rows_ordered
+    rows.ordered
+  end
+
+  def uploaded?
+    raw_file_str.present?
+  end
+
+  def configured?
+    uploaded? && rows_count > 0
+  end
+
+  def configured_for_status_detail?
+    configured?
+  end
+
+  def cleaned?
+    configured? && rows.all?(&:valid?)
+  end
+
+  def publishable?
+    cleaned? && mappings.all?(&:valid?)
+  end
+
+  def cleaned_from_validation_stats?(invalid_rows_count:)
+    configured? && invalid_rows_count.zero?
+  end
+
+  def publishable_from_validation_stats?(invalid_rows_count:)
+    cleaned_from_validation_stats?(invalid_rows_count: invalid_rows_count) && mappings.all?(&:valid?)
+  end
+
+  def mapping_status_counts
+    mappable_ids = mappings.pluck(:mappable_id)
+
+    {
+      mappings_count: mappable_ids.size,
+      unassigned_mappings_count: mappable_ids.count(&:nil?)
+    }
+  end
+
+  def revertable?
+    complete? || revert_failed?
+  end
+
+  def family_config?
+    FAMILY_CONFIG_TYPES.include?(type)
+  end
+
+  # Guests may view family configuration but not change it, so they may only
+  # edit an import that doesn't write family configuration and isn't being
+  # (or already) published.
+  def editable_by?(user)
+    return true unless user&.guest?
+
+    (pending? || failed?) && !family_config?
+  end
+
+  # Whether publishing would add new categories or tags to the family.
+  def creates_categories_or_tags?
+    mappings.creational.where(type: %w[Import::CategoryMapping Import::TagMapping]).where.not(key: [ nil, "" ]).exists?
+  end
+
+  # Whether the user may write to every pre-existing account this import
+  # targets (its own account, account mappings) or has already written into
+  # (entries). Accounts the import created itself are excluded.
+  def accounts_writable_by?(user)
+    ids = [ account_id ]
+    ids += mappings.accounts.where.not(mappable_id: nil).pluck(:mappable_id)
+    ids += entries.distinct.pluck(:account_id)
+    ids = ids.compact.uniq - accounts.pluck(:id)
+    return true if ids.empty?
+    return false if user.nil?
+
+    (ids - family.accounts.writable_by(user).where(id: ids).pluck(:id)).empty?
+  end
+
+  def has_unassigned_account?
+    mappings.accounts.where(key: "").any?
+  end
+
+  def requires_account?
+    family.accounts.empty? && has_unassigned_account?
+  end
+
+  # Used to optionally pre-fill the configuration for the current import
+  def suggested_template
+    family.imports
+          .complete
+          .where(account: account, type: type)
+          .order(created_at: :desc)
+          .first
+  end
+
+  def apply_template!(import_template)
+    update!(
+      import_template.attributes.slice(
+        "date_col_label", "amount_col_label", "name_col_label",
+        "category_col_label", "tags_col_label", "account_col_label",
+        "qty_col_label", "ticker_col_label", "price_col_label",
+        "entity_type_col_label", "notes_col_label", "currency_col_label",
+        "date_format", "signage_convention", "number_format",
+        "exchange_operating_mic_col_label",
+        "rows_to_skip"
+      )
+    )
+  end
+
+  def max_row_count
+    10000
+  end
+
+  private
+    # Commit signal for import types whose records hang off the family rather
+    # than the import itself (Category/Merchant/Rule imports create no entries
+    # or accounts, so the base data_committed? can't see them). import! runs as
+    # a single find-or-create-by-name transaction, so once every named row has
+    # a matching family record the data committed — or every name already
+    # existed, leaving the family in the same end state. Either way the
+    # truthful terminal status is complete, not a retryable failed. Rows with
+    # blank names carry no stable key, so a file with only blank names yields
+    # no signal and stays retryable (the conservative side of the reaper).
+    def committed_by_named_records?(scope)
+      names = rows.pluck(:name).filter_map { |value| value.to_s.strip.presence }.uniq
+      names.any? && (names - scope.where(name: names).pluck(:name)).empty?
+    end
+
+    def row_count_exceeded?
+      rows_count > max_row_count
+    end
+
+    def import!
+      # no-op, subclasses can implement for customization of algorithm
+    end
+
+    def default_row_name
+      "Imported item"
+    end
+
+    def default_currency
+      account&.currency || family.currency
+    end
+
+    def csv_value(row, label, *aliases)
+      return if label.blank?
+
+      [ label, *aliases ].each do |candidate|
+        header = header_for(candidate)
+        next if header.blank?
+
+        value = row[header]
+        return value if value.present?
+      end
+
+      nil
+    end
+
+    def header_for(candidate)
+      return if candidate.blank?
+
+      normalized_csv_headers[normalize_header(candidate)]
+    end
+
+    def normalized_csv_headers
+      @normalized_csv_headers ||= begin
+        grouped_headers = Array(csv_headers)
+          .filter_map do |header|
+            normalized = normalize_header(header)
+            next if normalized.blank?
+
+            [ normalized, header ]
+          end
+          .group_by(&:first)
+
+        duplicate_headers = grouped_headers.values.filter_map do |headers|
+          originals = headers.map(&:last).uniq
+          originals if originals.many?
+        end
+
+        if duplicate_headers.any?
+          errors.add(:base, :duplicate_headers, columns: duplicate_headers.map { |headers| headers.join(", ") }.join("; "))
+          raise ActiveRecord::RecordInvalid, self
+        end
+
+        grouped_headers.transform_values { |headers| headers.first.last }
+      end
+    end
+
+    def normalize_header(header)
+      header.to_s.strip.downcase.gsub(/\*/, "").gsub(/[\s-]+/, "_")
+    end
+
+    def parsed_csv
+      return @parsed_csv if defined?(@parsed_csv)
+
+      csv_content = raw_file_str || ""
+      if rows_to_skip.to_i > 0
+        csv_content = csv_content.lines.drop(rows_to_skip).join
+      end
+
+      @parsed_csv = self.class.parse_csv_str(csv_content, col_sep: col_sep)
+    end
+
+    # Normalizes a raw CSV numeric string into a plain, parseable decimal string
+    # based on the import's configured +number_format+ (thousands delimiter and
+    # decimal separator). Returns "" when the value is blank, the format is
+    # unknown, or the result is not a valid number.
+    #
+    # @param value [String, nil] the raw cell value from the CSV
+    # @return [String] a normalized number like "1234.56", or "" if invalid
+    def sanitize_number(value)
+      return "" if value.nil?
+
+      format = NUMBER_FORMATS[number_format]
+      return "" unless format
+
+      # First, normalize spaces and remove any characters that aren't numbers, delimiters, separators, or minus signs
+      sanitized = value.to_s.strip
+
+      # Handle French/Scandinavian format specially
+      if format[:delimiter] == " "
+        # The thousands "space" can be an ASCII space, a non-breaking space
+        # (U+00A0) or a narrow no-break space (U+202F) depending on the locale
+        # or exporter. Ruby's \s does not match those Unicode spaces, so strip
+        # every kind of whitespace via the Unicode property.
+        sanitized = sanitized.gsub(/\p{Space}/, "")
+
+        # Strip currency symbols/codes only at the leading/trailing edges (e.g.
+        # "€1 234,56" or "1 234,56 kr"). Interior characters are deliberately
+        # left in place so a misconfigured US-style value like "1,234.56" keeps
+        # its period and is rejected by the numeric guard below, rather than
+        # being silently reinterpreted as 1.23456. Digits, the separator, and a
+        # minus sign are preserved so signed values and the guard still work.
+        edge_junk = /\A[^\d#{Regexp.escape(format[:separator])}\-]+|[^\d#{Regexp.escape(format[:separator])}\-]+\z/
+        sanitized = sanitized.gsub(edge_junk, "")
+      else
+        sanitized = sanitized.gsub(/[^\d#{Regexp.escape(format[:delimiter])}#{Regexp.escape(format[:separator])}\-]/, "")
+
+        # Replace delimiter with empty string
+        if format[:delimiter].present?
+          sanitized = sanitized.gsub(format[:delimiter], "")
+        end
+      end
+
+      # Replace separator with period for proper float parsing
+      if format[:separator].present?
+        sanitized = sanitized.gsub(format[:separator], ".")
+      end
+
+      # Return empty string if not a valid number
+      unless sanitized =~ /\A-?\d+\.?\d*\z/
+        return ""
+      end
+
+      sanitized
+    end
+
+    def set_default_number_format
+      self.number_format ||= "1,234.56" # Default to US/UK format
+    end
+
+    def custom_column_import_requires_identifier
+      return unless amount_type_strategy == "custom_column"
+
+      if amount_type_inflow_value.blank?
+        errors.add(:base, I18n.t("imports.errors.custom_column_requires_inflow"))
+      end
+    end
+
+    # Common encodings to try when UTF-8 detection fails
+    # Windows-1250 is prioritized for Central/Eastern European languages
+    COMMON_ENCODINGS = [ "Windows-1250", "Windows-1252", "ISO-8859-1", "ISO-8859-2" ].freeze
+
+    def ensure_utf8_encoding
+      # Handle nil or empty string first (before checking if changed)
+      return if raw_file_str.nil? || raw_file_str.bytesize == 0
+
+      # Only process if the attribute was changed
+      # Use will_save_change_to_attribute? which is safer for binary data
+      return unless will_save_change_to_raw_file_str?
+
+      # If already valid UTF-8, nothing to do
+      begin
+        if raw_file_str.encoding == Encoding::UTF_8 && raw_file_str.valid_encoding?
+          return
+        end
+      rescue ArgumentError
+        # raw_file_str might have invalid encoding, continue to detection
+      end
+
+      # Detect encoding using rchardet
+      begin
+        require "rchardet"
+        detection = CharDet.detect(raw_file_str)
+        detected_encoding = detection["encoding"]
+        confidence = detection["confidence"]
+
+        # Only convert if we have reasonable confidence in the detection
+        if detected_encoding && confidence > 0.75
+          # Force encoding and convert to UTF-8
+          self.raw_file_str = raw_file_str.force_encoding(detected_encoding).encode("UTF-8", invalid: :replace, undef: :replace)
+        else
+          # Fallback: try common encodings
+          try_common_encodings
+        end
+      rescue LoadError
+        # rchardet not available, fallback to trying common encodings
+        try_common_encodings
+      rescue ArgumentError, Encoding::CompatibilityError => e
+        # Handle encoding errors by falling back to common encodings
+        try_common_encodings
+      end
+    end
+
+    def try_common_encodings
+      COMMON_ENCODINGS.each do |encoding|
+        begin
+          test = raw_file_str.dup.force_encoding(encoding)
+          if test.valid_encoding?
+            self.raw_file_str = test.encode("UTF-8", invalid: :replace, undef: :replace)
+            return
+          end
+        rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+          next
+        end
+      end
+
+      # If nothing worked, force UTF-8 and replace invalid bytes
+      self.raw_file_str = raw_file_str.force_encoding("UTF-8").scrub("?")
+    end
+
+    def account_belongs_to_family
+      return if account.nil?
+      return if account.family_id == family_id
+
+      errors.add(:account, "must belong to your family")
+    end
+
+    def payloads_are_json_objects
+      errors.add(:summary, "must be an object") unless summary.is_a?(Hash)
+      errors.add(:error_details, "must be an object") unless error_details.is_a?(Hash)
+    end
+
+    def rows_to_skip_within_file_bounds
+      return if raw_file_str.blank?
+      return if rows_to_skip.to_i == 0
+
+      line_count = raw_file_str.lines.count
+
+      if rows_to_skip.to_i >= line_count
+        errors.add(:rows_to_skip, "must be less than the number of lines in the file (#{line_count})")
+      end
+    end
+end

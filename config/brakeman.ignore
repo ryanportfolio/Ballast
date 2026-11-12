@@ -1,0 +1,175 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Redirect",
+      "warning_code": 18,
+      "fingerprint": "723b1970ca6bf16ea0c2c1afa0c00d3c54854a16568d6cb933e497947565d9ab",
+      "check_name": "Redirect",
+      "message": "Possible unprotected redirect",
+      "file": "app/controllers/family_exports_controller.rb",
+      "line": 30,
+      "link": "https://brakemanscanner.org/docs/warning_types/redirect/",
+      "code": "redirect_to(Current.family.family_exports.find(params[:id]).export_file, :allow_other_host => true)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FamilyExportsController",
+        "method": "download"
+      },
+      "user_input": "Current.family.family_exports.find(params[:id]).export_file",
+      "confidence": "Weak",
+      "cwe_id": [
+        601
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "81c63f2c375da309440b9308df3ae9d1fcbada7043a26919898b08f3a38b29f6",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/api/v1/trades_controller.rb",
+      "line": 159,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:trade).permit(:account_id, :date, :qty, :price, :currency, :security_id, :ticker, :manual_ticker, :investment_activity_label, :category_id, :fee, :type, :amount, :transfer_account_id)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Api::V1::TradesController",
+        "method": "trade_params"
+      },
+      "user_input": ":account_id",
+      "confidence": "High",
+      "cwe_id": [
+        915
+      ],
+      "note": "account_id validated in create action (line 42: family.accounts.visible.find ensures family membership; lines 44-48: supports_trades? check); security_id validated via Security.find (line 290); transfer_account_id validated in Transfer::Creator where family.accounts.find scopes both source and destination accounts to the family (app/models/transfer/creator.rb lines 4-5); type validated in build_create_form_params against allowed values: buy, sell, dividend, deposit, withdrawal, interest (line 217)"
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "aaccd8db0be34afdc88e5af08d91ae2e8b7765dfea2f3fc6e1c37db0adc7b991",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/invitations_controller.rb",
+      "line": 58,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:invitation).permit(:email, :role)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "InvitationsController",
+        "method": "invitation_params"
+      },
+      "user_input": ":role",
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "dba46648ab625bae43bd8126e4dcdba34b6828a064cedb5129c3c2e8607789c7",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/users_controller.rb",
+      "line": 146,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:user).permit(:role, :family_id, :new_family_name, :new_family_moniker, :password)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Admin::UsersController",
+        "method": "user_params"
+      },
+      "user_input": ":role",
+      "confidence": "Medium",
+      "cwe_id": [
+        915
+      ],
+      "note": "Protected by Pundit authorization - UserPolicy requires super_admin and prevents users from changing their own role"
+    },
+    {
+      "warning_type": "Dangerous Eval",
+      "warning_code": 13,
+      "fingerprint": "abc0f66938760081100a003a9ce62aae3fc27a3e62bcaa026a009da6a2ed99d1",
+      "check_name": "Evaluation",
+      "message": "Dynamic string evaluated as code",
+      "file": "app/helpers/styled_form_builder.rb",
+      "line": 15,
+      "link": "https://brakemanscanner.org/docs/warning_types/dangerous_eval/",
+      "code": "class_eval(\"      def #{selector}(method, options = {})\\n        form_options = options.slice(*BUILDER_OPTIONS, :required)\\n        html_options = options.except(*BUILDER_OPTIONS)\\n\\n        build_field(method, form_options, html_options) do |merged_options|\\n          super(method, merged_options)\\n        end\\n      end\\n\", \"app/helpers/styled_form_builder.rb\", (15 + 1))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "StyledFormBuilder",
+        "method": null
+      },
+      "user_input": null,
+      "confidence": "Weak",
+      "cwe_id": [
+        913,
+        95
+      ],
+      "note": "Uses similar pattern to Rails internal form builder"
+    },
+    {
+      "warning_type": "Dynamic Render Path",
+      "warning_code": 15,
+      "fingerprint": "fb6f7abeabc405d6882ffd41dbe8016403ef39307a5c6b4cd7b18adfaf0c24bf",
+      "check_name": "Render",
+      "message": "Render path contains parameter value",
+      "file": "app/views/import/configurations/show.html.erb",
+      "line": 34,
+      "link": "https://brakemanscanner.org/docs/warning_types/dynamic_render_path/",
+      "code": "render(partial => permitted_import_configuration_path(Current.family.imports.find(params[:import_id])), { :locals => ({ :import => Current.family.imports.find(params[:import_id]) }) })",
+      "render_path": [
+        {
+          "type": "controller",
+          "class": "Import::ConfigurationsController",
+          "method": "show",
+          "line": 7,
+          "file": "app/controllers/import/configurations_controller.rb",
+          "rendered": {
+            "name": "import/configurations/show",
+            "file": "app/views/import/configurations/show.html.erb"
+          }
+        }
+      ],
+      "location": {
+        "type": "template",
+        "template": "import/configurations/show"
+      },
+      "user_input": "params[:import_id]",
+      "confidence": "Weak",
+      "cwe_id": [
+        22
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "58922d7449ed00df3f1dbe574362416f1e9bee31afeb8675a3db3e91b87a9fdc",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/recurring_transactions_controller.rb",
+      "line": 379,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:recurring_transaction).permit(:name, :amount, :currency, :account_id, :first_due_on, :frequency_preset, :frequency_interval, :frequency_interval_unit, :payment_url, :autopay, :notes, :is_income, :category_id)",
+      "render_path": null,
+      "location": {
+        "type": "controller",
+        "controller": "RecurringTransactionsController",
+        "method": "new_recurring_transaction_params"
+      },
+      "user_input": ":account_id",
+      "confidence": "High",
+      "note": "account_id is never mass-assigned: build_declared_bill resolves it through Account.writable_by(user).find_by; a foreign or read-only id adds account_invalid and the controller returns 422 rather than creating a bill. An omitted account stays nil. category_id is checked by RecurringTransaction#category_belongs_to_family, which rejects another family's category."
+    }
+  ],
+  "brakeman_version": "7.1.0"
+}

@@ -1,0 +1,308 @@
+require "test_helper"
+
+class ChatTest < ActiveSupport::TestCase
+  setup do
+    @user = users(:family_admin)
+    @assistant = mock
+  end
+
+  test "user sees all messages in debug mode" do
+    chat = chats(:one)
+    with_env_overrides AI_DEBUG_MODE: "true" do
+      assert_equal chat.messages.count, chat.conversation_messages.count
+    end
+  end
+
+  test "user sees assistant and user messages in normal mode" do
+    chat = chats(:one)
+    assert_equal 3, chat.conversation_messages.count
+  end
+
+  test "uses chat-scoped stream targets" do
+    first_chat = chats(:one)
+    second_chat = chats(:two)
+
+    assert_not_equal "messages", first_chat.messages_target
+    assert_not_equal "chat-error", first_chat.error_target
+    assert_not_equal first_chat.messages_target, second_chat.messages_target
+    assert_not_equal first_chat.error_target, second_chat.error_target
+  end
+
+  test "creates with initial message" do
+    prompt = "Test prompt"
+
+    assert_difference "@user.chats.count", 1 do
+      chat = @user.chats.start!(prompt, model: "gpt-4.1")
+
+      assert_equal 2, chat.messages.count
+      assert_equal 1, chat.messages.where(type: "UserMessage").count
+      assert_equal 1, chat.messages.where(type: "AssistantMessage", status: "pending").count
+    end
+  end
+
+  test "a response queued before the assistant was turned off never reaches a provider" do
+    chat = @user.chats.start!("Test prompt", model: "gpt-4.1")
+    user_message = chat.messages.find_by!(type: "UserMessage")
+    pending = chat.messages.find_by!(type: "AssistantMessage", status: "pending")
+
+    @user.family.update!(assistant_type: "mcp_only")
+    Assistant.expects(:for_chat).never
+
+    AssistantResponseJob.perform_now(user_message, pending)
+
+    assert_not Message.exists?(pending.id)
+  end
+
+  test "the pending bubble says busy while the AI lane is busy, then Thinking when the job starts" do
+    chat = chats(:one)
+    user_message = chat.messages.where(type: "UserMessage").first
+    BackgroundJobHealth.stubs(:ai_busy?).returns(true)
+    Chat.any_instance.expects(:broadcast_update).with { |opts| opts[:html] == I18n.t("chats.ai_busy") }
+
+    chat.ask_assistant_later(user_message)
+
+    pending = chat.messages.find_by!(type: "AssistantMessage", status: "pending")
+    Chat.any_instance.expects(:broadcast_update).with { |opts| opts[:target] == ActionView::RecordIdentifier.dom_id(pending, :status) && opts[:html] == I18n.t("chats.thinking") }
+    Assistant.stubs(:for_chat).returns(stub(respond_to: nil))
+
+    chat.ask_assistant(user_message, assistant_message: pending)
+  end
+
+  test "a finished reply holds the reservation and refreshes the bubble" do
+    chat = chats(:one)
+    user_message = chat.messages.where(type: "UserMessage").first
+    UserMessage.any_instance.expects(:request_response).with(assistant_message: nil)
+    ChatReservation.expects(:hold!).returns(60)
+    ChatReservation.expects(:bubble).with(60).returns(seconds: 60, busy: false)
+    Turbo::StreamsChannel.expects(:broadcast_update_to).with(chat, targets: ChatReservation::TARGETS, partial: "chats/reservation", locals: { bubble: { seconds: 60, busy: false } })
+
+    AssistantResponseJob.perform_now(user_message)
+  end
+
+  test "a failed hold doesn't fail a finished reply" do
+    user_message = chats(:one).messages.where(type: "UserMessage").first
+    UserMessage.any_instance.expects(:request_response).with(assistant_message: nil)
+    ChatReservation.stubs(:while_chat_runs).yields
+    ChatReservation.expects(:hold!).raises(RedisClient::ConnectionError)
+
+    assert_nothing_raised { AssistantResponseJob.perform_now(user_message) }
+  end
+
+  test "creates with default model when model is nil" do
+    prompt = "Test prompt"
+
+    assert_difference "@user.chats.count", 1 do
+      chat = @user.chats.start!(prompt, model: nil)
+
+      assert_equal 2, chat.messages.count
+      assert_equal Chat.default_model, chat.messages.find_by!(type: "UserMessage").ai_model
+    end
+  end
+
+  test "creates with default model when model is empty string" do
+    prompt = "Test prompt"
+
+    assert_difference "@user.chats.count", 1 do
+      chat = @user.chats.start!(prompt, model: "")
+
+      assert_equal 2, chat.messages.count
+      assert_equal Chat.default_model, chat.messages.find_by!(type: "UserMessage").ai_model
+    end
+  end
+
+  # These three tests assert routing (which provider's effective_model wins),
+  # not the constant value itself — the assertion side reads through
+  # Provider::*.effective_model so ENV overrides like ANTHROPIC_MODEL /
+  # OPENAI_MODEL don't make the tests flake.
+  test "default_model returns Anthropic's effective_model when LLM_PROVIDER=anthropic and Anthropic is configured" do
+    Provider::Anthropic.stubs(:configured?).returns(true)
+    Setting.stubs(:llm_provider).returns("anthropic")
+
+    assert_equal Provider::Anthropic.effective_model, Chat.default_model
+  end
+
+  test "default_model falls back to OpenAI's effective_model when Anthropic is preferred but unconfigured" do
+    Provider::Anthropic.stubs(:configured?).returns(false)
+    Provider::Openai.stubs(:configured?).returns(true)
+    Setting.stubs(:llm_provider).returns("anthropic")
+
+    assert_equal Provider::Openai.effective_model, Chat.default_model
+  end
+
+  test "default_model uses Anthropic's effective_model when OpenAI is unconfigured" do
+    Provider::Anthropic.stubs(:configured?).returns(true)
+    Provider::Openai.stubs(:configured?).returns(false)
+    Setting.stubs(:llm_provider).returns("openai")
+
+    assert_equal Provider::Anthropic.effective_model, Chat.default_model
+  end
+
+  test "creates with configured model when OPENAI_MODEL env is set" do
+    prompt = "Test prompt"
+
+    with_env_overrides OPENAI_MODEL: "custom-model" do
+      chat = @user.chats.start!(prompt, model: "")
+
+      assert_equal "custom-model", chat.messages.find_by!(type: "UserMessage").ai_model
+    end
+  end
+
+  test "returns nil presentable error message when no error is stored" do
+    chat = chats(:one)
+
+    chat.update!(error: nil)
+
+    assert_nil chat.presentable_error_message
+  end
+
+  test "surfaces a friendly rate limit error" do
+    chat = chats(:one)
+
+    chat.add_error(StandardError.new("OpenAI API error 429: rate limit exceeded"))
+
+    assert_equal I18n.t("chat.errors.rate_limited"), chat.presentable_error_message
+    assert_match "429", chat.technical_error_message
+  end
+
+  test "surfaces a friendly temporary provider error" do
+    chat = chats(:one)
+
+    chat.add_error(StandardError.new("OpenAI API error 503: service unavailable"))
+
+    assert_equal I18n.t("chat.errors.temporarily_unavailable"), chat.presentable_error_message
+    assert_match "503", chat.technical_error_message
+  end
+
+  test "surfaces a friendly auth configuration error" do
+    chat = chats(:one)
+
+    chat.add_error(StandardError.new("OpenAI API error: invalid api key"))
+
+    assert_equal I18n.t("chat.errors.misconfigured"), chat.presentable_error_message
+    assert_match "invalid api key", chat.technical_error_message
+  end
+
+  test "surfaces a friendly default error for unrecognized errors" do
+    chat = chats(:one)
+
+    chat.add_error(StandardError.new("something totally unknown happened"))
+
+    assert_equal I18n.t("chat.errors.default"), chat.presentable_error_message
+  end
+
+  test "falls back to a friendly message for legacy serialized errors" do
+    chat = chats(:one)
+
+    chat.update!(error: "OpenAI API error 429: rate limit exceeded".to_json)
+
+    assert_equal I18n.t("chat.errors.rate_limited"), chat.presentable_error_message
+    assert_equal "OpenAI API error 429: rate limit exceeded", chat.technical_error_message
+  end
+
+  test "handle_undelivered_response! clears a blank pending bubble and records an error + debug log" do
+    BackgroundJobHealth.stubs(:snapshot).returns({ healthy: false, workers: 0 })
+    BackgroundJobHealth.stubs(:summary).returns("workers=0")
+
+    chat = chats(:two)
+    pending = chat.messages.create!(type: "AssistantMessage", content: "", ai_model: "gpt-4.1", status: :pending, created_at: 5.minutes.ago)
+
+    assert_difference -> { DebugLogEntry.count } => 1, -> { Message.count } => -1 do
+      assert chat.handle_undelivered_response!(pending)
+    end
+
+    assert_not Message.exists?(pending.id)
+    assert_equal I18n.t("chat.errors.no_response"), chat.reload.presentable_error_message
+  end
+
+  test "handle_undelivered_response! demotes a partially-streamed pending bubble to failed" do
+    BackgroundJobHealth.stubs(:snapshot).returns({})
+    BackgroundJobHealth.stubs(:summary).returns("")
+
+    chat = chats(:two)
+    pending = chat.messages.create!(type: "AssistantMessage", content: "partial answer", ai_model: "gpt-4.1", status: :pending, created_at: 5.minutes.ago)
+
+    assert_no_difference -> { Message.count } do
+      assert chat.handle_undelivered_response!(pending)
+    end
+
+    assert_equal "failed", pending.reload.status
+  end
+
+  test "handle_undelivered_response! ignores a pending bubble younger than the server timeout" do
+    chat = chats(:two)
+    fresh = chat.messages.create!(type: "AssistantMessage", content: "", ai_model: "gpt-4.1", status: :pending, created_at: 5.seconds.ago)
+
+    assert_no_difference [ "DebugLogEntry.count", "Message.count" ] do
+      assert_not chat.handle_undelivered_response!(fresh)
+    end
+
+    assert fresh.reload.pending?
+  end
+
+  test "handle_undelivered_response! is a no-op for non-pending messages" do
+    chat = chats(:one)
+    complete = chat.messages.create!(type: "AssistantMessage", content: "done", ai_model: "gpt-4.1", status: :complete)
+
+    assert_no_difference [ "DebugLogEntry.count", "Message.count" ] do
+      assert_not chat.handle_undelivered_response!(complete)
+    end
+  end
+
+  # `Chat.response_timeout` reads ENV ahead of Setting, so every assertion about
+  # the Setting, the default or the floor has to clear AI_RESPONSE_TIMEOUT first —
+  # otherwise an environment that happens to define it silently decides the result.
+  def with_setting_timeout(value)
+    Setting.stubs(:ai_response_timeout).returns(value)
+    with_env_overrides("AI_RESPONSE_TIMEOUT" => nil) { yield }
+  end
+
+  test "response_timeout falls back to the default when unconfigured" do
+    with_setting_timeout(nil) do
+      assert_equal Chat::DEFAULT_RESPONSE_TIMEOUT, Chat.response_timeout
+    end
+  end
+
+  test "response_timeout prefers ENV over Setting" do
+    with_setting_timeout(120) do
+      assert_equal 120.seconds, Chat.response_timeout
+    end
+
+    Setting.stubs(:ai_response_timeout).returns(120)
+    with_env_overrides("AI_RESPONSE_TIMEOUT" => "300") do
+      assert_equal 300.seconds, Chat.response_timeout
+    end
+  end
+
+  test "response_timeout ignores non-positive values and enforces a floor" do
+    with_setting_timeout(0) do
+      assert_equal Chat::DEFAULT_RESPONSE_TIMEOUT, Chat.response_timeout
+    end
+
+    with_setting_timeout(5) do
+      assert_equal Chat::MIN_RESPONSE_TIMEOUT, Chat.response_timeout
+    end
+  end
+
+  # An early report is refused by the server, and `report_timeout` answers 409 so
+  # the watchdog retries. The grace window keeps those retries rare for a client
+  # whose clock is modestly ahead.
+  test "undelivered_response_timeout stays below the client timeout" do
+    with_setting_timeout(300) do
+      assert_equal 290.seconds, Chat.undelivered_response_timeout
+      assert Chat.undelivered_response_timeout < Chat.response_timeout
+    end
+  end
+
+  test "handle_undelivered_response! respects a raised timeout" do
+    chat = chats(:two)
+    pending = chat.messages.create!(type: "AssistantMessage", content: "", ai_model: "gpt-4.1", status: :pending, created_at: 5.minutes.ago)
+
+    with_setting_timeout(600) do
+      assert_no_difference [ "DebugLogEntry.count", "Message.count" ] do
+        assert_not chat.handle_undelivered_response!(pending)
+      end
+    end
+
+    assert pending.reload.pending?
+  end
+end

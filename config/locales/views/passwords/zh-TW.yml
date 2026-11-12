@@ -1,0 +1,11 @@
+---
+zh-TW:
+  passwords:
+    disabled: "此系統已停用變更密碼的功能。請聯絡您的管理員。"
+    edit:
+      password: 新密碼
+      password_challenge: 目前密碼
+      submit: 重設密碼
+      title: 更新密碼
+    update:
+      success: 您的密碼已重設。

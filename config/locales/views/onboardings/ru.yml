@@ -1,0 +1,52 @@
+---
+ru:
+  onboardings:
+    goals:
+      ai_insights: Пусть ИИ поможет мне понять мои финансы
+      budgeting: Управление финансовыми планами и бюджетом
+      cashflow: Понимание денежного потока и расходов
+      investments: Отслеживание инвестиций
+      optimization: Анализ и оптимизация счетов
+      partner: Управление финансами с партнёром
+      reduce_stress: Снижение финансового стресса или тревоги
+      submit: Далее
+      subtitle: Выберите одну или несколько целей, которые вы преследуете, используя
+        %{product_name} как инструмент управления личными финансами.
+      title: Что привело вас сюда?
+      unified_accounts: Просмотр всех моих счетов в одном месте
+    header:
+      goals: Цели
+      preferences: Предпочтения
+      setup: Настройка
+      sign_out: Выйти
+    logout:
+      sign_out: Выйти
+    preferences:
+      color_theme: Цветовая тема
+      currency: Валюта
+      date_format: Формат даты
+      example: Пример счёта
+      locale: Язык
+      preview: Предварительный просмотр отображения данных на основе предпочтений.
+      submit: Завершить
+      subtitle: Давайте настроим ваши предпочтения.
+      theme_dark: Тёмная
+      theme_light: Светлая
+      theme_system: Системная
+      title: Настройте ваши предпочтения
+    show:
+      country: Страна
+      first_name: Имя
+      first_name_placeholder: Имя
+      group_name: Название группы
+      group_name_placeholder: Название группы
+      household_name: Название домохозяйства
+      household_name_placeholder: Название домохозяйства
+      last_name: Фамилия
+      last_name_placeholder: Фамилия
+      moniker_family: Члены семьи (только вы или с партнёром, подростками и т.д.)
+      moniker_group: Группа людей (компания, клуб, ассоциация, любой другой тип)
+      moniker_prompt: Будете использовать %{product_name} с ...
+      submit: Продолжить
+      subtitle: Сначала давайте настроим ваш профиль.
+      title: Давайте настроим ваш аккаунт

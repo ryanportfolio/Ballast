@@ -1,0 +1,54 @@
+---
+fr:
+  onboardings:
+    goals:
+      ai_insights: Laisser l'IA m'aider à comprendre mes finances
+      budgeting: Gérer les plans financiers et les budgets
+      cashflow: Comprendre les flux de trésorerie et les dépenses
+      investments: Suivre les investissements
+      optimization: Analyser et optimiser les comptes
+      partner: Gérer les finances avec un partenaire
+      reduce_stress: Réduire le stress financier ou l'anxiété
+      submit: Suivant
+      subtitle: Sélectionnez un ou plusieurs objectifs que vous souhaitez atteindre
+        avec %{product_name} comme outil de finances personnelles.
+      title: Qu'est-ce qui vous amène ici ?
+      unified_accounts: Voir tous mes comptes en un seul endroit
+    header:
+      goals: Objectifs
+      preferences: Préférences
+      setup: Configuration
+      sign_out: Se déconnecter
+    logout:
+      sign_out: Se déconnecter
+    preferences:
+      color_theme: Thème de couleur
+      currency: Devise
+      date_format: Format de date
+      example: Compte exemple
+      locale: Langue
+      preview: Aperçu de l'affichage des données selon vos préférences.
+      submit: Terminer
+      subtitle: Configurons vos préférences.
+      theme_dark: Sombre
+      theme_light: Clair
+      theme_system: Système
+      title: Configurez vos préférences
+    show:
+      country: Pays
+      first_name: Prénom
+      first_name_placeholder: Prénom
+      group_name: Nom du groupe
+      group_name_placeholder: Nom du groupe
+      household_name: Nom du foyer
+      household_name_placeholder: Nom du foyer
+      last_name: Nom de famille
+      last_name_placeholder: Nom de famille
+      moniker_family: Membres de la famille (seul ou avec votre partenaire, vos enfants,
+        etc.)
+      moniker_group: Groupe de personnes (entreprise, club, association, ou tout autre
+        type)
+      moniker_prompt: Vous utiliserez %{product_name} avec…
+      submit: Continuer
+      subtitle: Commençons par compléter votre profil.
+      title: Configurons votre compte

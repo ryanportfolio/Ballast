@@ -1,0 +1,216 @@
+<% content_for :page_header do %>
+  <div class="space-y-4 mb-6">
+    <header class="flex justify-between items-center text-primary font-medium gap-4">
+      <div class="space-y-1">
+        <h1 class="text-xl lg:text-3xl font-medium text-primary">
+          <%= t("reports.index.title") %>
+        </h1>
+        <p class="text-sm lg:text-base text-secondary">
+          <%= t("reports.index.subtitle") %>
+        </p>
+      </div>
+
+      <%# Flash messages %>
+      <% if flash[:alert].present? %>
+        <div class="p-3 rounded-lg bg-destructive-surface text-sm text-destructive">
+          <%= flash[:alert] %>
+        </div>
+      <% end %>
+
+      <%# Print Report Button %>
+        <%= link_to print_reports_path(period_type: @period_type, start_date: @start_date, end_date: @end_date),
+                  target: "_blank",
+                  rel: "noopener",
+                  aria: { label: t("reports.index.print_report") },
+                  class: "font-medium whitespace-nowrap inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-primary border border-secondary bg-transparent hover:bg-surface-hover" do %>
+        <%= icon("printer", size: "sm") %>
+        <span class="hidden sm:inline"><%= t("reports.index.print_report") %></span>
+      <% end %>
+    </header>
+
+    <%# Period Navigation Tabs %>
+    <div class="flex items-center justify-between gap-4">
+      <%= render DS::SegmentedControl.new(aria_label: t("reports.index.period_aria", default: "Report period"), class: "overflow-x-auto no-scrollbar") do |sc| %>
+        <% %i[monthly quarterly ytd last_6_months custom].each do |ptype| %>
+          <% sc.with_segment(t("reports.index.periods.#{ptype}"),
+               active: @period_type == ptype,
+               href: reports_path(period_type: ptype),
+               class: "whitespace-nowrap") %>
+        <% end %>
+      <% end %>
+    </div>
+
+    <%# Custom Date Range Picker (only shown when custom is selected) %>
+    <% if @period_type == :custom %>
+      <%= form_with url: reports_path, method: :get, data: { controller: "auto-submit-form" }, class: "flex items-center gap-3 bg-surface-inset p-3 rounded-lg" do |f| %>
+        <%= f.hidden_field :period_type, value: :custom %>
+
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-secondary"><%= t("reports.index.date_range.from") %></label>
+          <%= f.date_field :start_date,
+                           value: @start_date.strftime("%Y-%m-%d"),
+                           data: { auto_submit_form_target: "auto" },
+                           autocomplete: "off",
+                           class: "px-3 py-1.5 border border-primary rounded-lg text-sm bg-container-inset text-primary" %>
+        </div>
+        <span class="text-secondary">—</span>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-secondary"><%= t("reports.index.date_range.to") %></label>
+          <%= f.date_field :end_date,
+                           value: @end_date.strftime("%Y-%m-%d"),
+                           data: { auto_submit_form_target: "auto" },
+                           autocomplete: "off",
+                           class: "px-3 py-1.5 border border-primary rounded-lg text-sm bg-container-inset text-primary" %>
+        </div>
+      <% end %>
+    <% end %>
+
+    <%# Period Display %>
+    <% if @nav %>
+      <div class="flex items-center gap-1 mb-4">
+        <div class="flex items-center gap-2">
+          <%= render DS::Tooltip.new(text: t("reports.index.shortcut_hint", action: t("reports.index.previous_period"), key: "←")) do |tooltip| %>
+            <% tooltip.with_trigger do %>
+              <%= render DS::Link.new(
+                variant: "icon",
+                icon: "chevron-left",
+                href: reports_path(period_type: @period_type, start_date: @nav[:prev_start], end_date: @nav[:prev_end]),
+                aria: { label: t("reports.index.previous_period"), keyshortcuts: "ArrowLeft" },
+                data: { controller: "hotkey", hotkey: "ArrowLeft" },
+              ) %>
+            <% end %>
+          <% end %>
+
+          <% if @nav[:at_latest] %>
+            <button disabled aria-label="<%= t("reports.index.next_period") %>" class="text-subdued inline-flex items-center justify-center w-9 h-9 rounded-lg cursor-not-allowed">
+              <%= icon("chevron-right", color: "current") %>
+            </button>
+          <% else %>
+            <%= render DS::Tooltip.new(text: t("reports.index.shortcut_hint", action: t("reports.index.next_period"), key: "→")) do |tooltip| %>
+              <% tooltip.with_trigger do %>
+                <%= render DS::Link.new(
+                  variant: "icon",
+                  icon: "chevron-right",
+                  href: reports_path(period_type: @period_type, start_date: @nav[:next_start], end_date: @nav[:next_end]),
+                  aria: { label: t("reports.index.next_period"), keyshortcuts: "ArrowRight" },
+                  data: { controller: "hotkey", hotkey: "ArrowRight" },
+                ) %>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+
+        <% if [:monthly, :quarterly, :ytd].include?(@period_type) %>
+          <%= render DS::Popover.new(variant: "button") do |popover| %>
+            <% popover.with_button class: "flex items-center gap-1 hover:bg-surface-hover cursor-pointer rounded-md p-2" do %>
+              <span class="text-primary font-medium text-lg lg:text-base"><%= @nav[:label] %></span>
+              <%= icon("chevron-down") %>
+            <% end %>
+
+            <% popover.with_custom_content do %>
+              <%= render "reports/period_picker", period_type: @period_type, start_date: @start_date %>
+            <% end %>
+          <% end %>
+        <% else %>
+          <span class="text-primary font-medium text-lg lg:text-base"><%= @nav[:label] %></span>
+        <% end %>
+
+        <div class="ml-auto">
+          <%= render DS::Link.new(
+            text: t("reports.index.today"),
+            variant: "outline",
+            href: reports_path(period_type: @period_type),
+          ) %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<div class="w-full space-y-6 lg:pb-6">
+  <% if Current.family.transactions.any? %>
+    <%# Summary Dashboard - Always visible, not collapsible %>
+    <section>
+      <%= render partial: "reports/summary_dashboard", locals: {
+        metrics: @summary_metrics,
+        period_type: @period_type
+      } %>
+    </section>
+
+    <%# Collapsible & Reorderable Sections %>
+    <div data-controller="sortable-list"
+         data-sortable-list-url-value="<%= update_preferences_reports_path %>"
+         data-sortable-list-param-value="preferences.reports_section_order"
+         data-sortable-list-hold-delay-value="800"
+         data-sortable-list-own-keys-only-value="true"
+         data-action="dragover->sortable-list#dragOver drop->sortable-list#drop turbo:before-visit@window->sortable-list#saveBeforeVisit"
+         role="list"
+         aria-label="<%= t("reports.index.sections_aria") %>">
+      <% @reports_sections.each do |section| %>
+        <% next unless section[:visible] %>
+        <%# [-webkit-touch-callout:none] suppresses iOS Safari's native long-press
+            link preview on the amount/percentage anchors inside this section —
+            without it, the callout preempts the touch, fires touchcancel, and
+            the press-and-hold drag gesture never gets a chance to activate
+            (see #3132 review). %>
+        <section
+          class="bg-container rounded-xl shadow-border-xs transition-all mb-6 group focus:outline-none focus-visible:ring-2 focus-visible:ring-alpha-black-300 focus-visible:ring-offset-2 [-webkit-touch-callout:none]"
+          data-sortable-list-target="item"
+          data-sortable-list-id="<%= section[:key] %>"
+          data-section-key="<%= section[:key] %>"
+          data-controller="reports-section"
+          data-reports-section-section-key-value="<%= section[:key] %>"
+          data-reports-section-collapsed-value="<%= Current.user.reports_section_collapsed?(section[:key]) %>"
+          draggable="true"
+          tabindex="0"
+          role="listitem"
+          aria-grabbed="false"
+          aria-label="<%= t(section[:title]) %> section. Press Enter or Space to grab for reordering, then use arrow keys to move."
+          data-action="
+            dragstart->sortable-list#dragStart
+            dragend->sortable-list#dragEnd
+            touchstart->sortable-list#touchStart
+            touchmove->sortable-list#touchMove
+            touchend->sortable-list#touchEnd
+            touchcancel->sortable-list#touchCancel
+            contextmenu->sortable-list#suppressContextMenu
+            keydown->sortable-list#handleKeyDown">
+          <div class="px-4 py-2 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="text-secondary hover:text-primary transition-colors p-0.5"
+                data-action="click->reports-section#toggle keydown->reports-section#handleToggleKeydown"
+                data-reports-section-target="button"
+                aria-label="<%= t("reports.index.toggle_section") %>"
+                aria-expanded="<%= !Current.user.reports_section_collapsed?(section[:key]) %>">
+                <%= icon("chevron-down", size: "sm", class: "transition-transform", data: { reports_section_target: "chevron" }) %>
+              </button>
+              <h2 class="text-base font-medium">
+                <%= t(section[:title]) %>
+              </h2>
+              <% if section[:preview] %>
+                <%= render DS::Pill.new(label: t("shared.preview")) %>
+              <% end %>
+            </div>
+            <%# A mouse grab hint. Keys only grab the section itself, so the hint
+                stays out of the tab order instead of being an invisible stop. %>
+            <span
+              class="cursor-grab active:cursor-grabbing hidden lg:flex items-center justify-center w-6 h-6 text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+              aria-hidden="true">
+              <%= icon("grip-vertical", size: "sm") %>
+            </span>
+          </div>
+          <div class="p-4" data-reports-section-target="content">
+            <%= render partial: section[:partial], locals: section[:locals] %>
+          </div>
+        </section>
+      <% end %>
+    </div>
+  <% else %>
+    <%# Empty State %>
+    <section>
+      <%= render partial: "reports/empty_state" %>
+    </section>
+  <% end %>
+</div>

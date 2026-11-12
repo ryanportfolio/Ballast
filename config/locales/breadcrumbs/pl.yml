@@ -1,0 +1,73 @@
+---
+pl:
+  breadcrumbs:
+    account_sharings: Udostępnianie konta
+    account_statements: Magazyn wyciągów
+    accounts: Konta
+    ai_prompts: Prompty AI
+    api_key: Klucz API
+    api_keys: Klucze API
+    appearance: Wygląd
+    appearances: Wygląd
+    bank_sync: Synchronizacja z bankiem
+    budget_categories: Kategorie budżetu
+    budgets: Budżety
+    categories: Kategorie
+    categorize: Kategoryzuj
+    changelog: Co nowego
+    chats: Czaty
+    credit_cards: Karty kredytowe
+    cryptos: Kryptowaluty
+    dashboard: Pulpit
+    debug: Debugowanie
+    debugs: Debugowanie
+    depositories: Konta gotówkowe
+    exports: Eksporty
+    family_exports: Eksporty
+    family_merchants: Kontrahenci
+    feedback: Opinie
+    guides: Przewodniki
+    holdings: Pozycje
+    home: Strona główna
+    hostings: Hosting własny
+    impersonation_sessions: Podszywanie się
+    imports: Importy
+    intro: Wprowadzenie
+    investments: Inwestycje
+    invitations: Zaproszenia
+    invite_codes: Kody zaproszeń
+    llm_usage: Użycie LLM
+    llm_usages: Użycie LLM
+    loans: Pożyczki
+    mcp: Serwer MCP
+    merchants: Kontrahenci
+    messages: Wiadomości
+    mfa: Uwierzytelnianie dwuskładnikowe
+    onboardings: Wprowadzenie
+    other_assets: Inne aktywa
+    other_liabilities: Inne zobowiązania
+    pending_duplicate_merges: Przegląd duplikatów
+    plan: Plan
+    preferences: Preferencje
+    profile: Dane profilu
+    profiles: Dane profilu
+    properties: Nieruchomości
+    providers: Dostawcy
+    recurring_transactions: Cykliczne
+    registrations: Rejestracja
+    reports: Raporty
+    rules: Reguły
+    securities: Papiery wartościowe
+    security: Bezpieczeństwo
+    self_hosting: Hosting własny
+    sessions: Logowanie
+    simplefin_items: SimpleFIN
+    splits: Podział
+    tags: Tagi
+    trades: Transakcje giełdowe
+    transactions: Transakcje
+    transfer_matches: Dopasowania przelewów
+    transfers: Przelewy
+    users: Użytkownicy
+    valuations: Wyceny
+    vehicles: Pojazdy

@@ -1,0 +1,17 @@
+<%= link_to href, **merged_opts do %>
+  <% if icon && (icon_position != :right) %>
+    <%= helpers.icon(icon, size: size, color: icon_color) %>
+  <% end %>
+
+  <% unless icon_only? %>
+    <%= text %>
+  <% end %>
+
+  <% if icon && icon_position == :right %>
+    <%= helpers.icon(icon, size: size, color: icon_color) %>
+  <% end %>
+
+  <% if opens_in_new_tab? %>
+    <span class="sr-only"><%= t("ds.link.opens_in_new_tab", default: "(opens in new tab)") %></span>
+  <% end %>
+<% end %>

@@ -1,0 +1,11 @@
+---
+en:
+  passwords:
+    disabled: "Password changes are disabled on this instance. Please contact your administrator."
+    edit:
+      password: New Password
+      password_challenge: Current Password
+      submit: Reset Password
+      title: Update Password
+    update:
+      success: Your password has been reset.

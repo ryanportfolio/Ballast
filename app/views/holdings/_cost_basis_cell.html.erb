@@ -1,0 +1,39 @@
+<%# locals: (holding:, editable: true) %>
+
+<%= turbo_frame_tag dom_id(holding, :cost_basis) do %>
+  <% if holding.cost_basis_locked? && !editable %>
+    <%# Locked and not editable (from holdings list) - just show value, right-aligned %>
+    <div class="flex items-center justify-end gap-1">
+      <%= tag.span format_money(holding.avg_cost), class: "privacy-sensitive" %>
+      <%= icon "lock", size: "xs", class: "text-secondary" %>
+    </div>
+  <% else %>
+    <%# Unlocked OR editable context (drawer) - show clickable menu %>
+    <%= render DS::Popover.new(variant: :button, placement: "bottom-end") do |popover| %>
+      <% popover.with_button(class: "hover:text-primary cursor-pointer group") do %>
+        <% if holding.avg_cost %>
+          <div class="flex items-center gap-1">
+            <%= tag.span format_money(holding.avg_cost), class: "privacy-sensitive" %>
+            <% if holding.cost_basis_locked? %>
+              <%= icon "lock", size: "xs", class: "text-secondary" %>
+            <% end %>
+            <%= icon "pencil", size: "xs", class: "text-secondary opacity-0 group-hover:opacity-100 transition-opacity" %>
+          </div>
+        <% else %>
+          <div class="flex items-center gap-1 px-2 py-0.5 rounded text-secondary hover:text-primary hover:bg-container-inset-hover transition-colors">
+            <%= icon "pencil", size: "xs" %>
+            <span class="text-xs"><%= t(".set") %></span>
+          </div>
+        <% end %>
+      <% end %>
+      <% popover.with_custom_content do %>
+        <div class="p-4 min-w-70 text-left">
+          <h4 class="font-medium text-sm mb-3">
+            <%= t(".set_cost_basis_header", ticker: holding.ticker) %>
+          </h4>
+          <%= render "holdings/cost_basis_form", holding: holding, context: :popover, cancel_action: "DS--popover#close" %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

@@ -1,0 +1,135 @@
+require "test_helper"
+
+class DepositoriesControllerTest < ActionDispatch::IntegrationTest
+  include AccountableResourceInterfaceTest
+
+  setup do
+    sign_in @user = users(:family_admin)
+    @account = accounts(:depository)
+  end
+
+  # The provider link's visibility and the controller's gate are two
+  # expressions of one rule, and they disagreed. ConnectorAuthorizable requires
+  # `member_connectable? && Current.user&.member?`; the selector asked only
+  # `admin? || member_connectable`, so a GUEST was shown the link and refused
+  # on submit -- a control that looks broken rather than one that is absent.
+  #
+  # One user, one family, one variable: the role changes between the two
+  # requests and nothing else does, so a difference can only be the role.
+  test "a member-connectable provider is offered to a member and withheld from a guest" do
+    config = {
+      key: "test_provider",
+      name: "Test Provider",
+      member_connectable: true,
+      new_account_path: ->(_accountable_type, _return_to) { "/test-provider/new" }
+    }
+    Provider::Factory.stubs(:connection_configs_for_account_type).returns([ config ])
+
+    sign_in user = users(:family_member)
+
+    get new_depository_url(step: "method_select")
+    assert_response :success
+    assert_select "a[href='/test-provider/new']", { minimum: 1 },
+                  "a member may connect this provider and must be offered it"
+
+    user.update!(role: :guest)
+
+    get new_depository_url(step: "method_select")
+    assert_response :success
+    assert_select "a[href='/test-provider/new']", { count: 0 },
+                  "a guest was offered a link require_connector_create! refuses"
+  end
+
+  test "create falls back to the stored return_to when no form param is present" do
+    get new_account_path(return_to: transactions_path) # StoreLocation captures it into the session
+
+    assert_difference -> { Account.count } => 1 do
+      post depositories_path, params: {
+        account: { name: "Return To Checking", currency: "USD", balance: 100, accountable_type: "Depository" }
+      }
+    end
+
+    assert_redirected_to transactions_path
+  end
+
+  test "create prefers the form return_to over the session value" do
+    get new_account_path(return_to: transactions_path) # session return_to
+
+    post depositories_path, params: {
+      account: { name: "Form RT Checking", currency: "USD", balance: 100, accountable_type: "Depository", return_to: budgets_path }
+    }
+
+    assert_redirected_to budgets_path
+  end
+
+  test "create ignores an external return_to (open-redirect guard)" do
+    post depositories_path, params: {
+      account: { name: "Evil RT Checking", currency: "USD", balance: 100, accountable_type: "Depository", return_to: "https://evil.example/phish" }
+    }
+
+    created = Account.order(:created_at).last
+    assert_redirected_to account_path(created) # not the external URL
+  end
+
+  test "update persists enable_category_matcher through the shared update action" do
+    linked_account = accounts(:connected)
+    link_account_to_simplefin!(linked_account)
+    assert linked_account.enable_category_matcher?
+
+    patch depository_path(linked_account), params: {
+      account: { enable_category_matcher: "0" }
+    }
+
+    refute linked_account.reload.enable_category_matcher?
+
+    patch depository_path(linked_account), params: {
+      account: { enable_category_matcher: "1" }
+    }
+
+    assert linked_account.reload.enable_category_matcher?
+  end
+
+  # No remaining provider applies the category matcher
+  # (Account::CATEGORY_MATCHER_PROVIDER_TYPES is empty), so the toggle is
+  # hidden for linked and manual accounts alike.
+  test "edit form does not render the category matcher toggle while no provider supports it" do
+    linked_account = accounts(:connected)
+    link_account_to_simplefin!(linked_account)
+
+    get edit_account_url(linked_account)
+    assert_response :success
+    assert_select "input[name='account[enable_category_matcher]']", 0
+
+    get edit_account_url(accounts(:depository))
+    assert_response :success
+    assert_select "input[name='account[enable_category_matcher]']", 0
+  end
+
+  # --- member-owned connections (issue #3579) ------------------------------
+
+  test "a member is not offered a tenant-wide provider in the method selector" do
+    sign_in users(:family_member)
+    get new_depository_path(step: "method_select")
+
+    assert_response :success
+    # SimpleFIN is tenant-wide, so it must not be offered to a member even
+    # when it is configured.
+    assert_select "a[href*=?]", "simplefin", count: 0
+  end
+
+  test "an admin still sees every configured provider in the method selector" do
+    sign_in users(:family_admin)
+    get new_depository_path(step: "method_select")
+
+    assert_response :success
+    assert_select "a[href=?]", new_simplefin_item_path(accountable_type: "Depository"), count: 1
+  end
+
+  test "a member is offered manual entry even with no connectable providers" do
+    sign_in users(:family_member)
+    get new_depository_path(step: "method_select")
+
+    assert_response :success
+    assert_select "a[href=?]", new_depository_path, count: 1
+  end
+end

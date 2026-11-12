@@ -1,0 +1,13 @@
+---
+pt-PT:
+  password_resets:
+    edit:
+      title: Repor palavra-passe
+    new:
+      requested: Verifique o seu e-mail para obter uma ligação para repor a sua palavra-passe.
+      submit: Repor palavra-passe
+      title: Repor palavra-passe
+      back: Voltar
+    update:
+      invalid_token: Token inválido.
+      success: A sua palavra-passe foi reposta.

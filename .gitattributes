@@ -1,6 +1,28 @@
+# See https://git-scm.com/docs/gitattributes for more about git attribute files.
+
+# Mark the database schema as having been generated.
+db/schema.rb linguist-generated
+
+# Mark generated design system CSS (built from tokens/sure.tokens.json).
+app/assets/tailwind/sure-design-system/_generated.css linguist-generated
+
+# Mark any vendored files as having been vendored.
+vendor/* linguist-vendored
+config/credentials/*.yml.enc diff=rails_credentials
+config/credentials.yml.enc diff=rails_credentials
+
+# Ensure consistent line endings for scripts and Ruby files to avoid shebang issues on Windows
+bin/* text eol=lf
+*.sh text eol=lf
+*.rb text eol=lf
+.devcontainer/.bashrc text eol=lf
+
+# Harness firmware
 # Shell scripts must stay LF. CRLF breaks bash on Windows (git-bash) checkouts.
 *.sh text eol=lf
 
 # Workflow and issue-template YAML stays LF. A Windows checkout that rewrites it
 # to CRLF produces a whole-file diff for everyone with core.autocrlf off.
-*.yml text eol=lf
+# Scoped to .github/: Sure commits some locale YAML with CRLF, and a repo-wide rule
+# would show those files as modified in every checkout.
+.github/**/*.yml text eol=lf

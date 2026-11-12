@@ -1,0 +1,17 @@
+---
+de:
+  credit_cards:
+    edit:
+      edit: "%{account} bearbeiten"
+    form:
+      annual_fee: Jahresgebühr
+      annual_fee_placeholder: '99'
+      apr: Effektiver Jahreszins
+      apr_placeholder: '15,99'
+      available_credit: Verfügbarer Kreditrahmen
+      available_credit_placeholder: '10000'
+      expiration_date: Ablaufdatum
+      minimum_payment: Mindestzahlung
+      minimum_payment_placeholder: '100'
+    new:
+      title: Kreditkartendaten eingeben

@@ -1,0 +1,20 @@
+---
+vi:
+  sessions:
+    create:
+      invalid_credentials: Email hoặc mật khẩu không đúng.
+      local_login_disabled: Đăng nhập bằng mật khẩu nội bộ đã bị tắt.
+    destroy:
+      logout_successful: Bạn đã đăng xuất thành công.
+    new:
+      email: Địa chỉ email
+      email_placeholder: ban@example.com
+      forgot_password: Quên mật khẩu?
+      password: Mật khẩu
+      submit: Đăng nhập
+      title: Sure
+      password_placeholder: Nhập mật khẩu của bạn
+      local_login_admin_only: Đăng nhập nội bộ chỉ dành cho quản trị viên.
+      no_auth_methods_enabled: Hiện chưa có phương thức xác thực nào được bật. Vui lòng liên hệ quản trị viên.
+      demo_banner_title: "Chế độ Demo đang hoạt động"
+      demo_banner_message: "Đây là môi trường minh họa. Thông tin đăng nhập đã được điền sẵn để tiện sử dụng. Vui lòng không nhập thông tin thật hoặc nhạy cảm."

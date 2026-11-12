@@ -1,0 +1,31 @@
+<%= content_for :page_title, t(".accounts") %>
+<%= content_for :page_actions do %>
+  <%= render "accounts/sync_controls", family: Current.family %>
+  <%= render DS::Link.new(
+    text: t(".new_account"),
+    href: new_account_path(return_to: accounts_path),
+    variant: "primary",
+    icon: "plus",
+    frame: :modal
+  ) %>
+<% end %>
+
+<% if @manual_accounts.empty? && @simplefin_items.empty? %>
+  <%= render "empty" %>
+<% else %>
+  <div class="space-y-2">
+    <% if @simplefin_items.any? %>
+      <% @simplefin_items.sort_by(&:created_at).each do |item| %>
+        <%= render item, visible_accounts: visible_card_accounts(item) %>
+      <% end %>
+    <% end %>
+
+    <% if @manual_accounts.any? %>
+      <div id="manual-accounts">
+        <%= render "accounts/index/manual_accounts", accounts: @manual_accounts %>
+      </div>
+    <% else %>
+      <div id="manual-accounts"></div>
+    <% end %>
+  </div>
+<% end %>

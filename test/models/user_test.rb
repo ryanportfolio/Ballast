@@ -1,0 +1,1279 @@
+require "test_helper"
+require "concurrent"
+
+class UserTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+
+  uses_transaction :test_first_user_role_lock_makes_concurrent_family_creators_deterministic,
+    :"test_verify_otp?_claim_otp_time_step!_lets_only_one_of_two_racing_connections_claim_a_step"
+
+  def setup
+    @user = users(:family_admin)
+  end
+
+  def teardown
+    clear_enqueued_jobs
+    clear_performed_jobs
+  end
+
+  test "should be valid" do
+    assert @user.valid?, @user.errors.full_messages.to_sentence
+  end
+
+  # email
+  test "email must be present" do
+    potential_user = User.new(
+      email: "david@davidbowie.com",
+      password_digest: BCrypt::Password.create("password"),
+      first_name: "David",
+      last_name: "Bowie"
+    )
+    potential_user.email = "     "
+    assert_not potential_user.valid?
+  end
+
+  test "has email address" do
+    assert_equal "bob@bobdylan.com", @user.email
+  end
+
+  test "can update email" do
+    @user.update(email: "new_email@example.com")
+    assert_equal "new_email@example.com", @user.email
+  end
+
+  test "email addresses must be unique" do
+    duplicate_user = @user.dup
+    duplicate_user.email = @user.email.upcase
+    @user.save
+    assert_not duplicate_user.valid?
+  end
+
+  test "email address is normalized" do
+    @user.update!(email: " UNIQUE-User@ExAMPle.CoM ")
+    assert_equal "unique-user@example.com", @user.reload.email
+  end
+
+  test "display name" do
+    user = User.new(email: "user@example.com")
+    assert_equal "user@example.com", user.display_name
+    user.first_name = "Bob"
+    assert_equal "Bob", user.display_name
+    user.last_name = "Dylan"
+    assert_equal "Bob Dylan", user.display_name
+  end
+
+  test "initial" do
+    user = User.new(email: "user@example.com")
+    assert_equal "U", user.initial
+    user.first_name = "Bob"
+    assert_equal "B", user.initial
+    user.first_name = nil
+    user.last_name = "Dylan"
+    assert_equal "D", user.initial
+  end
+
+  test "family validation label uses localized default moniker" do
+    I18n.with_locale(:es) do
+      Current.stubs(:family).returns(nil)
+      user = User.new(email: "missing-family@example.com", password: user_password_test)
+
+      assert_not user.valid?
+      assert_includes user.errors.full_messages, "Familia debe existir"
+    end
+  end
+
+  test "family validation label uses current family moniker" do
+    family = families(:dylan_family)
+    family.update!(moniker: "Group")
+
+    I18n.with_locale(:es) do
+      Current.stubs(:family).returns(family)
+      user = User.new(email: "missing-group@example.com", password: user_password_test)
+
+      assert_not user.valid?
+      assert_includes user.errors.full_messages, "Grupo debe existir"
+    end
+  end
+
+  test "family attribute labels use requested locale for current family moniker" do
+    family = families(:dylan_family)
+    family.update!(moniker: "Group")
+    Current.stubs(:family).returns(family)
+
+    I18n.with_locale(:en) do
+      assert_equal "Grupo", User.human_attribute_name(:family, locale: :es)
+      assert_equal "Grupo", User.human_attribute_name(:family_id, locale: :es)
+    end
+  end
+
+  test "family validation label renders in every supported locale" do
+    family = families(:dylan_family)
+    family.update!(moniker: "Group")
+    Current.stubs(:family).returns(family)
+
+    LanguagesHelper::SUPPORTED_LOCALES.each do |locale|
+      I18n.with_locale(locale) do
+        user = User.new(email: "missing-family-#{locale.parameterize}@example.com", password: user_password_test)
+        family_label = User.human_attribute_name(:family, locale: locale)
+        family_id_label = User.human_attribute_name(:family_id, locale: locale)
+
+        assert_not user.valid?
+        assert_includes user.errors.full_messages_for(:family).to_sentence,
+                        family_label,
+                        "expected family error to include moniker label for #{locale}"
+        assert_equal family_label, family_id_label
+      end
+    end
+  end
+
+  test "names are normalized" do
+    @user.update!(first_name: "", last_name: "")
+    assert_nil @user.first_name
+    assert_nil @user.last_name
+
+    @user.update!(first_name: " Bob ", last_name: " Dylan ")
+    assert_equal "Bob", @user.first_name
+    assert_equal "Dylan", @user.last_name
+  end
+
+  # MFA Tests
+  test "setup_mfa! generates required fields" do
+    user = users(:family_member)
+    user.setup_mfa!
+
+    assert user.otp_secret.present?
+    assert_not user.otp_required?
+    assert_empty user.otp_backup_codes
+  end
+
+  test "enable_mfa! enables MFA and generates backup codes" do
+    user = users(:family_member)
+    user.setup_mfa!
+    backup_codes = user.enable_mfa!
+
+    assert user.otp_required?
+    assert_equal 8, backup_codes.length
+    assert backup_codes.all? { |code| code.match?(/\A[0-9a-f]{16}\z/) }
+    assert_equal 8, user.otp_backup_codes.length
+    assert user.otp_backup_codes.all? { |code| code.start_with?("$2") }
+    assert_empty backup_codes & user.otp_backup_codes
+  end
+
+  test "enable_mfa! requires an OTP secret" do
+    user = users(:family_member)
+    user.setup_mfa!
+    user.update_column(:otp_secret, nil)
+
+    assert_raises(ArgumentError) { user.enable_mfa! }
+    assert_not user.reload.otp_required?
+    assert_empty user.otp_backup_codes
+  end
+
+  test "disable_mfa! removes all MFA data" do
+    user = users(:family_member)
+    user.setup_mfa!
+    user.enable_mfa!
+    user.webauthn_credentials.create!(
+      nickname: "YubiKey",
+      credential_id: "credential-id",
+      public_key: "public-key"
+    )
+
+    user.disable_mfa!
+
+    assert_nil user.otp_secret
+    assert_not user.otp_required?
+    assert_empty user.otp_backup_codes
+    assert_empty user.webauthn_credentials
+  end
+
+  test "ensure_webauthn_id! generates a stable credential user handle" do
+    user = users(:family_member)
+    assert_nil user.webauthn_id
+
+    webauthn_id = user.ensure_webauthn_id!
+
+    assert webauthn_id.present?
+    assert_equal webauthn_id, user.reload.ensure_webauthn_id!
+  end
+
+  test "webauthn_enabled? requires MFA and at least one credential" do
+    user = users(:family_member)
+    assert_not user.webauthn_enabled?
+
+    user.setup_mfa!
+    user.enable_mfa!
+    assert_not user.webauthn_enabled?
+
+    user.webauthn_credentials.create!(
+      nickname: "Touch ID",
+      credential_id: "touch-id-credential",
+      public_key: "public-key"
+    )
+
+    assert user.webauthn_enabled?
+  end
+
+  test "verify_otp? validates TOTP codes" do
+    user = users(:family_member)
+    user.setup_mfa!
+
+    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances")
+    valid_code = totp.now
+
+    assert user.verify_otp?(valid_code)
+    assert_not user.verify_otp?("invalid")
+    assert_not user.verify_otp?("123456")
+  end
+
+  # A code stays valid for its whole time step (and the 15s drift window), so
+  # without this anyone who saw it could sign in with it a second time.
+  test "verify_otp? accepts a TOTP code only once" do
+    user = users(:family_member)
+    user.setup_mfa!
+    code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+
+    assert user.verify_otp?(code)
+    assert_not user.verify_otp?(code)
+    assert_not User.find(user.id).verify_otp?(code), "a freshly loaded user must reject it too"
+  end
+
+  test "otp_code_status answers like verify_otp without spending the code" do
+    user = users(:family_member)
+    user.setup_mfa!
+    backup_code = user.enable_mfa!.first
+
+    travel_to Time.zone.parse("2026-10-07 12:00:10") do
+      code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+
+      assert_equal :accepted, user.otp_code_status(code)
+      assert_equal :accepted, user.otp_code_status(code), "checking must not claim the time step"
+      assert_equal :accepted, user.otp_code_status(backup_code)
+      assert_equal :accepted, user.otp_code_status(backup_code), "checking must not consume the backup code"
+      assert_equal :invalid, user.otp_code_status("000000")
+      assert_equal :invalid, user.otp_code_status(nil)
+
+      assert_equal :accepted, user.verify_otp(code)
+      assert_equal :replayed, user.otp_code_status(code)
+      assert_equal :accepted, user.verify_otp(backup_code)
+      assert_equal :invalid, user.otp_code_status(backup_code)
+    end
+  end
+
+  test "verify_otp? accepts the next time step's code after one was used" do
+    user = users(:family_member)
+    user.setup_mfa!
+    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances")
+
+    travel_to Time.zone.at(1_800_000_000) do
+      assert user.verify_otp?(totp.now)
+    end
+
+    travel_to Time.zone.at(1_800_000_000 + totp.interval) do
+      assert user.verify_otp?(totp.now)
+      assert_not user.verify_otp?(totp.at(1_800_000_000)), "an earlier step stays rejected"
+    end
+  end
+
+  # Two sign-in requests with the same code, both loaded before either records it.
+  test "verify_otp? lets only one of two concurrent uses of a code through" do
+    user = users(:family_member)
+    user.setup_mfa!
+    code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+    first = User.find(user.id)
+    second = User.find(user.id)
+
+    assert first.verify_otp?(code)
+    assert_not second.verify_otp?(code)
+  end
+
+  # The test above checks two stale instances one after another. The gap
+  # between "verify" and "claim" is too small for real threads to land inside
+  # reliably, so it would not catch a regression that drops the conditional
+  # UPDATE in claim_otp_time_step! for an unconditional one: two connections
+  # racing the same claim on real, separately loaded (stale) instances must
+  # still let only one through, because Postgres serializes the two UPDATEs
+  # on the same row and the loser's WHERE no longer matches.
+  test "verify_otp? claim_otp_time_step! lets only one of two racing connections claim a step" do
+    user = users(:family_member)
+    user.setup_mfa!
+    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances")
+    now = Time.current
+    time_step = totp.verify(totp.at(now), at: now)
+
+    first = User.find(user.id)
+    second = User.find(user.id)
+    latch = Concurrent::CountDownLatch.new(2)
+
+    results = [ first, second ].map do |instance|
+      Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          latch.count_down
+          latch.wait(5)
+          instance.send(:claim_otp_time_step!, time_step)
+        end
+      end
+    end.map(&:value)
+
+    assert_equal 1, results.count(true), "exactly one racing connection should claim the step"
+    assert_not_nil user.reload.otp_last_used_at
+  end
+
+  test "verify_otp tells a replayed code apart from an invalid one" do
+    user = users(:family_member)
+    user.setup_mfa!
+    code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+
+    assert_equal :accepted, user.verify_otp(code)
+    assert_equal :replayed, user.verify_otp(code)
+    assert_equal :replayed, User.find(user.id).verify_otp(code), "a freshly loaded user must see the replay too"
+    assert_equal :invalid, user.verify_otp("invalid")
+    assert_equal :invalid, user.verify_otp("123456")
+  end
+
+  # A claim carried by a stale instance must not mark a time step as used on
+  # a factor enrolled after the secret changed underneath it.
+  test "verify_otp? claim_otp_time_step! does not claim across a replaced secret" do
+    user = users(:family_member)
+    user.setup_mfa!
+    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances")
+    now = Time.current
+    time_step = totp.verify(totp.at(now), at: now)
+    stale = User.find(user.id)
+
+    user.disable_mfa!
+    user.setup_mfa!
+
+    assert_not stale.send(:claim_otp_time_step!, time_step)
+    assert_nil user.reload.otp_last_used_at, "the new factor must not inherit the old claim"
+  end
+
+  test "setting up or disabling MFA forgets the last used time step" do
+    user = users(:family_member)
+    user.setup_mfa!
+    assert user.verify_otp?(ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now)
+    assert_not_nil user.reload.otp_last_used_at
+
+    user.setup_mfa!
+    assert_nil user.reload.otp_last_used_at
+
+    assert user.verify_otp?(ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now)
+    user.disable_mfa!
+    assert_nil user.reload.otp_last_used_at
+  end
+
+  test "verify_otp? does not check backup code digests for normal TOTP input" do
+    user = users(:family_member)
+    user.setup_mfa!
+    user.enable_mfa!
+    valid_code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+
+    BCrypt::Password.expects(:new).never
+
+    assert user.verify_otp?(valid_code)
+  end
+
+  test "verify_otp? fast rejects non-backup-code input before digest checks" do
+    user = users(:family_member)
+    user.setup_mfa!
+    user.enable_mfa!
+
+    BCrypt::Password.expects(:new).never
+
+    assert_not user.verify_otp?("not-a-backup-code")
+  end
+
+  test "verify_otp? rejects unmatched legacy-shaped backup input" do
+    user = users(:family_member)
+    user.setup_mfa!
+    user.enable_mfa!
+
+    assert_not user.verify_otp?("deadbeef")
+  end
+
+  test "verify_otp? accepts backup codes" do
+    user = users(:family_member)
+    user.setup_mfa!
+    backup_codes = user.enable_mfa!
+
+    backup_code = backup_codes.first
+    matching_digest = user.otp_backup_codes.find { |digest| BCrypt::Password.new(digest).is_password?(backup_code) }
+    assert_not_nil matching_digest
+
+    assert user.verify_otp?(backup_code)
+
+    # Backup code should be consumed
+    assert_equal 7, user.otp_backup_codes.length
+    assert_not_includes user.otp_backup_codes, matching_digest
+
+    # Used backup code should not work again
+    assert_not user.verify_otp?(backup_code)
+  end
+
+  test "verify_otp? reloads backup codes while consuming under lock" do
+    user = users(:family_member)
+    user.setup_mfa!
+    backup_code = user.enable_mfa!.first
+    stale_user = User.find(user.id)
+
+    user.update!(otp_backup_codes: [])
+
+    assert_not stale_user.verify_otp?(backup_code)
+    assert_empty stale_user.reload.otp_backup_codes
+  end
+
+  test "verify_otp? accepts and consumes legacy plaintext backup codes once" do
+    user = users(:family_member)
+    user.setup_mfa!
+    user.update!(otp_required: true, otp_backup_codes: [ "deadbeef" ])
+
+    assert user.verify_otp?("deadbeef")
+
+    assert_empty user.reload.otp_backup_codes
+    assert_not user.verify_otp?("deadbeef")
+  end
+
+  test "verify_otp? accepts and consumes migrated legacy backup code digests" do
+    user = users(:family_member)
+    user.setup_mfa!
+    user.update!(
+      otp_required: true,
+      otp_backup_codes: [ BCrypt::Password.create("deadbeef", cost: BCrypt::Engine::MIN_COST).to_s ]
+    )
+
+    assert user.verify_otp?("deadbeef")
+
+    assert_empty user.reload.otp_backup_codes
+    assert_not user.verify_otp?("deadbeef")
+  end
+
+  test "provisioning_uri generates correct URI" do
+    user = users(:family_member)
+    user.setup_mfa!
+
+    assert_match %r{otpauth://totp/}, user.provisioning_uri
+    assert_match %r{secret=#{user.otp_secret}}, user.provisioning_uri
+    assert_match %r{issuer=Sure}, user.provisioning_uri
+  end
+
+  test "ai_available? returns true when openai access token set in settings" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+    previous = Setting.openai_access_token
+    with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: nil, EXTERNAL_ASSISTANT_TOKEN: nil, EXTERNAL_ASSISTANT_MODEL: nil do
+      Setting.openai_access_token = nil
+      assert_not @user.ai_available?
+
+      Setting.openai_access_token = "token"
+      assert @user.ai_available?
+    end
+  ensure
+    Setting.openai_access_token = previous
+  end
+
+  test "ai_available? returns true when external assistant is configured and family type is external" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+    previous = Setting.openai_access_token
+    @user.family.update!(assistant_type: "external")
+    with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: "http://localhost:18789/v1/chat", EXTERNAL_ASSISTANT_TOKEN: "test-token", EXTERNAL_ASSISTANT_MODEL: "openclaw/main" do
+      Setting.openai_access_token = nil
+      assert @user.ai_available?
+    end
+  ensure
+    Setting.openai_access_token = previous
+    @user.family.update!(assistant_type: "builtin")
+  end
+
+  test "ai_available? returns false when external assistant is configured but family type is builtin" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+    previous = Setting.openai_access_token
+    with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: "http://localhost:18789/v1/chat", EXTERNAL_ASSISTANT_TOKEN: "test-token", EXTERNAL_ASSISTANT_MODEL: "openclaw/main" do
+      Setting.openai_access_token = nil
+      assert_not @user.ai_available?
+    end
+  ensure
+    Setting.openai_access_token = previous
+  end
+
+  test "ai_available? returns false when external assistant is configured but user is not in allowlist" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+    previous = Setting.openai_access_token
+    @user.family.update!(assistant_type: "external")
+    with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: "http://localhost:18789/v1/chat", EXTERNAL_ASSISTANT_TOKEN: "test-token", EXTERNAL_ASSISTANT_MODEL: "openclaw/main", EXTERNAL_ASSISTANT_ALLOWED_EMAILS: "other@example.com" do
+      Setting.openai_access_token = nil
+      assert_not @user.ai_available?
+    end
+  ensure
+    Setting.openai_access_token = previous
+    @user.family.update!(assistant_type: "builtin")
+  end
+
+  test "ai_available? is false when the assistant type is mcp_only, even with a provider configured" do
+    previous = Setting.openai_access_token
+    @user.family.update!(assistant_type: "mcp_only")
+    with_env_overrides OPENAI_ACCESS_TOKEN: nil do
+      Setting.openai_access_token = "token"
+
+      Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+      assert_not @user.ai_available?
+      assert_not @user.ai_enabled?
+
+      Rails.application.config.app_mode.stubs(:self_hosted?).returns(false)
+      assert_not @user.ai_available?
+    end
+  ensure
+    Setting.openai_access_token = previous
+  end
+
+  test "ASSISTANT_TYPE=mcp_only overrides the family assistant type" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+    @user.family.update!(assistant_type: "external")
+    with_env_overrides ASSISTANT_TYPE: "mcp_only", EXTERNAL_ASSISTANT_URL: "http://localhost:18789/v1/chat", EXTERNAL_ASSISTANT_TOKEN: "test-token", EXTERNAL_ASSISTANT_MODEL: "openclaw/main" do
+      assert_not @user.ai_available?
+      assert_not @user.family.assistant_enabled?
+    end
+  end
+
+  test "intro layout collapses sidebars and enables ai" do
+    user = User.new(
+      family: families(:empty),
+      email: "intro-new@example.com",
+      password: "Password1!",
+      password_confirmation: "Password1!",
+      role: :guest,
+      ui_layout: :intro
+    )
+
+    assert user.save, user.errors.full_messages.to_sentence
+    assert user.ui_layout_intro?
+    assert_not user.show_sidebar?
+    assert_not user.show_ai_sidebar?
+    assert user.ai_enabled?
+  end
+
+  test "non-guest role cannot persist intro layout" do
+    user = User.new(
+      family: families(:empty),
+      email: "dashboard-only@example.com",
+      password: "Password1!",
+      password_confirmation: "Password1!",
+      role: :member,
+      ui_layout: :intro
+    )
+
+    assert user.save, user.errors.full_messages.to_sentence
+    assert user.ui_layout_dashboard?
+  end
+
+  test "upgrading guest role restores dashboard layout defaults" do
+    user = users(:intro_user)
+    user.update!(role: :member)
+    user.reload
+
+    assert user.ui_layout_dashboard?
+    assert user.show_sidebar?
+    assert user.show_ai_sidebar?
+  end
+
+  test "new member defaults show_ai_sidebar to false when AI is not available" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+    previous = Setting.openai_access_token
+    with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: nil, EXTERNAL_ASSISTANT_TOKEN: nil, EXTERNAL_ASSISTANT_MODEL: nil do
+      Setting.openai_access_token = nil
+      user = User.new(
+        family: families(:empty),
+        email: "member-no-ai@example.com",
+        password: "Password1!",
+        password_confirmation: "Password1!",
+        role: :member
+      )
+      assert user.save, user.errors.full_messages.to_sentence
+      assert_not user.show_ai_sidebar?
+    end
+  ensure
+    Setting.openai_access_token = previous
+  end
+
+  test "new admin defaults show_ai_sidebar to true even when AI is not available" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+    previous = Setting.openai_access_token
+    with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: nil, EXTERNAL_ASSISTANT_TOKEN: nil, EXTERNAL_ASSISTANT_MODEL: nil do
+      Setting.openai_access_token = nil
+      user = User.new(
+        family: families(:empty),
+        email: "admin-no-ai@example.com",
+        password: "Password1!",
+        password_confirmation: "Password1!",
+        role: :admin
+      )
+      assert user.save, user.errors.full_messages.to_sentence
+      assert user.show_ai_sidebar?
+    end
+  ensure
+    Setting.openai_access_token = previous
+  end
+
+  test "new member defaults show_ai_sidebar to true when AI is available" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(false)
+    user = User.new(
+      family: families(:empty),
+      email: "member-with-ai@example.com",
+      password: "Password1!",
+      password_confirmation: "Password1!",
+      role: :member
+    )
+    assert user.save, user.errors.full_messages.to_sentence
+    assert user.show_ai_sidebar?
+  end
+
+  test "new guest defaults show_ai_sidebar to false when AI is not available" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(true)
+    previous = Setting.openai_access_token
+    with_env_overrides OPENAI_ACCESS_TOKEN: nil, EXTERNAL_ASSISTANT_URL: nil, EXTERNAL_ASSISTANT_TOKEN: nil, EXTERNAL_ASSISTANT_MODEL: nil do
+      Setting.openai_access_token = nil
+      user = User.new(
+        family: families(:empty),
+        email: "guest-no-ai@example.com",
+        password: "Password1!",
+        password_confirmation: "Password1!",
+        role: :guest
+      )
+      assert user.save, user.errors.full_messages.to_sentence
+      assert_not user.show_ai_sidebar?
+    end
+  ensure
+    Setting.openai_access_token = previous
+  end
+
+  test "new guest defaults show_ai_sidebar to false when AI is available" do
+    Rails.application.config.app_mode.stubs(:self_hosted?).returns(false)
+    user = User.new(
+      family: families(:empty),
+      email: "guest-with-ai@example.com",
+      password: "Password1!",
+      password_confirmation: "Password1!",
+      role: :guest
+    )
+    assert user.save, user.errors.full_messages.to_sentence
+    assert_not user.show_ai_sidebar?
+  end
+
+  test "update_dashboard_preferences handles concurrent updates atomically" do
+    @user.update!(preferences: {})
+
+    # Simulate concurrent updates from multiple requests
+    # Each thread collapses a different section simultaneously
+    threads = []
+    sections = %w[net_worth_chart outflows_donut cashflow_sankey balance_sheet]
+
+    sections.each_with_index do |section, index|
+      threads << Thread.new do
+        # Small staggered delays to increase chance of race conditions
+        sleep(index * 0.01)
+
+        # Each thread loads its own instance and updates
+        user = User.find(@user.id)
+        user.update_dashboard_preferences({
+          "collapsed_sections" => { section => true }
+        })
+      end
+    end
+
+    # Wait for all threads to complete
+    threads.each(&:join)
+
+    # Verify all updates persisted (no data loss from race conditions)
+    @user.reload
+    sections.each do |section|
+      assert @user.dashboard_section_collapsed?(section),
+        "Expected #{section} to be collapsed, but it was not. " \
+        "Preferences: #{@user.preferences.inspect}"
+    end
+
+    # Verify all sections are in the preferences hash
+    assert_equal sections.sort,
+      @user.preferences.dig("collapsed_sections")&.keys&.sort,
+      "Expected all sections to be in preferences"
+  end
+
+  test "update_dashboard_preferences merges nested hashes correctly" do
+    @user.update!(preferences: {})
+
+    # First update: collapse net_worth
+    @user.update_dashboard_preferences({
+      "collapsed_sections" => { "net_worth_chart" => true }
+    })
+    @user.reload
+
+    assert @user.dashboard_section_collapsed?("net_worth_chart")
+    assert_not @user.dashboard_section_collapsed?("outflows_donut")
+
+    # Second update: collapse outflows (should preserve net_worth)
+    @user.update_dashboard_preferences({
+      "collapsed_sections" => { "outflows_donut" => true }
+    })
+    @user.reload
+
+    assert @user.dashboard_section_collapsed?("net_worth_chart"),
+      "First collapsed section should still be collapsed"
+    assert @user.dashboard_section_collapsed?("outflows_donut"),
+      "Second collapsed section should be collapsed"
+  end
+
+  test "update_dashboard_preferences handles section_order updates" do
+    @user.update!(preferences: {})
+
+    # Set initial order
+    new_order = %w[outflows_donut net_worth_chart cashflow_sankey balance_sheet]
+    @user.update_dashboard_preferences({ "section_order" => new_order })
+    @user.reload
+
+    assert_equal new_order, @user.dashboard_section_order
+  end
+
+  test "update_dashboard_section_hidden hides and re-adds a section without touching other preferences" do
+    @user.update!(preferences: { "section_order" => %w[balance_sheet net_worth_chart] })
+    assert_equal [], @user.dashboard_hidden_sections
+
+    @user.update_dashboard_section_hidden("net_worth_chart", true)
+    @user.update_dashboard_section_hidden("net_worth_chart", true)
+    @user.update_dashboard_section_hidden("balance_sheet", true)
+    assert_equal %w[net_worth_chart balance_sheet], @user.reload.dashboard_hidden_sections
+
+    @user.update_dashboard_section_hidden("net_worth_chart", false)
+    assert_equal %w[balance_sheet], @user.reload.dashboard_hidden_sections
+    assert_equal %w[balance_sheet net_worth_chart], @user.dashboard_section_order
+  end
+
+  test "update_dashboard_preferences keeps a hidden section's place when the rest are reordered" do
+    @user.update!(preferences: {
+      "section_order" => %w[cashflow_sankey net_worth_chart balance_sheet outflows_donut],
+      "hidden_sections" => %w[net_worth_chart]
+    })
+
+    @user.update_dashboard_preferences({ "section_order" => %w[outflows_donut cashflow_sankey balance_sheet] })
+
+    assert_equal %w[outflows_donut cashflow_sankey net_worth_chart balance_sheet], @user.reload.dashboard_section_order
+  end
+
+  test "dashboard_section_height returns stored preset or nil" do
+    @user.update!(preferences: {})
+    assert_nil @user.dashboard_section_height("net_worth_chart")
+
+    @user.update_dashboard_preferences({
+      "dashboard_section_layout" => { "net_worth_chart" => { "height" => "tall" } }
+    })
+    @user.reload
+
+    assert_equal "tall", @user.dashboard_section_height("net_worth_chart")
+    assert_nil @user.dashboard_section_height("balance_sheet")
+  end
+
+  test "dashboard_section_width returns stored col_span or nil" do
+    @user.update!(preferences: {})
+    assert_nil @user.dashboard_section_width("cashflow_sankey")
+
+    @user.update_dashboard_preferences({
+      "dashboard_section_layout" => { "cashflow_sankey" => { "col_span" => "single" } }
+    })
+
+    assert_equal "single", @user.reload.dashboard_section_width("cashflow_sankey")
+  end
+
+  test "dashboard_section_layout merges width and height without clobbering" do
+    @user.update!(preferences: {})
+
+    @user.update_dashboard_preferences({
+      "dashboard_section_layout" => { "net_worth_chart" => { "height" => "tall" } }
+    })
+    @user.update_dashboard_preferences({
+      "dashboard_section_layout" => { "net_worth_chart" => { "col_span" => "full" } }
+    })
+    @user.reload
+
+    assert_equal "tall", @user.dashboard_section_height("net_worth_chart")
+    assert_equal "full", @user.dashboard_section_width("net_worth_chart")
+  end
+
+  test "handles empty preferences gracefully for dashboard methods" do
+    @user.update!(preferences: {})
+
+    # dashboard_section_collapsed? should return false when key is missing
+    assert_not @user.dashboard_section_collapsed?("net_worth_chart"),
+      "Should return false when collapsed_sections key is missing"
+
+    # dashboard_section_order should return default order when key is missing
+    assert_equal %w[insights_feed cashflow_sankey outflows_donut net_worth_chart balance_sheet],
+      @user.dashboard_section_order,
+      "Should return default order when section_order key is missing"
+
+    # update_dashboard_preferences should work with empty preferences
+    @user.update_dashboard_preferences({ "section_order" => %w[balance_sheet] })
+    @user.reload
+
+    assert_equal %w[balance_sheet], @user.preferences["section_order"]
+  end
+
+  test "handles empty preferences gracefully for reports methods" do
+    @user.update!(preferences: {})
+
+    # reports_section_collapsed? should return false when key is missing
+    assert_not @user.reports_section_collapsed?("trends_insights"),
+      "Should return false when reports_collapsed_sections key is missing"
+
+    # reports_section_order should return default order when key is missing
+    assert_equal %w[trends_insights transactions_breakdown],
+      @user.reports_section_order,
+      "Should return default order when reports_section_order key is missing"
+
+    # update_reports_preferences should work with empty preferences
+    @user.update_reports_preferences({ "reports_section_order" => %w[transactions_breakdown] })
+    @user.reload
+
+    assert_equal %w[transactions_breakdown], @user.preferences["reports_section_order"]
+  end
+
+  test "handles missing nested keys in preferences for collapsed sections" do
+    @user.update!(preferences: { "section_order" => %w[cashflow] })
+
+    # Should return false when collapsed_sections key is missing entirely
+    assert_not @user.dashboard_section_collapsed?("net_worth_chart"),
+      "Should return false when collapsed_sections key is missing"
+
+    # Should return false when section_key is missing from collapsed_sections
+    @user.update!(preferences: { "collapsed_sections" => {} })
+    assert_not @user.dashboard_section_collapsed?("net_worth_chart"),
+      "Should return false when section key is missing from collapsed_sections"
+  end
+
+  # Default account for transactions
+  test "default_account_for_transactions returns account when active and manual" do
+    account = accounts(:depository)
+    @user.update!(default_account: account)
+    assert_equal account, @user.default_account_for_transactions
+  end
+
+  test "default_account_for_transactions returns nil when account is disabled" do
+    account = accounts(:depository)
+    @user.update!(default_account: account)
+    account.disable!
+    assert_nil @user.default_account_for_transactions
+  end
+
+  test "default_account_for_transactions returns nil when account is linked" do
+    account = accounts(:depository)
+    @user.update!(default_account: account)
+    link_account_to_simplefin!(account)
+    assert_nil @user.default_account_for_transactions
+  end
+
+  test "default_account_for_transactions returns nil when no default set" do
+    assert_nil @user.default_account_for_transactions
+  end
+
+  test "transfer_to_family! clears a shared default account" do
+    user = users(:family_member)
+    user.update!(role: "admin", default_account: accounts(:depository))
+
+    new_family = Family.create!(name: "Transferred Family")
+
+    user.transfer_to_family!(new_family, role: "admin")
+
+    user.reload
+
+    assert_equal new_family, user.family
+    assert_nil user.default_account_id
+    assert_nil user.default_account_for_transactions
+  end
+
+  test "transfer_to_family! moves owned account provider items and statements" do
+    user = users(:family_member)
+    source_family = user.family
+    new_family = Family.create!(name: "Transferred Provider Family")
+    account = Account.create!(family: source_family, owner: user, name: "Synced Checking", balance: 100, currency: "USD", accountable: Depository.new)
+    simplefin_item = link_account_to_simplefin!(account).simplefin_item
+    statement = AccountStatement.create_from_upload!(
+      family: source_family,
+      account: account,
+      file: uploaded_file(filename: "transfer-statement.csv", content_type: "text/csv", content: "date,amount\n2026-01-01,10\n")
+    )
+
+    user.transfer_to_family!(new_family, role: "admin")
+
+    assert_equal new_family, user.reload.family
+    assert_equal new_family, account.reload.family
+    assert_equal new_family, simplefin_item.reload.family
+    assert_equal new_family, statement.reload.family
+  end
+
+  test "transfer_to_family! rejects provider items linked to accounts outside the transfer" do
+    user = users(:family_member)
+    other_user = users(:family_admin)
+    source_family = user.family
+    new_family = Family.create!(name: "Rejected Provider Family")
+    moved_account = Account.create!(family: source_family, owner: user, name: "Moved Synced", balance: 100, currency: "USD", accountable: Depository.new)
+    remaining_account = Account.create!(family: source_family, owner: other_user, name: "Remaining Synced", balance: 200, currency: "USD", accountable: Depository.new)
+    simplefin_item = link_account_to_simplefin!(moved_account).simplefin_item
+    link_account_to_simplefin!(remaining_account, simplefin_item: simplefin_item)
+
+    error = assert_raises(ActiveRecord::RecordInvalid) do
+      user.transfer_to_family!(new_family, role: "admin")
+    end
+
+    assert_includes error.record.errors[:base], I18n.t("activerecord.errors.models.user.attributes.base.provider_item_has_other_accounts")
+    assert_equal source_family, user.reload.family
+    assert_equal source_family, moved_account.reload.family
+    assert_equal source_family, simplefin_item.reload.family
+  end
+
+  test "has_local_password? returns true when password_digest is present" do
+    assert @user.has_local_password?
+  end
+
+  test "user requires password on create" do
+    user = User.new(
+      email: "needspassword@example.com",
+      first_name: "Needs",
+      last_name: "Password",
+      family: families(:empty)
+    )
+    assert_not user.valid?
+    assert_includes user.errors[:password], "can't be blank"
+  end
+
+  test "only a super admin manages instance settings when the instance hosts several families" do
+    assert Family.count > 1
+
+    assert users(:sure_support_staff).manages_instance_settings?
+    assert_not users(:family_admin).manages_instance_settings?
+    assert_not users(:family_member).manages_instance_settings?
+
+    Rails.configuration.stubs(:app_mode).returns("self_hosted".inquiry)
+    assert_not users(:family_admin).manages_instance_settings?
+  end
+
+  test "the admins of the only family on a self-hosted instance manage instance settings" do
+    Family.stubs(:count).returns(1)
+
+    Rails.configuration.stubs(:app_mode).returns("self_hosted".inquiry)
+    assert users(:family_admin).manages_instance_settings?
+    assert_not users(:family_member).manages_instance_settings?
+
+    Rails.configuration.stubs(:app_mode).returns("managed".inquiry)
+    assert_not users(:family_admin).manages_instance_settings?
+  end
+
+  # First user role assignment tests
+  test "role_for_new_family_creator returns super_admin when no users exist" do
+    # Delete all users to simulate fresh instance
+    User.connection.disable_referential_integrity { User.delete_all }
+
+    assert_equal :super_admin, User.role_for_new_family_creator
+  end
+
+  test "role_for_new_family_creator returns admin-capable fallback role when users exist" do
+    # Users exist from fixtures
+    assert User.exists?
+
+    assert_equal :admin, User.role_for_new_family_creator
+    assert_equal :admin, User.role_for_new_family_creator(fallback_role: :member)
+    assert_equal :admin, User.role_for_new_family_creator(fallback_role: :guest)
+    assert_equal :admin, User.role_for_new_family_creator(fallback_role: "custom_role")
+    assert_equal "super_admin", User.role_for_new_family_creator(fallback_role: "super_admin")
+  end
+
+  test "first user role lock makes concurrent family creators deterministic" do
+    created_family_ids = Queue.new
+
+    User.connection.disable_referential_integrity { User.delete_all }
+    first_user_saved = Queue.new
+    creator_errors = Queue.new
+
+    first_creator = Thread.new do
+      signaled = false
+
+      ActiveRecord::Base.connection_pool.with_connection do
+        ActiveRecord::Base.transaction do
+          family = Family.create!
+          created_family_ids << family.id
+
+          User.lock_first_user_role!
+          user = User.create!(
+            email: "concurrent-first@example.com",
+            password: user_password_test,
+            family: family,
+            role: User.role_for_new_family_creator
+          )
+          first_user_saved << user.id
+          signaled = true
+          sleep 0.1
+        end
+      end
+    rescue StandardError => e
+      creator_errors << e
+      first_user_saved << nil unless signaled
+    end
+
+    first_user_saved.pop
+    second_creator = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        ActiveRecord::Base.transaction do
+          family = Family.create!
+          created_family_ids << family.id
+
+          User.lock_first_user_role!
+          User.create!(
+            email: "concurrent-second@example.com",
+            password: user_password_test,
+            family: family,
+            role: User.role_for_new_family_creator
+          )
+        end
+      end
+    rescue StandardError => e
+      creator_errors << e
+    end
+
+    [ first_creator, second_creator ].each(&:join)
+    raise creator_errors.pop(true) unless creator_errors.empty?
+
+    assert_equal 1, User.where(role: :super_admin).count
+    assert User.find_by(email: "concurrent-first@example.com").super_admin?
+    assert User.find_by(email: "concurrent-second@example.com").admin?
+  ensure
+    [ first_creator, second_creator ].compact.each(&:join)
+
+    family_ids = []
+    family_ids << created_family_ids.pop(true) until created_family_ids.empty?
+
+    User.connection.disable_referential_integrity do
+      User.where(email: %w[concurrent-first@example.com concurrent-second@example.com]).delete_all
+      Family.where(id: family_ids).delete_all if family_ids.any?
+    end
+  end
+
+  # Preview features preference tests
+  test "preview_features_enabled? defaults to false" do
+    @user.update!(preferences: {})
+    assert_not @user.preview_features_enabled?
+  end
+
+  test "preview_features_enabled? true only when explicitly true" do
+    @user.update!(preferences: { "preview_features_enabled" => true })
+    assert @user.preview_features_enabled?
+
+    @user.update!(preferences: { "preview_features_enabled" => false })
+    assert_not @user.preview_features_enabled?
+
+    @user.update!(preferences: { "preview_features_enabled" => "yes" })
+    assert_not @user.preview_features_enabled?, "truthy non-boolean should not enable"
+  end
+
+  # ActiveStorage attachment cleanup tests
+  test "purging a user removes attached profile image" do
+    user = users(:family_admin)
+    user.profile_image.attach(
+      io: StringIO.new("profile-image-data"),
+      filename: "profile.png",
+      content_type: "image/png"
+    )
+
+    attachment_id = user.profile_image.id
+    assert ActiveStorage::Attachment.exists?(attachment_id)
+
+    perform_enqueued_jobs do
+      user.purge
+    end
+
+    assert_not User.exists?(user.id)
+    assert_not ActiveStorage::Attachment.exists?(attachment_id)
+  end
+
+  # Admin-initiated permanent removal (super-admin action)
+  test "permanently_remove! deactivates, revokes all credentials, and schedules purge" do
+    target = users(:family_member)
+    target.sessions.create!
+    assert target.sessions.exists?
+    assert target.api_keys.exists?
+
+    assert target.permanently_remove!
+
+    target.reload
+    assert_not target.active?
+    assert_empty target.sessions
+    assert_empty target.api_keys
+  end
+
+  test "permanently_remove! is blocked (fail-closed) for an admin with co-members and keeps credentials" do
+    target = users(:family_admin)
+    target.sessions.create!
+    assert_operator target.family.users.count, :>, 1
+
+    assert_not target.permanently_remove!
+
+    assert target.reload.active?
+    assert target.sessions.exists?
+  end
+
+  test "permanently_remove! schedules purge for an already inactive user" do
+    target = users(:family_member)
+    target.update_column(:active, false)
+
+    assert_enqueued_with(job: UserPurgeJob, args: [ target ]) do
+      assert target.permanently_remove!
+    end
+  end
+
+  test "purging an impersonated user nullifies the admin's active_impersonator_session instead of failing" do
+    admin = users(:sure_support_staff)
+    target = users(:family_member)
+    impersonation = ImpersonationSession.create!(impersonator: admin, impersonated: target, status: :in_progress)
+    admin_session = admin.sessions.create!(active_impersonator_session: impersonation)
+
+    # UserPurgeJob may run before the admin's next request notices the
+    # target is gone — dependent: :destroy on User#impersonated_support_sessions
+    # destroys the ImpersonationSession row underneath the admin's still-live
+    # Session. Without ON DELETE SET NULL on that FK, this raises
+    # ActiveRecord::InvalidForeignKey instead of completing the purge.
+    perform_enqueued_jobs do
+      target.purge
+    end
+
+    assert_not User.exists?(target.id)
+    assert_nil admin_session.reload.active_impersonator_session_id
+  end
+
+  test "with_active_lock! rejects an inactive user without yielding" do
+    @user.update_column(:active, false)
+    yielded = false
+
+    assert_raises(User::InactiveError) do
+      @user.with_active_lock! { yielded = true }
+    end
+
+    assert_not yielded
+  end
+
+  test "with_active_lock! translates RecordNotFound only when the lock itself can't find the row" do
+    @user.stubs(:with_lock).raises(ActiveRecord::RecordNotFound)
+
+    assert_raises(User::InactiveError) do
+      @user.with_active_lock! { flunk "should not yield when the row can't be locked" }
+    end
+  end
+
+  test "with_active_lock! does not misreport a RecordNotFound raised inside the yielded block" do
+    # A failure unrelated to the user's own activity status (e.g. resolving
+    # some other record inside the caller's block) must propagate as-is,
+    # not get swallowed into "this user is inactive".
+    assert_raises(ActiveRecord::RecordNotFound) do
+      @user.with_active_lock! { raise ActiveRecord::RecordNotFound, "unrelated record missing" }
+    end
+  end
+
+  test "deactivate refuses the last active super admin" do
+    family = Family.create!(name: "Sole admin family", locale: "en", date_format: "%m-%d-%Y", currency: "USD")
+    target = User.create!(
+      family: family,
+      email: "sole-super-admin@example.com",
+      password: user_password_test,
+      role: :super_admin
+    )
+    User.where(role: :super_admin).where.not(id: target.id).update_all(active: false)
+
+    assert_not target.deactivate
+    assert target.reload.active?
+    assert_match(/last active super admin/, target.errors.full_messages.to_sentence)
+  end
+
+  test "purging the last user cascades to remove family and its export attachments" do
+    family = Family.create!(name: "Solo Family", locale: "en", date_format: "%m-%d-%Y", currency: "USD")
+    user = User.create!(family: family, email: "solo@example.com", password: "password123")
+    export = family.family_exports.create!
+    export.export_file.attach(
+      io: StringIO.new("export-data"),
+      filename: "export.zip",
+      content_type: "application/zip"
+    )
+
+    export_attachment_id = export.export_file.id
+    assert ActiveStorage::Attachment.exists?(export_attachment_id)
+
+    perform_enqueued_jobs do
+      user.purge
+    end
+
+    assert_not Family.exists?(family.id)
+    assert_not ActiveStorage::Attachment.exists?(export_attachment_id)
+  end
+
+  test "cannot demote the last super admin in the system" do
+    User.where(role: :super_admin).update_all(role: :member)
+    solo_super_admin = users(:sure_support_staff)
+    solo_super_admin.update!(role: :super_admin)
+
+    solo_super_admin.role = :member
+    assert_not solo_super_admin.valid?
+    assert_includes solo_super_admin.errors[:role], "Cannot demote the last super admin in the system."
+  end
+
+  test "can demote super admin if another super admin exists" do
+    admin1 = users(:family_admin)
+    admin1.update!(role: :super_admin)
+
+    admin2 = users(:sure_support_staff)
+    admin2.update!(role: :super_admin)
+
+    assert admin1.update(role: :member)
+  end
+
+  test "deactivating a user revokes their API keys" do
+    user = users(:family_member)
+    api_key = ApiKey.create!( # pipelock:ignore
+      user: user,
+      name: "Test Key",
+      display_key: "test_revoke_key_#{SecureRandom.hex(8)}",
+      scopes: [ "read" ]
+    )
+
+    assert api_key.active?
+
+    user.deactivate
+
+    assert api_key.reload.revoked?
+  end
+
+  test "update_manual_account_order keeps other groups and only accessible accounts" do
+    @user.update_manual_account_order("credit_card", [ accounts(:credit_card).id ])
+    foreign = families(:empty).accounts.create!(name: "Foreign", currency: "USD", balance: 0, accountable: Depository.new, owner: users(:empty))
+
+    assert @user.update_manual_account_order("depository", [ accounts(:connected).id, foreign.id, accounts(:depository).id, "not-a-uuid" ])
+
+    order = @user.reload.manual_account_order
+    assert_equal [ accounts(:connected).id, accounts(:depository).id ], order["depository"]
+    assert_equal [ accounts(:credit_card).id ], order["credit_card"]
+  end
+
+  test "update_manual_account_order drops family accounts not shared with the user" do
+    unshared = families(:dylan_family).accounts.create!(name: "Unshared", currency: "USD", balance: 0, accountable: Depository.new, owner: users(:family_member))
+
+    assert @user.update_manual_account_order("depository", [ unshared.id, accounts(:depository).id ])
+
+    assert_equal [ accounts(:depository).id ], @user.reload.manual_account_order["depository"]
+  end
+
+  test "update_manual_account_order drops accounts from another group" do
+    @user.update_manual_account_order("depository", [ accounts(:credit_card).id, accounts(:depository).id ])
+
+    assert_equal [ accounts(:depository).id ], @user.reload.manual_account_order["depository"]
+  end
+
+  test "update_manual_account_order rejects account ids that are not a list" do
+    assert_not @user.update_manual_account_order("depository", { "0" => accounts(:depository).id })
+    assert_equal({}, @user.reload.manual_account_order)
+  end
+
+  test "update_manual_account_order rejects unknown groups" do
+    assert_not @user.update_manual_account_order("transactions", [ accounts(:depository).id ])
+    assert_equal({}, @user.reload.manual_account_order)
+  end
+end

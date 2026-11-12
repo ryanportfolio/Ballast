@@ -1,0 +1,618 @@
+require "test_helper"
+
+class McpControllerTest < ActionDispatch::IntegrationTest
+  MCP_PROTOCOL_VERSION = "2025-06-18"
+
+  setup do
+    @user = users(:family_admin)
+    @token = "test-mcp-token-#{SecureRandom.hex(8)}"
+  end
+
+  # -- Authentication --
+
+  test "returns 401 without authorization header" do
+    post "/mcp", params: jsonrpc_request("initialize").to_json,
+         headers: { "Content-Type" => "application/json" }
+
+    assert_response :unauthorized
+    assert_equal "unauthorized", JSON.parse(response.body)["error"]
+    assert_equal "Bearer", response.headers["WWW-Authenticate"]
+  end
+
+  test "returns 401 with wrong token" do
+    post "/mcp", params: jsonrpc_request("initialize").to_json,
+         headers: mcp_headers("wrong-token")
+
+    assert_response :unauthorized
+    assert response.headers["WWW-Authenticate"].present?
+  end
+
+  test "authenticates with the env-var token" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("initialize").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+    end
+  end
+
+  test "returns 401 and warns when env-var token matches but MCP_USER_EMAIL finds no user" do
+    with_env_overrides("MCP_API_TOKEN" => @token, "MCP_USER_EMAIL" => "nonexistent@example.com") do # pipelock:ignore
+      Rails.logger.expects(:warn).with(regexp_matches(/MCP_USER_EMAIL/)).once
+
+      post "/mcp", params: jsonrpc_request("initialize").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :unauthorized
+    end
+  end
+
+  test "returns 401 and warns when MCP_USER_EMAIL belongs to a deactivated user" do
+    @user.update_column(:active, false)
+
+    with_mcp_env do
+      Rails.logger.expects(:warn).with(regexp_matches(/deactivated/)).once
+
+      post "/mcp", params: jsonrpc_request("initialize").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :unauthorized
+    end
+  end
+
+  # -- JSON-RPC protocol --
+
+  test "returns parse error for invalid JSON" do
+    with_mcp_env do
+      # Send with text/plain to bypass Rails JSON middleware parsing
+      post "/mcp", params: "not valid json",
+           headers: mcp_headers(@token).merge("Content-Type" => "text/plain")
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      assert_equal(-32700, body["error"]["code"])
+      assert_includes body["error"]["message"], "Parse error"
+    end
+  end
+
+  test "returns invalid request for missing jsonrpc version" do
+    with_mcp_env do
+      post "/mcp", params: { method: "initialize" }.to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      assert_equal(-32600, body["error"]["code"])
+    end
+  end
+
+  test "returns method not found for unknown method with request id preserved" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("unknown/method", {}, id: 77).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      assert_equal(-32601, body["error"]["code"])
+      assert_includes body["error"]["message"], "unknown/method"
+      assert_equal 77, body["id"], "Error response must echo the request id"
+    end
+  end
+
+  # -- Notifications (requests without id) --
+
+  test "notifications receive no response body" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_notification("notifications/initialized").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :no_content
+      assert response.body.blank?, "Notification must not produce a response body"
+    end
+  end
+
+  test "tools/call sent as notification does not execute" do
+    Usage.expects(:capture).with("mcp_call_served_daily").never
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_notification("tools/call", { name: "get_balance_sheet", arguments: {} }).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :no_content
+      assert response.body.blank?, "Notification-style tools/call must not execute or respond"
+    end
+  end
+
+  test "unknown notification method still returns no content" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_notification("notifications/unknown").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :no_content
+      assert response.body.blank?
+    end
+  end
+
+  # -- initialize --
+
+  test "initialize returns server info and capabilities" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("initialize", { protocolVersion: MCP_PROTOCOL_VERSION }).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      result = body["result"]
+
+      assert_equal "2.0", body["jsonrpc"]
+      assert_equal 1, body["id"]
+      assert_mcp_initialize_response(result)
+      assert_equal "sure", result["serverInfo"]["name"]
+      assert result["capabilities"].key?("tools")
+    end
+  end
+
+  test "initialize echoes a supported legacy protocol version" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("initialize", { protocolVersion: "2025-03-26" }).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      result = JSON.parse(response.body)["result"]
+      assert_equal "2025-03-26", result["protocolVersion"]
+      assert_equal "2025-03-26", response.headers["Mcp-Protocol-Version"]
+      assert_match(/\A[0-9a-f-]{36}\z/, result["sessionId"])
+    end
+  end
+
+  test "initialize negotiates unsupported protocol versions to the default version" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("initialize", { protocolVersion: "2099-01-01" }, id: 24).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      assert_equal 24, body["id"]
+      assert_equal MCP_PROTOCOL_VERSION, body.dig("result", "protocolVersion")
+      assert_equal MCP_PROTOCOL_VERSION, response.headers["Mcp-Protocol-Version"]
+    end
+  end
+
+  # -- tools/list --
+
+  test "tools/list returns all assistant function tools" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/list").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      tools = body["result"]["tools"]
+
+      assert_kind_of Array, tools
+      assert_equal Assistant.function_classes(@user).size, tools.size
+
+      tool_names = tools.map { |t| t["name"] }
+      assert_includes tool_names, "get_transactions"
+      assert_includes tool_names, "get_accounts"
+      assert_includes tool_names, "get_holdings"
+      assert_includes tool_names, "set_opening_balance"
+      assert_includes tool_names, "get_balance_sheet"
+      assert_includes tool_names, "get_income_statement"
+      assert_includes tool_names, "update_transaction"
+      assert_includes tool_names, "update_budget"
+      assert_includes tool_names, "get_transfer_match_candidates"
+      assert_includes tool_names, "match_transfer"
+      assert_includes tool_names, "review_transfer"
+
+      # Each tool has required fields
+      tools.each do |tool|
+        assert tool["name"].present?, "Tool missing name"
+        assert tool["description"].present?, "Tool #{tool['name']} missing description"
+        assert tool["inputSchema"].present?, "Tool #{tool['name']} missing inputSchema"
+        assert_equal "object", tool["inputSchema"]["type"]
+      end
+    end
+  end
+
+  test "tools stay available to external agents when the in-app assistant is off" do
+    @user.family.update!(assistant_type: "mcp_only")
+
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/list").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      assert_equal Assistant.function_classes(@user).size,
+                   JSON.parse(response.body)["result"]["tools"].size
+
+      post "/mcp", params: jsonrpc_request("tools/call", { name: "get_accounts", arguments: {} }).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      result = JSON.parse(response.body)["result"]
+      assert_not result["isError"]
+      assert JSON.parse(result["content"][0]["text"]).key?("accounts")
+    end
+  end
+
+  test "tools/list accepts and echoes a valid MCP session id" do
+    with_mcp_cache do
+      with_mcp_env do
+        post "/mcp", params: jsonrpc_request("initialize").to_json,
+             headers: mcp_headers(@token)
+
+        assert_response :ok
+        session_id = response.headers["Mcp-Session-Id"]
+        assert session_id.present?, "initialize should return an MCP session id"
+
+        post "/mcp", params: jsonrpc_request("tools/list").to_json,
+             headers: mcp_headers(@token).merge(
+               "Mcp-Protocol-Version" => MCP_PROTOCOL_VERSION,
+               "Mcp-Session-Id" => session_id
+             )
+
+        assert_response :ok
+        assert_equal MCP_PROTOCOL_VERSION, response.headers["Mcp-Protocol-Version"]
+        assert_equal session_id, response.headers["Mcp-Session-Id"]
+        assert_kind_of Array, JSON.parse(response.body).dig("result", "tools")
+      end
+    end
+  end
+
+  test "tools/list rejects an invalid MCP session id" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/list", {}, id: 25).to_json,
+           headers: mcp_headers(@token).merge(
+             "Mcp-Protocol-Version" => MCP_PROTOCOL_VERSION,
+             "Mcp-Session-Id" => SecureRandom.uuid
+           )
+
+      assert_response :not_found
+      body = JSON.parse(response.body)
+      assert_equal 25, body["id"]
+      assert_equal(-32600, body["error"]["code"])
+      assert_includes body["error"]["message"], "Invalid MCP session id"
+    end
+  end
+
+  test "tools/list rejects unsupported MCP protocol version headers" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/list", {}, id: 26).to_json,
+           headers: mcp_headers(@token).merge("Mcp-Protocol-Version" => "2099-01-01")
+
+      assert_response :bad_request
+      body = JSON.parse(response.body)
+      assert_equal 26, body["id"]
+      assert_equal(-32600, body["error"]["code"])
+      assert_includes body["error"]["message"], "2099-01-01"
+    end
+  end
+
+  test "tools/list omits preview tools for a user without preview features" do
+    @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => false))
+
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/list").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      tool_names = JSON.parse(response.body)["result"]["tools"].map { |t| t["name"] }
+
+      assert_includes tool_names, "get_transactions"
+      Assistant::PREVIEW_FUNCTION_CLASSES.each do |fn_class|
+        assert_not_includes tool_names, fn_class.name
+      end
+    end
+  end
+
+  test "tools/list includes preview tools for an opted-in user" do
+    @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => true))
+
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/list").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      tool_names = JSON.parse(response.body)["result"]["tools"].map { |t| t["name"] }
+
+      Assistant::PREVIEW_FUNCTION_CLASSES.each do |fn_class|
+        assert_includes tool_names, fn_class.name
+      end
+    end
+  end
+
+  # -- tools/call --
+
+  test "tools/call rejects a preview tool for a user without preview features" do
+    Usage.expects(:capture).with("mcp_call_served_daily").never
+    @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => false))
+
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/call", { name: "list_account_statements", arguments: {} }, id: 42).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      assert_equal(-32602, body["error"]["code"])
+      assert_includes body["error"]["message"], "list_account_statements"
+    end
+  end
+
+  test "tools/call returns error for unknown tool with request id preserved" do
+    Usage.expects(:capture).with("mcp_call_served_daily").never
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/call", { name: "nonexistent_tool", arguments: {} }, id: 99).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      assert_equal(-32602, body["error"]["code"])
+      assert_includes body["error"]["message"], "nonexistent_tool"
+      assert_equal 99, body["id"], "Error response must echo the request id"
+    end
+  end
+
+  test "tools/call executes get_balance_sheet" do
+    Usage.expects(:capture).with("mcp_call_served_daily").once
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/call", {
+        name: "get_balance_sheet",
+        arguments: {}
+      }).to_json, headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      result = body["result"]
+
+      assert_kind_of Array, result["content"]
+      assert_equal "text", result["content"][0]["type"]
+
+      # The text field should be valid JSON
+      inner = JSON.parse(result["content"][0]["text"])
+      assert inner.key?("net_worth") || inner.key?("error"),
+             "Expected balance sheet data or error, got: #{inner.keys}"
+    end
+  end
+
+  # A vault payload is richer than the other tools' output — nested account hashes,
+  # BigDecimal balances, dates, a `.compact`ed hash — so these exercise a real
+  # record all the way out through tools/call's JSON envelope, rather than
+  # trusting that the unit-tested return value serializes cleanly.
+  test "tools/call round-trips a real vault payload through list_account_statements" do
+    @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => true))
+    statement = AccountStatement.create_from_upload!(
+      family: @user.family,
+      account: accounts(:depository),
+      file: uploaded_file(filename: "statement.csv", content_type: "text/csv", content: "date,amount\n2024-01-01,1\n")
+    )
+
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/call", {
+        name: "list_account_statements",
+        arguments: {}
+      }).to_json, headers: mcp_headers(@token)
+
+      assert_response :ok
+      result = JSON.parse(response.body)["result"]
+      assert_not result["isError"], "vault payload should not surface as a tool error"
+
+      inner = JSON.parse(result["content"][0]["text"])
+      assert inner["success"]
+
+      payload = inner["statements"].find { |s| s["id"] == statement.id }
+      assert_not_nil payload, "expected the created statement in the response"
+      assert_equal statement.content_sha256, payload["content_sha256"]
+      assert_equal accounts(:depository).id, payload.dig("account", "id")
+    end
+  end
+
+  test "tools/call round-trips an upload through upload_account_statement" do
+    @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => true))
+    content = "date,amount\n2024-02-01,7\n"
+
+    with_mcp_env do
+      assert_difference "AccountStatement.count", 1 do
+        post "/mcp", params: jsonrpc_request("tools/call", {
+          name: "upload_account_statement",
+          arguments: { filename: "uploaded.csv", content_base64: Base64.strict_encode64(content) }
+        }).to_json, headers: mcp_headers(@token)
+      end
+
+      assert_response :ok
+      result = JSON.parse(response.body)["result"]
+      assert_not result["isError"]
+
+      inner = JSON.parse(result["content"][0]["text"])
+      assert inner["success"]
+      assert_not inner["duplicate"]
+      assert_equal Digest::SHA256.hexdigest(content), inner.dig("statement", "content_sha256")
+    end
+  end
+
+  test "tools/call executes update_transaction" do
+    with_mcp_env do
+      transaction = transactions(:one)
+      category = categories(:subcategory)
+
+      post "/mcp", params: jsonrpc_request("tools/call", {
+        name: "update_transaction",
+        arguments: {
+          id: transaction.id,
+          category_id: category.id,
+          notes: "Updated through MCP"
+        }
+      }).to_json, headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      result = body["result"]
+      inner = JSON.parse(result["content"][0]["text"])
+
+      assert_equal true, inner["success"]
+      assert_equal category.id, transaction.reload.category_id
+      assert_equal "Updated through MCP", transaction.entry.notes
+    end
+  end
+
+  test "tools/call executes update_budget" do
+    with_mcp_env do
+      budget = budgets(:one)
+
+      post "/mcp", params: jsonrpc_request("tools/call", {
+        name: "update_budget",
+        arguments: {
+          budgeted_spending: 6200,
+          expected_income: 8800
+        }
+      }).to_json, headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      result = body["result"]
+      inner = JSON.parse(result["content"][0]["text"])
+
+      assert_equal true, inner["success"]
+      budget.reload
+      assert_equal 6200, budget.budgeted_spending
+      assert_equal 8800, budget.expected_income
+    end
+  end
+
+  test "tools/call wraps function errors as isError response" do
+    Usage.expects(:capture).with("mcp_call_served_daily").once
+    with_mcp_env do
+      # Force a function error by stubbing
+      Assistant::Function::GetBalanceSheet.any_instance.stubs(:call).raises(StandardError, "test error")
+
+      post "/mcp", params: jsonrpc_request("tools/call", {
+        name: "get_balance_sheet",
+        arguments: {}
+      }).to_json, headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      result = body["result"]
+
+      assert result["isError"], "Expected isError to be true"
+      inner = JSON.parse(result["content"][0]["text"])
+
+      # The raised text is written for a log, not for an external client: a
+      # RecordNotFound carries the access-control SQL and a range error carries
+      # the column definition. The client learns which tool failed; the detail
+      # stays server-side.
+      assert_equal "The tool failed to run", inner["error"]
+      assert_equal "get_balance_sheet", inner["tool"]
+      assert_no_match(/test error/, response.body)
+    end
+  end
+
+  # -- Daily usage --
+
+  test "tools/call records daily usage without tool metadata" do
+    Usage.expects(:capture).with("mcp_call_served_daily").once
+    Assistant::Function::GetBalanceSheet.any_instance.expects(:call).with({}).returns({ success: true })
+
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("tools/call", { name: "get_balance_sheet", arguments: {} }).to_json,
+           headers: mcp_headers(@token)
+    end
+
+    assert_response :ok
+    result = JSON.parse(response.body)["result"]
+    assert_equal true, JSON.parse(result["content"][0]["text"])["success"]
+  end
+
+  test "protocol messages and rejected calls do not record daily MCP usage" do
+    Usage.expects(:capture).with("mcp_call_served_daily").never
+    call = jsonrpc_request("tools/call", { name: "get_balance_sheet", arguments: {} }).to_json
+
+    with_mcp_env do
+      [ "initialize", "tools/list" ].each do |method|
+        post "/mcp", params: jsonrpc_request(method).to_json, headers: mcp_headers(@token)
+        assert_response :ok
+      end
+
+      post "/mcp", params: call, headers: mcp_headers("wrong-token")
+      assert_response :unauthorized
+
+      post "/mcp", params: call, headers: mcp_headers(@token).merge("Mcp-Protocol-Version" => "2099-01-01")
+      assert_response :bad_request
+
+      post "/mcp", params: call, headers: mcp_headers(@token).merge("Mcp-Session-Id" => SecureRandom.uuid)
+      assert_response :not_found
+    end
+  end
+
+  # -- Session isolation --
+
+  test "does not persist sessions or inherit impersonation state" do
+    with_mcp_env do
+      assert_no_difference "Session.count" do
+        post "/mcp", params: jsonrpc_request("initialize").to_json,
+             headers: mcp_headers(@token)
+      end
+
+      assert_response :ok
+    end
+  end
+
+  # -- JSON-RPC id preservation --
+
+  test "preserves request id in successful response" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("initialize", {}, id: 42).to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      assert_equal 42, body["id"]
+    end
+  end
+
+  test "preserves string request id" do
+    with_mcp_env do
+      post "/mcp", params: jsonrpc_request("initialize", {}, id: "req-abc-123").to_json,
+           headers: mcp_headers(@token)
+
+      assert_response :ok
+      body = JSON.parse(response.body)
+      assert_equal "req-abc-123", body["id"]
+    end
+  end
+
+  private
+
+    def with_mcp_env(&block)
+      with_env_overrides("MCP_API_TOKEN" => @token, "MCP_USER_EMAIL" => @user.email, &block) # pipelock:ignore
+    end
+
+    def with_mcp_cache
+      original_cache = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      yield
+    ensure
+      Rails.cache = original_cache
+    end
+
+    def mcp_headers(token)
+      {
+        "Content-Type" => "application/json",
+        "Authorization" => "Bearer #{token}"
+      }
+    end
+
+    def jsonrpc_request(method, params = {}, id: 1)
+      { jsonrpc: "2.0", id: id, method: method, params: params }
+    end
+
+    def jsonrpc_notification(method, params = {})
+      { jsonrpc: "2.0", method: method, params: params }
+    end
+
+    def assert_mcp_initialize_response(result)
+      assert_equal MCP_PROTOCOL_VERSION, result["protocolVersion"]
+      assert_match(/\A[0-9a-f-]{36}\z/, result["sessionId"])
+      assert_equal MCP_PROTOCOL_VERSION, response.headers["Mcp-Protocol-Version"]
+      assert_equal result["sessionId"], response.headers["Mcp-Session-Id"]
+    end
+end

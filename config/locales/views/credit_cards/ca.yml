@@ -1,0 +1,22 @@
+---
+ca:
+  credit_cards:
+    edit:
+      edit: Edita %{account}
+    form:
+      annual_fee: Quota anual
+      annual_fee_placeholder: '99'
+      apr: TAE
+      apr_placeholder: '15.99'
+      available_credit: Crèdit disponible
+      available_credit_placeholder: '10000'
+      expiration_date: Data de caducitat
+      minimum_payment: Pagament mínim
+      minimum_payment_placeholder: '100'
+      simplefin_balance_sign_auto: Automàtic
+      simplefin_balance_sign_credit: Crèdit (el banc et deu diners)
+      simplefin_balance_sign_debt: Deute (deus diners al banc)
+      simplefin_balance_sign_description: Força el signe només quan SimpleFIN informi d'un signe ambigu. L'opció automàtica continua fent servir l'historial de transaccions i el saldo del proveïdor.
+      simplefin_balance_sign_label: Significat del saldo de SimpleFIN
+    new:
+      title: Introdueix les dades de la targeta de crèdit

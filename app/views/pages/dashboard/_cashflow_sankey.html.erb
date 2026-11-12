@@ -1,0 +1,33 @@
+<%# locals: (sankey_data:, period:) %>
+<div id="cashflow-sankey-chart">
+  <% if sankey_data[:links].present? %>
+    <div class="w-full h-96">
+      <%= render "pages/dashboard/cashflow_sankey_chart", sankey_data: sankey_data, period: period %>
+    </div>
+    <%= render DS::Dialog.new(id: "cashflow-expanded-dialog", auto_open: false, width: "expanded", disable_frame: true, data: { action: "close->cashflow-expand#restore" }) do |dialog| %>
+      <% dialog.with_header(title: t("pages.dashboard.cashflow_sankey.title")) %>
+      <% dialog.with_body do %>
+        <div class="w-full h-[85dvh] max-h-[90dvh] overflow-y-auto overscroll-contain">
+          <%= render "pages/dashboard/cashflow_sankey_chart", sankey_data: sankey_data, period: period %>
+        </div>
+      <% end %>
+    <% end %>
+  <% else %>
+    <div class="h-[300px] lg:h-[340px] bg-container py-4 flex flex-col items-center justify-center">
+      <div class="space-y-3 text-center flex flex-col items-center">
+        <%= render DS::FilledIcon.new(
+          variant: :container,
+          icon: "activity" # cashflow placeholder icon
+        ) %>
+        <p class="text-sm font-medium text-primary"><%= t("pages.dashboard.cashflow_sankey.no_data_title") %></p>
+        <p class="text-secondary text-sm"><%= t("pages.dashboard.cashflow_sankey.no_data_description") %></p>
+        <%= render DS::Link.new(
+          text: t("pages.dashboard.cashflow_sankey.add_transaction"),
+          icon: "plus",
+          href: new_transaction_path,
+          frame: :modal
+        ) %>
+      </div>
+    </div>
+  <% end %>
+</div>

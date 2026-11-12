@@ -1,0 +1,644 @@
+# Self Hosting Sure with Docker
+
+This guide will help you setup, update, and maintain your self-hosted Sure application with Docker Compose. Docker Compose is the most popular and recommended way to self-host the Sure app.
+
+## Setup Guide
+
+Follow the guide below to get your app running.
+
+### Step 1: Install Docker
+
+Complete the following steps:
+
+1. Install Docker Engine by following [the official guide](https://docs.docker.com/engine/install/)
+2. Start the Docker service on your machine
+3. Verify that Docker is installed correctly and is running by opening up a terminal and running the following command:
+
+```bash
+# If Docker is setup correctly, this command will succeed
+docker run hello-world
+```
+
+### Step 2: Configure your Docker Compose file and environment
+
+#### Create a directory for your app to run
+
+Open your terminal and create a directory where your app will run. Below is an example command with a recommended directory:
+
+```bash
+# Create a directory on your computer for Docker files (name it whatever you like)
+mkdir -p ~/docker-apps/sure
+
+# Once created, navigate your current working directory to the new folder
+cd ~/docker-apps/sure
+```
+
+#### Copy our sample Docker Compose file
+
+Make sure you are in the directory you just created and run the following command:
+
+```bash
+# Download the sample compose.yml file from the GitHub repository
+curl --fail --location --silent --show-error --output compose.yml https://raw.githubusercontent.com/we-promise/sure/main/compose.example.yml
+```
+
+This command will do the following:
+
+1. Fetch the sample docker compose file from our public Github repository
+2. Creates a file in your current directory called `compose.yml` with the contents of the example file
+
+At this point, you should have `compose.yml` in your directory. It includes an optional `backup` service; see [Backups, upgrades and rollbacks](#backups-upgrades-and-rollbacks).
+
+### Step 3 (optional): Configure your environment
+
+By default, our `compose.example.yml` file runs without any configuration.  
+That said, if you would like extra security (important if you're running outside of a local network), you can follow the steps below to set things up.
+
+If you're running the app locally and don't care much about security, you can skip this step.
+
+#### Create your environment file
+
+In order to configure the app, you will need to create a file called `.env`, which is where Docker will read environment variables from.
+
+To do this, you should get our .env.example as a starting point:
+
+```bash
+curl --fail --location --silent --show-error --output .env https://raw.githubusercontent.com/we-promise/sure/main/.env.example
+```
+
+#### Generate the app secret key
+
+The app requires an environment variable called `SECRET_KEY_BASE` to run.
+
+We will first need to generate this in the terminal. If you have `openssl` installed on your computer, you can generate it with the following command:
+
+```bash
+openssl rand -hex 64
+```
+
+_Alternatively_, you can generate a key without openssl or any external dependencies by pasting the following bash command in your terminal and running it:
+
+```bash
+head -c 64 /dev/urandom | od -An -tx1 | tr -d ' \n' && echo
+```
+
+Once you have generated a key, save it and move on to the next step.
+
+#### Fill in your environment file
+
+Open the file named `.env` that we created in a prior step using your favorite text editor.
+
+Fill in this file with the following variables:
+
+```txt
+SECRET_KEY_BASE="replacemewiththegeneratedstringfromthepriorstep"
+POSTGRES_PASSWORD="replacemewithyourdesireddatabasepassword"
+```
+
+Both are required. The compose file has no defaults for them, so `docker compose up` stops with an error until they are set.
+
+#### Using HTTPS
+
+Assuming you want to access your instance from the internet, you should have secured your URL address with an SSL certificate.  
+The Docker instance runs in plain HTTP and you need to tell it that you are redirecting your HTTPS stream to the HTTP one.  
+To do this, edit the `compose.yml` file and find the line stating:  
+
+```yaml
+RAILS_ASSUME_SSL: "false"
+```
+
+and change it to `true`
+
+```yaml
+RAILS_ASSUME_SSL: "true"
+```
+
+#### Sending email (SMTP)
+
+Sure sends email through an SMTP server that you provide. Email is sent by the background worker (the `worker` service), not by `web`, so the worker must have these settings.
+
+On a self-hosted instance, Sure sends these emails:
+
+- Password reset links, when password sign-in is enabled.
+- A confirmation link when a user changes their email address, but only when **Require email confirmation** is on under Settings > Self-Hosting. When it is off, the new address is saved straight away and nothing is sent.
+- Rule notifications, from rules with a "Send email notification" action.
+- A daily summary to every super admin after the demo family is refreshed, but only when **Enable daily demo family refresh** is on under Settings > Self-Hosting and a demo family has been selected for it. It is off by default.
+
+Invitations are never emailed on a self-hosted instance, even with SMTP set up. After you add a member, copy the invitation link from Settings > Profile Info and send it to them yourself.
+
+| Variable | What it does | Default when not set |
+|----------|--------------|----------------------|
+| `SMTP_ADDRESS` | Host name of your SMTP server, for example `smtp.example.com`. | None. Required to send email. |
+| `SMTP_PORT` | Port of your SMTP server. | `25` |
+| `SMTP_USERNAME` | User name for logging in to the SMTP server. | None (no login) |
+| `SMTP_PASSWORD` | Password for logging in to the SMTP server. | None |
+| `SMTP_TLS_ENABLED` | `true` uses TLS from the start of the connection (SMTPS, usually port 465). Any other value connects in plain text and switches to TLS with STARTTLS when the server offers it (usually port 587). | Off |
+| `SMTP_TLS_SKIP_VERIFY` | `true` turns off verification of the SMTP server's certificate. | Off (the certificate is verified) |
+| `SSL_CA_FILE` | Path inside the container to a CA certificate (PEM) for verifying a server with a self-signed or internal certificate. The file must be mounted into the containers; see **Using a custom CA certificate** below. | None |
+| `EMAIL_SENDER` | Address that emails are sent from, for example `sure@example.com`. | `sender@sure.local` |
+| `APP_DOMAIN` | Host name your instance is reached at, for example `sure.example.com`. Used to build links in emails. | None |
+
+A few things to watch:
+
+- `SMTP_TLS_ENABLED` and `SMTP_TLS_SKIP_VERIFY` are on only when the value is exactly the string `true`. `True`, `1` or `yes` all count as off.
+- If `EMAIL_SENDER` is not set, email goes out from `sender@sure.local`, which many mail servers reject. Set it to an address your SMTP server is allowed to send from.
+
+**Passing the settings to the containers**
+
+Docker Compose uses `.env` to fill in the `${...}` values in `compose.yml`. It does not pass `.env` to the containers as a whole. A variable set only in `.env` does not reach the app unless `compose.yml` lists it.
+
+Both `web` and `worker` merge the shared `x-rails-env` anchor, so add the keys there once and both services get them. If you run the AI setup from `compose.ai.yml` (see [Using the AI compose file](#using-the-ai-compose-file) below), that file has its own `x-rails-env` anchor with no SMTP keys, so add the same keys there instead:
+
+```yaml
+x-rails-env: &rails_env
+  # ...existing keys...
+  APP_DOMAIN: ${APP_DOMAIN}
+  EMAIL_SENDER: ${EMAIL_SENDER}
+  SMTP_ADDRESS: ${SMTP_ADDRESS}
+  SMTP_PORT: ${SMTP_PORT:-465}
+  SMTP_USERNAME: ${SMTP_USERNAME}
+  SMTP_PASSWORD: ${SMTP_PASSWORD}
+  SMTP_TLS_ENABLED: ${SMTP_TLS_ENABLED:-true}
++  # Only when an otherwise valid certificate uses an untrusted CA:
+  # SMTP_TLS_SKIP_VERIFY: ${SMTP_TLS_SKIP_VERIFY:-false}
+```
+
+Any other variable from the table reaches the app only if you add it to the anchor the same way. `SMTP_TLS_SKIP_VERIFY` is shown commented out because turning off certificate checks is a last resort; prefer `SSL_CA_FILE` (see **Using a custom CA certificate** below).
+
+The table above lists the app's own defaults. This snippet sets different ones for Compose: port 465 with TLS from the start of the connection (SMTPS), the same values `.env.example` ships with. For a server that uses STARTTLS on port 587, set `SMTP_PORT` and `SMTP_TLS_ENABLED` in `.env` as shown below.
+
+Then set the values in `.env`:
+
+```txt
+APP_DOMAIN="sure.example.com"
+EMAIL_SENDER="sure@example.com"
+SMTP_ADDRESS="smtp.example.com"
+SMTP_USERNAME="replacemewithyoursmtpusername"
+SMTP_PASSWORD="replacemewithyoursmtppassword"
+# For STARTTLS on port 587 instead of SMTPS on 465:
+# SMTP_PORT="587"
+# SMTP_TLS_ENABLED="false"
+```
+
++Set each key you list in the anchor that has no default in the plain `${VAR}` form. Docker Compose passes such a key that has no value in `.env` as an empty value, not as unset. An empty `EMAIL_SENDER` replaces the `sender@sure.local` fallback with an empty address, and an empty `SMTP_USERNAME` still makes the app try to log in. If your server needs no login, leave the `SMTP_USERNAME` and `SMTP_PASSWORD` lines out of the anchor. Keys written as `${VAR:-default}`, such as `SMTP_PORT` and `SMTP_TLS_ENABLED` above, are different: Compose uses the default when the `.env` value is unset or empty.
+
+**Using a custom CA certificate**
+
+If your SMTP server's certificate is signed by an internal CA or is self-signed, mount the CA certificate into the containers and point `SSL_CA_FILE` at it. Add `SSL_CA_FILE` to the anchor, and the volume to both `web` and `worker`, since both merge the anchor:
+
+```yaml
+x-rails-env: &rails_env
+  # ...existing keys...
+  SSL_CA_FILE: /certs/my-ca.crt
+
+services:
+  web:
+    volumes:
+      - app-storage:/rails/storage
+      - ./my-ca.crt:/certs/my-ca.crt:ro
+  worker:
+    volumes:
+      - app-storage:/rails/storage
+      - ./my-ca.crt:/certs/my-ca.crt:ro
+```
+
+The worker is the service that sends email, so it is the one that must have the file. The same setting is also used for other outbound HTTPS connections. The file must be the PEM-format certificate (starting with `-----BEGIN CERTIFICATE-----`) of the CA that signed the server's certificate. To diagnose certificate errors, set `SSL_DEBUG=true`: the log then shows which CA file is used, the verification mode and the full error. `SSL_VERIFY=false` turns verification off entirely; use it only for testing, since it removes protection against man-in-the-middle attacks.
+
+Pull request [#2811](https://github.com/we-promise/sure/pull/2811), which is still open, would pass `.env` to both services directly. If it is merged, listing the keys in the anchor is no longer needed.
+
+**Applying changes**
+
+Run `docker compose up -d` after changing `compose.yml` or `.env`. It recreates the containers whose settings changed. `docker compose restart` keeps the old environment, so new settings do not take effect.
+
+To check what the worker sees, without printing the password:
+
+```bash
+docker compose exec worker bin/rails runner 'p ActionMailer::Base.smtp_settings.slice(:address, :port, :user_name, :tls)'
+docker compose exec worker printenv EMAIL_SENDER APP_DOMAIN
+```
+
+#### WebAuthn MFA (passkeys and security keys)
+
+If you enable passkeys, Touch ID, Windows Hello, or hardware security keys as MFA credentials, pin the WebAuthn relying party settings in your `.env` file:
+
+```txt
+WEBAUTHN_RP_ID="example.com"
+WEBAUTHN_ALLOWED_ORIGINS="https://sure.example.com"
+```
+
+`WEBAUTHN_RP_ID` should usually be your registrable domain, not a full URL. See [WebAuthn MFA Configuration](webauthn.md) before changing hostnames or reverse proxy settings for an instance with registered passkeys.
+
+#### Binding to IPv6 (optional)
+
+By default Sure listens on `0.0.0.0:3000` (IPv4 wildcard) inside the container and Docker publishes the port on the host's IPv4 interface only. If you want the app reachable over IPv6 as well, two things need to change:
+
+1. **Tell the app to bind to `[::]`** by setting `BINDING=::` in the container environment. `BINDING` is Rails' native env var for the server bind address. On any kernel with `net.ipv6.bindv6only=0` (the default on Linux and macOS) a single `[::]` bind is **dual-stack**: it accepts both IPv6 and IPv4 clients from the same socket. You do not need two binds and you do not need two ports.
+2. **Tell Docker to publish the host port on IPv6** by adding a bracketed-host `ports:` entry alongside the existing IPv4 one.
+
+In `compose.yml`:
+
+```yaml
+services:
+  web:
+    ports:
+      - ${PORT:-3000}:3000
+      - "[::]:${PORT:-3000}:3000"
+    environment:
+      <<: *rails_env
+      BINDING: "::"
+```
+
+With both changes in place, `http://127.0.0.1:3000/` and `http://[::1]:3000/` both work against the same container.
+
+**Note:** Docker's default userland proxy already bridges host-side IPv6 publishes to the container's internal IPv4 address, so in many setups just adding the `[::]:` port entry is enough. Setting `BINDING=::` inside the container only becomes load-bearing when the Docker daemon has `"ipv6": true` + `"ip6tables": true` configured (uncommon for self-hosters) and forwards raw IPv6 packets into the container via netfilter instead of the proxy. Setting both is harmless and future-proof.
+
+If you are running behind a reverse proxy that terminates TLS, nothing else changes — `proxy_pass http://[::1]:3000` and `proxy_pass http://127.0.0.1:3000` both work because the `[::]` bind is dual-stack.
+
+#### Local development bind
+
+For `bin/dev` on your own machine, the server now defaults to Rails' native `localhost` bind (`127.0.0.1` + `[::1]`) — only reachable from the same machine. If you need external access (phone on the same WiFi, devcontainer port forwarding, LAN testing), set the Rails-native env var:
+
+```bash
+BINDING=0.0.0.0 bin/dev   # reachable from LAN
+BINDING=::       bin/dev  # IPv6 dual-stack
+```
+
+The bundled devcontainer at `.devcontainer/docker-compose.yml` already pins `BINDING: "0.0.0.0"` so Docker port forwarding reaches the app — no manual override needed when using the devcontainer.
+
+### Step 4: Run the app
+
+You are now ready to run the app. Start with the following command to make sure everything is working:
+
+```bash
+docker compose up
+```
+
+This will pull our official Docker image and start the app. You will see logs in your terminal.
+
+Open your browser, and navigate to `http://localhost:3000`.
+
+If everything is working, you will see the Sure login screen.
+
+### Step 5: Create your account
+
+The first time you run the app, you will need to register a new account by hitting "create your account" on the login page.
+
+1. Enter your email
+2. Enter a password
+
+### Step 5a: Restrict future signups (optional)
+
+After creating your initial admin account, you can control how other people join your self-hosted instance from **Settings > Self-Hosting > Onboarding**.
+
+- **Open**: Anyone can create an account from the registration page.
+- **Invite-only**: New account creation stays enabled. Signups require a valid invite code unless you configure a default family for invite-only onboarding.
+- **Closed**: The registration page is disabled for new signups.
+
+If you do not want additional self-service registrations, switch the instance to **Closed** after the initial setup.
+
+### Step 6: Run the app in the background
+
+Most self-hosting users will want the Sure app to run in the background on their computer so they can access it at all times. To do this, hit `Ctrl+C` to stop the running process, and then run the following command:
+
+```bash
+docker compose up -d
+```
+
+The `-d` flag will run Docker Compose in "detached" mode. To verify it is running, you can run the following command:
+
+```
+docker compose ls
+```
+
+### Step 7: Enjoy!
+
+Your app is now set up. You can visit it at `http://localhost:3000` in your browser.
+
+If you find bugs or have a feature request, be sure to read through our [contributing guide here](https://github.com/we-promise/sure/wiki/How-to-Contribute-Effectively-to-Sure).
+
+## AI features, external assistant, and Pipelock
+
+Sure ships with a separate compose file for AI-related features: `compose.example.ai.yml`. It adds:
+
+- **Pipelock** (always on): AI agent security proxy for outbound tunnel controls and inbound MCP scanning
+- **Ollama + Open WebUI** (optional `--profile local-ai`): local LLM inference
+
+### Using the AI compose file
+
+```bash
+# Download both compose files
+curl --fail --location --silent --show-error --output compose.yml https://raw.githubusercontent.com/we-promise/sure/main/compose.example.yml
+curl --fail --location --silent --show-error --output compose.ai.yml https://raw.githubusercontent.com/we-promise/sure/main/compose.example.ai.yml
+curl --fail --location --silent --show-error --output pipelock.example.yaml https://raw.githubusercontent.com/we-promise/sure/main/pipelock.example.yaml
+
+# Run with Pipelock (no local LLM)
+docker compose -f compose.ai.yml up -d
+
+# Run with Pipelock + Ollama
+docker compose -f compose.ai.yml --profile local-ai up -d
+```
+
+### Setting up the external AI assistant
+
+The external assistant delegates chat to a remote AI agent instead of calling LLMs directly. The agent calls back to Sure's `/mcp` endpoint for financial data (accounts, transactions, balance sheet).
+
+1. Set the MCP endpoint credentials in your `.env`:
+   ```bash
+   MCP_API_TOKEN=generate-a-random-token-here
+   MCP_USER_EMAIL=your@email.com   # must match an existing Sure user
+   ```
+
+2. Set the external assistant connection:
+   ```bash
+   EXTERNAL_ASSISTANT_URL=https://your-agent/v1/chat/completions
+   EXTERNAL_ASSISTANT_TOKEN=your-agent-api-token
+   ```
+
+3. Choose how to activate:
+   - **Per-family (UI):** Go to Settings > Self-Hosting > AI Assistant, select "External"
+   - **Global (env):** Set `ASSISTANT_TYPE=external` to force all families to use external
+
+To use the bundled OpenClaw service instead of a separately hosted agent, start the `external-assistant` profile. This profile starts OpenClaw without the local Ollama or Open WebUI services:
+
+```bash
+docker compose -f compose.ai.yml --profile external-assistant up -d
+```
+
+See [docs/hosting/ai.md](ai.md) for full configuration details including agent ID, session keys, and email allowlisting.
+
+### Pipelock security proxy
+
+Pipelock sits between Sure and external services. The default Compose file provides:
+
+- MCP request and response scanning for DLP, prompt injection, and tool poisoning
+- HTTPS tunnel controls for destination, SSRF, rate, budget, CONNECT headers, and optional signed receipts
+
+The example doesn't enable TLS interception, so Pipelock can't read encrypted HTTPS request or response bodies. Docker Compose also doesn't prevent a client from bypassing the proxy.
+
+When using `compose.example.ai.yml`, Pipelock is always running. External AI agents should connect to port 8889 (MCP reverse proxy) instead of directly to Sure's `/mcp` on port 3000.
+
+For full Pipelock configuration, see [docs/hosting/pipelock.md](pipelock.md).
+
+## Running Sure on small (512 MB) hosts
+
+Sure runs comfortably on hosts or containers limited to 512 MB of RAM, which makes it a good fit for the smallest tiers on platforms like Render, Fly.io, or a cheap VPS. This section summarizes what fits, what does not, and how to handle the jobs that do not.
+
+### What fits in 512 MB
+
+Measured on a production deploy of the official image with the tuning below:
+
+- Boot, first-run onboarding, and everyday use (dashboard, transactions, budgets, reports)
+- Small bank syncs and CSV imports
+- Scheduled (cron) jobs such as exchange-rate refreshes
+
+Steady-state memory sits around **352 MB**, leaving comfortable headroom under a 512 MB limit.
+
+### What does not fit in 512 MB
+
+- **The demo-data generator** ("Load sample/demo data"): this is the one operation that deterministically exceeds 512 MB. On a 512 MB container it climbs to the limit and gets OOM-killed mid-generation (observed flat at ~680 MB on a 2 GB container, ~5 minutes). Because the generation runs in the worker, the symptom is a sample-data load that never completes, sometimes with all rows silently rolled back.
+- **Very large first-time imports or historical syncs** (tens of thousands of rows) can also exceed the limit. Import your history in smaller batches, or temporarily raise the memory limit for the initial import and lower it afterwards.
+- **AI features**: the assistant flavors need extra headroom. If you enable AI, run at least 1 GB.
+
+### Tuning already in the image
+
+The official image ships with the memory tuning that makes 512 MB viable, so no extra configuration is needed:
+
+- **jemalloc** preloaded to reduce memory fragmentation
+- **YJIT** (Ruby's JIT) enabled
+- **Puma constrained to 1 worker x 3 threads** (`WEB_CONCURRENCY=1`, `RAILS_MAX_THREADS=3`)
+
+If you run your own process supervisor instead of the official image, set those same values.
+
+The worker splits `RAILS_MAX_THREADS` between its default and AI lanes (`RAILS_AI_MAX_THREADS`, default `1`), so keep the worker's value at `2` or more; see [Where AI jobs run](ai.md#where-ai-jobs-run-sidekiq-lanes).
+
+### Operational note for the sample-data button
+
+If you want to load sample/demo data on a small host:
+
+1. Raise the **worker's** memory limit (the generator runs in the worker process, not the web process). On Render, bump the worker service's plan; on Docker Compose, raise the worker container's memory limit.
+2. Apply the change with a **fresh deploy/restart of the worker**. Note for Render specifically: plan changes only take effect on the next deploy - they do **not** apply on a plain restart.
+3. Load the sample data, then optionally drop the worker back to the small plan with another fresh deploy.
+
+## Daily market data import
+
+Sure imports security prices once a day, Monday to Friday. By default the import runs at 22:00 UTC, about an hour after the New York close. To change the time or turn the import off, open **Settings > Self-Hosting** and use the market data import options under the sync settings. The time you save there is interpreted in your browser's timezone.
+
+You can also set the defaults in your `.env` file. A value saved on the settings page always takes precedence over these variables:
+
+```txt
+MARKET_DATA_SYNC_ENABLED=1        # 1 = on, anything else = off
+MARKET_DATA_SYNC_TIME=22:00       # HH:MM, 24-hour clock
+MARKET_DATA_SYNC_TIMEZONE=UTC     # IANA name such as Europe/Berlin; unknown names fall back to UTC
+```
+
+**Upgrading from an earlier version:** the import used to be a fixed entry in `config/schedule.yml`. It is now created by the worker when it starts, from the settings above. Without any change on your side it keeps running at 22:00 UTC, Monday to Friday. If prices stop updating after an upgrade, open `/sidekiq` (see [Inspecting background jobs](#inspecting-background-jobs-sidekiq)), check that the **Cron** tab lists `import_market_data`, and look for `[MarketDataScheduler]` lines in the worker log (`docker compose logs worker`). Saving the import time once on the settings page recreates the job.
+
+## How to update your app
+
+The mechanism that updates your self-hosted Sure app is the GHCR (Github Container Registry) Docker image that you see in the `compose.yml` file:
+
+```yml
+image: ghcr.io/we-promise/sure:${SURE_IMAGE_TAG:-stable}
+```
+
+We recommend using one of the following images, but you can pin your app to whatever version you'd like (see [packages](https://github.com/we-promise/sure/pkgs/container/sure)):
+
+- `ghcr.io/we-promise/sure:latest` (latest `alpha`)
+- `ghcr.io/we-promise/sure:stable` (latest release)
+
+By default, your app _will NOT_ automatically update. Take a backup first (see below), then run:
+
+```bash
+cd ~/docker-apps/sure # Navigate to whatever directory you configured the app in
+docker compose run --rm backup create # Back up the current version (optional, recommended)
+docker compose pull web worker # Pull the newest image for your tag
+docker compose up -d # Restart on the new version; database migrations run automatically
+```
+
+### Upgrade note: instance-wide settings need a super admin
+
+Provider credentials, the shared AI connection settings (LLM provider, endpoints, API keys and models), sync settings, and the external assistant connection are stored once for the whole instance and apply to every family. On an instance with more than one family, only a `super_admin` can change them. When there is a single family, its admins keep access. Family-scoped choices, such as which assistant a family uses, stay with that family's admins.
+
+Installs created before the first user was automatically made `super_admin` may have no super admin at all. If your instance has more than one family (for example, because someone else signed up), these instance-wide settings are hidden after the update and saving them returns "not authorized". Promote your own user once:
+
+```bash
+docker compose exec web bin/rails runner 'User.find_by!(email: "you@example.com").update!(role: :super_admin)'
+```
+
+After that, you can promote other users at `/admin/users`.
+
+## How to change which updates your app receives
+
+Set `SURE_IMAGE_TAG` in your `.env` file to a channel (`stable`, `latest`) or a specific version (for example `0.7.4`):
+
+```bash
+SURE_IMAGE_TAG=0.7.4
+```
+
+After doing this, pull and restart the app:
+
+```bash
+docker compose pull web worker
+docker compose up -d
+```
+
+## Backups, upgrades and rollbacks
+
+The `backup` service in `compose.example.yml` takes full backups of your instance. It runs the same Sure image as `web` and `worker`, so there is nothing to install or download. Run these commands from the directory that holds `compose.yml`.
+
+**Take a backup now** (do this before every upgrade):
+
+```bash
+docker compose run --rm backup create
+```
+
+**Take a backup every day** at 02:00 UTC, keeping the last 7 days of daily backups:
+
+```bash
+docker compose --profile backup up -d backup
+```
+
+**See your backups:**
+
+```bash
+docker compose run --rm backup list
+```
+
+### What a backup contains
+
+Each backup is a folder under `backups/<version>/<date>-<manual|scheduled>/` with everything needed to bring the same version back up, on this machine or a new one:
+
+| File | Contents |
+|---|---|
+| `db.dump` | The whole database: accounts, transactions, budgets, rules, users and settings |
+| `storage.tar.gz` | Uploaded files: transaction attachments, account statements and documents, imports and exports, profile pictures and account logos |
+| `config/.env`, `config/compose.yml` | Your configuration, including `SECRET_KEY_BASE` |
+| `manifest.json` | Sure version and image, database schema version, when it was taken |
+| `restore.sh` | Restores the backup into a new folder (see below) |
+| `SHA256SUMS` | Checksums, verified before every restore |
+
+`db.dump` is written with the PostgreSQL tools in the Sure image (version 17), which older tools can't read. Restore it with `sure-backup` (`restore`, `recover` or `restore.sh`), not with `pg_restore` from the `db` container.
+
+Uploaded files are always stored on local disk in the `app-storage` volume, and the backup includes them.
+
+The version comes from the running app: every time `web` starts it records its version, and a backup is refused if the database schema no longer matches it.
+
+> [!WARNING]
+> `config/.env` contains `SECRET_KEY_BASE` and your API keys. Without `SECRET_KEY_BASE`, encrypted data in the database cannot be read. Keep the backup folder private, and encrypt off-site copies (for example with [rclone crypt](https://rclone.org/crypt/)).
+
+### Settings
+
+Set these in `.env`:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `BACKUP_DIR` | `./backups` | Host folder for backups |
+| `BACKUP_SCHEDULE` | `0 2 * * *` | Daily time for scheduled backups, as `minute hour * * *` in UTC |
+| `BACKUP_KEEP_DAYS` | `7` | Scheduled backups older than this are deleted; backups you take with `create` are kept |
+
+### Off-site copies
+
+The optional `backup-offsite` service copies the backup folder to any [rclone](https://rclone.org/) remote (S3, Cloudflare R2, Backblaze B2, SFTP, Google Drive, ...) every hour, under `<BACKUP_DESTINATION>/<INSTANCE_ID>/`, and removes scheduled backups there after `BACKUP_KEEP_DAYS`. Set `BACKUP_DESTINATION` and the `RCLONE_CONFIG_*` variables in `.env` (see `.env.example`), then:
+
+```bash
+docker compose --profile backup-offsite up -d backup-offsite
+```
+
+### Roll back an upgrade
+
+```bash
+docker compose stop web worker
+docker compose run --rm backup restore 0.7.4/2026-10-01_080524-manual   # or "latest"
+# Set SURE_IMAGE_TAG=0.7.4 in .env
+docker compose up -d
+```
+
+`restore` replaces the database and all uploaded files. It refuses while other clients are connected to the database, and asks you to type `restore` to confirm (pass `--yes` to skip in scripts).
+
+### Restore into a new folder or onto a new machine
+
+Every backup contains `restore.sh`, so all you need is the backup folder and Docker:
+
+```bash
+sh 2026-10-01_080524-manual/restore.sh
+```
+
+It verifies the backup and asks for a folder for the restored instance (new or empty; its name becomes the Compose project name). Then it:
+
+- refuses if Docker already has containers or volumes for that project name, or if the copied compose files use storage outside the new folder (external volumes or networks, absolute host paths), so it can't overwrite another instance;
+- warns if other Sure instances are running on the machine, and offers to start the restored one without its `worker` (see below);
+- picks the next free port if the backup's `PORT` is taken;
+- stops with a list of files to copy over if your compose files mount local files that are not part of the backup (custom certificates, for example);
+- copies the configuration and the backup in, pins `web` and `worker` to the backed-up version in `compose.restore.yml`, and sets `COMPOSE_FILE` in `.env` so plain `docker compose` commands use it;
+- restores the database and files, starts the app and prints its address.
+
+For scripts, pass the answers as options: `sh restore.sh --target ~/sure-restored --port 3001 --without-worker --yes`. Add `--no-start` to only prepare the folder.
+
+> [!WARNING]
+> Don't run a restored copy with its `worker` while the original instance is still running. Both would sync the same bank connections (some providers rotate access tokens on every sync, so the copy can disconnect the original) and run scheduled jobs such as recurring transactions and emails twice. Signing in to both on `localhost` also signs you out of the other, because browsers share cookies across ports.
+
+### Without the backup service (any version, including 0.7.5 and older)
+
+You can also run backups with the script on its own, without the `backup` service and without editing `compose.yml`. That's the way to back up and restore Sure 0.7.5 and older, whose images don't include the script, and it suits anyone who prefers to keep the script outside the image. Download it once next to `compose.yml`:
+
+```bash
+curl --fail --location --silent --show-error --output sure-backup https://raw.githubusercontent.com/we-promise/sure/main/bin/sure-backup
+```
+
+Then, from that folder:
+
+```bash
+sh sure-backup create                   # Take a backup now
+sh sure-backup list                     # List backups
+sh sure-backup restore latest           # Roll back in place (stop web and worker first)
+sh sure-backup recover backups/<version>/<backup>   # Restore into a new folder
+```
+
+The script finds your `web` container and runs itself once in a container from that exact image, with your uploaded-files volume, network and database settings. It reads the version from the image and checks it against the database, so no `--version` is needed. Backups go to `./backups`, or `BACKUP_DIR` from `.env`. `restore` refuses while `web` or `worker` is running.
+
+To take a backup every day without the service, add a cron job on the host, for example `0 2 * * * cd /opt/sure && sh sure-backup scheduled`. That takes a backup and removes scheduled backups older than `BACKUP_KEEP_DAYS`.
+
+### Upgrading from the database-only backup service (v0.7.5)
+
+Sure v0.7.5 shipped a `backup` service that ran `bin/db-backup.sh` and uploaded database dumps with rclone. It keeps working until you change it, but it does not back up uploaded files or configuration and cannot restore. To switch:
+
+1. Replace the `backup` service in your `compose.yml` with the `backup` and `backup-offsite` services from the current [`compose.example.yml`](https://github.com/we-promise/sure/blob/main/compose.example.yml).
+2. In `.env`, remove `BACKUP_OVERWRITE`; backups are now kept per version and date. `BACKUP_SCHEDULE` must be a daily time (`minute hour * * *`). `BACKUP_DESTINATION`, `INSTANCE_ID` and the `RCLONE_CONFIG_*` variables now belong to `backup-offsite`.
+3. Start them: `docker compose --profile backup --profile backup-offsite up -d backup backup-offsite`.
+
+Off-site backups now go to `<BACKUP_DESTINATION>/<INSTANCE_ID>/<version>/<date>-<trigger>/` and include `.env`, so use an encrypted remote. Earlier `backup_*.sql.gz` files are left in place and are no longer pruned; delete them once you no longer need them. To restore one of them, stop `web` and `worker` and load it with `gunzip -c backup_<timestamp>.sql.gz | docker compose exec -T db psql -U <POSTGRES_USER> -d <POSTGRES_DB>` into an empty database.
+
+If you download the new `bin/db-backup.sh` without updating the compose file, the backup service stops with an error that points here.
+
+## Troubleshooting
+
+### ActiveRecord::DatabaseConnectionError
+
+If you are trying to get Sure started for the **first time** and run into database connection issues, it is likely because Docker has already initialized the Postgres database with a _different_ default role (usually from a previous attempt to start the app).
+
+If you run into this issue, you can optionally **reset the database**.
+
+**PLEASE NOTE: this will delete any existing data that you have in your Sure database, so proceed with caution.**  For first-time users of the app just trying to get started, you're generally safe to run the commands below.
+
+By running the commands below, you will delete your existing Sure database and "reset" it.
+
+```
+docker compose down
+docker volume rm sure_postgres-data # this is the name of the volume the DB is mounted to
+docker compose up
+docker compose exec db psql -U sure_user -d sure_development -c "SELECT 1;" # This will verify that the issue is fixed
+```
+
+### Slow `.csv` import (processing rows taking longer than expected)
+
+Importing comma-separated-value file(s) requires the `sure-worker` container to communicate with Redis. Check your worker logs for any unexpected errors, such as connection timeouts or Redis communication failures.
+
+### Inspecting background jobs (`/sidekiq`)
+
+Sure ships the Sidekiq Web dashboard at `/sidekiq`. The route only exists for a signed-in **super admin** — the first user created on your instance. Anyone else (including logged-out visitors) gets a 404, so there is nothing to configure to keep it safe. If you want a second layer of protection anyway, set both `SIDEKIQ_WEB_USERNAME` and `SIDEKIQ_WEB_PASSWORD` in your environment file to additionally require basic-auth credentials; there are no default credentials.
+
+For day-to-day triage of stuck syncs, imports, and exports, prefer **Settings → Background jobs** — it maps queue state onto the actual records and offers safe recovery actions. The Sidekiq dashboard is a break-glass tool; two warnings when using it directly:
+
+- Never manually retry `SimplefinConnectionUpdateJob` — it consumes a single-use setup token, and a retry permanently breaks that connection attempt.
+- Deleting or retrying jobs does **not** update the corresponding Sure record (a deleted `ImportJob` leaves its import stuck in `importing`) — use Settings → Background jobs for record-level recovery.
+

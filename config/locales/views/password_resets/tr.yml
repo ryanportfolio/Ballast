@@ -1,0 +1,13 @@
+---
+tr:
+  password_resets:
+    edit:
+      title: Şifreyi sıfırla
+    new:
+      back: Geri
+      requested: Lütfen şifrenizi sıfırlamak için e-postanızı kontrol edin.
+      submit: Şifreyi sıfırla
+      title: Şifreyi sıfırla
+    update:
+      invalid_token: Geçersiz token.
+      success: Şifreniz başarıyla sıfırlandı.

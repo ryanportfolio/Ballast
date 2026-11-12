@@ -1,0 +1,22 @@
+---
+pt-PT:
+  sessions:
+    create:
+      invalid_credentials: E-mail ou palavra-passe inválidos.
+      local_login_disabled: O início de sessão com palavra-passe local está desativado.
+    destroy:
+      logout_successful: Terminou a sessão com sucesso.
+    new:
+      email: Endereço de e-mail
+      email_placeholder: voce@exemplo.com
+      forgot_password: Esqueceu-se da sua palavra-passe?
+      password: Palavra-passe
+      submit: Iniciar sessão
+      title: Sure
+      password_placeholder: Introduza a sua palavra-passe
+      local_login_admin_only: O início de sessão local está restrito aos administradores.
+      passkey_button: Iniciar sessão com uma chave de acesso
+      passkey_unsupported: Este navegador não suporta chaves de acesso.
+      no_auth_methods_enabled: Não existem métodos de autenticação ativados de momento. Contacte um administrador.
+      demo_banner_title: "Modo de Demonstração Ativo"
+      demo_banner_message: "Este é um ambiente de demonstração. As credenciais de início de sessão foram pré-preenchidas para sua conveniência. Por favor, não introduza informações reais ou sensíveis."

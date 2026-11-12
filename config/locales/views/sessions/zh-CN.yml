@@ -1,0 +1,20 @@
+---
+zh-CN:
+  sessions:
+    create:
+      invalid_credentials: 邮箱或密码无效。
+      local_login_disabled: 本地密码登录已禁用。
+    destroy:
+      logout_successful: 您已成功退出登录。
+    new:
+      email: 邮箱地址
+      email_placeholder: you@example.com
+      forgot_password: 忘记密码？
+      password: 密码
+      submit: 登录
+      title: Sure
+      password_placeholder: 输入您的密码
+      local_login_admin_only: 本地登录仅限管理员使用。
+      no_auth_methods_enabled: 当前没有启用任何认证方式。请联系管理员。
+      demo_banner_title: 演示模式已启用
+      demo_banner_message: 这是一个演示环境。为方便起见，登录凭据已预先填好。请不要输入真实或敏感信息。

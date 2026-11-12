@@ -1,0 +1,443 @@
+---
+ca:
+  settings:
+    encryption_migration_guide: Guia de configuració del xifratge i migració
+    ai_prompts:
+      show:
+        disable_ai: Desactiva l'assistent d'IA
+        main_system_prompt:
+          subtitle: Instruccions bàsiques que defineixen el comportament de l'assistent
+            d'IA a totes les converses
+          title: Prompt principal del sistema
+          label: Prompt del sistema del xat
+        merchant_detector:
+          subtitle: La IA identifica i enriqueix les dades de transaccions amb informació
+            de comerç
+          title: Detector de comerços
+        openai_label: OpenAI
+        page_title: Prompts d'IA
+        prompt_instructions: Instruccions del prompt
+        transaction_categorizer:
+          subtitle: La IA categoritza automàticament les teves transaccions segons
+            les categories definides
+          title: Categoritzador de transaccions
+        save: Desa els prompts
+        save_confirm:
+          title: Vols desar els prompts d'IA personalitzats?
+          body: Els prompts personalitzats substitueixen les instruccions del sistema integrades i les salvaguardes de seguretat (com ara les restriccions sobre assessorament financer) per a la teva família.
+          dont_show_again: No tornis a mostrar aquest avís
+          cancel: Cancel·la
+          confirm: Confirma
+      prompt_field:
+        provider_label: Proveïdor
+        prompt_label: Prompt
+        provider_openai: OpenAI
+        provider_anthropic: Anthropic
+        reset: Restableix el predeterminat
+        reset_confirm_title: Vols restablir el prompt predeterminat?
+        reset_confirm_body: Això descartarà el teu prompt personalitzat i restaurarà les instruccions predeterminades integrades.
+        status_custom: S'utilitza el teu prompt personalitzat
+        status_default: S'utilitza el predeterminat integrat
+        format_risk: 'El teu prompt de %{provider} ja no inclou l''exemple {"%{key}": ...}. Cada sol·licitud continua demanant aquest format, així que l''anàlisi normalment funciona, però una substitució que demani un format de sortida diferent la farà fallar.'
+      update:
+        success: Prompts d'IA actualitzats
+        multiple_errors: Hi ha diversos prompts massa llargs (el màxim és de %{count} caràcters)
+    appearances:
+      show:
+        dashboard_subtitle: Personalitza com es mostra el tauler de control
+        dashboard_title: Tauler de control
+        dashboard_two_column_description: Mostra els ginys del tauler en dues columnes
+          en pantalles grans. Si està desactivat, els ginys s'apilen en una sola columna.
+        dashboard_two_column_title: Disseny a dues columnes
+        page_title: Aparença
+        split_grouped_description: Mostra les transaccions dividides agrupades sota
+          la seva matriu a la llista de transaccions. Si està desactivat, els fills
+          apareixen com a files individuals.
+        split_grouped_title: Agrupa les transaccions dividides
+        auto_generate_transaction_names_title: "Genera automàticament els noms de les transaccions"
+        auto_generate_transaction_names_description: "Quan el nom d'una transacció introduïda manualment es deixa en blanc, s'omple a partir de la categoria i el comerç seleccionats (p. ex. «Entreteniment - Netflix»). Si no se'n selecciona cap, el nom continua sent obligatori. S'aplica a tota la llar i només a les transaccions noves."
+        theme_dark: Fosc
+        theme_light: Clar
+        theme_subtitle: Tria el tema preferit per a l'aplicació
+        theme_system: Sistema
+        modals_title: Modals
+        modals_subtitle: Personalitza el comportament dels modals
+        disable_modal_click_outside_title: Mantén els modals oberts en fer clic fora
+        disable_modal_click_outside_description: Evita que els modals es tanquin en fer clic fora. Útil per evitar perdre canvis no desats accidentalment.
+        theme_title: Tema
+        transactions_subtitle: Personalitza com es mostren les transaccions
+        transactions_title: Transaccions
+        dashboard_account_groups_title: Desplegades per defecte
+        dashboard_account_groups_description: Aquestes seccions de comptes es mostraran desplegades al tauler i a la barra lateral de comptes. Pots plegar-les manualment en qualsevol moment.
+    debugs:
+      show:
+        context:
+          account: account=%{value}
+          account_provider: account_provider=%{value}
+          family: family=%{value}
+          provider: provider=%{value}
+          user: user=%{value}
+        empty: No s'han trobat esdeveniments de depuració.
+        filters:
+          account_id: ID del compte
+          account_provider_id: ID del proveïdor del compte
+          all: Tots
+          category: Categoria
+          end_date: Fins
+          family_id: ID de la família
+          level: Nivell
+          provider: Proveïdor
+          reset: Restableix
+          source: Origen
+          start_date: Des de
+          submit: Filtra
+          user_id: ID de l'usuari
+        missing_value: "-"
+        page_title: Depuració
+        subtitle: Esdeveniments operatius rellevants per a superadministradors. Els
+          més nous primer.
+        table:
+          category: Categoria
+          context: Context
+          level: Nivell
+          message: Missatge
+          metadata: Metadades
+          source: Origen
+          time: Hora
+          view_metadata: Veure
+        title: Registre d'esdeveniments de depuració
+    hostings:
+      ensure_admin:
+        not_authorized: No autoritzat
+    llm_usages:
+      show:
+        avg_cost_per_request: Cost mitjà/sol·licitud
+        based_on_requests: Basat en %{with_cost} de %{total} sol·licituds amb dades
+          de cost
+        col_cost: Cost
+        col_date: Data
+        col_model: Model
+        col_operation: Operació
+        col_tokens: Tokens
+        completion: resposta
+        cost_by_model: Cost per model
+        cost_by_operation: Cost per operació
+        cost_estimates_description: 'Els costos s’estimen segons els preus publicats pels proveïdors, verificats per darrera vegada el %{date}. Els costos reals poden variar. El preu és per cada milió de tokens i varia segons el model. Els models personalitzats o amb self hosting mostraran "N/A" i no s’inclouen als totals de cost.'
+        cost_estimates_title: Sobre les estimacions de cost
+        end_date: Data de fi
+        failed: Errades
+        filter: Filtra
+        no_usage_data: No s'han trobat dades d'ús per al període seleccionat
+        page_title: Ús i costos d'LLM
+        prompt: prompt
+        recent_usage: Ús recent
+        start_date: Data d'inici
+        subtitle: Fes el seguiment del teu ús d'IA i els costos estimats
+        total_cost: Cost total
+        total_requests: Total de sol·licituds
+        total_tokens: Total de tokens
+    preferences:
+      show:
+        additional_currencies_label: Divises addicionals
+        base_currency_badge: Divisa base
+        base_currency_label: Divisa base
+        preview:
+          description: Activa funcions en desenvolupament etiquetades com a experimentals o canary.
+          title: Activa funcions experimentals
+        country: País
+        currencies_more: "+%{count} més"
+        currencies_subtitle: Tria quines divises apareixen als camps d'import de %{moniker}
+        currencies_title: "Divises"
+        currency: Divisa
+        currency_search_placeholder: Cerca divises
+        date_format: Format de data
+        default_account_order: Ordre de comptes per defecte
+        default_period: Període per defecte
+        general_subtitle: Configura les teves preferències
+        general_title: General
+        language: Idioma
+        language_auto: Idioma del navegador
+        manage_currencies: Gestiona divises
+        manage_currencies_subtitle: Desmarca les divises que mai utilitzes, o redueix
+          la llista a unes poques.
+        month_start_day: El mes del pressupost comença el
+        month_start_day_hint: Estableix quan comença el teu mes pressupostari (p.
+          ex., dia de cobrament)
+        month_start_day_warning: Els teus pressupostos i càlculs MTD utilitzaran aquest
+          dia d'inici personalitzat en lloc del dia 1 de cada mes.
+        translations_notice: Tingues en compte que encara estem treballant en les traduccions
+          a diversos idiomes.
+        no_additional_currencies: Cap seleccionada
+        no_matching_currencies: No s'han trobat divises
+        page_title: Preferències
+        save_currencies: Desa les divises
+        select_all_currencies: Selecciona-ho tot
+        select_base_only: Només la divisa base
+        selected_currencies_count:
+          one: "%{count} seleccionada"
+          other: "%{count} seleccionades"
+        sharing_default_label: Compartició predeterminada per a comptes nous
+        sharing_private: Mantén privat per defecte
+        sharing_shared: Comparteix amb tots els membres
+        sharing_subtitle: Controla com es comparteixen els comptes entre els membres
+        sharing_title: "Compartició de comptes"
+        timezone: Fus horari
+        budget_title: Pressupost
+        budget_subtitle: Configura com funcionen els teus pressupostos
+        personal_budgets: Pressupostos personals
+        personal_budgets_hint: Activa pressupostos individuals per a cada membre.
+        household_budget_enabled: Pressupost de la llar
+        household_budget_enabled_hint: Mantén un pressupost compartit de la llar juntament amb els pressupostos personals. Desactiva-ho per utilitzar només pressupostos personals.
+        budget_sharing_title: Compartició del pressupost
+        budget_sharing_subtitle: Permet que altres membres vegin o editin el teu pressupost personal
+        budget_sharing_no_members: No hi ha altres membres amb qui compartir-lo
+        budget_sharing_permission_label: Accés de %{name}
+        budget_sharing_permissions:
+          none: Sense accés
+          read_only: Només lectura
+          read_write: Pot editar
+    profiles:
+      destroy:
+        cannot_remove_self: No pots eliminar-te del compte.
+        member_removal_failed: Hi ha hagut un problema en eliminar el membre.
+        member_removed: Membre eliminat correctament.
+        not_authorized: No estàs autoritzat/da a eliminar membres.
+        member_owns_other_family_data: Aquest membre encara és titular de comptes en una altra llar i no es pot eliminar. Primer transfereix o elimina aquests comptes.
+      show:
+        confirm_delete:
+          body: Segur que vols eliminar definitivament el teu compte? Aquesta acció
+            és irreversible.
+          title: Vols eliminar el compte?
+        confirm_remove_invitation:
+          body: Segur que vols eliminar la invitació per a %{email}?
+          title: Eliminar invitació
+        confirm_remove_member:
+          body: Segur que vols eliminar %{name} del teu compte?
+          title: Eliminar membre
+        confirm_reset:
+          body: Segur que vols restablir el teu compte? Això eliminarà tots els teus
+            comptes, categories, comerços, etiquetes i altres dades. Aquesta acció
+            no es pot desfer.
+          title: Vols restablir el compte?
+        confirm_reset_with_sample_data:
+          body: Segur que vols restablir el teu compte i carregar dades d'exemple?
+            Això eliminarà les teves dades existents i les substituirà per dades de
+            demostració perquè puguis explorar Sure amb seguretat.
+          title: Vols restablir el compte i carregar dades d'exemple?
+        danger_zone_title: Zona perillosa
+        delete_account: Elimina el compte
+        delete_account_warning: Eliminar el teu compte suprimirà definitivament totes
+          les teves dades i no es podrà desfer.
+        email: Correu electrònic
+        first_name: Nom
+        group_form_input_placeholder: Introdueix el nom del grup
+        group_form_label: Nom del grup
+        group_title: Membres del grup
+        household_form_input_placeholder: Introdueix el nom de la llar
+        household_form_label: Nom de la llar
+        household_subtitle: Els convidats poden iniciar sessió al teu compte de %{moniker}
+          i accedir als recursos compartits.
+        household_title: Llar
+        invitation_link: Enllaç d'invitació
+        invite_member: Afegeix membre
+        last_name: Cognom
+        page_title: Informació del perfil
+        pending: Pendent
+        profile_subtitle: Personalitza com apareixes a %{product_name}
+        profile_title: Personal
+        remove_invitation: Elimina invitació
+        remove_member: Elimina membre
+        reset_account: Restableix el compte
+        reset_account_warning: Restablir el teu compte eliminarà tots els teus comptes,
+          categories, comerços, etiquetes i altres dades, però mantindrà el teu usuari.
+        reset_account_with_sample_data: Restableix i pre-carrega
+        reset_account_with_sample_data_warning: Elimina totes les teves dades existents
+          i carrega dades d'exemple per explorar amb un entorn preomplert.
+        save: Desa
+        resend_confirmation_link: sol·licita un nou correu de confirmació
+        unconfirmed_email_notice_html: Has sol·licitat canviar el teu correu electrònic a %{email}. Consulta el teu correu i confirma-ho perquè el canvi tingui efecte. Si no has rebut el correu, revisa la carpeta de correu brossa o %{resend_link}.
+    providers:
+      bank_sync:
+        lede: Connecta comptes externs perquè transaccions, saldos i posicions flueixin
+          automàticament a Sure.
+        page_title: Sincronització bancària
+      clear_filter: Neteja filtres
+      connect: Connecta
+      drawer_trust_statement: Accés només de lectura. Sure mai no pot moure diners
+        i les teves credencials s'emmagatzemen xifrades.
+      empty_filter: Cap proveïdor coincideix amb el teu filtre.
+      encryption_error:
+        message: La sincronització bancària requereix Active Record encryption configurat.
+          Estableix primary_key, deterministic_key i key_derivation_salt a les teves
+          credencials de Rails o variables d'entorn.
+        title: Falten les claus de xifratge
+      groups:
+        available: Disponibles
+        empty_available: Tots els proveïdors disponibles estan connectats.
+        your_connections: Les teves connexions
+      health_strip:
+        accounts_syncing: comptes sincronitzant-se
+        connected: connectats
+        last_synced: Última sincronització fa %{time}
+        needs_attention: necessita atenció
+      maturity:
+        alpha: Alfa
+        beta: Beta
+      meta:
+        last_synced: Sincronitzat fa %{time}
+        no_recent_sync: Sincronització endarrerida
+        sync_error: Error de sincronització
+      not_authorized: No autoritzat
+      not_found: Proveïdor no trobat.
+      recently_synced: Sincronitzat recentment. Torna-ho a provar d'aquí a un moment.
+      search_filters:
+        aria_label: Cerca proveïdors
+        chips:
+          all: Tots
+          bank: Bancs
+          investment: Inversions
+        placeholder: Cerca proveïdors
+      setup_steps:
+        eyebrow: Configuració
+        need_help: Necessites ajuda?
+      simplefin_panel:
+        save_and_connect: Desa i connecta
+        setup_token_label: Token de configuració
+        setup_token_placeholder: Enganxa el token de configuració de SimpleFIN
+        step_1_html: Ves a %{link} per obtenir un token d'un sol ús.
+        step_2: Enganxa el token a sota i connecta.
+        step_3: Després ves a Comptes per enllaçar els teus comptes sincronitzats.
+      status:
+        err: Error
+        "off": No configurat
+        ok: Connectat
+        warn: Cal acció
+      sync_all: Sincronitza-ho tot
+      sync_all_in_progress: Sincronitzant tots els proveïdors connectats…
+      sync_all_recently: Sincronització ja en curs. Torna-ho a provar d'aquí a un
+        moment.
+      sync_provider: Sincronitza ara
+      sync_provider_in_progress: Sincronització iniciada.
+      sync_provider_no_items: No hi ha connexions disponibles per sincronitzar.
+      taglines:
+        simplefin: Connecta comptes bancaris dels EUA mitjançant el protocol obert
+          SimpleFIN.
+      update:
+        no_changes: No s'ha fet cap canvi
+        updated_successfully: Configuració del proveïdor actualitzada correctament
+      drawer_trust_statement_encryption_unconfigured: Accés només de lectura. Sure mai no pot moure diners. Configura claus de xifratge explícites abans de desar credencials de proveïdors en producció.
+      provider_setup_encryption_warning:
+        title: Falten les claus de xifratge
+        message: Aquesta instal·lació autoallotjada no té configurades claus de xifratge explícites d'Active Record. Configura primary_key, deterministic_key i key_derivation_salt abans de desar credencials de proveïdors en producció.
+      provider_form:
+        save_and_connect: Desa i connecta
+    securities:
+      show:
+        page_title: Seguretat
+        encryption_warning:
+          title: Falten les claus de xifratge
+          intro: 'Les dades sensibles (claus API, tokens de proveïdors, secrets de MFA i dades personals) s''emmagatzemen sense xifrar. Per activar el xifratge, defineix les claus següents a les variables d''entorn o a les credencials de Rails:'
+          keys:
+          - ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+          - ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+          - ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+          generate: 'Genera''n un joc amb: bin/rails db:encryption:init'
+    mcp:
+      show:
+        page_title: Servidor MCP
+        connect_title: Connecta un assistent d'IA
+        copy_url: Copia
+        copied: Copiat!
+    background_jobs:
+      show:
+        page_title: Tasques en segon pla
+        title: Estat dels workers
+        subtitle: 'Estat d''execució de Sidekiq en directe: processos worker, mida de les cues i conjunts de reintents i tasques mortes.'
+        redis_unreachable: L'estat de Sidekiq no està disponible (no s'arriba a Redis). No se sap si els workers estan actius, així que les accions estan desactivades.
+        operations_title: Operacions en curs
+        operations_subtitle: Sincronitzacions, importacions i exportacions de totes les famílies que encara no han arribat a un estat final. Les operacions inactives durant més de 30 minuts sense cap tasca visible es consideren perdudes i es poden marcar com a tals.
+        empty: No hi ha operacions en curs.
+        missing_value: '-'
+        stats:
+          workers: Workers
+          busy: Ocupats
+          enqueued: A la cua
+          retries: Reintents
+          scheduled: Programades
+          dead: Mortes
+          queue_label: '%{name}: %{size} · latència de %{latency}s'
+        table:
+          type: Operació
+          family: Família
+          status: Estat
+          last_activity: Darrera activitat
+          liveness: Activitat
+          action: Acció
+      operation:
+        ago: fa %{time}
+        sync_label: Sincronització · %{type}
+        running: En execució
+        queued: A la cua
+        recent: Recent
+        unknown: Desconegut
+        stuck: 'Encallada: es considera perduda'
+        confirm: Vols marcar aquesta operació com a perduda? El registre passa a un estat final perquè es pugui tornar a intentar. Les dades subjacents no es modifiquen.
+        missing_value: '-'
+        actions:
+          mark_stale: Marca com a obsoleta
+          mark_failed: Marca com a fallida
+      cancel:
+        cancelled: '%{type} s''ha marcat com a perdut.'
+        not_cancellable: 'Ara mateix no es pot modificar aquesta operació: pot ser que la tasca encara estigui a la cua o en execució. Torna-ho a provar quan hagi estat inactiva durant 30 minuts.'
+        cancelled_error: 'Marcada com a fallida per un administrador: es considera que la tasca en segon pla s''ha perdut.'
+    budget_shares:
+      update:
+        success: S'ha actualitzat la configuració de compartició del pressupost
+    settings_nav:
+      accounts_label: Comptes
+      advanced_section_title: Avançat
+      ai_prompts_label: Prompts d'IA
+      auto_matches_label: Coincidències automàtiques
+      api_key_label: Clau API
+      api_keys_label: Clau API
+      appearance_label: Aparença
+      background_jobs_label: Tasques en segon pla
+      bank_sync_label: Sincronització bancària
+      categories_label: Categories
+      debug_label: Depuració
+      exports_label: Exportacions
+      feedback_label: Feedback
+      general_section_title: General
+      guides_label: Guies
+      imports_label: Importacions
+      llm_usage_label: Ús d'LLM
+      logout: Tanca la sessió
+      mcp_label: MCP
+      merchants_label: Comerços
+      other_section_title: Més
+      preferences_label: Preferències
+      profile_label: Informació del perfil
+      providers_label: Proveïdors
+      recurring_transactions_label: Recurrent
+      rules_label: Regles
+      security_label: Seguretat
+      self_hosting_label: Self hosting
+      statement_vault_label: Arxiu d'extractes
+      system_health_label: Estat del sistema
+      tags_label: Etiquetes
+      transactions_section_title: Transaccions
+      users_label: Usuaris
+      whats_new_label: Novetats
+    settings_nav_link_large:
+      next: Següent
+      previous: Enrere
+    user_avatar_field:
+      accepted_formats: JPG o PNG. Màxim 5MB.
+      change: Canvia la foto
+      choose: Puja una foto
+      choose_label: "(opcional)"
+  views:
+    settings:
+      payments:
+        cancellation: La teva contribució finalitza el %{date}.
+        renewal: La teva contribució continua el %{date}.
