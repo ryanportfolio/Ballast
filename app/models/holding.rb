@@ -309,8 +309,8 @@ class Holding < ApplicationRecord
         Trade::INTERNAL_MOVEMENT_LABELS
       )
 
-      # The rate a trade carries itself (extra["exchange_rate"], e.g. IBKR's
-      # fx_rate_to_base) comes before the table's, as in the calculators and
+      # The rate a trade carries itself (extra["exchange_rate"], e.g. a broker's
+      # own FX rate) comes before the table's, as in the calculators and
       # Balance::SyncCache; a trade in the account's own currency converts at 1.
       # Trade#exchange_rate= stores a number, but a row written to `extra`
       # directly can hold the same rate as a string, which Trade's validation

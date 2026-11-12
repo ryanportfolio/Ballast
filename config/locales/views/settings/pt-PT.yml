@@ -364,8 +364,6 @@ pt-PT:
         sync_error: Erro de sincronização
         no_recent_sync: Sincronização em atraso
         reconsent_required: Necessário novo consentimento
-        login_required: "Início de sessão necessário"
-        login_expires_soon: "A sessão expira dentro de %{time} (%{at})"
         reconsent_needed:
           one: Necessário novo consentimento em 1 dia
           other: Necessário novo consentimento em %{count} dias
@@ -385,11 +383,6 @@ pt-PT:
         wise: Sincronize automaticamente os seus saldos multi-moeda Wise e transferências internacionais.
         mercury: Sincronize automaticamente as suas contas bancárias empresariais Mercury.
         brex: Sincronize o numerário e a atividade do cartão empresarial Brex com acesso apenas de leitura.
-        snaptrade: Ligue contas de corretagem através da rede de agregação SnapTrade.
-        trading212: Sincronize a sua carteira de investimento Trading 212 utilizando uma chave de API apenas de leitura.
-        ibkr: Sincronize contas de investimento Interactive Brokers através de importações de Flex Query.
-        questrade: Sincronize as suas contas de investimento Questrade diretamente através da API Questrade.
-        indexa_capital: Acompanhe a sua carteira de investimento automatizada Indexa Capital.
         sophtron: Ligue bancos e utilities dos EUA e do Canadá.
         plaid: Ligue milhares de instituições financeiras dos EUA via Plaid.
         plaid_eu: Ligue instituições financeiras europeias via Plaid (PSD2 / Open Banking).
@@ -399,7 +392,6 @@ pt-PT:
         chips:
           all: Tudo
           bank: Bancos
-          crypto: Cripto
           investment: Investimentos
       empty_filter: Nenhum serviço corresponde ao seu filtro.
       clear_filter: Limpar filtros
@@ -473,81 +465,3 @@ pt-PT:
         step_1_html: "Abra %{link} e copie o seu EU Client ID e Secret Key."
       not_found: Serviço não encontrado.
       sync_provider_no_items: Sem ligações disponíveis para sincronizar.
-      ibkr_panel:
-        steps:
-          step_1: 'No seu Client Portal IBKR, navegue até "Performance & Reports" > "Flex Queries".'
-          step_2: 'Clique no ícone "+" na secção "Activity Flex Query" para criar uma nova consulta.'
-          step_3: 'Dê um nome à consulta (por exemplo, "Sure Sync"), reveja depois os detalhes da Flex Query abaixo e ative as secções, campos e opções de configuração listados.'
-          step_4: 'Guarde a consulta, anote o seu "Query ID" e utilize depois o ícone de engrenagem na secção "Flex Web Service Configuration" para gerar um Token de acesso.'
-          step_5: "Cole abaixo o seu Query ID e Token, guarde a configuração e aceda depois a Contas para ligar as contas IBKR descobertas."
-        flex_query_details:
-          eyebrow: Flex Query
-          title: Secções, campos e configuração
-          summary: Expanda para ver as secções, campos e definições exatos que a sua Activity Flex Query IBKR deve incluir.
-          sections_heading: Ative estas secções e campos
-          configuration_heading: Defina estas opções de consulta
-        sections:
-          account_information: "Informações da Conta: Account ID, Currency"
-          cash_report: "Relatório de Numerário:"
-          cash_report_options: "Opções: None"
-          cash_report_fields: "Campos: Currency, Ending Cash"
-          cash_transactions: "Transações de Numerário:"
-          cash_transactions_options: "Opções: Dividends, Deposits & Withdrawals, Detail"
-          cash_transactions_fields: "Campos: Amount, Conid, Currency, FX Rate To Base, Report Date, Transaction ID, Type"
-          change_in_position_value_summary: "Alteração no Resumo do Valor da Posição: Currency, End Of Period Value"
-          net_asset_value: "Valor Líquido dos Ativos (NAV) em Base:"
-          net_asset_value_options: "Opções: None"
-          net_asset_value_fields: "Campos: Currency, Report Date, Total"
-          open_positions: "Posições Abertas:"
-          open_positions_options: "Opções: Summary"
-          open_positions_fields: "Campos: Asset Class, Conid, Cost Basis Price, Currency, FX Rate To Base, Mark Price, Quantity, Report Date, Security ID, Security ID Type, Side, Symbol"
-          trades: "Negociações:"
-          trades_options: "Opções: Execution"
-          trades_fields: "Campos: Asset Class, Buy/Sell, Conid, Currency, FX Rate To Base, IB Commission, IB Commission Currency, Quantity, Symbol, Trade Date, Trade ID, TradePrice, Transaction ID"
-        configuration:
-          models: "Modelos: Opcional"
-          format: "Formato: XML"
-          period: "Período: Últimos 365 Dias de Calendário"
-          date_format: "Formato de Data: yyyy-MM-dd"
-          time_format: "Formato de Hora: HH:mm:ss"
-          date_time_separator: "Separador Data/Hora: ; (ponto e vírgula)"
-          profit_and_loss: "Ganhos e Perdas: Predefinição"
-          all_other_options: 'Todas as outras opções de configuração: "No"'
-        report_window_note: "Os relatórios Flex IBKR estão limitados à janela de consulta que configurou no IBKR. O Sure importará as posições atuais completas mais até aos últimos 365 dias de atividade deste relatório."
-        sync: Sincronizar
-        disconnect_confirm: Desligar Interactive Brokers?
-        query_id_label: Query ID
-        query_id_placeholder_new: Introduza o seu IBKR Flex Query ID
-        query_id_placeholder_existing: Deixe em branco para manter o Query ID atual
-        token_label: Token
-        token_placeholder_new: Introduza o seu IBKR Flex Web Service Token
-        token_placeholder_existing: Deixe em branco para manter o Token atual
-        save_configuration: Guardar Configuração
-        update_configuration: Atualizar Configuração
-        status_configured_prefix: "%{summary}. Visite o"
-        accounts_tab: Contas
-        status_configured_suffix: separador para gerir as contas descobertas.
-        not_configured: Não configurado.
-      trading212_panel:
-        steps:
-          step_1: Aceda a Trading 212 → Definições → API (aplicação web ou móvel).
-          step_2: Gere uma nova chave de API — a Trading 212 mostrar-lhe-á um API ID e um Secret Key.
-          step_3: Cole ambos abaixo, selecione o seu ambiente e moeda da conta e guarde.
-        api_key_label: API ID
-        api_key_placeholder_new: Cole o seu Trading 212 API ID
-        api_key_placeholder_existing: Deixe em branco para manter o API ID atual
-        api_secret_label: Secret Key
-        api_secret_placeholder_new: Cole o seu Trading 212 Secret Key
-        api_secret_placeholder_existing: Deixe em branco para manter o Secret Key atual
-        environment_label: Ambiente
-        environment_live: Conta ao vivo
-        environment_demo: Conta de demonstração
-        currency_label: Moeda da conta
-        save_configuration: Guardar Configuração
-        update_configuration: Atualizar Configuração
-        sync: Sincronizar
-        disconnect_confirm: Desligar Trading 212?
-        status_configured_prefix: "Configurado. Visite o"
-        accounts_tab: Contas
-        status_configured_suffix: separador para gerir as contas descobertas.
-        not_configured: Não configurado.

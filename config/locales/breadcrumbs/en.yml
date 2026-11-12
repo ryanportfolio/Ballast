@@ -33,10 +33,8 @@ en:
     holdings: Holdings
     home: Home
     hostings: Self-Hosting
-    ibkr_items: Interactive Brokers
     impersonation_sessions: Impersonations
     imports: Imports
-    indexa_capital_items: Indexa Capital
     intro: Intro
     investments: Investments
     invitations: Invitations
@@ -72,7 +70,6 @@ en:
     self_hosting: Self-Hosting
     sessions: Sign in
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Split
     system_health: System Health

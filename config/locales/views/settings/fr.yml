@@ -366,61 +366,6 @@ fr:
         connected: connecté
         last_synced: Dernière synchronisation il y a %{time}
         needs_attention: requiert de l'attention
-      ibkr_panel:
-        accounts_tab: Comptes
-        configuration:
-          all_other_options: 'All other configuration options : "No"'
-          date_format: "Date Format : yyyy-MM-dd"
-          date_time_separator: "Date/Time Separator : ; (semi-colon)"
-          format: "Format : XML"
-          models: "Models : Optional"
-          period: "Period : Last 365 Calendar Days"
-          profit_and_loss: "Profit and Loss : Default"
-          time_format: "Time Format : HH:mm:ss"
-        disconnect_confirm: Déconnecter Interactive Brokers ?
-        flex_query_details:
-          configuration_heading: Définissez ces options de requête
-          eyebrow: Requête Flex
-          sections_heading: Activez ces sections et ces champs
-          summary: Développez pour voir les sections, champs et paramètres exacts que votre requête Flex d'activité IBKR doit inclure.
-          title: Sections, champs et configuration
-        not_configured: Non configuré.
-        query_id_label: ID de requête (Query ID)
-        query_id_placeholder_existing: Laissez vide pour conserver l'ID de requête actuel
-        query_id_placeholder_new: Saisissez votre ID de requête IBKR Flex
-        report_window_note: Les rapports IBKR Flex sont limités à la fenêtre de requête que vous avez configurée dans IBKR. Sure importera la totalité des positions actuelles ainsi que jusqu'aux 365 derniers jours d'activité de ce rapport.
-        save_configuration: Enregistrer la configuration
-        sections:
-          account_information: "Account Information: Account ID, Currency"
-          cash_report: "Cash Report :"
-          cash_report_fields: "Fields : Currency, Ending Cash"
-          cash_report_options: "Options : None"
-          cash_transactions: "Cash Transactions :"
-          cash_transactions_fields: "Fields : Amount, Conid, Currency, FX Rate To Base, Report Date, Transaction ID, Type"
-          cash_transactions_options: "Options : Dividends, Deposits & Withdrawals, Detail"
-          change_in_position_value_summary: "Change In Position Value Summary : Currency, End Of Period Value"
-          net_asset_value: "Net Asset Value (NAV) in Base :"
-          net_asset_value_fields: "Fields : Currency, Report Date, Total"
-          net_asset_value_options: "Options : None"
-          open_positions: "Open Positions :"
-          open_positions_fields: "Fields : Asset Class, Conid, Cost Basis Price, Currency, FX Rate To Base, Mark Price, Quantity, Report Date, Security ID, Security ID Type, Side, Symbol"
-          open_positions_options: "Options : Summary"
-          trades: "Trades :"
-          trades_fields: "Fields : Asset Class, Buy/Sell, Conid, Currency, FX Rate To Base, IB Commission, IB Commission Currency, Quantity, Symbol, Trade Date, Trade ID, TradePrice, Transaction ID"
-          trades_options: "Options : Execution"
-        status_configured_prefix: "%{summary}. Visitez l'onglet"
-        status_configured_suffix: pour gérer les comptes découverts.
-        steps:
-          step_1: Dans votre portail client IBKR, accédez à "Performance & Rapports" > "Requêtes Flex".
-          step_2: Cliquez sur l'icône "+" dans la section "Activity Flex Query" pour créer une nouvelle requête.
-          step_3: 'Nommez votre requête (ex: "Sure Sync"), puis passez en revue les détails de la requête Flex ci-dessous et activez les sections, champs et options de configuration répertoriés.'
-          step_4: Enregistrez la requête, notez votre "Query ID", puis utilisez l'icône d'engrenage dans la section "Flex Web Service Configuration" pour générer un jeton d'accès (Token).
-          step_5: Collez votre Query ID et votre Token ci-dessous, enregistrez la configuration, puis allez dans Comptes pour lier les comptes IBKR découverts.
-        sync: Synchroniser
-        token_label: Jeton (Token)
-        token_placeholder_existing: Laissez vide pour conserver le jeton actuel
-        token_placeholder_new: Saisissez votre jeton de service web IBKR Flex
-        update_configuration: Mettre à jour la configuration
       lunchflow_panel:
         api_key_label: Clé API
         api_key_placeholder_new: Collez la clé API ici
@@ -442,8 +387,6 @@ fr:
           one: Consentement requis dans 1 jour
           other: Consentement requis dans %{count} jours
         reconsent_required: Consentement requis
-        login_required: "Connexion requise"
-        login_expires_soon: "La connexion expire dans %{time} (%{at})"
         sync_error: Erreur de synchro
       monobank_panel:
         step_1_html: Rendez-vous sur %{link}, connectez-vous avec l'app Monobank et générez un jeton personnel.
@@ -468,7 +411,6 @@ fr:
         chips:
           all: Tous
           bank: Banques
-          crypto: Crypto
           investment: Investissements
         placeholder: Rechercher des fournisseurs
       setup_steps:
@@ -499,109 +441,16 @@ fr:
         enable_banking: Synchronisez les comptes bancaires européens via l'open banking PSD2.
         financekit: Synchronisez (certains) comptes FinanceKit via l'app iOS Sure.
         fio: Synchronisez un compte Fio banka avec un jeton d'API en lecture seule.
-        ibkr: Synchronisez vos comptes d'investissement Interactive Brokers via l'import Flex Query.
-        indexa_capital: Suivez votre portefeuille d'investissement automatisé Indexa Capital.
         lunchflow: Connectez plus de 20k banques dans plus de 40 pays (UK, UE, USA, etc.)
         mercury: Synchronisez automatiquement vos comptes professionnels Mercury.
         monobank: Synchronisez des cartes et cagnottes Monobank (Ukraine) avec un jeton d'API personnel.
         plaid: Connectez des milliers d'institutions financières américaines via Plaid.
         plaid_eu: Connectez des institutions financières européennes via Plaid (PSD2 / Open Banking).
-        questrade: Synchronisez directement vos comptes d'investissement Questrade via l'API Questrade.
         redbark: Synchronisez des comptes bancaires australiens via l'open banking Redbark.
         simplefin: Connectez des comptes bancaires américains via le protocole ouvert SimpleFIN.
-        snaptrade: Connectez vos comptes de courtage via le réseau d'agrégation SnapTrade.
         sophtron: Connectez vos banques et services publics américains et canadiens.
-        trade_republic: Synchronisez votre compte d'investissement Trade Republic via une connexion web sécurisée en lecture seule.
-        trading212: Synchronisez votre portefeuille d'investissement Trading 212 à l'aide d'une clé d'API en lecture seule.
         up: Synchronisez des comptes bancaires australiens Up avec un jeton d'accès personnel.
         wise: Synchronisez automatiquement vos soldes multi-devises Wise et vos transferts internationaux.
-      trade_republic_panel:
-        accounts_discovered:
-          one: 1 compte Trade Republic détecté.
-          other: "%{count} comptes Trade Republic détectés."
-        accounts_tab: Comptes
-        approval_pending: Connexion lancée. Approuvez-la dans l'application Trade Republic ; Sure vérifie automatiquement.
-        authenticator_code_label: Code d'authentification (si demandé)
-        authenticator_code_notice: Saisissez le code de votre application d'authentification.
-        authenticator_code_placeholder: Code à 6 chiffres
-        awaiting_authenticator_code: Code d'authentification requis.
-        awaiting_confirmation: L'approbation dans l'application Trade Republic est en attente.
-        check_login_status: Vérifier maintenant
-        complete_login: Continuer
-        confirm_login: Vérifier la connexion
-        connect: Se connecter
-        connection_success:
-          close: Terminé
-          description: Sure synchronise désormais vos données Trade Republic en arrière-plan.
-          message: Votre connexion Trade Republic est prête.
-          title: Trade Republic connecté avec succès
-        currency_label: Devise du compte
-        disconnect: Déconnecter Trade Republic
-        disconnect_confirm: Déconnecter Trade Republic ? Vos comptes synchronisés deviendront des comptes manuels.
-        disconnect_confirm_with_identifier: "Déconnecter la connexion Trade Republic se terminant par %{last4} ? Vos comptes synchronisés deviendront des comptes manuels."
-        identifier_phone: Téléphone
-        identifier_account: Compte
-        encryption_warning:
-          message: Les identifiants et les données de session Trade Republic ne peuvent pas être stockés de façon sécurisée tant que le chiffrement Active Record n'est pas configuré.
-          title: Le chiffrement n'est pas configuré
-        login_expired: La demande d'approbation a expiré.
-        not_configured: Non configuré.
-        phone_number_label: Numéro de téléphone
-        phone_number_placeholder_existing: Laissez vide pour conserver le numéro actuel
-        phone_number_placeholder_new: "+33 6 12 34 56 78"
-        pin_label: Code PIN ou mot de passe
-        pin_placeholder_existing: Laissez vide pour conserver le code PIN ou le mot de passe actuel
-        pin_placeholder_new: Le code PIN ou le mot de passe de votre application Trade Republic
-        push_login_notice: Approuvez la connexion dans votre application Trade Republic dès maintenant. Sure vérifie automatiquement en arrière-plan. Vous pouvez aussi vérifier l'état vous-même.
-        qr_back_to_credentials: Revenir au numéro de téléphone et au code PIN ou mot de passe
-        qr_cancel: Annuler la connexion par QR code
-        qr_error: La connexion par QR code n'a pas pu être lancée. Veuillez réessayer.
-        requires_update: "Reconnectez-vous pour reprendre la synchronisation."
-        session_expires_in: "La connexion expire dans %{time} (%{at})."
-        qr_instruction: Scannez le QR code avec l'appareil photo de votre téléphone, puis approuvez la connexion dans l'application Trade Republic.
-        qr_loading: Préparation du QR code …
-        qr_login: Se connecter avec un QR code
-        qr_success: Connexion approuvée. Sure actualise la page du fournisseur.
-        restart_login: Relancer la connexion
-        add_account: "Ajouter une autre connexion"
-        save_configuration: Enregistrer et lancer la connexion
-        setup_accounts: Configurer les comptes
-        status_configured_prefix: Connecté. Ouvrez l'onglet
-        status_configured_suffix: pour gérer les comptes détectés.
-        steps:
-          step_1: Saisissez le numéro de téléphone et le code PIN ou le mot de passe que vous utilisez pour l'application Trade Republic, puis enregistrez.
-          step_2: Saisissez le code de votre application d'authentification lorsqu'il vous est demandé.
-          step_3: Approuvez la connexion dans votre application Trade Republic lorsque vous y êtes invité.
-        sync: Synchroniser
-        syncing: "Synchronisation..."
-        update_configuration: Mettre à jour la configuration
-      trading212_panel:
-        accounts_tab: Comptes
-        add_account: Ajouter un autre compte
-        api_key_label: Identifiant d'API
-        api_key_placeholder_existing: Laissez vide pour conserver l'identifiant d'API actuel
-        api_key_placeholder_new: Collez votre identifiant d'API Trading 212
-        api_secret_label: Clé secrète
-        api_secret_placeholder_existing: Laissez vide pour conserver la clé secrète actuelle
-        api_secret_placeholder_new: Collez votre clé secrète Trading 212
-        currency_label: Devise du compte
-        default_account_name: Compte Trading 212
-        disconnect: Déconnecter le compte Trading 212
-        disconnect_confirm: Déconnecter Trading 212 ?
-        environment_demo: Compte de démonstration
-        environment_label: Environnement
-        environment_live: Compte réel
-        not_configured: Non configuré.
-        save_configuration: Enregistrer la configuration
-        status_configured_prefix: Configuré. Ouvrez l'onglet
-        status_configured_suffix: pour gérer les comptes détectés.
-        steps:
-          step_1: Ouvrez Trading 212 → Paramètres → API (application web ou mobile).
-          step_2: "Générez une nouvelle clé d'API : Trading 212 vous affichera un identifiant d'API et une clé secrète."
-          step_3: Collez les deux ci-dessous, sélectionnez votre environnement et la devise du compte, puis enregistrez.
-        sync: Synchroniser
-        syncing: Synchronisation...
-        update_configuration: Mettre à jour la configuration
       up_panel:
         step_1_html: Allez sur %{link} et générez un jeton d'accès personnel.
         step_2: Copiez votre jeton d'accès personnel.

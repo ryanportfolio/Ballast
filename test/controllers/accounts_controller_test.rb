@@ -3,7 +3,6 @@ require "test_helper"
 class AccountsControllerTest < ActionDispatch::IntegrationTest
   include ActionView::RecordIdentifier
   include EntriesTestHelper
-  include TradeRepublicSessionTestHelper
 
   setup do
     sign_in @user = users(:family_admin)
@@ -227,67 +226,6 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Hidden Bank 235"
   end
 
-  # The SnapTrade card's brokerage line is built from every
-  # account on the connection. With one brokerage it prints that brokerage's
-  # name, so a member shared only the nameless account would read the other's.
-  test "a partially shared member does not see a SnapTrade connection's brokerage" do
-    item = snaptrade_items(:configured_item)
-    # The fixture accounts name two brokerages, which makes the line a count.
-    # Cleared so the only brokerage left is the unshared account's.
-    item.snaptrade_accounts.update_all(brokerage_name: nil)
-    link_two_accounts_to(item) do |st_item, index|
-      st_item.snaptrade_accounts.create!(
-        name: "ST #{index}", snaptrade_account_id: "st_235_#{index}", currency: "USD",
-        current_balance: 1, brokerage_name: (index.zero? ? nil : "Hidden Broker 235")
-      )
-    end
-
-    sign_in users(:family_member)
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{dom_id(item)}"
-    assert_not_includes response.body, "Hidden Broker 235"
-  end
-
-  test "an admin still sees a SnapTrade connection's brokerage" do
-    item = snaptrade_items(:configured_item)
-    # The fixture accounts name two brokerages, which makes the line a count.
-    # Cleared so the only brokerage left is the unshared account's.
-    item.snaptrade_accounts.update_all(brokerage_name: nil)
-    link_two_accounts_to(item) do |st_item, index|
-      st_item.snaptrade_accounts.create!(
-        name: "ST #{index}", snaptrade_account_id: "st_235_#{index}", currency: "USD",
-        current_balance: 1, brokerage_name: (index.zero? ? nil : "Hidden Broker 235")
-      )
-    end
-
-    get accounts_url
-
-    assert_response :success
-    assert_includes response.body, "Hidden Broker 235"
-  end
-
-  test "a partially shared member does not see a Trade Republic connection's data-quality totals" do
-    item = trade_republic_items(:configured_item)
-    # The fixture item already has one portfolio and one cash account, and
-    # the database allows one of each kind per connection.
-    link_two_accounts_to(item) do |_item, index|
-      trade_republic_accounts(index.zero? ? :main_account : :cash_account)
-    end
-    title = I18n.t("trade_republic_items.trade_republic_item.data_quality.title")
-
-    sign_in users(:family_member)
-    get accounts_url
-    assert_response :success
-    assert_select "##{dom_id(item)}"
-    assert_not_includes response.body, title
-
-    sign_in users(:family_admin)
-    get accounts_url
-    assert_includes response.body, title
-  end
-
   # The default trail ends on "Accounts", which is never a link, so an account's
   # page had no way back to the accounts list.
   test "show links the Accounts crumb back to the accounts list" do
@@ -304,76 +242,6 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "[data-breadcrumbs] a[href=?]", accounts_path, count: 0
     assert_select "[data-breadcrumbs] > span:last-child", text: I18n.t("breadcrumbs.accounts")
-  end
-
-  test "index offers a QR login on a Trade Republic connection that needs one" do
-    item = trade_republic_items(:configured_item)
-    item.update!(session_blob: trade_republic_session_blob(expires_at: 1.minute.ago))
-
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{dom_id(item)} [data-trade-republic-qr-initiate-url-value='#{initiate_qr_login_trade_republic_item_path(item)}']"
-    assert_select "##{dom_id(item)} [data-trade-republic-qr-return-url-value='#{accounts_path}']"
-    # Until then a sync can only fail.
-    assert_select "##{dom_id(item)} form[action='#{sync_trade_republic_item_path(item)}'] button[disabled]"
-  end
-
-  test "index shows when a Trade Republic login expires" do
-    item = trade_republic_items(:configured_item)
-    item.update!(session_blob: trade_republic_session_blob(expires_at: 5.hours.from_now))
-
-    get accounts_url
-
-    assert_response :success
-    assert_includes response.body, I18n.t("trade_republic_items.trade_republic_item.session_expires_in",
-                                          time: "about 5 hours", at: I18n.l(item.reload.session_expires_at, format: :short))
-    assert_select "##{dom_id(item)} [data-controller='trade-republic-qr']", count: 0
-  end
-
-  test "index renders trading212 items" do
-    trading212_item = trading212_items(:configured_item)
-    get accounts_url
-    assert_response :success
-    assert_select "##{dom_id(trading212_item)}"
-  end
-
-  test "index renders only accessible accounts for a visible trading212 item" do
-    accessible_account = accounts(:depository)
-    inaccessible_account = accounts(:investment)
-    trading212_item = trading212_items(:configured_item)
-    trading212_accounts(:main_account).ensure_account_provider!(accessible_account)
-    trading212_item.trading212_accounts.create!(
-      name: "Private Trading 212 Account",
-      trading212_account_id: "t212_private_123",
-      currency: "USD",
-      current_balance: 1000,
-      cash_balance: 100,
-      raw_positions_payload: [],
-      raw_orders_payload: [],
-      raw_dividends_payload: [],
-      raw_transactions_payload: []
-    ).ensure_account_provider!(inaccessible_account)
-    sign_in users(:family_member)
-
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{dom_id(trading212_item)}"
-    assert_select "turbo-frame##{dom_id(accessible_account)}", count: 1
-    assert_select "turbo-frame##{dom_id(inaccessible_account)}", count: 0
-  end
-
-  test "index renders only trading212 items with accessible accounts for members" do
-    shared_account = accounts(:credit_card)
-    trading212_accounts(:main_account).ensure_account_provider!(shared_account)
-    sign_in users(:family_member)
-
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{dom_id(trading212_items(:configured_item))}"
-    assert_select "##{dom_id(trading212_items(:pending_setup_item))}", count: 0
   end
 
   test "should get show" do
@@ -1186,10 +1054,10 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Account is already linked to a provider", flash[:alert]
   end
 
-  test "unlink preserves SnaptradeAccount record" do
-    snaptrade_account = snaptrade_accounts(:fidelity_401k)
+  test "unlink preserves the provider account record" do
+    provider_account = lunchflow_accounts(:investment_account)
     investment = accounts(:investment)
-    AccountProvider.create!(account: investment, provider: snaptrade_account)
+    AccountProvider.create!(account: investment, provider: provider_account)
     investment.reload
 
     assert investment.linked?
@@ -1199,27 +1067,16 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
 
     assert_not investment.linked?
     assert_redirected_to accounts_path
-    # SnaptradeAccount should still exist (not destroyed)
-    assert SnaptradeAccount.exists?(snaptrade_account.id), "SnaptradeAccount should be preserved after unlink"
+    # The provider account should still exist (not destroyed)
+    assert LunchflowAccount.exists?(provider_account.id), "LunchflowAccount should be preserved after unlink"
     # But AccountProvider should be gone
-    assert_not AccountProvider.exists?(provider_type: "SnaptradeAccount", provider_id: snaptrade_account.id)
+    assert_not AccountProvider.exists?(provider_type: "LunchflowAccount", provider_id: provider_account.id)
   end
 
-  test "unlink does not enqueue SnapTrade cleanup job" do
-    snaptrade_account = snaptrade_accounts(:fidelity_401k)
+  test "unlink detaches holdings from the provider" do
+    provider_account = lunchflow_accounts(:investment_account)
     investment = accounts(:investment)
-    AccountProvider.create!(account: investment, provider: snaptrade_account)
-    investment.reload
-
-    assert_no_enqueued_jobs(only: SnaptradeConnectionCleanupJob) do
-      delete unlink_account_url(investment)
-    end
-  end
-
-  test "unlink detaches holdings from SnapTrade provider" do
-    snaptrade_account = snaptrade_accounts(:fidelity_401k)
-    investment = accounts(:investment)
-    ap = AccountProvider.create!(account: investment, provider: snaptrade_account)
+    ap = AccountProvider.create!(account: investment, provider: provider_account)
 
     # Assign a holding to this provider
     holding = holdings(:one)

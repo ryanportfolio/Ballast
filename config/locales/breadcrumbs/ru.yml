@@ -30,10 +30,8 @@ ru:
     holdings: Активы
     home: Главная
     hostings: Самостоятельный хостинг
-    ibkr_items: Interactive Brokers
     impersonation_sessions: Сеансы имитации
     imports: Импорт
-    indexa_capital_items: Indexa Capital
     intro: Введение
     investments: Инвестиции
     invitations: Приглашения
@@ -66,7 +64,6 @@ ru:
     self_hosting: Самостоятельный хостинг
     sessions: Вход
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Разделение
     tags: Теги

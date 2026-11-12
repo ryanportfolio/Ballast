@@ -111,7 +111,7 @@ class PlaidAccount::Processor
         # the total balance in the current anchor. The cash_balance field on the account model
         # is still being used for the breakdown.
         #
-        # One lock across the whole of it, as in IbkrAccount::Processor: which
+        # One lock across the whole of it: which
         # snapshot the account follows is decided by the anchor's date, and a
         # sync running beside this one can move that anchor between any two of
         # these writes. The currency, the anchor and the cash split are settled
@@ -176,8 +176,8 @@ class PlaidAccount::Processor
     # sync run before the close is the previous session's; the total it reports
     # alongside is as of that same date. Anchoring that total on today would
     # set it against holdings later repriced for today, and the difference
-    # would read as cash on every day in between -- the shift #3815 removed
-    # from IBKR. The anchor goes on the newest date the holdings carry; a
+    # would read as cash on every day in between -- the shift Sure #3815
+    # removed elsewhere. The anchor goes on the newest date the holdings carry; a
     # snapshot with no dated holdings is today's.
     def balance_date
       return Date.current unless plaid_account.plaid_type == "investment"

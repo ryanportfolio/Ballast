@@ -33,9 +33,7 @@ de:
     guides: Anleitungen
     holdings: Bestände
     hostings: Self-Hosting
-    ibkr_items: Interactive Brokers
     impersonation_sessions: Sitzungsübernahmen
-    indexa_capital_items: Indexa Capital
     intro: Einführung
     investments: Investments
     invitations: Einladungen
@@ -70,7 +68,6 @@ de:
     self_hosting: Self-Hosting
     sessions: Anmelden
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Aufteilung
     system_health: Systemstatus

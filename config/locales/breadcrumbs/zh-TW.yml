@@ -32,10 +32,8 @@ zh-TW:
     holdings: 持股
     home: 首頁
     hostings: 自行代管
-    ibkr_items: Interactive Brokers
     impersonation_sessions: 模擬登入
     imports: 匯入紀錄
-    indexa_capital_items: Indexa Capital
     intro: 簡介
     investments: 投資
     invitations: 邀請
@@ -70,7 +68,6 @@ zh-TW:
     self_hosting: 自行代管
     sessions: 登入
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: 拆分
     tags: 標籤

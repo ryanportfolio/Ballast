@@ -31,16 +31,8 @@ class AccountsController < ApplicationController
     @enable_banking_items = visible_provider_items(family.enable_banking_items.ordered.with_attached_logo)
     @mercury_items = visible_provider_items(family.mercury_items.ordered.with_attached_logo.includes(:mercury_accounts))
     @brex_items = visible_provider_items(family.brex_items.ordered.with_attached_logo.includes(:accounts, brex_accounts: :account_provider))
-    @snaptrade_items = visible_provider_items(family.snaptrade_items.ordered.with_attached_logo.includes(:snaptrade_accounts))
-    @ibkr_items = visible_provider_items(family.ibkr_items.ordered.with_attached_logo.includes(:ibkr_accounts))
-    @indexa_capital_items = visible_provider_items(family.indexa_capital_items.ordered.with_attached_logo.includes(:indexa_capital_accounts))
     @sophtron_items = visible_provider_items(family.sophtron_items.ordered.with_attached_logo.includes(:sophtron_accounts))
-    @trading212_items = visible_provider_items(family.trading212_items.ordered.with_attached_logo.includes(:trading212_accounts)).sort_by(&:created_at)
-    @questrade_items = visible_provider_items(family.questrade_items.ordered.with_attached_logo.includes(:accounts, questrade_accounts: :account_provider))
     @wise_items = visible_provider_items(family.wise_items.ordered.includes(:wise_accounts, :accounts))
-    @trade_republic_items = visible_provider_items(
-      family.trade_republic_items.ordered.includes(trade_republic_accounts: { account_provider: :account })
-    )
 
     preload_latest_sync_metadata_for_index!
 
@@ -292,10 +284,8 @@ class AccountsController < ApplicationController
         simplefin_account_to_destroy = @account.simplefin_account
 
         # Remove new system links (account_providers join table)
-        # SnaptradeAccount records are preserved (not destroyed) so users can relink later.
+        # Provider account records are preserved (not destroyed) so users can relink later.
         # This follows the Plaid pattern where the provider account survives as "unlinked".
-        # SnapTrade has limited connection slots (5 free), so preserving the record avoids
-        # wasting a slot on reconnect.
         @account.account_providers.reload.destroy_all
 
         # Remove legacy system links (foreign keys)
@@ -474,14 +464,8 @@ class AccountsController < ApplicationController
         @enable_banking_items,
         @mercury_items,
         @brex_items,
-        @snaptrade_items,
-        @ibkr_items,
-        @indexa_capital_items,
         @sophtron_items,
-        @trading212_items,
-        @questrade_items,
-        @wise_items,
-        @trade_republic_items
+        @wise_items
       ].flatten.compact
 
       accounts = @manual_accounts.to_a + @financekit_accounts.to_a
@@ -669,26 +653,6 @@ class AccountsController < ApplicationController
           .filter_map(&:institution_metadata)
           .uniq { |institution| institution["name"] || institution["institution_name"] }
           .count
-      end
-
-      # IndexaCapital sync stats
-      @indexa_capital_sync_stats_map = {}
-      @indexa_capital_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @indexa_capital_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Questrade sync stats and account counts
-      @questrade_sync_stats_map = {}
-      @questrade_account_counts_map = {}
-      @questrade_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @questrade_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-        accounts = item.questrade_accounts.to_a
-        linked = accounts.count { |a| a.account_provider.present? }
-        @questrade_account_counts_map[item.id] = {
-          linked: linked, unlinked: accounts.size - linked, total: accounts.size
-        }
       end
 
       # Wise sync stats

@@ -30,10 +30,8 @@ vi:
     holdings: Danh mục nắm giữ
     home: Trang chủ
     hostings: Tự lưu trữ
-    ibkr_items: Interactive Brokers
     impersonation_sessions: Mạo danh
     imports: Nhập dữ liệu
-    indexa_capital_items: Indexa Capital
     intro: Giới thiệu
     investments: Đầu tư
     invitations: Lời mời
@@ -65,7 +63,6 @@ vi:
     self_hosting: Tự lưu trữ
     sessions: Đăng nhập
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Phân chia
     tags: Nhãn

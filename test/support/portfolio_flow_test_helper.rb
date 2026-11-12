@@ -53,7 +53,7 @@ module PortfolioFlowTestHelper
     )
   end
 
-  # Trading212 / IBKR / Questrade: a Transaction with the label and the
+  # Providers that book income as a Transaction with the label and the
   # security id in extra. Negative amount = cash in.
   def create_income_transaction(account:, label:, amount:, security: create_portfolio_security, date: Date.current, extra_shape: :flat)
     extra = case extra_shape

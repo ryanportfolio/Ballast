@@ -11,15 +11,9 @@ class ProviderConnectionStatus
     { key: "simplefin", type: "SimplefinItem", association: :simplefin_items, accounts: :simplefin_accounts },
     { key: "lunchflow", type: "LunchflowItem", association: :lunchflow_items, accounts: :lunchflow_accounts },
     { key: "enable_banking", type: "EnableBankingItem", association: :enable_banking_items, accounts: :enable_banking_accounts },
-    { key: "snaptrade", type: "SnaptradeItem", association: :snaptrade_items, accounts: :snaptrade_accounts, linked_accounts: :linked_accounts },
-    { key: "ibkr", type: "IbkrItem", association: :ibkr_items, accounts: :ibkr_accounts },
     { key: "mercury", type: "MercuryItem", association: :mercury_items, accounts: :mercury_accounts },
     { key: "brex", type: "BrexItem", association: :brex_items, accounts: :brex_accounts },
     { key: "sophtron", type: "SophtronItem", association: :sophtron_items, accounts: :sophtron_accounts },
-    { key: "indexa_capital", type: "IndexaCapitalItem", association: :indexa_capital_items, accounts: :indexa_capital_accounts },
-    { key: "trading212", type: "Trading212Item", association: :trading212_items, accounts: :trading212_accounts },
-    { key: "trade_republic", type: "TradeRepublicItem", association: :trade_republic_items, accounts: :trade_republic_accounts },
-    { key: "questrade", type: "QuestradeItem", association: :questrade_items, accounts: :questrade_accounts },
     { key: "redbark", type: "RedbarkItem", association: :redbark_items, accounts: :redbark_accounts },
     { key: "wise", type: "WiseItem", association: :wise_items, accounts: :wise_accounts }
   ].freeze

@@ -10,33 +10,6 @@ class Account::SyncerTest < ActiveSupport::TestCase
     Account::Syncer.new(account).perform_post_sync
   end
 
-  test "applies IBKR historical balance overrides after materialization" do
-    family = families(:empty)
-    account = family.accounts.create!(
-      name: "IBKR Brokerage",
-      balance: 0,
-      cash_balance: 0,
-      currency: "CHF",
-      accountable: Investment.new(subtype: "brokerage")
-    )
-    ibkr_account = family.ibkr_items.create!(
-      name: "IBKR",
-      query_id: "QUERY123",
-      token: "TOKEN123"
-    ).ibkr_accounts.create!(
-      name: "Main",
-      ibkr_account_id: "U1234567",
-      currency: "CHF"
-    )
-    ibkr_account.ensure_account_provider!(account)
-
-    Account::MarketDataImporter.any_instance.expects(:import_all).once
-    Balance::Materializer.any_instance.expects(:materialize_balances).once
-    IbkrAccount::HistoricalBalancesSync.any_instance.expects(:sync!).once
-
-    Account::Syncer.new(account).perform_sync(OpenStruct.new(window_start_date: nil))
-  end
-
   # A provider that dates its holdings itself, but anchors the balance on the
   # day of the sync, leaves the two a day apart and the gap reads as cash.
   # Nothing fails, so the sync is the one place it can be seen.
@@ -53,7 +26,7 @@ class Account::SyncerTest < ActiveSupport::TestCase
     assert_equal "provider_sync", entry.category
     assert_equal "warn", entry.level
     assert_equal "Account::Syncer", entry.source
-    assert_equal "ibkr", entry.provider_key
+    assert_equal "simplefin", entry.provider_key
     assert_equal account, entry.account
     assert_equal account_provider, entry.account_provider
     assert_equal Date.current.to_s, entry.metadata["anchor_date"]
@@ -139,16 +112,15 @@ class Account::SyncerTest < ActiveSupport::TestCase
     def linked_investment_account
       family = families(:empty)
       account = family.accounts.create!(
-        name: "IBKR Brokerage",
+        name: "Brokerage",
         balance: 0,
         cash_balance: 0,
         currency: "CHF",
         accountable: Investment.new(subtype: "brokerage")
       )
-      ibkr_account = family.ibkr_items.create!(name: "IBKR", query_id: "QUERY123", token: "TOKEN123")
-        .ibkr_accounts.create!(name: "Main", ibkr_account_id: "U1234567", currency: "CHF")
-      ibkr_account.ensure_account_provider!(account)
-      [ account, account.account_providers.first ]
+      simplefin_account = family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+        .simplefin_accounts.create!(name: "Main", currency: "CHF", account_type: "investment", current_balance: 0)
+      [ account, account.account_providers.create!(provider: simplefin_account) ]
     end
 
     def provider_holding(account, account_provider, date:)
@@ -161,7 +133,6 @@ class Account::SyncerTest < ActiveSupport::TestCase
     def run_sync(account)
       Account::MarketDataImporter.any_instance.stubs(:import_all)
       Balance::Materializer.any_instance.stubs(:materialize_balances)
-      IbkrAccount::HistoricalBalancesSync.any_instance.stubs(:sync!)
       Account::Syncer.new(account).perform_sync(OpenStruct.new(window_start_date: nil))
     end
 end

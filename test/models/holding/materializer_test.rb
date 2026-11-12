@@ -312,7 +312,7 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
     account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     # Provider snapshot two days ago with known cost basis, but no trades.
-    # This mirrors IBKR Flex where the export ends on Friday but today is Sunday.
+    # This mirrors a broker export that ends on Friday while today is Sunday.
     Holding.create!(
       account: @account,
       security: @aapl,

@@ -337,79 +337,6 @@ tr:
         connected: bağlı
         last_synced: Son senkronizasyon %{time} önce
         needs_attention: dikkat gerekiyor
-      ibkr_panel:
-        accounts_tab: Hesaplar
-        configuration:
-          all_other_options: 'Diğer tüm yapılandırma seçenekleri: "No"'
-          date_format: 'Tarih Formatı: yyyy-MM-dd'
-          date_time_separator: 'Tarih/Saat Ayırıcı: ; (noktalı virgül)'
-          format: 'Format: XML'
-          models: 'Modeller: İsteğe Bağlı'
-          period: 'Dönem: Son 365 Takvim Günü'
-          profit_and_loss: 'Kar ve Zarar: Varsayılan'
-          time_format: 'Saat Formatı: HH:mm:ss'
-        disconnect_confirm: Interactive Brokers bağlantısı kesilsin mi?
-        flex_query_details:
-          configuration_heading: Bu sorgu seçeneklerini ayarlayın
-          eyebrow: Flex Query
-          sections_heading: Bu bölümleri ve alanları etkinleştirin
-          summary: IBKR Activity Flex Query'nizin içermesi gereken tam bölümleri,
-            alanları ve ayarları görmek için genişletin.
-          title: Bölümler, alanlar ve yapılandırma
-        not_configured: Yapılandırılmadı.
-        query_id_label: Sorgu ID
-        query_id_placeholder_existing: Mevcut Sorgu ID'sini korumak için boş bırakın
-        query_id_placeholder_new: IBKR Flex Query ID'nizi girin
-        report_window_note: IBKR Flex raporları, IBKR'de yapılandırdığınız sorgu penceresiyle
-          sınırlıdır. Sure, bu rapordan mevcut tüm varlıkları ve son 365 güne kadar
-          olan işlem geçmişini içe aktaracaktır.
-        save_configuration: Yapılandırmayı Kaydet
-        sections:
-          account_information: 'Hesap Bilgileri: Account ID, Currency'
-          cash_report: 'Nakit Raporu:'
-          cash_report_fields: 'Alanlar: Currency, Ending Cash'
-          cash_report_options: 'Seçenekler: None'
-          cash_transactions: 'Nakit İşlemleri:'
-          cash_transactions_fields: 'Alanlar: Amount, Conid, Currency, FX Rate To
-            Base, Report Date, Transaction ID, Type'
-          cash_transactions_options: 'Seçenekler: Dividends, Deposits & Withdrawals,
-            Detail'
-          change_in_position_value_summary: 'Pozisyon Değeri Değişim Özeti: Currency,
-            End Of Period Value'
-          net_asset_value: 'Ana Para Biriminde Net Varlık Değeri (NAV):'
-          net_asset_value_fields: 'Alanlar: Currency, Report Date, Total'
-          net_asset_value_options: 'Seçenekler: None'
-          open_positions: 'Açık Pozisyonlar:'
-          open_positions_fields: 'Alanlar: Asset Class, Conid, Cost Basis Price, Currency,
-            FX Rate To Base, Mark Price, Quantity, Report Date, Security ID, Security
-            ID Type, Side, Symbol'
-          open_positions_options: 'Seçenekler: Summary'
-          trades: 'İşlemler:'
-          trades_fields: 'Alanlar: Asset Class, Buy/Sell, Conid, Currency, FX Rate
-            To Base, IB Commission, IB Commission Currency, Quantity, Symbol, Trade
-            Date, Trade ID, TradePrice, Transaction ID'
-          trades_options: 'Seçenekler: Execution'
-        status_configured_prefix: "%{summary}. Şuraya gidin:"
-        status_configured_suffix: sekmesine giderek keşfedilen hesapları yönetin.
-        steps:
-          step_1: IBKR Client Portal'ınızda "Performance & Reports" > "Flex Queries"
-            bölümüne gidin.
-          step_2: Yeni bir sorgu oluşturmak için "Activity Flex Query" bölümündeki
-            "+" simgesine tıklayın.
-          step_3: Sorgunuza bir ad verin (ör. "Sure Sync"), ardından aşağıdaki Flex
-            Query ayrıntılarını inceleyin ve listelenen bölümleri, alanları ve yapılandırma
-            seçeneklerini etkinleştirin.
-          step_4: Sorguyu kaydedin, "Query ID"nizi not edin, ardından bir erişim Token'ı
-            oluşturmak için "Flex Web Service Configuration" bölümündeki dişli simgesini
-            kullanın.
-          step_5: Sorgu ID'nizi ve Token'ınızı aşağıya yapıştırın, yapılandırmayı
-            kaydedin, ardından keşfedilen IBKR hesaplarını bağlamak için Hesaplar'a
-            gidin.
-        sync: Senkronize et
-        token_label: Token
-        token_placeholder_existing: Mevcut Token'ı korumak için boş bırakın
-        token_placeholder_new: IBKR Flex Web Service Token'ınızı girin
-        update_configuration: Yapılandırmayı Güncelle
       lunchflow_panel:
         api_key_label: API Anahtarı
         api_key_placeholder_new: API anahtarını buraya yapıştırın
@@ -431,8 +358,6 @@ tr:
           one: "%{count} gün içinde yeniden onay gerekiyor"
           other: "%{count} gün içinde yeniden onay gerekiyor"
         reconsent_required: Yeniden onay gerekiyor
-        login_required: "Giriş gerekli"
-        login_expires_soon: "Girişin süresi %{time} içinde doluyor (%{at})"
         registration_needed: Kayıt gerekiyor
         sync_error: Senkronizasyon hatası
       not_authorized: Yetkiniz yok
@@ -454,7 +379,6 @@ tr:
         chips:
           all: Tümü
           bank: Bankalar
-          crypto: Kripto
           investment: Yatırımlar
         placeholder: Sağlayıcıları ara
       setup_steps:
@@ -484,9 +408,6 @@ tr:
           edin.
         enable_banking: PSD2 açık bankacılığı üzerinden Avrupa banka hesaplarınızı
           senkronize edin.
-        ibkr: Flex Query içe aktarmaları yoluyla Interactive Brokers yatırım hesaplarınızı
-          senkronize edin.
-        indexa_capital: Indexa Capital otomatik yatırım portföyünüzü takip edin.
         lunchflow: 40'tan fazla ülkeden 20 bin+ bankayı bağlayın (İngiltere, AB, ABD
           ve daha fazlası!)
         mercury: Mercury işletme bankacılığı hesaplarınızı otomatik olarak senkronize
@@ -494,18 +415,13 @@ tr:
         plaid: Plaid üzerinden binlerce ABD finans kurumunu bağlayın.
         plaid_eu: Plaid üzerinden (PSD2 / Açık Bankacılık) Avrupa finans kurumlarını
           bağlayın.
-        questrade: Questrade API'si aracılığıyla Questrade yatırım hesaplarınızı doğrudan
-          senkronize edin.
         simplefin: Açık SimpleFIN protokolü üzerinden ABD banka hesaplarını bağlayın.
-        snaptrade: SnapTrade birleştirme ağı üzerinden aracı kurum hesaplarını bağlayın.
         sophtron: ABD ve Kanada bankalarını ve kurumlarını bağlayın.
         wise: Wise çoklu para birimi bakiyelerinizi ve uluslararası transferlerinizi
           otomatik olarak senkronize edin.
         redbark: Avustralya banka hesaplarını Redbark açık bankacılık ile senkronize edin.
         monobank: Ukrayna Monobank kartlarını ve kumbaralarını kişisel bir API token ile senkronize edin.
         fio: Bir Fio banka hesabını salt okunur bir API token ile senkronize edin.
-        trading212: Trading 212 yatırım portföyünüzü salt okunur bir API anahtarıyla senkronize edin.
-        trade_republic: Trade Republic yatırım hesabınızı güvenli, salt okunur web girişiyle senkronize edin.
       up_panel:
         step_1_html: "%{link} adresine gidin ve kişisel bir erişim token'ı oluşturun."
         step_2: Kişisel erişim token'ınızı kopyalayın.
@@ -526,93 +442,6 @@ tr:
         step_1_html: '%{link} internet bankacılığına giriş yapın ve Settings → API bölümünü açın.'
         step_2: Salt okunur erişimli bir token oluşturun ("Sledování účtu"). Bu işlem güçlü kimlik doğrulama gerektirir ve token en fazla 180 gün geçerlidir.
         step_3: Token'ı aşağıya yapıştırıp kaydedin. Bir token yalnızca bir hesaba erişir; bu nedenle her Fio hesabı için ayrı bir bağlantı ekleyin.
-      trade_republic_panel:
-        encryption_warning:
-          title: Şifreleme yapılandırılmamış
-          message: Active Record Encryption yapılandırılana kadar Trade Republic kimlik bilgileri ve oturum verileri güvenli şekilde saklanamaz.
-        steps:
-          step_1: Trade Republic uygulamasında kullandığınız telefon numarasını ve PIN'i veya şifreyi girip kaydedin.
-          step_2: İstendiğinde doğrulama uygulamanızdaki kodu girin.
-          step_3: İstendiğinde girişi Trade Republic uygulamanızda onaylayın.
-        phone_number_label: Telefon numarası
-        phone_number_placeholder_new: +49 170 1234567
-        phone_number_placeholder_existing: Mevcut telefon numarasını korumak için boş bırakın
-        pin_label: PIN veya şifre
-        pin_placeholder_new: Trade Republic uygulama PIN'iniz veya şifreniz
-        pin_placeholder_existing: Mevcut PIN'i veya şifreyi korumak için boş bırakın
-        currency_label: Hesap para birimi
-        connect: Giriş yap
-        confirm_login: Girişi kontrol et
-        complete_login: Devam et
-        authenticator_code_label: Doğrulama kodu (istenirse)
-        authenticator_code_placeholder: 6 haneli kod
-        push_login_notice: Girişi şimdi Trade Republic uygulamanızda onaylayın. Sure arka planda otomatik olarak kontrol eder. Durumu kendiniz de kontrol edebilirsiniz.
-        check_login_status: Durumu şimdi kontrol et
-        authenticator_code_notice: Doğrulama uygulamanızdaki kodu girin.
-        approval_pending: Giriş başlatıldı. Trade Republic uygulamasında onaylayın; Sure otomatik olarak kontrol ediyor.
-        awaiting_confirmation: Trade Republic uygulamasında onay bekleniyor.
-        awaiting_authenticator_code: Doğrulama kodu gerekli.
-        login_expired: Onay isteğinin süresi doldu.
-        restart_login: Girişi yeniden başlat
-        connection_success:
-          title: Trade Republic başarıyla bağlandı
-          message: Trade Republic bağlantınız hazır.
-          description: Sure, Trade Republic verilerinizi arka planda senkronize ediyor.
-          close: Bitti
-        qr_login: QR kodla giriş yap
-        qr_cancel: QR girişini iptal et
-        qr_back_to_credentials: Telefon numarası ve PIN'e veya şifreye dön
-        qr_loading: QR kod hazırlanıyor …
-        qr_instruction: QR kodu telefonunuzun kamerasıyla tarayın, ardından girişi Trade Republic uygulamasında onaylayın.
-        qr_success: Giriş onaylandı. Sure sağlayıcı sayfasını yeniliyor.
-        qr_error: QR girişi başlatılamadı. Lütfen tekrar deneyin.
-        requires_update: "Senkronizasyona devam etmek için yeniden giriş yapın."
-        session_expires_in: "Girişin süresi %{time} içinde doluyor (%{at})."
-        add_account: "Başka bir bağlantı ekle"
-        save_configuration: Kaydet ve Girişi Başlat
-        update_configuration: Yapılandırmayı Güncelle
-        sync: Senkronize et
-        syncing: "Senkronize ediliyor..."
-        disconnect: Trade Republic bağlantısını kes
-        disconnect_confirm: Trade Republic bağlantısı kesilsin mi? Senkronize hesaplarınız manuel hesaplara dönüşecektir.
-        disconnect_confirm_with_identifier: "%{last4} ile biten Trade Republic bağlantısı kesilsin mi? Senkronize hesaplarınız manuel hesaplara dönüşecektir."
-        identifier_phone: Telefon
-        identifier_account: Hesap
-        status_configured_prefix: Bağlandı. Keşfedilen hesapları yönetmek için
-        accounts_tab: Hesaplar
-        setup_accounts: Hesapları kur
-        accounts_discovered:
-          one: '%{count} Trade Republic hesabı keşfedildi.'
-          other: '%{count} Trade Republic hesabı keşfedildi.'
-        status_configured_suffix: sekmesine gidin.
-        not_configured: Yapılandırılmadı.
-      trading212_panel:
-        steps:
-          step_1: Trading 212 → Settings → API bölümüne gidin (web veya mobil uygulama).
-          step_2: Yeni bir API anahtarı oluşturun — Trading 212 size bir API ID ve bir Secret Key gösterecektir.
-          step_3: İkisini de aşağıya yapıştırın, ortamınızı ve hesap para biriminizi seçin, ardından kaydedin.
-        api_key_label: API ID
-        api_key_placeholder_new: Trading 212 API ID'nizi yapıştırın
-        api_key_placeholder_existing: Mevcut API ID'yi korumak için boş bırakın
-        api_secret_label: Gizli Anahtar
-        api_secret_placeholder_new: Trading 212 Gizli Anahtarınızı yapıştırın
-        api_secret_placeholder_existing: Mevcut Gizli Anahtarı korumak için boş bırakın
-        environment_label: Ortam
-        environment_live: Gerçek hesap
-        environment_demo: Demo hesap
-        currency_label: Hesap para birimi
-        save_configuration: Yapılandırmayı Kaydet
-        update_configuration: Yapılandırmayı Güncelle
-        sync: Senkronize et
-        syncing: Senkronize ediliyor...
-        disconnect: Trading 212 hesabının bağlantısını kes
-        disconnect_confirm: Trading 212 bağlantısı kesilsin mi?
-        default_account_name: Trading 212 Hesabı
-        add_account: Başka bir hesap ekle
-        status_configured_prefix: Yapılandırıldı. Keşfedilen hesapları yönetmek için
-        accounts_tab: Hesaplar
-        status_configured_suffix: sekmesine gidin.
-        not_configured: Yapılandırılmadı.
     securities:
       show:
         disable_mfa: 2FA'yı devre dışı bırak

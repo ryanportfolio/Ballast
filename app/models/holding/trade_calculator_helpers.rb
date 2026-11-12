@@ -43,7 +43,7 @@ module Holding::TradeCalculatorHelpers
 
     # The rate on the trade's own day: a basis is what was paid then, and must
     # not drift with the exchange rate afterwards. A rate the trade carries
-    # itself (`extra["exchange_rate"]`, e.g. IBKR's fx_rate_to_base) comes
+    # itself (`extra["exchange_rate"]`, e.g. a broker's own FX rate) comes
     # first, as it does for the cash balance in Balance::SyncCache. No rate means
     # the amount in the account's currency is unknown -- not the raw figure,
     # which is what a rate of 1.0 would give -- the same answer

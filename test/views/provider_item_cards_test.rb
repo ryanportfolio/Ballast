@@ -13,7 +13,7 @@ class ProviderItemCardsTest < ActiveSupport::TestCase
   RENDER_SOURCES = Dir[Rails.root.join("{app,lib}/**/*.{rb,erb,tt}")].sort
 
   test "there are cards to check" do
-    assert_operator CARDS.size, :>=, 19
+    assert_operator CARDS.size, :>=, 13
   end
 
   CARDS.each do |card|

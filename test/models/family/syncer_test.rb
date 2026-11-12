@@ -34,21 +34,22 @@ class Family::SyncerTest < ActiveSupport::TestCase
     assert_equal "completed", family_sync.reload.status
   end
 
-  test "syncs ibkr items through reflective provider discovery" do
+  test "syncs simplefin items through reflective provider discovery" do
     family_sync = syncs(:family)
+    @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
     syncer = Family::Syncer.new(@family)
 
-    assert_includes syncable_item_associations.map(&:name), :ibkr_items
+    assert_includes syncable_item_associations.map(&:name), :simplefin_items
 
     Account.any_instance.stubs(:sync_later)
-    syncable_item_associations.reject { |association| association.name == :ibkr_items }.each do |association|
+    syncable_item_associations.reject { |association| association.name == :simplefin_items }.each do |association|
       association.klass.any_instance.stubs(:sync_later)
     end
 
-    IbkrItem.any_instance
-            .expects(:sync_later)
-            .with(parent_sync: family_sync, window_start_date: nil, window_end_date: nil)
-            .times(@family.ibkr_items.syncable.count)
+    SimplefinItem.any_instance
+                 .expects(:sync_later)
+                 .with(parent_sync: family_sync, window_start_date: nil, window_end_date: nil)
+                 .times(@family.simplefin_items.syncable.count)
 
     syncer.perform_sync(family_sync)
   end

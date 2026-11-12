@@ -1106,7 +1106,7 @@ class Account::ProviderImportAdapter
     # one joined query, so Transfer#kind_for_leg reads them without the lazy
     # loads it would otherwise pay on every re-imported row. Looked up per row
     # rather than memoized per adapter: most processors build an adapter per
-    # row, and some link or destroy transfers mid-sync (Trade Republic), so a
+    # row, and some link or destroy transfers mid-sync, so a
     # memo would be both costlier and stale.
     def matched_transfer_for(entry)
       return nil unless entry.persisted?

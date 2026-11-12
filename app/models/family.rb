@@ -6,13 +6,10 @@ class Family < ApplicationRecord
   include FioConnectable
   include Syncable, AutoTransferMatchable, Subscribeable, VectorSearchable
   include PlaidConnectable, SimplefinConnectable, LunchflowConnectable, AkahuConnectable, EnableBankingConnectable
-  include SnaptradeConnectable, MercuryConnectable, BrexConnectable, SophtronConnectable
-  include IndexaCapitalConnectable, IbkrConnectable, WiseConnectable
+  include MercuryConnectable, BrexConnectable, SophtronConnectable
+  include WiseConnectable
   include UpConnectable
   include MonobankConnectable
-  include Trading212Connectable
-  include TradeRepublicConnectable
-  include QuestradeConnectable
   include RedbarkConnectable
   include AiPromptable
 

@@ -254,7 +254,7 @@ class Holding::ForwardCalculatorTest < ActiveSupport::TestCase
     assert_nil current.cost_basis
   end
 
-  # A rate the trade carries itself (IBKR's fx_rate_to_base) is a rate for its
+  # A rate the trade carries itself (a broker's own FX rate) is a rate for its
   # day, so the basis is known even when the rates table has a gap.
   test "a foreign purchase converts at the rate it carries when the table has none" do
     load_prices

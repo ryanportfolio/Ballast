@@ -14,9 +14,9 @@
 # save callbacks for it to skip). Setting the flag must not fail on a validation
 # unrelated to deletion: BrexItem checks base_url against an allowlist on every
 # save, so a row that predates an allowlist change would otherwise be
-# undeletable. Restoring it must not fail on one that depends on the flag --
-# QuestradeItem skips its refresh_token presence check while
-# scheduled_for_deletion is set -- and mask the enqueue error with its own.
+# undeletable. Restoring it must not fail on a model whose validations skip a
+# check while scheduled_for_deletion is set, and mask the enqueue error with
+# its own.
 #
 # Don't call this inside a transaction: ApplicationJob defers enqueues until
 # commit, so perform_later would return before the push is attempted and a

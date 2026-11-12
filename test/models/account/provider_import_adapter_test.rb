@@ -888,7 +888,9 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
 
   test "another provider's same-day row with that provider security is not claimed" do
     account, adapter, account_provider = provider_holding_setup
-    other_provider = AccountProvider.create!(account: account, provider: snaptrade_accounts(:vanguard_ira))
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "IRA", currency: "USD", account_type: "investment", current_balance: 0)
+    other_provider = AccountProvider.create!(account: account, provider: simplefin_account)
     original = Security.create!(ticker: "MINE", name: "Provider Row")
     chosen = Security.create!(ticker: "MINE", name: "Chosen Row", exchange_operating_mic: "XNYS")
     others = account.holdings.create!(
@@ -2486,8 +2488,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       )
     end
 
-    # A provider that sends no external_id (Plaid, Indexa Capital, SnapTrade
-    # securities): the row is keyed by security, date and currency.
+    # A provider that sends no external_id (Plaid securities): the row is keyed by security, date and currency.
     def import_holding_without_external_id(adapter, account_provider, security, date, quantity: 10, cost_basis: nil)
       adapter.import_holding(
         security: security,

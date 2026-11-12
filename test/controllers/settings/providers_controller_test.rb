@@ -280,9 +280,9 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
   end
 
   # Saves and errors from a row or the drawer re-render the panel by replacing
-  # "<turbo_id>-providers-panel". SnapTrade never streams to it.
+  # "<turbo_id>-providers-panel".
   test "every streamed panel renders the root its streams replace" do
-    Settings::ProvidersController::FAMILY_PANELS.reject { |panel| panel[:key] == "snaptrade" }.each do |panel|
+    Settings::ProvidersController::FAMILY_PANELS.each do |panel|
       get connect_form_settings_providers_url(provider_key: panel[:key])
 
       assert_response :success
@@ -664,14 +664,6 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Sync started/i, response.body)
   end
 
-  test "GET show includes Interactive Brokers in bank sync providers" do
-    get settings_providers_url
-
-    assert_response :success
-    assert_match(/Interactive Brokers/i, response.body)
-    assert_match(/Flex Query/i, response.body)
-  end
-
   test "GET show warns on configured provider forms when self-hosted encryption keys are not explicitly configured" do
     Setting["plaid_client_id"] = "test-client-id"
     Setting["plaid_secret"] = "test-secret"
@@ -713,19 +705,11 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     Setting["plaid_secret"] = nil
   end
 
-  test "GET connect_form renders Interactive Brokers panel" do
-    get connect_form_settings_providers_path(provider_key: "ibkr")
-
-    assert_response :success
-    assert_match(/Interactive Brokers/i, response.body)
-    assert_match(/Query ID/i, response.body)
-  end
-
   test "GET connect_form warns when self-hosted encryption keys are not explicitly configured" do
     with_self_hosting do
       ActiveRecordEncryptionConfig.stubs(:explicitly_configured?).returns(false)
 
-      get connect_form_settings_providers_path(provider_key: "ibkr")
+      get connect_form_settings_providers_path(provider_key: "simplefin")
 
       assert_response :success
       assert_includes response.body, I18n.t("settings.providers.provider_setup_encryption_warning.title")
@@ -742,7 +726,7 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     with_self_hosting do
       ActiveRecordEncryptionConfig.stubs(:explicitly_configured?).returns(true)
 
-      get connect_form_settings_providers_path(provider_key: "ibkr")
+      get connect_form_settings_providers_path(provider_key: "simplefin")
 
       assert_response :success
       refute_includes response.body, I18n.t("settings.providers.provider_setup_encryption_warning.title")
@@ -759,7 +743,7 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     Rails.configuration.stubs(:app_mode).returns("managed".inquiry)
     ActiveRecordEncryptionConfig.stubs(:explicitly_configured?).returns(false)
 
-    get connect_form_settings_providers_path(provider_key: "ibkr")
+    get connect_form_settings_providers_path(provider_key: "simplefin")
 
     assert_response :success
     refute_includes response.body, I18n.t("settings.providers.provider_setup_encryption_warning.title")
@@ -788,95 +772,6 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
       assert_includes response.body, I18n.t("settings.providers.drawer_trust_statement_encryption_unconfigured")
       refute_includes response.body, I18n.t("settings.providers.drawer_trust_statement")
     end
-  end
-
-  test "GET show includes Trade Republic in bank sync providers" do
-    get settings_providers_url
-
-    assert_response :success
-    assert_match(/Trade Republic/i, response.body)
-    assert_match(/Approve the login in your Trade Republic app/i, response.body)
-  end
-
-  test "GET connect_form renders Trade Republic panel" do
-    get connect_form_settings_providers_path(provider_key: "trade_republic")
-
-    assert_response :success
-    assert_match(/Trade Republic/i, response.body)
-    assert_match(I18n.t("settings.providers.trade_republic_panel.phone_number_label"), response.body)
-  end
-
-  test "GET connect_form for snaptrade shows OAuth setup instructions when instance is not configured" do
-    Provider::Snaptrade.stubs(:oauth_configured?).returns(false)
-
-    get connect_form_settings_providers_path(provider_key: "snaptrade")
-
-    assert_response :success
-    assert_includes response.body, I18n.t("providers.snaptrade.oauth_setup_step_3")
-    refute_includes response.body, I18n.t("providers.snaptrade.oauth_connect_button")
-    refute_includes response.body, I18n.t("providers.snaptrade.oauth_status_ready")
-  end
-
-  test "GET connect_form for snaptrade shows connect CTA when configured but item is not authorized" do
-    sign_in users(:empty)
-    Provider::Snaptrade.stubs(:oauth_configured?).returns(true)
-    Provider::Snaptrade.stubs(:authorization_code_configured?).returns(true)
-
-    get connect_form_settings_providers_path(provider_key: "snaptrade")
-
-    assert_response :success
-    assert_includes response.body, I18n.t("providers.snaptrade.oauth_connect_button")
-    assert_includes response.body, I18n.t("providers.snaptrade.oauth_status_ready")
-    # Both grants are available here, so the device code is offered alongside.
-    assert_includes response.body, I18n.t("providers.snaptrade.oauth_device_button")
-    refute_includes response.body, I18n.t("providers.snaptrade.oauth_status_authorized")
-    refute_includes response.body, I18n.t("providers.snaptrade.oauth_reauthorize_button")
-  end
-
-  test "GET connect_form for snaptrade offers only the device code without a confidential client" do
-    sign_in users(:empty)
-    Provider::Snaptrade.stubs(:oauth_configured?).returns(true)
-    Provider::Snaptrade.stubs(:authorization_code_configured?).returns(false)
-
-    get connect_form_settings_providers_path(provider_key: "snaptrade")
-
-    assert_response :success
-    assert_includes response.body, I18n.t("providers.snaptrade.oauth_device_button")
-    assert_includes response.body, I18n.t("providers.snaptrade.oauth_status_ready_device")
-    # The browser redirect needs a client secret this deployment does not have.
-    refute_includes response.body, I18n.t("providers.snaptrade.oauth_connect_button")
-  end
-
-  test "GET connect_form for snaptrade shows authorized status and reauthorize CTA when item is connected" do
-    # Default signed-in user (family_admin) belongs to dylan_family, which owns
-    # the oauth-authorized `configured_item` fixture.
-    Provider::Snaptrade.stubs(:oauth_configured?).returns(true)
-    Provider::Snaptrade.stubs(:authorization_code_configured?).returns(true)
-
-    get connect_form_settings_providers_path(provider_key: "snaptrade")
-
-    assert_response :success
-    assert_includes response.body, I18n.t("providers.snaptrade.oauth_status_authorized")
-    assert_includes response.body, I18n.t("providers.snaptrade.oauth_reauthorize_button")
-    assert_includes response.body, I18n.t("providers.snaptrade.manage_connections")
-    refute_includes response.body, I18n.t("providers.snaptrade.oauth_connect_button")
-  end
-
-  test "POST sync for ibkr without an active Ibkr sync enqueues SyncJob" do
-    # Keep the fixture sync on yesterday to cover runs that cross midnight.
-    families(:dylan_family).syncs.update_all(created_at: 1.day.ago)
-    item = ibkr_items(:configured_item)
-    Sync.where(syncable_type: "IbkrItem", syncable_id: item.id).delete_all
-
-    assert_enqueued_jobs 1, only: SyncJob do
-      post sync_provider_settings_providers_path(provider_key: "ibkr")
-    end
-
-    assert_redirected_to settings_providers_path
-
-    follow_redirect!
-    assert_response :success
-    assert_match(/Sync started/i, response.body)
   end
 
   test "non-admin users cannot update providers" do

@@ -138,9 +138,10 @@ class AccountableSparklinesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "linked investment sparkline does not load full account records" do
+    simplefin_item = accounts(:investment).family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
     AccountProvider.create!(
       account: accounts(:investment),
-      provider: snaptrade_accounts(:fidelity_401k)
+      provider: simplefin_item.simplefin_accounts.create!(name: "401k", currency: "USD", account_type: "investment", current_balance: 0)
     )
 
     Rails.cache.clear

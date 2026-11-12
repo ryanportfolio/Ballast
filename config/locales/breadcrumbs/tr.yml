@@ -30,10 +30,8 @@ tr:
     holdings: Varlıklar
     home: Ana Sayfa
     hostings: Kendi Barındırma
-    ibkr_items: Interactive Brokers
     impersonation_sessions: Taklit Oturumları
     imports: İçe Aktarmalar
-    indexa_capital_items: Indexa Capital
     intro: Giriş
     investments: Yatırımlar
     invitations: Davetler
@@ -66,7 +64,6 @@ tr:
     self_hosting: Kendi Barındırma
     sessions: Giriş yap
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Bölme
     tags: Etiketler

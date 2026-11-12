@@ -32,10 +32,8 @@ pt-PT:
     holdings: Posições
     home: Início
     hostings: Self-Hosting
-    ibkr_items: Interactive Brokers
     impersonation_sessions: Representações
     imports: Importações
-    indexa_capital_items: Indexa Capital
     intro: Introdução
     investments: Investimentos
     invitations: Convites
@@ -70,7 +68,6 @@ pt-PT:
     self_hosting: Self-Hosting
     sessions: Iniciar sessão
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Divisão
     tags: Etiquetas

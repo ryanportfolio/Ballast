@@ -214,13 +214,7 @@ class Settings::ProvidersController < ApplicationController
       { key: "wise",           title: "Wise",            turbo_id: "wise",           partial: "wise_panel" },
       { key: "mercury",        title: "Mercury",         turbo_id: "mercury",        partial: "mercury_panel" },
       { key: "brex",           title: "Brex",            turbo_id: "brex",           partial: "brex_panel" },
-      { key: "snaptrade",      title: "SnapTrade",       turbo_id: "snaptrade",      partial: "snaptrade_panel", auto_open: "manage" },
-      { key: "ibkr",           title: "Interactive Brokers", turbo_id: "ibkr",      partial: "ibkr_panel" },
-      { key: "trading212",     title: "Trading 212",     turbo_id: "trading212", partial: "trading212_panel" },
-      { key: "trade_republic", title: "Trade Republic",  turbo_id: "trade-republic", partial: "trade_republic_panel" },
-      { key: "indexa_capital", title: "Indexa Capital",  turbo_id: "indexa_capital", partial: "indexa_capital_panel" },
-      { key: "sophtron",       title: "Sophtron",        turbo_id: "sophtron",       partial: "sophtron_panel" },
-      { key: "questrade",      title: "Questrade",       turbo_id: "questrade",      partial: "questrade_panel" }
+      { key: "sophtron",       title: "Sophtron",        turbo_id: "sophtron",       partial: "sophtron_panel" }
     ].freeze
 
     FAMILY_PANEL_KEYS = FAMILY_PANELS.map { |p| p[:key] }.freeze
@@ -239,12 +233,6 @@ class Settings::ProvidersController < ApplicationController
       "wise"           => "WiseItem",
       "mercury"        => "MercuryItem",
       "brex"           => "BrexItem",
-      "snaptrade"      => "SnaptradeItem",
-      "questrade"      => "QuestradeItem",
-      "ibkr"           => "IbkrItem",
-      "trading212"     => "Trading212Item",
-      "trade_republic" => "TradeRepublicItem",
-      "indexa_capital" => "IndexaCapitalItem",
       "sophtron"       => "SophtronItem"
     }.freeze
 
@@ -272,20 +260,8 @@ class Settings::ProvidersController < ApplicationController
         @mercury_items = Current.family.mercury_items.active.ordered.includes(:syncs, :mercury_accounts)
       when "brex"
         @brex_items = Current.family.brex_items.active.ordered.includes(:syncs, :brex_accounts)
-      when "snaptrade"
-        @snaptrade_items = Current.family.snaptrade_items.includes(:snaptrade_accounts).ordered
-      when "ibkr"
-        @ibkr_items = Current.family.ibkr_items.ordered
-      when "trading212"
-        @trading212_items = Current.family.trading212_items.ordered
-      when "trade_republic"
-        @trade_republic_items = Current.family.trade_republic_items.active.ordered.includes(:trade_republic_accounts)
-      when "indexa_capital"
-        @indexa_capital_items = Current.family.indexa_capital_items.ordered
       when "sophtron"
         @sophtron_items = Current.family.sophtron_items.ordered
-      when "questrade"
-        @questrade_items = Current.family.questrade_items.active.ordered
       end
     end
 
@@ -312,12 +288,6 @@ class Settings::ProvidersController < ApplicationController
       @wise_items = Current.family.wise_items.active.ordered
       @mercury_items = Current.family.mercury_items.active.ordered
       @brex_items = Current.family.brex_items.active.ordered
-      @snaptrade_items = Current.family.snaptrade_items.ordered
-      @ibkr_items = Current.family.ibkr_items.ordered.select(:id)
-      @trading212_items = Current.family.trading212_items.ordered
-      @trade_republic_items = Current.family.trade_republic_items.active.ordered.includes(:trade_republic_accounts)
-      @indexa_capital_items = Current.family.indexa_capital_items.ordered.select(:id)
-      @questrade_items = Current.family.questrade_items.active.ordered.select(:id)
       @fio_items = Current.family.fio_items.active.ordered
 
       # Wallet uploads are managed on iOS. Only expose linked accounts the
@@ -357,12 +327,6 @@ class Settings::ProvidersController < ApplicationController
         "wise"           => @wise_items,
         "mercury"        => @mercury_items,
         "brex"           => @brex_items,
-        "snaptrade"      => @snaptrade_items,
-        "questrade"      => @questrade_items,
-        "ibkr"           => @ibkr_items,
-        "trading212"     => @trading212_items,
-        "trade_republic" => @trade_republic_items,
-        "indexa_capital" => @indexa_capital_items,
         "sophtron"       => @sophtron_items
       }
     end

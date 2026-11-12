@@ -175,7 +175,7 @@ class Holding::PortfolioCache
         # market price on that date in the ForwardCalculator, producing a
         # zero-amount holding.  Use qty (the same heuristic as
         # Balance::BaseCalculator) rather than price to avoid blocking
-        # non-income zero-price trades such as Questrade journal transfers.
+        # non-income zero-price trades such as broker journal transfers.
         trade_prices = (trades_by_security_id[security.id] || [])
           .reject { |t| t.entryable.qty == 0 }
           .map do |trade|

@@ -182,7 +182,7 @@ class Account::ChartableTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -247,7 +247,7 @@ class Account::ChartableTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -289,7 +289,7 @@ class Account::ChartableTest < ActiveSupport::TestCase
       date: trade_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -332,7 +332,7 @@ class Account::ChartableTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -375,7 +375,7 @@ class Account::ChartableTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -420,7 +420,7 @@ class Account::ChartableTest < ActiveSupport::TestCase
       date: early_trade_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 

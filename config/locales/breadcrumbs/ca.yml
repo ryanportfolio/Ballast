@@ -30,10 +30,8 @@ ca:
     holdings: Posicions
     home: Inici
     hostings: Self hosting
-    ibkr_items: Interactive Brokers
     impersonation_sessions: Suplantacions
     imports: Importacions
-    indexa_capital_items: Indexa Capital
     intro: Introducció
     investments: Inversions
     invitations: Invitacions
@@ -65,7 +63,6 @@ ca:
     self_hosting: Self hosting
     sessions: Inici de sessió
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Divisió
     tags: Etiquetes

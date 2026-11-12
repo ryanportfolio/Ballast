@@ -9,7 +9,7 @@
     }
   ) %>
   <%= render DS::SegmentedControl.new(aria_label: t("settings.providers.search_filters.aria_label")) do |sc| %>
-    <% %w[all bank crypto investment].each do |kind| %>
+    <% %w[all bank investment].each do |kind| %>
       <% sc.with_segment(t("settings.providers.search_filters.chips.#{kind}"),
            active: kind == "all",
            data: {

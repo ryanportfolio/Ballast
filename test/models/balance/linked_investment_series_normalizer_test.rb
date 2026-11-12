@@ -56,7 +56,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       name: "Trade",
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
     manual_account.set_opening_anchor_balance(balance: 50, date: manual_anchor_date)
@@ -97,7 +97,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       name: "Early Trade",
       amount: 50,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -106,7 +106,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       name: "Reconciliation Valuation",
       amount: 500,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Valuation.new(kind: "reconciliation")
     )
 
@@ -159,7 +159,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -205,7 +205,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -249,7 +249,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: first_activity_date,
       amount: 4703_99,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -293,7 +293,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -361,7 +361,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: two_years_ago,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -404,7 +404,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -446,7 +446,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: opening_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -490,7 +490,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: early_trade_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 
@@ -533,7 +533,7 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       date: anchor_date,
       amount: 100,
       currency: "USD",
-      source: "snaptrade",
+      source: "simplefin",
       entryable: Transaction.new
     )
 

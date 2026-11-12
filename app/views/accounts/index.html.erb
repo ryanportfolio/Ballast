@@ -10,7 +10,7 @@
   ) %>
 <% end %>
 
-<% if @manual_accounts.empty? && @financekit_accounts.empty? && @plaid_items.empty? && @simplefin_items.empty? && @lunchflow_items.empty? && @redbark_items.empty? && @akahu_items.empty? && @up_items.empty? && @monobank_items.empty? && @fio_items.empty? && @enable_banking_items.empty? && @mercury_items.empty? && @brex_items.empty? && @ibkr_items.empty? && @snaptrade_items.empty? && @indexa_capital_items.empty? && @sophtron_items.empty? && @questrade_items.empty? && @wise_items.empty? && @trade_republic_items.empty? && @trading212_items.empty? %>
+<% if @manual_accounts.empty? && @financekit_accounts.empty? && @plaid_items.empty? && @simplefin_items.empty? && @lunchflow_items.empty? && @redbark_items.empty? && @akahu_items.empty? && @up_items.empty? && @monobank_items.empty? && @fio_items.empty? && @enable_banking_items.empty? && @mercury_items.empty? && @brex_items.empty? && @sophtron_items.empty? && @wise_items.empty? %>
   <%= render "empty" %>
 <% else %>
   <div class="space-y-2">
@@ -84,44 +84,8 @@
       <% end %>
     <% end %>
 
-    <% if @trading212_items.any? %>
-      <% @trading212_items.each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
     <% if @wise_items.any? %>
       <% @wise_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @trade_republic_items.any? %>
-      <% @trade_republic_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @snaptrade_items.any? %>
-      <% @snaptrade_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @ibkr_items.any? %>
-      <% @ibkr_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @indexa_capital_items.any? %>
-      <% @indexa_capital_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @questrade_items.any? %>
-      <% @questrade_items.sort_by(&:created_at).each do |item| %>
         <%= render item, visible_accounts: visible_card_accounts(item) %>
       <% end %>
     <% end %>

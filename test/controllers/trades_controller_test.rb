@@ -9,7 +9,7 @@ class TradesControllerTest < ActionDispatch::IntegrationTest
   end
 
   # The header used to read the amount's sign and call every trade a buy or a
-  # sell, so an inbound transfer — Questrade journals one, and so do the
+  # sell, so an inbound transfer — brokers journal one, and so do
   # self-custody wallets — was shown as a purchase it never was.
   test "the header calls a labelled trade what it is, not a buy or a sell" do
     @entry.trade.update!(investment_activity_label: "Transfer")

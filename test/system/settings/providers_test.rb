@@ -147,9 +147,6 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
 
   test "connected providers are grouped under Your connections in alphabetical title order" do
     SimplefinItem.create!(family: @family, name: "Test SimpleFIN", access_url: "https://bridge.simplefin.org/simplefin/access")
-    # A connection that needs attention is listed first, so keep the Trade
-    # Republic one logged in and let only the alphabetical order count.
-    trade_republic_items(:requires_update_item).update!(status: :good)
 
     visit settings_providers_path
 
@@ -322,21 +319,6 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
 
     details = find("details", text: /Enable Banking/)
     assert_includes details[:class], "border-warning/25"
-  end
-
-  test "Manage Connections in the SnapTrade menu opens the connections list" do
-    Provider::Snaptrade.stubs(:oauth_configured?).returns(true)
-    Provider::Snaptrade.any_instance.stubs(:list_connections)
-      .returns([ { "id" => "auth_456", "brokerage" => { "name" => "Fidelity Investments" } } ])
-
-    visit accounts_path
-    within "##{dom_id(snaptrade_items(:configured_item))}" do
-      find("button[aria-haspopup='menu']", match: :first).click
-      click_link "Manage Connections"
-    end
-
-    assert_selector "details[open] #snaptrade-providers-panel details[open]", text: "Fidelity Investments"
-    assert_current_path settings_providers_path
   end
 
   private

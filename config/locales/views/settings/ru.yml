@@ -330,77 +330,6 @@ ru:
         connected: подключено
         last_synced: Последняя синхронизация %{time} назад
         needs_attention: требует внимания
-      ibkr_panel:
-        accounts_tab: Счета
-        configuration:
-          all_other_options: 'Все остальные параметры конфигурации: "Нет"'
-          date_format: 'Формат даты: yyyy-MM-dd'
-          date_time_separator: 'Разделитель даты/времени: ; (точка с запятой)'
-          format: 'Формат: XML'
-          models: 'Модели: Необязательно'
-          period: 'Период: Последние 365 календарных дней'
-          profit_and_loss: 'Прибыль и убытки: По умолчанию'
-          time_format: 'Формат времени: HH:mm:ss'
-        disconnect_confirm: Отключить Interactive Brokers?
-        flex_query_details:
-          configuration_heading: Установите эти параметры запроса
-          eyebrow: Flex Query
-          sections_heading: Включите эти разделы и поля
-          summary: Разверните, чтобы увидеть точные разделы, поля и настройки, которые
-            должен включать ваш запрос активности IBKR Flex.
-          title: Разделы, поля и конфигурация
-        not_configured: Не настроено.
-        query_id_label: Query ID
-        query_id_placeholder_existing: Оставьте пустым, чтобы сохранить текущий ID
-          запроса
-        query_id_placeholder_new: Введите ваш ID запроса IBKR Flex
-        report_window_note: Отчёты IBKR Flex ограничены окном запроса, которое вы
-          настроили в IBKR. Sure импортирует полные текущие активы плюс до последних
-          365 дней активности из этого отчёта.
-        save_configuration: Сохранить конфигурацию
-        sections:
-          account_information: 'Информация о счёте: ID счёта, Валюта'
-          cash_report: 'Отчёт о наличных:'
-          cash_report_fields: 'Поля: Валюта, Конечный остаток наличных'
-          cash_report_options: 'Опции: Нет'
-          cash_transactions: 'Операции с наличными:'
-          cash_transactions_fields: 'Поля: Сумма, Conid, Валюта, Курс к базовой валюте,
-            Дата отчёта, ID операции, Тип'
-          cash_transactions_options: 'Опции: Дивиденды, Депозиты и снятия, Детали'
-          change_in_position_value_summary: 'Изменение стоимости позиции: Валюта,
-            Стоимость на конец периода'
-          net_asset_value: 'Чистая стоимость активов (NAV) в базовой валюте:'
-          net_asset_value_fields: 'Поля: Валюта, Дата отчёта, Всего'
-          net_asset_value_options: 'Опции: Нет'
-          open_positions: 'Открытые позиции:'
-          open_positions_fields: 'Поля: Класс активов, Conid, Цена по себестоимости,
-            Валюта, Курс к базовой валюте, Рыночная цена, Количество, Дата отчёта,
-            ID ценной бумаги, Тип ID ценной бумаги, Сторона, Символ'
-          open_positions_options: 'Опции: Сводка'
-          trades: 'Сделки:'
-          trades_fields: 'Поля: Класс активов, Покупка/Продажа, Conid, Валюта, Курс
-            к базовой валюте, Комиссия IB, Валюта комиссии IB, Количество, Символ,
-            Дата сделки, ID сделки, Цена сделки, ID операции'
-          trades_options: 'Опции: Исполнение'
-        status_configured_prefix: "%{summary}. Перейдите на"
-        status_configured_suffix: вкладку, чтобы управлять обнаруженными счетами.
-        steps:
-          step_1: В вашем клиентском портале IBKR перейдите в "Performance & Reports"
-            > "Flex Queries".
-          step_2: Нажмите на значок "+" в разделе "Activity Flex Query", чтобы создать
-            новый запрос.
-          step_3: Назовите ваш запрос (например, "Sure Sync"), затем просмотрите детали
-            Flex Query ниже и включите перечисленные разделы, поля и параметры конфигурации.
-          step_4: Сохраните запрос, запомните ваш "Query ID", затем используйте значок
-            шестерёнки в разделе "Flex Web Service Configuration", чтобы сгенерировать
-            токен доступа.
-          step_5: Вставьте ваш Query ID и токен ниже, сохраните конфигурацию, затем
-            перейдите в Счета, чтобы связать обнаруженные счета IBKR.
-        sync: Синхронизировать
-        token_label: Токен
-        token_placeholder_existing: Оставьте пустым, чтобы сохранить текущий токен
-        token_placeholder_new: Введите ваш токен веб-сервиса IBKR Flex
-        update_configuration: Обновить конфигурацию
       lunchflow_panel:
         api_key_label: API-ключ
         api_key_placeholder_new: Вставьте API-ключ здесь
@@ -424,8 +353,6 @@ ru:
           one: Повторное согласие требуется через %{count} день
           other: Повторное согласие требуется через %{count} дня
         reconsent_required: Требуется повторное согласие
-        login_required: "Требуется вход"
-        login_expires_soon: "Вход истекает через %{time} (%{at})"
         sync_error: Ошибка синхронизации
       not_authorized: Не авторизован
       not_found: Провайдер не найден.
@@ -444,7 +371,6 @@ ru:
         chips:
           all: Все
           bank: Банки
-          crypto: Крипто
           investment: Инвестиции
         placeholder: Поиск провайдеров
       setup_steps:
@@ -474,10 +400,6 @@ ru:
           только для чтения.
         enable_banking: Синхронизируйте европейские банковские счета через открытый
           банкинг PSD2.
-        ibkr: Синхронизируйте инвестиционные счета Interactive Brokers через Flex
-          Query импорт.
-        indexa_capital: Отслеживайте ваш автоматизированный инвестиционный портфель
-          Indexa Capital.
         lunchflow: Подключите более 20 000 банков из более чем 40 стран (Великобритания,
           ЕС, США и другие!)
         mercury: Синхронизируйте ваши бизнес-счета Mercury автоматически.
@@ -485,15 +407,11 @@ ru:
         plaid_eu: Подключите европейские финансовые учреждения через Plaid (PSD2 /
           Open Banking).
         simplefin: Подключите банковские счета США через открытый протокол SimpleFIN.
-        snaptrade: Подключите брокерские счета через сеть агрегации SnapTrade.
         sophtron: Подключите банки и коммунальные услуги США и Канады.
         redbark: Синхронизируйте австралийские банковские счета через открытый банкинг Redbark.
         monobank: Синхронизируйте карты и «банки» Monobank из Украины с помощью персонального API-токена.
         fio: Синхронизируйте счёт Fio banka с помощью API-токена только для чтения.
         wise: Автоматически синхронизируйте мультивалютные балансы Wise и международные переводы.
-        trading212: Синхронизируйте инвестиционный портфель Trading 212 с помощью API-ключа только для чтения.
-        trade_republic: Синхронизируйте инвестиционный счёт Trade Republic через защищённый веб-вход только для чтения.
-        questrade: Синхронизируйте инвестиционные счета Questrade напрямую через Questrade API.
       up_panel:
         step_1_html: Перейдите по ссылке %{link} и создайте персональный токен доступа.
         step_2: Скопируйте персональный токен доступа.
@@ -513,95 +431,6 @@ ru:
         step_1_html: Войдите в интернет-банк %{link} и откройте Настройки → API.
         step_2: Создайте токен с доступом только для чтения («Sledování účtu»). Для этого требуется строгая авторизация; токен действует до 180 дней.
         step_3: Вставьте токен ниже и сохраните. Один токен даёт доступ к одному счёту, поэтому добавьте отдельное подключение для каждого счёта Fio.
-      trade_republic_panel:
-        encryption_warning:
-          title: Шифрование не настроено
-          message: Учётные данные и данные сессии Trade Republic нельзя хранить безопасно, пока не настроено шифрование Active Record.
-        steps:
-          step_1: Введите номер телефона и PIN-код или пароль, которые вы используете в приложении Trade Republic, затем сохраните.
-          step_2: Введите код из приложения-аутентификатора, когда он будет запрошен.
-          step_3: Подтвердите вход в приложении Trade Republic, когда появится запрос.
-        phone_number_label: Номер телефона
-        phone_number_placeholder_new: +49 170 1234567
-        phone_number_placeholder_existing: Оставьте пустым, чтобы сохранить текущий номер телефона
-        pin_label: PIN-код или пароль
-        pin_placeholder_new: PIN-код или пароль приложения Trade Republic
-        pin_placeholder_existing: Оставьте пустым, чтобы сохранить текущий PIN-код или пароль
-        currency_label: Валюта счёта
-        connect: Войти
-        confirm_login: Проверить вход
-        complete_login: Продолжить
-        authenticator_code_label: Код аутентификатора (если запрошен)
-        authenticator_code_placeholder: 6-значный код
-        push_login_notice: Подтвердите вход в приложении Trade Republic. Sure проверяет статус автоматически в фоновом режиме. Вы также можете проверить его сами.
-        check_login_status: Проверить статус сейчас
-        authenticator_code_notice: Введите код из приложения-аутентификатора.
-        approval_pending: Вход начат. Подтвердите его в приложении Trade Republic; Sure проверяет статус автоматически.
-        awaiting_confirmation: Ожидается подтверждение в приложении Trade Republic.
-        awaiting_authenticator_code: Требуется код аутентификатора.
-        login_expired: Срок действия запроса на подтверждение истёк.
-        restart_login: Начать вход заново
-        connection_success:
-          title: Trade Republic успешно подключён
-          message: Подключение Trade Republic готово.
-          description: Sure синхронизирует ваши данные Trade Republic в фоновом режиме.
-          close: Готово
-        qr_login: Войти по QR-коду
-        qr_cancel: Отменить вход по QR-коду
-        qr_back_to_credentials: Вернуться к номеру телефона и PIN-коду или паролю
-        qr_loading: Подготовка QR-кода…
-        qr_instruction: Отсканируйте QR-код камерой телефона, затем подтвердите вход в приложении Trade Republic.
-        qr_success: Вход подтверждён. Sure обновляет страницу провайдера.
-        qr_error: Не удалось начать вход по QR-коду. Пожалуйста, попробуйте снова.
-        requires_update: "Войдите снова, чтобы возобновить синхронизацию."
-        session_expires_in: "Вход истекает через %{time} (%{at})."
-        add_account: "Добавить ещё одно подключение"
-        save_configuration: Сохранить и войти
-        update_configuration: Обновить конфигурацию
-        sync: Синхронизировать
-        syncing: "Синхронизация..."
-        disconnect: Отключить Trade Republic
-        disconnect_confirm: Отключить Trade Republic? Ваши синхронизированные счета станут ручными.
-        disconnect_confirm_with_identifier: "Отключить подключение Trade Republic, оканчивающееся на %{last4}? Ваши синхронизированные счета станут ручными."
-        identifier_phone: Телефон
-        identifier_account: Счёт
-        status_configured_prefix: Подключено. Перейдите на
-        accounts_tab: Счета
-        setup_accounts: Настроить счета
-        accounts_discovered:
-          one: Обнаружен %{count} счёт Trade Republic.
-          few: Обнаружено %{count} счёта Trade Republic.
-          many: Обнаружено %{count} счетов Trade Republic.
-          other: Обнаружено %{count} счёта Trade Republic.
-        status_configured_suffix: вкладку, чтобы управлять обнаруженными счетами.
-        not_configured: Не настроено.
-      trading212_panel:
-        steps:
-          step_1: Откройте Trading 212 → Settings → API (в веб-версии или мобильном приложении).
-          step_2: Сгенерируйте новый API-ключ — Trading 212 покажет API ID и Secret Key.
-          step_3: Вставьте оба значения ниже, выберите среду и валюту счёта, затем сохраните.
-        api_key_label: API ID
-        api_key_placeholder_new: Вставьте ваш API ID Trading 212
-        api_key_placeholder_existing: Оставьте пустым, чтобы сохранить текущий API ID
-        api_secret_label: Secret Key
-        api_secret_placeholder_new: Вставьте ваш Secret Key Trading 212
-        api_secret_placeholder_existing: Оставьте пустым, чтобы сохранить текущий Secret Key
-        environment_label: Среда
-        environment_live: Реальный счёт
-        environment_demo: Демо-счёт
-        currency_label: Валюта счёта
-        save_configuration: Сохранить конфигурацию
-        update_configuration: Обновить конфигурацию
-        sync: Синхронизировать
-        syncing: Синхронизация...
-        disconnect: Отключить счёт Trading 212
-        disconnect_confirm: Отключить Trading 212?
-        default_account_name: Счёт Trading 212
-        add_account: Добавить ещё один счёт
-        status_configured_prefix: Настроено. Перейдите на
-        accounts_tab: Счета
-        status_configured_suffix: вкладку, чтобы управлять обнаруженными счетами.
-        not_configured: Не настроено.
     securities:
       show:
         encryption_warning:

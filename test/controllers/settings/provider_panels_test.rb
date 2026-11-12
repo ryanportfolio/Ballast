@@ -27,17 +27,6 @@ class Settings::ProviderPanelsTest < ActionDispatch::IntegrationTest
     assert_error_alert "redbark-providers-panel"
   end
 
-  test "provider warnings are titled alerts" do
-    TradeRepublicItem.stubs(:encryption_ready?).returns(false)
-
-    { "trade_republic" => "settings.providers.trade_republic_panel.encryption_warning.title" }.each do |provider_key, title_key|
-      get connect_form_settings_providers_path(provider_key: provider_key)
-
-      assert_response :success
-      assert_select "turbo-frame##{provider_key}-connect-form p", { text: titled_alert(:warning, title_key) }, provider_key
-    end
-  end
-
   test "sync and disconnect actions are named DS buttons" do
     family = families(:dylan_family)
     EnableBankingItem.create!(family: family, name: "Live", country_code: "FI", application_id: "app",
@@ -61,10 +50,6 @@ class Settings::ProviderPanelsTest < ActionDispatch::IntegrationTest
 
   private
     # DS::Alert prefixes its text with the variant for screen readers ("Error: …").
-    def titled_alert(variant, title_key)
-      /#{I18n.t("ds.alert.variants.#{variant}")}:\s*#{Regexp.escape(I18n.t(title_key))}/
-    end
-
     def assert_error_alert(target)
       assert_response :unprocessable_entity
       assert_select "turbo-stream[target=#{target}] template p", text: /\A\s*#{I18n.t("ds.alert.variants.error")}:\s+\S/

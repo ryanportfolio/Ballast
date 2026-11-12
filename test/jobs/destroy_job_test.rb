@@ -79,12 +79,13 @@ class DestroyJobTest < ActiveJob::TestCase
     DestroyJob.perform_now(item)
   end
 
-  # QuestradeItem only requires a refresh token while not scheduled for
-  # deletion, so a reset that re-ran validations would raise RecordInvalid out
-  # of the rescue and leave the job retrying with the flag still set.
-  test "resets the flag without re-running validations that depend on it" do
-    item = questrade_items(:one)
-    item.update_columns(scheduled_for_deletion: true, refresh_token: nil)
+  # A reset that re-ran validations would raise RecordInvalid out of the rescue
+  # for an item that no longer validates, and leave the job retrying with the
+  # flag still set.
+  test "resets the flag without re-running validations" do
+    item = plaid_items(:one)
+    item.update_column(:scheduled_for_deletion, true)
+    item.stubs(:valid?).returns(false)
     item.stubs(:destroy).raises(StandardError, "destroy failed")
 
     assert_nothing_raised { DestroyJob.perform_now(item) }

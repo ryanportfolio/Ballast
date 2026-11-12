@@ -29,10 +29,8 @@ uk:
     holdings: Портфель
     home: Головна
     hostings: Self-Hosting
-    ibkr_items: Interactive Brokers
     impersonation_sessions: Імперсонація
     imports: Імпорт
-    indexa_capital_items: Indexa Capital
     intro: Вступ
     investments: Інвестиції
     invitations: Запрошення
@@ -56,7 +54,6 @@ uk:
     profiles: Профіль
     properties: Нерухомість
     providers: Постачальники
-    questrade_items: Questrade
     recurring_transactions: Повторювані
     registrations: Реєстрація
     reports: Звіти
@@ -66,7 +63,6 @@ uk:
     self_hosting: Self-Hosting
     sessions: Вхід
     simplefin_items: SimpleFIN
-    snaptrade_items: SnapTrade
     sophtron_items: Sophtron
     splits: Розділення
     tags: Теги

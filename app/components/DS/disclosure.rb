@@ -16,8 +16,8 @@ class DS::Disclosure < DesignSystemComponent
   #
   # `:card_inset` — `<details>` is `bg-surface-inset rounded-xl` (no
   # shadow). Use for inset sub-panels inside a parent card surface
-  # (e.g. the IBKR flex-query "report details" panel embedded inside
-  # the IBKR settings flow). Same summary contract as `:card`.
+  # (e.g. a "report details" panel embedded inside a provider settings
+  # flow). Same summary contract as `:card`.
   #
   # `:inline` — no surface, no padding, no shadow. The disclosure reads
   # as a plain text-link-style toggle (e.g. "Alternative auth" inside

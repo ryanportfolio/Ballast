@@ -43,15 +43,11 @@ class Family::FinancialDataReset
     financekit_items
     brex_items
     enable_banking_items
-    ibkr_items
-    indexa_capital_items
-    questrade_items
     lunchflow_items
     redbark_items
     mercury_items
     plaid_items
     simplefin_items
-    snaptrade_items
     sophtron_items
     up_items
     monobank_items

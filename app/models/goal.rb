@@ -945,8 +945,8 @@ class Goal < ApplicationRecord
   end
 
   # True when any linked account is wired to a live sync provider (Plaid,
-  # SimpleFIN, or any AccountProvider. Brex, Enable Banking, IBKR,
-  # SnapTrade, Lunchflow). Drives the pledge-create copy: connected accounts
+  # SimpleFIN, or any AccountProvider. Brex, Enable Banking,
+  # Lunchflow). Drives the pledge-create copy: connected accounts
   # get the "I just transferred…" path; manual-only accounts get "I just
   # saved…" so users aren't told to wait for a sync that won't happen.
   def any_connected_account?

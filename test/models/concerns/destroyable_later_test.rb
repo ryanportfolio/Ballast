@@ -87,17 +87,16 @@ class DestroyableLaterTest < ActiveSupport::TestCase
     assert item.reload.scheduled_for_deletion?
   end
 
-  # QuestradeItem only requires a refresh token while not scheduled for
-  # deletion, so a restore that re-ran validations would raise RecordInvalid
-  # here, masking the enqueue error and leaving the flag set.
-  test "restores the flag without re-running validations that depend on it" do
-    item = questrade_items(:one)
-    item.update_column(:refresh_token, nil)
+  # A restore that re-ran validations would raise RecordInvalid here for an
+  # item that no longer validates, masking the enqueue error and leaving the
+  # flag set.
+  test "restores the flag without re-running validations" do
+    @item.stubs(:valid?).returns(false)
     DestroyJob.queue_adapter.stubs(:enqueue).raises(RedisClient::CannotConnectError, "Connection refused")
 
-    assert_raises(RedisClient::CannotConnectError) { item.destroy_later }
+    assert_raises(RedisClient::CannotConnectError) { @item.destroy_later }
 
-    assert_not item.reload.scheduled_for_deletion?
+    assert_not @item.reload.scheduled_for_deletion?
   end
 
   # Every table with the flag gets its destroy_later from here, so a new provider
@@ -105,6 +104,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
   # Tables Ballast keeps after deleting the provider code that used them.
   REMOVED_PROVIDER_TABLES = %w[
     binance_items coinbase_items coinspot_items coinstats_items kraken_items onchain_wallet_items
+    ibkr_items indexa_capital_items questrade_items snaptrade_items trade_republic_items trading212_items
   ].freeze
 
   test "every model with a scheduled_for_deletion column uses the concern" do
@@ -113,7 +113,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
       .select { |table| connection.column_exists?(table, :scheduled_for_deletion) }
       .map { |table| table.classify.constantize }
 
-    assert_operator models.size, :>=, 19
+    assert_operator models.size, :>=, 13
 
     models.each do |model|
       assert_equal DestroyableLater, model.instance_method(:destroy_later).owner,

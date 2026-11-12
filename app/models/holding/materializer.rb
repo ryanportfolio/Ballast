@@ -231,7 +231,7 @@ class Holding::Materializer
     # reports keep showing trend data.
     #
     # Provider and calculated rows can be denominated in different currencies
-    # (e.g., IBKR reports USD holdings while the reverse calculator converts to
+    # (e.g., a broker reports USD holdings while the reverse calculator converts to
     # the account's base currency). When they differ, the cost_basis is converted
     # at the snapshot date — the same convention ReverseCalculator uses for trade
     # prices — so the result is consistent with trade-derived cost_basis values.
