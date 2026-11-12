@@ -50,8 +50,8 @@ class SimplefinPendingRestoreTest < ActiveSupport::TestCase
     assert entry.reload.excluded
   end
 
-  test "leaves entries flagged pending by other providers alone" do
-    entry = excluded_entry("enable_banking" => { "pending" => true })
+  test "leaves entries flagged pending by a provider outside the pending list alone" do
+    entry = excluded_entry("other_provider" => { "pending" => true })
 
     restore
 

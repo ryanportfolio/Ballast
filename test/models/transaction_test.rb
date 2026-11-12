@@ -21,18 +21,6 @@ class TransactionTest < ActiveSupport::TestCase
     assert_not transaction.pending?
   end
 
-  test "pending? returns true for enable_banking pending transactions" do
-    transaction = Transaction.new(extra: { "enable_banking" => { "pending" => true } })
-
-    assert transaction.pending?
-  end
-
-  test "pending? returns false for enable_banking non-pending transactions" do
-    transaction = Transaction.new(extra: { "enable_banking" => { "pending" => false } })
-
-    assert_not transaction.pending?
-  end
-
   # The SQL forms of "is this pending?" must give the answer pending? gives for
   # whatever is stored. PostgreSQL's ::boolean reads "no", "False", "Off" and
   # " false" as false where ActiveModel::Type::Boolean reads them as true.

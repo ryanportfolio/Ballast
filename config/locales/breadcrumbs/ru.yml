@@ -10,7 +10,6 @@ ru:
     appearance: Внешний вид
     appearances: Внешний вид
     bank_sync: Синхронизация с банком
-    brex_items: Brex
     budget_categories: Категории бюджета
     budgets: Бюджеты
     categories: Категории
@@ -22,7 +21,6 @@ ru:
     debug: Отладка
     debugs: Отладка
     depositories: Денежные счета
-    enable_banking_items: Enable Banking
     exports: Экспорт
     family_exports: Экспорт
     family_merchants: Продавцы
@@ -41,7 +39,6 @@ ru:
     loans: Кредиты
     mcp: MCP Сервер
     merchants: Продавцы
-    mercury_items: Mercury
     messages: Сообщения
     mfa: Двухфакторная аутентификация
     onboardings: Онбординг

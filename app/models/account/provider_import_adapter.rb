@@ -64,7 +64,7 @@ class Account::ProviderImportAdapter
         if skip_reason
           # Pending→booked bypass for user_modified entries: clear the stale pending flag
           # when the provider delivers a booked version of the same transaction.
-          # Some ASPSPs (e.g. Revolut Italy via Enable Banking) reuse the same transaction_id
+          # Some providers' banks reuse the same transaction_id
           # for pending and booked, so the entry is found by external_id rather than going
           # through the auto-claim path. Without this, a user who categorised a pending entry
           # (setting user_modified=true) would see the pending badge stuck forever.
@@ -86,7 +86,7 @@ class Account::ProviderImportAdapter
           # Only the declared namespaces, never the whole payload. `extra` is not
           # uniformly provider-owned: Transaction#exchange_rate reads and writes
           # extra["exchange_rate"] at the top level, it is user-editable through the
-          # transaction form, and WiseEntry::Processor supplies one too — so merging
+          # transaction form, and a provider may supply one too — so merging
           # the whole hash here would overwrite a rate the user typed and silently
           # change how their balance converts. replace_extra_namespaces defaults to
           # empty, so a provider that has not opted in changes nothing on this path.

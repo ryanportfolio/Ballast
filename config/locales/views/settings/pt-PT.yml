@@ -363,10 +363,6 @@ pt-PT:
       meta:
         sync_error: Erro de sincronização
         no_recent_sync: Sincronização em atraso
-        reconsent_required: Necessário novo consentimento
-        reconsent_needed:
-          one: Necessário novo consentimento em 1 dia
-          other: Necessário novo consentimento em %{count} dias
         last_synced: Sincronizado há %{time}
       sync_all: Sincronizar tudo
       sync_all_in_progress: A sincronizar todos os serviços ligados…
@@ -376,10 +372,6 @@ pt-PT:
       recently_synced: Sincronizado recentemente. Tente novamente daqui a um momento.
       taglines:
         simplefin: Ligue contas bancárias dos EUA através do protocolo aberto SimpleFIN.
-        enable_banking: Sincronize contas bancárias europeias através do open banking PSD2.
-        wise: Sincronize automaticamente os seus saldos multi-moeda Wise e transferências internacionais.
-        mercury: Sincronize automaticamente as suas contas bancárias empresariais Mercury.
-        brex: Sincronize o numerário e a atividade do cartão empresarial Brex com acesso apenas de leitura.
         plaid: Ligue milhares de instituições financeiras dos EUA via Plaid.
         plaid_eu: Ligue instituições financeiras europeias via Plaid (PSD2 / Open Banking).
       search_filters:
@@ -396,37 +388,6 @@ pt-PT:
         message: "A sincronização bancária necessita de encriptação do Active Record configurada. Defina primary_key, deterministic_key e key_derivation_salt nas suas credenciais do Rails ou variáveis de ambiente."
       provider_form:
         save_and_connect: "Guardar e ligar"
-      enable_banking_panel:
-        callback_url_instruction: "Para o URL de callback, utilize %{callback_url}."
-        connection_error: Erro de Ligação
-        step_1_html: "Aceda a %{link} e obtenha as suas credenciais de programador."
-        step_2: "Escolha o seu país e cole abaixo o Application ID + Client Certificate."
-        step_3: "Guarde e, em seguida, utilize Adicionar Ligação para ligar o seu banco."
-        config_locked_title: "Configuração bloqueada"
-        config_locked_message: "Desligue todos os bancos ligados antes de alterar estas credenciais."
-        application_id_label: "Application ID"
-        application_id_placeholder_new: "Introduza o application ID"
-        application_id_placeholder_update: "Introduza o novo ID para atualizar"
-        client_certificate_label: "Client Certificate (com Chave Privada)"
-        keep_client_certificate_hint: "Deixe em branco para manter o certificado atual"
-        save_and_connect: "Guardar e ligar"
-        update_connection: "Atualizar ligação"
-        connected_bank: "Banco Ligado"
-        session_expires: "A sessão expira: %{date}"
-        unknown: "Desconhecido"
-        connection: "Ligação"
-        session_expired_reconnect: "Sessão expirada - voltar a ligar"
-        configured: "Configurado"
-        ready_to_link: "Pronto para ligar contas"
-        sync: "Sincronizar"
-        reconnect: "Voltar a ligar"
-        connect_bank: "Ligar banco"
-        remove: "Remover"
-        remove_confirm: "Tem a certeza de que pretende remover esta ligação?"
-        add_connection: "Adicionar Ligação"
-        syncing: "A sincronizar"
-        select_country: "Selecione o país..."
-        country_label: "País"
       simplefin_panel:
         step_1_html: "Aceda a %{link} para obter um token de configuração de utilização única."
         step_2: "Cole abaixo o token e ligue."

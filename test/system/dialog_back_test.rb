@@ -53,15 +53,19 @@ class DialogBackTest < ApplicationSystemTestCase
   # Cancel goes to the bare list. Back undid the Cancel: the modal came back as
   # if it had never been cancelled.
   test "going back after cancelling a provider's link modal shows the list without it" do
+    simplefin_item = @account.family.simplefin_items.create!(name: "SimpleFIN Connection", access_url: "https://example.com/access")
+    simplefin_item.simplefin_accounts.create!(name: "SimpleFIN Checking", account_id: "sf-dialog-back", currency: "USD",
+                                              account_type: "checking", current_balance: 100)
+
     visit accounts_url(return_to: root_path)
     within("##{dom_id(@account)}") { find("[data-DS--menu-target='button']").click }
     click_on I18n.t("accounts.account.link_provider")
-    click_on I18n.t("wise_items.provider_connection.name", name: wise_items(:one).name)
+    click_on "SimpleFIN"
 
     # Both lists look the same, so the one being left is marked.
     execute_script("document.body.dataset.left = ''")
-    within("dialog:modal", text: I18n.t("wise_items.select_existing_account.title", account_name: @account.name)) do
-      click_on I18n.t("wise_items.select_existing_account.cancel")
+    within("dialog:modal", text: I18n.t("simplefin_items.select_existing_account.title", account_name: @account.name)) do
+      click_on I18n.t("simplefin_items.select_existing_account.cancel")
     end
     assert_no_selector "body[data-left]"
 

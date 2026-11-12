@@ -9,8 +9,7 @@ class ProviderItemSyncCompleteEventsTest < ActiveSupport::TestCase
   include Turbo::Broadcastable::TestHelper
 
   PROVIDERS = %w[
-    mercury_item plaid_item
-    wise_item
+    plaid_item
   ].freeze
 
   PROVIDERS.each do |provider|

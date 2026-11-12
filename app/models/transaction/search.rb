@@ -336,7 +336,7 @@ class Transaction::Search
 
       # Delegate to the model scopes so the provider list stays sourced from
       # Transaction::PENDING_PROVIDERS. Previously this method hardcoded a short
-      # provider list, silently dropping enable_banking transactions.
+      # provider list, silently dropping other providers' transactions.
       case statuses.sort
       when [ "pending" ]
         query.pending

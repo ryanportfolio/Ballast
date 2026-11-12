@@ -18,7 +18,7 @@ class SecurityBackfillTest < ActiveSupport::TestCase
 
   # SimpleFIN is a representative provider model, chosen arbitrarily: the bug
   # this guards against applies identically to every json/jsonb encrypts
-  # column the task touches (the Plaid/SimpleFin/Enable Banking/... raw
+  # column the task touches (the Plaid/SimpleFin/... raw
   # payload columns), via the shared safe_read_field helper.
   test "backfill preserves jsonb payload structure and string fields" do
     item = SimplefinItem.new(family: families(:dylan_family), name: "Backfill Test", access_url: "seed")

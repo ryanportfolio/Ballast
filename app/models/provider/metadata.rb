@@ -1,12 +1,7 @@
 class Provider
   module Metadata
     REGISTRY = {
-      financekit:     { region: "US / UK", kinds: %w[Bank],            maturity: :beta,   logo_text: "AW", logo_color: nil, domain: "apple.com", name: "Apple Wallet" },
       simplefin:      { region: "US",      kinds: %w[Bank Investment], maturity: :stable, logo_text: "SF", logo_color: "#2563eb", domain: "simplefin.org" },
-      enable_banking: { region: "EU",      kinds: %w[Bank],            maturity: :beta,   logo_text: "EB", logo_color: "#9333ea", domain: "enablebanking.com" },
-      wise:           { region: "Global",  kinds: %w[Bank],            maturity: :beta,   logo_text: "WI", logo_color: "#22c55e", domain: "wise.com" },
-      mercury:        { region: "US",      kinds: %w[Bank],            maturity: :beta,   logo_text: "ME", logo_color: "#0891b2", domain: "mercury.com" },
-      brex:           { region: "US",      kinds: %w[Bank],            maturity: :beta,   logo_text: "BX", logo_color: "#059669", domain: "brex.com" },
       plaid:          { region: "US",      kinds: %w[Bank],            maturity: :stable, logo_text: "PL", logo_color: "#4f46e5", domain: "plaid.com", tier: "Paid" },
       plaid_eu:       { region: "EU",      kinds: %w[Bank],            maturity: :stable, logo_text: "PL", logo_color: "#4f46e5", domain: "plaid.com", tier: "Paid", name: "Plaid EU" },
       # Property valuation (AVM) providers

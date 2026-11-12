@@ -22,38 +22,6 @@ fr:
       drawer_trust_statement: Accès en lecture seule. Sure ne pourra jamais
         transférer d’argent et vos informations d’identification sont stockées cryptées.
       empty_filter: Aucun fournisseur ne correspond à votre filtre.
-      enable_banking_panel:
-        add_connection: Ajouter une connexion
-        application_id_label: Identifiant de la demande
-        application_id_placeholder_new: Entrez l'ID de la demande
-        application_id_placeholder_update: Entrez le nouvel identifiant à mettre à
-          jour
-        client_certificate_label: Certificat client (avec clé privée)
-        config_locked_message: Déconnectez toutes les banques liées avant de modifier
-          ces informations d'identification.
-        config_locked_title: Configuration verrouillée
-        configured: Configuré
-        connect_bank: Connecter la banque
-        connected_bank: Banque connectée
-        connection: Connexion
-        country_label: Pays
-        ready_to_link: Prêt à lier des comptes
-        reconnect: Reconnecter
-        remove: Supprimer
-        remove_confirm: Êtes-vous sûr de vouloir supprimer cette connexion ?
-        save_and_connect: Enregistrez et connectez-vous
-        select_country: Sélectionnez le pays...
-        session_expired_reconnect: Session expirée - reconnectez-vous
-        session_expires: 'Expiration de la session : %{date}'
-        step_1_html: Accédez à %{link} et récupérez vos informations d'identification
-          de développeur.
-        step_2: Choisissez votre pays et collez l'ID d'application + le certificat
-          client ci-dessous.
-        step_3: Enregistrez, puis utilisez Ajouter une connexion pour lier votre banque.
-        sync: Synchroniser
-        syncing: Synchronisation
-        unknown: Inconnu
-        update_connection: Mettre à jour la connexion
       groups:
         available: Disponible
         empty_available: Tous les fournisseurs disponibles sont connectés.
@@ -69,10 +37,6 @@ fr:
       meta:
         last_synced: Synchronisé il y a %{time}
         no_recent_sync: Synchronisation en retard
-        reconsent_needed:
-          one: Re-consentement nécessaire dans 1 jour
-          other: Renouvellement du consentement requis dans %{count} jours
-        reconsent_required: Re-consentement requis
         sync_error: Erreur de synchronisation
       not_found: Fournisseur introuvable.
       plaid_eu_panel:
@@ -114,12 +78,6 @@ fr:
       sync_provider_in_progress: La synchronisation a commencé.
       sync_provider_no_items: Aucune connexion disponible pour synchroniser.
       taglines:
-        brex: Synchronisez l'activité des espèces Brex et des cartes d'entreprise
-          avec un accès en lecture seule.
-        enable_banking: Synchronisez les comptes bancaires européens via l'open banking
-          PSD2.
-        mercury: Synchronisez automatiquement vos comptes bancaires professionnels
-          Mercury.
         plaid: Connectez des milliers d'institutions financières américaines via Plaid.
         plaid_eu: Connectez les institutions financières européennes via Plaid (PSD2
           / Open Banking).

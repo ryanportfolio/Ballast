@@ -10,7 +10,6 @@ zh-CN:
     appearance: 外观
     appearances: 外观
     bank_sync: 银行同步
-    brex_items: Brex
     budget_categories: 预算分类
     budgets: 预算
     categories: 分类
@@ -24,7 +23,6 @@ zh-CN:
     debug: 调试
     debugs: 调试
     depositories: 现金账户
-    enable_banking_items: Enable Banking
     exports: 导出
     family_exports: 导出
     family_merchants: 商户
@@ -44,7 +42,6 @@ zh-CN:
     loans: 贷款
     mcp: MCP 服务器
     merchants: 商户
-    mercury_items: Mercury
     messages: 消息
     mfa: 双重验证
     onboardings: 入门

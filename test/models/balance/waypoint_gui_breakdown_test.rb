@@ -1,7 +1,7 @@
 require "test_helper"
 
 # Proves what the day-detail "Details" popup (UI::Account::BalanceReconciliation)
-# shows for a daily-waypoint (EnableBanking-style) account with a transaction on
+# shows for a daily-waypoint account with a transaction on
 # every waypoint day. Persists real balances and reads the actual PG generated
 # columns through the real GUI component.
 class Balance::WaypointGuiBreakdownTest < ActiveSupport::TestCase

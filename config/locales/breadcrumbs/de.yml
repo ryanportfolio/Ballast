@@ -13,7 +13,6 @@ de:
     appearance: Darstellung
     appearances: Darstellung
     bank_sync: Bank-Sync
-    brex_items: Brex
     budget_categories: Budgetkategorien
     budgets: Budgets
     categories: Kategorien
@@ -26,7 +25,6 @@ de:
     debug: Debug
     debugs: Debug
     depositories: Bankkonten
-    enable_banking_items: Enable Banking
     family_exports: Exporte
     family_merchants: Händler
     feedback: Feedback
@@ -43,7 +41,6 @@ de:
     loans: Kredite
     mcp: MCP-Server
     merchants: Händler
-    mercury_items: Mercury
     messages: Nachrichten
     mfa: Zwei-Faktor-Authentifizierung
     onboardings: Einrichtung

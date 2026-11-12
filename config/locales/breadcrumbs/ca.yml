@@ -10,7 +10,6 @@ ca:
     appearance: Aparença
     appearances: Aparença
     bank_sync: Sincronització bancària
-    brex_items: Brex
     budget_categories: Categories del pressupost
     budgets: Pressupostos
     categories: Categories
@@ -22,7 +21,6 @@ ca:
     debug: Depuració
     debugs: Depuració
     depositories: Comptes d'efectiu
-    enable_banking_items: Enable Banking
     exports: Exportacions
     family_exports: Exportacions
     family_merchants: Comerços
@@ -40,7 +38,6 @@ ca:
     llm_usages: Ús d'LLM
     loans: Préstecs
     merchants: Comerços
-    mercury_items: Mercury
     messages: Missatges
     mfa: Autenticació de dos factors
     onboardings: Configuració inicial

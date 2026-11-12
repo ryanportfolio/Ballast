@@ -344,38 +344,6 @@ pl:
         zanim zaczniesz przechowywać dane uwierzytelniające dostawców w środowisku
         produkcyjnym.
       empty_filter: Żaden dostawca nie pasuje do Twojego filtra.
-      enable_banking_panel:
-        add_connection: Dodaj połączenie
-        application_id_label: ID aplikacji
-        application_id_placeholder_new: Wpisz ID aplikacji
-        application_id_placeholder_update: Wpisz nowe ID, aby zaktualizować
-        callback_url_instruction: Dla URL callback użyj %{callback_url}.
-        client_certificate_label: Certyfikat klienta (z kluczem prywatnym)
-        keep_client_certificate_hint: "Pozostaw puste, aby zachować bieżący certyfikat"
-        config_locked_message: Rozłącz wszystkie połączone banki, zanim zmienisz te
-          dane uwierzytelniające.
-        config_locked_title: Konfiguracja zablokowana
-        configured: Skonfigurowano
-        connect_bank: Połącz bank
-        connected_bank: Połączony bank
-        connection: Połączenie
-        connection_error: Błąd połączenia
-        country_label: Kraj
-        ready_to_link: Gotowe do połączenia kont
-        reconnect: Połącz ponownie
-        remove: Usuń
-        remove_confirm: Na pewno usunąć to połączenie?
-        save_and_connect: Zapisz i połącz
-        select_country: Wybierz kraj...
-        session_expired_reconnect: Sesja wygasła - połącz ponownie
-        session_expires: 'Sesja wygasa: %{date}'
-        step_1_html: Przejdź do %{link} i pobierz swoje dane uwierzytelniające dewelopera.
-        step_2: Wybierz kraj i wklej poniżej ID aplikacji oraz certyfikat klienta.
-        step_3: Zapisz, a następnie użyj Dodaj połączenie, aby połączyć swój bank.
-        sync: Synchronizuj
-        syncing: Synchronizowanie
-        unknown: Nieznane
-        update_connection: Zaktualizuj połączenie
       encryption_error:
         message: Klucze szyfrowania Active Record nie są skonfigurowane. Upewnij się,
           że dane uwierzytelniające szyfrowania (active_record_encryption.primary_key,
@@ -398,12 +366,6 @@ pl:
       meta:
         last_synced: Zsynchronizowano %{time} temu
         no_recent_sync: Zaległa synchronizacja
-        reconsent_needed:
-          few: Wymagana ponowna zgoda za %{count} dni
-          many: Wymagana ponowna zgoda za %{count} dni
-          one: Wymagana ponowna zgoda za 1 dzień
-          other: Wymagana ponowna zgoda za %{count} dni
-        reconsent_required: Wymagana ponowna zgoda
         sync_error: Błąd synchronizacji
       not_authorized: Brak autoryzacji
       not_found: Nie znaleziono dostawcy.
@@ -453,17 +415,10 @@ pl:
       sync_provider_in_progress: Synchronizacja rozpoczęta.
       sync_provider_no_items: Brak połączeń do synchronizacji.
       taglines:
-        brex: Synchronizuj środki i aktywność kart firmowych Brex z dostępem tylko
-          do odczytu.
-        enable_banking: Synchronizuj europejskie konta bankowe przez otwartą bankowość
-          PSD2.
-        mercury: Synchronizuj automatycznie swoje firmowe konta bankowe Mercury.
         plaid: Połącz tysiące amerykańskich instytucji finansowych przez Plaid.
         plaid_eu: Połącz europejskie instytucje finansowe przez Plaid (PSD2 / otwarta
           bankowość).
         simplefin: Połącz amerykańskie konta bankowe przez otwarty protokół SimpleFIN.
-        wise: Synchronizuj automatycznie swoje wielowalutowe salda i przelewy międzynarodowe
-          Wise.
       update:
         no_changes: Nie wprowadzono żadnych zmian
         updated_successfully: Ustawienia dostawcy zostały zaktualizowane

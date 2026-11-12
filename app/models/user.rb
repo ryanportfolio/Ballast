@@ -1,6 +1,4 @@
 class User < ApplicationRecord
-  has_many :financekit_items, dependent: :destroy
-
   include Encryptable
 
   # Password presence and length are validated explicitly below.
@@ -375,11 +373,6 @@ class User < ApplicationRecord
       AccountStatement.where(account: accounts_to_move).update_all(family_id: new_family.id, updated_at: Time.current) if accounts_to_move.any?
 
       provider_items_to_move.each do |provider_item|
-        if provider_item.is_a?(FinancekitItem)
-          lineage_ids = provider_item.financekit_account_lineages.select(:id)
-          FinancekitAccountLineage.where(id: lineage_ids).update_all(family_id: new_family.id, updated_at: Time.current)
-          provider_item.financekit_conflicts.update_all(family_id: new_family.id, updated_at: Time.current)
-        end
         attrs = { family: new_family }
 
         # provider_items_for_transfer only returns items whose accounts all
@@ -403,15 +396,8 @@ class User < ApplicationRecord
         provider_items_for(account_provider.provider)
       end
     end.flatten.uniq
-    provider_items.concat(financekit_items)
-    provider_items.uniq!
 
     provider_items.each do |provider_item|
-      if provider_item.is_a?(FinancekitItem) && provider_item.user_id != id
-        errors.add(:base, :provider_item_has_other_accounts)
-        raise ActiveRecord::RecordInvalid, self
-      end
-
       linked_account_ids = provider_item.accounts.map(&:id)
       next if linked_account_ids.all? { |account_id| account_ids_to_move.include?(account_id) }
 
@@ -423,10 +409,6 @@ class User < ApplicationRecord
   end
 
   def provider_items_for(provider)
-    if provider.is_a?(FinancekitAccountLineage)
-      return provider.financekit_accounts.includes(:financekit_item).map(&:financekit_item).uniq
-    end
-
     item_association = provider.class.reflect_on_all_associations(:belongs_to).find do |association|
       association.name.to_s.end_with?("_item") && provider.respond_to?(association.name)
     end

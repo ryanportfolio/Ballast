@@ -10,7 +10,6 @@ pl:
     appearance: Wygląd
     appearances: Wygląd
     bank_sync: Synchronizacja z bankiem
-    brex_items: Brex
     budget_categories: Kategorie budżetu
     budgets: Budżety
     categories: Kategorie
@@ -23,7 +22,6 @@ pl:
     debug: Debugowanie
     debugs: Debugowanie
     depositories: Konta gotówkowe
-    enable_banking_items: Enable Banking
     exports: Eksporty
     family_exports: Eksporty
     family_merchants: Kontrahenci
@@ -43,7 +41,6 @@ pl:
     loans: Pożyczki
     mcp: Serwer MCP
     merchants: Kontrahenci
-    mercury_items: Mercury
     messages: Wiadomości
     mfa: Uwierzytelnianie dwuskładnikowe
     onboardings: Wprowadzenie

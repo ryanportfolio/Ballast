@@ -347,57 +347,6 @@ class Account < ApplicationRecord
       create_and_sync(attributes, skip_initial_sync: true)
     end
 
-    def create_from_enable_banking_account(enable_banking_account, account_type, subtype = nil)
-      # Get the balance from Enable Banking
-      balance = enable_banking_account.current_balance || 0
-
-      # Enable Banking may return negative balances for liabilities
-      # Sure expects positive balances for liabilities
-      if account_type == "CreditCard" || account_type == "Loan"
-        balance = balance.abs
-      end
-
-      cash_balance = balance
-
-      family = enable_banking_account.enable_banking_item.family
-      attributes = {
-        family: family,
-        name: enable_banking_account.name,
-        balance: balance,
-        cash_balance: cash_balance,
-        currency: enable_banking_account.currency || "EUR"
-      }
-
-      accountable_attributes = {}
-      accountable_attributes[:subtype] = subtype if subtype.present?
-
-      # Skip initial sync - provider sync will handle balance creation with correct currency
-      create_and_sync(
-        attributes.merge(
-          accountable_type: account_type,
-          accountable_attributes: accountable_attributes
-        ),
-        skip_initial_sync: true
-      )
-    end
-
-    def create_from_wise_account(wise_account)
-      family = wise_account.wise_item.family
-
-      create_and_sync(
-        {
-          family: family,
-          name: wise_account.name || "Wise #{wise_account.currency}",
-          balance: wise_account.current_balance || 0,
-          cash_balance: wise_account.current_balance || 0,
-          currency: wise_account.currency,
-          accountable_type: "Depository",
-          accountable_attributes: { subtype: wise_account.account_subtype }
-        },
-        skip_initial_sync: true
-      )
-    end
-
     private
 
       def build_simplefin_accountable_attributes(simplefin_account, account_type, subtype)

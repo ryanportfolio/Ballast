@@ -382,12 +382,6 @@ uk:
         sync_error: Помилка синхронізації
         no_recent_sync: Синхронізація прострочена
         registration_needed: Потрібна реєстрація
-        reconsent_required: Потрібна повторна згода
-        reconsent_needed:
-          one: Повторна згода потрібна через %{count} день
-          other: Повторна згода потрібна через %{count} днів
-          few: Повторна згода потрібна через %{count} дні
-          many: Повторна згода потрібна через %{count} днів
         last_synced: Синхронізовано %{time} тому
       sync_all: Синхронізувати все
       sync_all_in_progress: Синхронізація всіх підключених постачальників…
@@ -397,10 +391,6 @@ uk:
       recently_synced: Нещодавно синхронізовано. Спробуйте ще раз за мить.
       taglines:
         simplefin: Підключайте банківські рахунки США за допомогою відкритого протоколу SimpleFIN.
-        enable_banking: Синхронізуйте європейські банківські рахунки через PSD2 open banking.
-        wise: Автоматично синхронізуйте свої мультивалютні баланси Wise та міжнародні перекази.
-        mercury: Автоматично синхронізуйте свої бізнес-рахунки Mercury.
-        brex: Синхронізуйте операції за рахунками Brex Cash і корпоративними картками з доступом лише для читання.
         plaid: Підключайте тисячі фінансових установ США через Plaid.
         plaid_eu: Підключайте європейські фінансові установи через Plaid (PSD2 / Open Banking).
       search_filters:
@@ -417,37 +407,6 @@ uk:
         message: "Синхронізація з банком потребує налаштування шифрування Active Record. Встановіть primary_key, deterministic_key та key_derivation_salt у своїх облікових даних Rails або змінних середовища."
       provider_form:
         save_and_connect: "Зберегти та підключити"
-      enable_banking_panel:
-        callback_url_instruction: "Для URL-адреси зворотного виклику використовуйте %{callback_url}."
-        connection_error: Помилка з'єднання
-        step_1_html: "Перейдіть до %{link} і отримайте свої облікові дані розробника."
-        step_2: "Виберіть свою країну та вставте ідентифікатор програми + сертифікат клієнта нижче."
-        step_3: "Збережіть, а потім використовуйте Додати з'єднання, щоб пов'язати свій банк."
-        config_locked_title: "Конфігурацію заблоковано"
-        config_locked_message: "Відключіть усі пов'язані банки перед зміною цих облікових даних."
-        application_id_label: "Ідентифікатор програми"
-        application_id_placeholder_new: "Введіть ідентифікатор програми"
-        application_id_placeholder_update: "Введіть новий ID для оновлення"
-        client_certificate_label: "Сертифікат клієнта (з приватним ключем)"
-        keep_client_certificate_hint: "Залиште порожнім, щоб зберегти поточний сертифікат"
-        save_and_connect: "Зберегти та підключити"
-        update_connection: "Оновити з'єднання"
-        connected_bank: "Підключений банк"
-        session_expires: "Сеанс закінчується: %{date}"
-        unknown: "Невідомо"
-        connection: "З'єднання"
-        session_expired_reconnect: "Сеанс закінчився - перепідключіться"
-        configured: "Налаштовано"
-        ready_to_link: "Готово до пов'язування рахунків"
-        sync: "Синхронізувати"
-        reconnect: "Перепідключити"
-        connect_bank: "Підключити банк"
-        remove: "Видалити"
-        remove_confirm: "Ви впевнені, що хочете видалити це з'єднання?"
-        add_connection: "Додати з'єднання"
-        syncing: "Синхронізація"
-        select_country: "Вибрати країну..."
-        country_label: "Країна"
       simplefin_panel:
         step_1_html: "Перейдіть до %{link} для отримання одноразового токена налаштування."
         step_2: "Вставте токен нижче та підключіться."

@@ -1,8 +1,7 @@
 # What an IP address is, as opposed to what a caller may do with it.
 # Provider::Simplefin decides which hosts it may connect to, and that depends
-# on the app mode; EnableBankingItem decides whether a browser's address is
-# one a bank will accept. Both need an IPv6 literal that carries an IPv4
-# address read as that address, so the unwrapping lives here once.
+# on the app mode. It needs an IPv6 literal that carries an IPv4 address read
+# as that address, so the unwrapping lives here.
 module NetworkAddress
   NAT64_NETWORK = IPAddr.new("64:ff9b::/96")
   IPV4_TRANSLATED_NETWORK = IPAddr.new("::ffff:0:0:0/96")

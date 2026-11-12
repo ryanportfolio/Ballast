@@ -119,7 +119,6 @@ namespace :dev do
 
       DevSyncStatsHelpers.generate_fake_stats_for_items(PlaidItem, "plaid")
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin")
-      DevSyncStatsHelpers.generate_fake_stats_for_items(EnableBankingItem, "enable_banking")
 
       puts "Done! Refresh your browser to see the sync summaries."
     end
@@ -147,7 +146,6 @@ namespace :dev do
 
       DevSyncStatsHelpers.generate_fake_stats_for_items(PlaidItem, "plaid", include_issues: true)
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin", include_issues: true)
-      DevSyncStatsHelpers.generate_fake_stats_for_items(EnableBankingItem, "enable_banking", include_issues: true)
       puts "Done! Refresh your browser to see the sync summaries with issues."
     end
 
@@ -206,41 +204,9 @@ namespace :dev do
       end
       puts "    Created 2 PlaidAccounts"
 
-      # Create a fake EnableBanking item
-      begin
-        enable_banking_item = family.enable_banking_items.create!(
-          name: "Test EnableBanking Connection",
-          institution_name: "Test Bank EU",
-          institution_id: "test-bank-#{SecureRandom.hex(8)}",
-          country_code: "DE",
-          aspsp_name: "Test Bank",
-          aspsp_id: "test-aspsp-#{SecureRandom.hex(8)}",
-          application_id: "test-app-#{SecureRandom.hex(8)}",
-          client_certificate: "-----BEGIN CERTIFICATE-----\nTEST_CERTIFICATE\n-----END CERTIFICATE-----"
-        )
-        puts "  Created EnableBankingItem: #{enable_banking_item.institution_name}"
-
-        # Create fake EnableBanking accounts
-        2.times do |i|
-          uid = "test-eb-uid-#{SecureRandom.hex(8)}"
-          enable_banking_item.enable_banking_accounts.create!(
-            name: "Test EU Account #{i + 1}",
-            uid: uid,
-            account_id: "test-eb-account-#{SecureRandom.hex(8)}",
-            currency: "EUR",
-            current_balance: rand(1000..50000),
-            iban: "DE#{rand(10..99)}#{SecureRandom.hex(10).upcase[0..17]}"
-          )
-        end
-        puts "    Created 2 EnableBankingAccounts"
-      rescue => e
-        puts "  Failed to create EnableBankingItem: #{e.message}"
-      end
-
       puts "\nNow generating sync stats for the test providers..."
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin", include_issues: true)
       DevSyncStatsHelpers.generate_fake_stats_for_items(PlaidItem, "plaid", include_issues: false)
-      DevSyncStatsHelpers.generate_fake_stats_for_items(EnableBankingItem, "enable_banking", include_issues: false)
 
       puts "\nDone! Visit /accounts to see the sync summaries."
     end
@@ -258,7 +224,6 @@ namespace :dev do
       count = 0
       count += SimplefinItem.where("name LIKE ?", "Test %").destroy_all.count
       count += PlaidItem.where("name LIKE ?", "Test %").destroy_all.count
-      count += EnableBankingItem.where("name LIKE ? OR institution_name LIKE ?", "Test %", "Test %").destroy_all.count
 
       puts "Removed #{count} test provider items. Done!"
     end

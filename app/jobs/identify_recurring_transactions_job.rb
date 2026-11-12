@@ -47,7 +47,7 @@ class IdentifyRecurringTransactionsJob < ApplicationJob
     # Debounce gate: delegate to `Sync.any_incomplete_for?`, which polls every
     # `Syncable` provider association on `Family` via reflection. The previous
     # hand-rolled list covered only 5 of the 14 `*_items` associations on
-    # `Family`, so a Mercury/Brex/etc. sync in flight silently
+    # `Family`, so a sync from any other provider in flight silently
     # bypassed this gate and let the identifier run against a partial dataset.
     def family_has_incomplete_syncs?(family)
       Sync.any_incomplete_for?(family)

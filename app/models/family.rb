@@ -1,12 +1,6 @@
 class Family < ApplicationRecord
-  has_many :financekit_items, dependent: :destroy
-  has_many :financekit_account_lineages, dependent: :destroy
-  has_many :financekit_conflicts, dependent: :destroy
-
   include Syncable, AutoTransferMatchable, Subscribeable, VectorSearchable
-  include PlaidConnectable, SimplefinConnectable, EnableBankingConnectable
-  include MercuryConnectable, BrexConnectable
-  include WiseConnectable
+  include PlaidConnectable, SimplefinConnectable
   include AiPromptable
 
   DATE_FORMATS = [
@@ -453,7 +447,7 @@ class Family < ApplicationRecord
 
   # Merchant names already associated with this family (via any provider, or a
   # manually created FamilyMerchant) -- used to recognize a merchant embedded in
-  # noisy provider text (e.g. Enable Banking's remittance lines) without
+  # noisy provider text (e.g. bank remittance lines) without
   # inventing a new one from scratch. Deliberately excludes recently-unlinked
   # merchants (unlike available_merchants), since those were explicitly removed.
   def known_merchant_names

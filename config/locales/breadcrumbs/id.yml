@@ -10,7 +10,6 @@ id:
     appearance: Tampilan
     appearances: Tampilan
     bank_sync: Sinkronisasi Bank
-    brex_items: Brex
     budget_categories: Kategori anggaran
     budgets: Anggaran
     categories: Kategori
@@ -24,7 +23,6 @@ id:
     debug: Debug
     debugs: Debug
     depositories: Rekening kas
-    enable_banking_items: Enable Banking
     exports: Ekspor
     family_exports: Ekspor
     family_merchants: Merchant
@@ -44,7 +42,6 @@ id:
     loans: Pinjaman
     mcp: Server MCP
     merchants: Merchant
-    mercury_items: Mercury
     messages: Pesan
     mfa: Autentikasi dua faktor
     onboardings: Onboarding

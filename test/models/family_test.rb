@@ -328,7 +328,7 @@ class FamilyTest < ActiveSupport::TestCase
   test "known_merchant_names includes assigned and family-owned merchant names, deduplicates matching names, and excludes recently-unlinked merchants" do
     family = families(:dylan_family)
 
-    provider_merchant = ProviderMerchant.create!(name: "Known Provider Merchant", source: "enable_banking")
+    provider_merchant = ProviderMerchant.create!(name: "Known Provider Merchant", source: "plaid")
     transactions(:one).update!(merchant: provider_merchant)
 
     # Same name as the assigned provider merchant, but a distinct record -- proves
@@ -342,7 +342,7 @@ class FamilyTest < ActiveSupport::TestCase
     # known_merchant_names must NOT, since it's used to auto-match/auto-assign new
     # transactions and re-surfacing a deliberately-removed association would undo
     # the user's action silently.
-    unlinked_merchant = ProviderMerchant.create!(name: "Recently Unlinked Merchant", source: "enable_banking")
+    unlinked_merchant = ProviderMerchant.create!(name: "Recently Unlinked Merchant", source: "plaid")
     transactions(:one).update!(merchant: unlinked_merchant)
     unlinked_merchant.unlink_from_family(family)
     transactions(:one).update!(merchant: provider_merchant)

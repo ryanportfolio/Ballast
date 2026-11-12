@@ -254,12 +254,12 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
   test "keeps a space before the arrow when the new key is longer than the column" do
     result = Provider::FamilyGenerator.append_panel_syncable_type(<<~RUBY, key: "gocardless_bank_data", class_name: "GocardlessBankData")
       PANEL_SYNCABLE_TYPES = {
-        "wise" => "WiseItem"
+        "simplefin" => "SimplefinItem"
       }.freeze
     RUBY
 
     assert_parses result
-    assert_includes result, %(  "wise" => "WiseItem",\n  "gocardless_bank_data" => "GocardlessBankDataItem"\n}.freeze)
+    assert_includes result, %(  "simplefin" => "SimplefinItem",\n  "gocardless_bank_data" => "GocardlessBankDataItem"\n}.freeze)
   end
 
   test "reserved item columns exclude family but include family_id" do

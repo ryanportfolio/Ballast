@@ -286,38 +286,6 @@ tr:
       drawer_trust_statement: Salt okunur erişim. Sure asla para transferi yapamaz
         ve kimlik bilgileriniz şifrelenmiş olarak saklanır.
       empty_filter: Filtrenizle eşleşen sağlayıcı yok.
-      enable_banking_panel:
-        add_connection: Bağlantı Ekle
-        application_id_label: Uygulama ID
-        application_id_placeholder_new: Uygulama ID girin
-        application_id_placeholder_update: Güncellemek için yeni ID girin
-        callback_url_instruction: Geri çağırma URL'si için %{callback_url} kullanın.
-        client_certificate_label: İstemci Sertifikası (Özel Anahtar ile)
-        keep_client_certificate_hint: "Mevcut sertifikayı korumak için boş bırakın"
-        config_locked_message: Bu kimlik bilgilerini değiştirmeden önce bağlı tüm
-          bankaların bağlantısını kesin.
-        config_locked_title: Yapılandırma kilitli
-        configured: Yapılandırıldı
-        connect_bank: Banka bağla
-        connected_bank: Bağlı Banka
-        connection: Bağlantı
-        connection_error: Bağlantı Hatası
-        country_label: Ülke
-        ready_to_link: Hesapları bağlamaya hazır
-        reconnect: Yeniden bağlan
-        remove: Kaldır
-        remove_confirm: Bu bağlantıyı kaldırmak istediğinizden emin misiniz?
-        save_and_connect: Kaydet ve bağlan
-        select_country: Ülke seçin...
-        session_expired_reconnect: Oturum süresi doldu - yeniden bağlan
-        session_expires: 'Oturum sona eriyor: %{date}'
-        step_1_html: "%{link} adresine gidin ve geliştirici kimlik bilgilerinizi alın."
-        step_2: Ülkenizi seçin ve Uygulama ID + İstemci Sertifikasını aşağıya yapıştırın.
-        step_3: Kaydedin, ardından bankanızı bağlamak için Bağlantı Ekle'yi kullanın.
-        sync: Senkronize et
-        syncing: Senkronize ediliyor
-        unknown: Bilinmiyor
-        update_connection: Bağlantıyı güncelle
       encryption_error:
         message: Banka senkronizasyonu için Active Record şifrelemesinin yapılandırılması
           gerekir. Rails kimlik bilgilerinizde veya ortam değişkenlerinizde primary_key,
@@ -338,10 +306,6 @@ tr:
       meta:
         last_synced: "%{time} önce senkronize edildi"
         no_recent_sync: Senkronizasyon gecikti
-        reconsent_needed:
-          one: "%{count} gün içinde yeniden onay gerekiyor"
-          other: "%{count} gün içinde yeniden onay gerekiyor"
-        reconsent_required: Yeniden onay gerekiyor
         registration_needed: Kayıt gerekiyor
         sync_error: Senkronizasyon hatası
       not_authorized: Yetkiniz yok
@@ -387,18 +351,10 @@ tr:
       sync_provider_in_progress: Senkronizasyon başladı.
       sync_provider_no_items: Senkronize edilecek bağlantı yok.
       taglines:
-        brex: Salt okunur erişimle Brex nakit ve kurumsal kart hareketlerinizi senkronize
-          edin.
-        enable_banking: PSD2 açık bankacılığı üzerinden Avrupa banka hesaplarınızı
-          senkronize edin.
-        mercury: Mercury işletme bankacılığı hesaplarınızı otomatik olarak senkronize
-          edin.
         plaid: Plaid üzerinden binlerce ABD finans kurumunu bağlayın.
         plaid_eu: Plaid üzerinden (PSD2 / Açık Bankacılık) Avrupa finans kurumlarını
           bağlayın.
         simplefin: Açık SimpleFIN protokolü üzerinden ABD banka hesaplarını bağlayın.
-        wise: Wise çoklu para birimi bakiyelerinizi ve uluslararası transferlerinizi
-          otomatik olarak senkronize edin.
       update:
         no_changes: Herhangi bir değişiklik yapılmadı
         updated_successfully: Sağlayıcı ayarları başarıyla güncellendi

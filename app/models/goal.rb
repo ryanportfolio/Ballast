@@ -945,7 +945,7 @@ class Goal < ApplicationRecord
   end
 
   # True when any linked account is wired to a live sync provider (Plaid,
-  # SimpleFIN, or any AccountProvider such as Brex or Enable Banking).
+  # SimpleFIN, or any other AccountProvider).
   # Drives the pledge-create copy: connected accounts
   # get the "I just transferred…" path; manual-only accounts get "I just
   # saved…" so users aren't told to wait for a sync that won't happen.

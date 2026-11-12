@@ -301,10 +301,6 @@ es:
         sync_error: Error de sincronización
         no_recent_sync: Sincronización pendiente
         registration_needed: Registro necesario
-        reconsent_required: Se requiere renovar el consentimiento
-        reconsent_needed:
-          one: Renovar consentimiento en 1 día
-          other: Renovar consentimiento en %{count} días
         last_synced: Sincronizado hace %{time}
       sync_all: Sincronizar todo
       sync_all_in_progress: Sincronizando todos los proveedores conectados…
@@ -314,9 +310,6 @@ es:
       recently_synced: Sincronizado hace poco. Inténtalo de nuevo en un momento.
       taglines:
         simplefin: Conecta cuentas bancarias de EE. UU. mediante el protocolo abierto SimpleFIN.
-        enable_banking: Sincroniza cuentas bancarias europeas mediante open banking PSD2.
-        mercury: Sincroniza automáticamente tus cuentas bancarias de empresa de Mercury.
-        brex: Sincroniza el efectivo y la actividad de tarjetas corporativas de Brex con acceso de solo lectura.
         plaid: Conecta miles de instituciones financieras de EE. UU. a través de Plaid.
         plaid_eu: Conecta instituciones financieras europeas a través de Plaid (PSD2 / Open Banking).
       search_filters:
@@ -333,37 +326,6 @@ es:
         message: Las claves de cifrado de Active Record no están configuradas. Por favor, asegúrate de que las credenciales de cifrado (active_record_encryption.primary_key, active_record_encryption.deterministic_key y active_record_encryption.key_derivation_salt) estén correctamente configuradas en tus credenciales de Rails o variables de entorno antes de usar proveedores de sincronización.
       provider_form:
         save_and_connect: Guardar y conectar
-      enable_banking_panel:
-        callback_url_instruction: Para la URL de retorno (callback), utiliza %{callback_url}.
-        connection_error: Error de conexión
-        step_1_html: Ve a %{link} y consigue tus credenciales de desarrollador.
-        step_2: Elige tu país y pega abajo el Application ID y el certificado de cliente.
-        step_3: Guarda y luego usa Añadir conexión para vincular tu banco.
-        config_locked_title: Configuración bloqueada
-        config_locked_message: Desconecta todos los bancos vinculados antes de cambiar estas credenciales.
-        application_id_label: Application ID
-        application_id_placeholder_new: Introduce el Application ID
-        application_id_placeholder_update: Introduce un nuevo ID para actualizarlo
-        client_certificate_label: Certificado de cliente (con clave privada)
-        keep_client_certificate_hint: "Déjalo en blanco para conservar el certificado actual"
-        save_and_connect: Guardar y conectar
-        update_connection: Actualizar conexión
-        connected_bank: Banco conectado
-        session_expires: 'La sesión caduca: %{date}'
-        unknown: Desconocido
-        connection: Conexión
-        session_expired_reconnect: 'Sesión caducada: vuelve a conectar'
-        configured: Configurado
-        ready_to_link: Listo para vincular cuentas
-        sync: Sincronizar
-        reconnect: Reconectar
-        connect_bank: Conectar banco
-        remove: Quitar
-        remove_confirm: ¿Seguro que quieres quitar esta conexión?
-        add_connection: Añadir conexión
-        syncing: Sincronizando
-        select_country: Selecciona un país...
-        country_label: País
       simplefin_panel:
         step_1_html: Ve a %{link} para obtener un token de configuración de un solo uso.
         step_2: Pega el token abajo y conecta.

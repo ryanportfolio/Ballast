@@ -300,55 +300,9 @@ fr:
       drawer_trust_statement: Accès en lecture seule. Sure ne peut jamais déplacer d'argent, et vos identifiants sont stockés de manière chiffrée.
       drawer_trust_statement_encryption_unconfigured: Accès en lecture seule. Sure ne peut jamais déplacer d'argent. Configurez des clés de chiffrement explicites avant de stocker des identifiants de fournisseurs en production.
       empty_filter: Aucun fournisseur ne correspond à votre filtre.
-      enable_banking_panel:
-        add_connection: Ajouter une connexion
-        application_id_label: Application ID
-        application_id_placeholder_new: Saisissez l'identifiant de l'application
-        application_id_placeholder_update: Saisissez le nouvel identifiant pour mettre à jour
-        callback_url_instruction: Pour l'URL de rappel, utilisez %{callback_url}.
-        client_certificate_label: Certificat client (avec clé privée)
-        keep_client_certificate_hint: "Laissez vide pour conserver le certificat actuel"
-        config_locked_message: Déconnectez toutes les banques liées avant de modifier ces identifiants.
-        config_locked_title: Configuration verrouillée
-        configured: Configuré
-        connect_bank: Connecter la banque
-        connected_bank: Banque connectée
-        connection: Connexion
-        connection_error: Erreur de connexion
-        country_label: Pays
-        ready_to_link: Prêt à lier les comptes
-        reconnect: Reconnecter
-        remove: Supprimer
-        remove_confirm: Voulez-vous vraiment supprimer cette connexion ?
-        save_and_connect: Enregistrer et connecter
-        select_country: Sélectionner le pays...
-        session_expired_reconnect: Session expirée - reconnecter
-        session_expires: "La session expire le : %{date}"
-        step_1_html: Allez sur %{link} et récupérez vos identifiants de développeur.
-        step_2: Choisissez votre pays et collez l'identifiant de l'application (Application ID) et le certificat client ci-dessous.
-        step_3: Enregistrez, puis utilisez Ajouter une connexion pour lier votre banque.
-        sync: Synchroniser
-        syncing: Synchronisation...
-        unknown: Inconnu
-        update_connection: Mettre à jour la connexion
       encryption_error:
         message: Les clés de chiffrement Active Record ne sont pas configurées. Veuillez vous assurer que les identifiants de chiffrement (active_record_encryption.primary_key, active_record_encryption.deterministic_key et active_record_encryption.key_derivation_salt) sont correctement définis dans vos identifiants Rails ou variables d'environnement avant d'utiliser les fournisseurs de synchronisation.
         title: Configuration de chiffrement requise
-      financekit:
-        accounts: Comptes liés
-        app_store: App Store
-        coming_soon: Bientôt disponible !
-        description: Gérez les connexions Apple Wallet dans l'app iOS Sure. Les données Wallet se synchronisent lorsque l'app est ouverte ; la synchronisation automatique en arrière-plan n'est pas encore disponible.
-        last_accepted_at: Dernière réception par Sure
-        last_imported_at: Dernier import dans votre foyer
-        linked_accounts:
-          one: 1 compte lié
-          other: "%{count} comptes liés"
-        not_yet: Pas encore
-        status:
-          active: Synchronisation active
-          repair_required: 'Réparation requise : ouvrez l''app iOS Sure'
-        summary: Synchronisation Wallet
       groups:
         available: Disponibles
         empty_available: Tous les fournisseurs disponibles sont connectés.
@@ -364,10 +318,6 @@ fr:
       meta:
         last_synced: Synchronisé il y a %{time}
         no_recent_sync: Synchro en retard
-        reconsent_needed:
-          one: Consentement requis dans 1 jour
-          other: Consentement requis dans %{count} jours
-        reconsent_required: Consentement requis
         sync_error: Erreur de synchro
       not_authorized: Non autorisé
       not_found: Fournisseur non trouvé.
@@ -413,14 +363,9 @@ fr:
       sync_provider_in_progress: Synchronisation démarrée.
       sync_provider_no_items: Aucune connexion disponible pour la synchronisation.
       taglines:
-        brex: Synchronisez l'activité de vos cartes de crédit et comptes de trésorerie Brex en lecture seule.
-        enable_banking: Synchronisez les comptes bancaires européens via l'open banking PSD2.
-        financekit: Synchronisez (certains) comptes FinanceKit via l'app iOS Sure.
-        mercury: Synchronisez automatiquement vos comptes professionnels Mercury.
         plaid: Connectez des milliers d'institutions financières américaines via Plaid.
         plaid_eu: Connectez des institutions financières européennes via Plaid (PSD2 / Open Banking).
         simplefin: Connectez des comptes bancaires américains via le protocole ouvert SimpleFIN.
-        wise: Synchronisez automatiquement vos soldes multi-devises Wise et vos transferts internationaux.
       update:
         no_changes: Aucune modification n'a été apportée
         updated_successfully: Paramètres du fournisseur mis à jour avec succès

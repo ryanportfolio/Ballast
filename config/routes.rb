@@ -2,73 +2,6 @@ require "sidekiq/web"
 require "sidekiq/cron/web"
 
 Rails.application.routes.draw do
-  resources :mercury_items, only: %i[index new create show edit update destroy] do
-    collection do
-      get :preload_accounts
-      get :select_accounts
-      post :link_accounts
-      get :select_existing_account
-      post :link_existing_account
-    end
-
-    member do
-      post :sync
-      get :setup_accounts
-      post :complete_account_setup
-    end
-  end
-
-  resources :wise_items, only: %i[index new create show edit update destroy] do
-    collection do
-      get :select_profiles
-      post :link_profiles
-      get :select_accounts
-      post :link_accounts
-      get :select_existing_account
-      post :link_existing_account
-    end
-
-    member do
-      post :sync
-      get :setup_accounts
-      post :complete_account_setup
-      post :generate_sca_keypair
-    end
-  end
-
-  resources :brex_items, only: %i[index new create show edit update destroy] do
-    collection do
-      get :preload_accounts, to: "brex_items/account_flows#preload_accounts"
-      get :select_accounts, to: "brex_items/account_flows#select_accounts"
-      post :link_accounts, to: "brex_items/account_flows#link_accounts"
-      get :select_existing_account, to: "brex_items/account_flows#select_existing_account"
-      post :link_existing_account, to: "brex_items/account_flows#link_existing_account"
-    end
-
-    member do
-      post :sync
-      get :setup_accounts, to: "brex_items/account_setups#setup_accounts"
-      post :complete_account_setup, to: "brex_items/account_setups#complete_account_setup"
-    end
-  end
-
-  resources :enable_banking_items, only: [ :new, :create, :update, :destroy ] do
-    collection do
-      get :callback
-      post :link_accounts
-      get :select_existing_account
-      post :link_existing_account
-    end
-    member do
-      post :sync
-      get :select_bank
-      post :authorize
-      post :reauthorize
-      get :setup_accounts
-      post :complete_account_setup
-      post :new_connection
-    end
-  end
   # MFA routes
   resource :mfa, controller: "mfa", only: [ :new, :create ] do
     get :verify
@@ -521,18 +454,6 @@ Rails.application.routes.draw do
   # API routes
   namespace :api do
     namespace :v1 do
-      namespace :financekit do
-        get "capabilities", to: "connections#capabilities"
-        resources :connections, only: [ :create, :show, :destroy ] do
-          put "account_mappings/:source_id", to: "connections#mapping"
-          post :activate, to: "connections#activate"
-          post :credential, to: "connections#credential"
-          post :repair, to: "connections#repair"
-          resources :conflicts, only: [ :index, :update ]
-        end
-        post "publishers/:publisher_id/batches", to: "batches#create", as: :publisher_batches_upload
-        get "publishers/:publisher_id/batches/:batch_id", to: "batches#show", as: :publisher_batch_status
-      end
       # Production API endpoints
       resources :accounts, only: [ :index, :show ]
       resources :balances, only: [ :index, :show ]

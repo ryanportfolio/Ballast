@@ -10,7 +10,6 @@ pt-PT:
     appearance: Aparência
     appearances: Aparência
     bank_sync: Sincronização bancária
-    brex_items: Brex
     budget_categories: Categorias de orçamento
     budgets: Orçamentos
     categories: Categorias
@@ -23,7 +22,6 @@ pt-PT:
     debug: Depuração
     debugs: Depuração
     depositories: Contas de dinheiro
-    enable_banking_items: Ativar Banca
     exports: Exportações
     family_exports: Exportações
     family_merchants: Comerciantes
@@ -43,7 +41,6 @@ pt-PT:
     loans: Empréstimos
     mcp: Servidor MCP
     merchants: Comerciantes
-    mercury_items: Mercury
     messages: Mensagens
     mfa: Autenticação de dois fatores
     onboardings: Onboarding

@@ -6,9 +6,9 @@ class IdentifyRecurringTransactionsJobTest < ActiveJob::TestCase
     @scheduled_at = Time.current.to_f
   end
 
-  test "skips identification while a Mercury provider sync is in flight" do
-    mercury_item = mercury_items(:one)
-    Sync.create!(syncable: mercury_item, status: :pending)
+  test "skips identification while a provider sync is in flight" do
+    plaid_item = plaid_items(:one)
+    Sync.create!(syncable: plaid_item, status: :pending)
 
     RecurringTransaction::Identifier.any_instance.expects(:identify_recurring_patterns).never
 

@@ -23,7 +23,7 @@ class SimplefinPendingCleanupTest < ActiveSupport::TestCase
   test "pending restore handles malformed pending values and leaves false or unrelated flags out" do
     malformed = create_excluded_entry("simplefin", "maybe", 10)
     false_flag = create_excluded_entry("simplefin", "off", 11)
-    unrelated_provider = create_excluded_entry("enable_banking", true, 12)
+    unrelated_provider = create_excluded_entry("other_provider", true, 12)
 
     output, = capture_io { Rake::Task["simplefin:pending_restore"].invoke }
 

@@ -10,7 +10,6 @@ vi:
     appearance: Giao diện
     appearances: Giao diện
     bank_sync: Đồng bộ ngân hàng
-    brex_items: Brex
     budget_categories: Danh mục ngân sách
     budgets: Ngân sách
     categories: Danh mục
@@ -22,7 +21,6 @@ vi:
     debug: Gỡ lỗi
     debugs: Gỡ lỗi
     depositories: Tài khoản tiền mặt
-    enable_banking_items: Enable Banking
     exports: Xuất dữ liệu
     family_exports: Xuất dữ liệu
     family_merchants: Nhà cung cấp
@@ -40,7 +38,6 @@ vi:
     llm_usages: Sử dụng LLM
     loans: Khoản vay
     merchants: Nhà cung cấp
-    mercury_items: Mercury
     messages: Tin nhắn
     mfa: Xác thực hai yếu tố
     onboardings: Khởi đầu

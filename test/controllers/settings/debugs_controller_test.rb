@@ -91,16 +91,16 @@ class Settings::DebugsControllerTest < ActionDispatch::IntegrationTest
     assert_match @entry.message, response.body
   end
 
-  test "FinanceKit diagnostics are visible and filterable by provider and family" do
+  test "provider diagnostics are visible and filterable by provider and family" do
     sign_in users(:sure_support_staff)
-    DebugLogEntry.capture(category: "provider_sync", level: "error", message: "FinanceKit import requires repair",
-      source: "Financekit::Processor", provider_key: "financekit", family: families(:dylan_family),
+    DebugLogEntry.capture(category: "provider_sync", level: "error", message: "SimpleFIN import requires repair",
+      source: "SimplefinItem::Importer", provider_key: "simplefin", family: families(:dylan_family),
       metadata: { event: "import_failed", error_code: "predecessor_conflict" })
 
-    get settings_debug_url, params: { provider_key: "financekit", family_id: families(:dylan_family).id }
+    get settings_debug_url, params: { provider_key: "simplefin", family_id: families(:dylan_family).id }
 
     assert_response :success
-    assert_includes response.body, "FinanceKit import requires repair"
+    assert_includes response.body, "SimpleFIN import requires repair"
     assert_includes response.body, "predecessor_conflict"
     refute_includes response.body, @entry.message
   end

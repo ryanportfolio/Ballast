@@ -18,12 +18,12 @@ class Transaction::MergeWithDuplicateTest < ActiveSupport::TestCase
       date:        3.days.ago.to_date,
       amount:      10,
       currency:    "USD",
-      external_id: "enable_banking_PDNG123",
-      source:      "enable_banking",
+      external_id: "simplefin_PDNG123",
+      source:      "simplefin",
       category:    @category_a
     )
     @pending_entry.transaction.update!(
-      extra: { "enable_banking" => { "pending" => true } }
+      extra: { "simplefin" => { "pending" => true } }
     )
 
     # Posted (booked) entry — the canonical settled transaction from the bank
@@ -33,8 +33,8 @@ class Transaction::MergeWithDuplicateTest < ActiveSupport::TestCase
       date:     1.day.ago.to_date,
       amount:   10,
       currency: "USD",
-      external_id: "enable_banking_BOOK456",
-      source:      "enable_banking"
+      external_id: "simplefin_BOOK456",
+      source:      "simplefin"
     )
 
     # Wire up the duplicate suggestion on the pending transaction
@@ -64,7 +64,7 @@ class Transaction::MergeWithDuplicateTest < ActiveSupport::TestCase
     @pending_entry.transaction.merge_with_duplicate!
 
     posted_tx = @posted_entry.transaction.reload
-    assert_equal "enable_banking_PDNG123", posted_tx.extra.dig("manual_merge", 0, "merged_from_external_id")
+    assert_equal "simplefin_PDNG123", posted_tx.extra.dig("manual_merge", 0, "merged_from_external_id")
   end
 
   test "records merged_from_entry_id and source in manual_merge metadata" do
@@ -73,17 +73,17 @@ class Transaction::MergeWithDuplicateTest < ActiveSupport::TestCase
 
     merge_meta = @posted_entry.transaction.reload.extra["manual_merge"].first
     assert_equal pending_id, merge_meta["merged_from_entry_id"]
-    assert_equal "enable_banking", merge_meta["source"]
+    assert_equal "simplefin", merge_meta["source"]
     assert merge_meta["merged_at"].present?
   end
 
   test "appends to existing manual_merge array preserving prior merged IDs" do
     # Seed a prior merge record directly so the posted entry already has one ID
-    prior_ext_id = "enable_banking_PDNG_PRIOR"
+    prior_ext_id = "simplefin_PDNG_PRIOR"
     @posted_entry.transaction.update!(
       extra: {
         "manual_merge" => [
-          { "merged_from_external_id" => prior_ext_id, "merged_at" => 1.day.ago.iso8601, "source" => "enable_banking" }
+          { "merged_from_external_id" => prior_ext_id, "merged_at" => 1.day.ago.iso8601, "source" => "simplefin" }
         ]
       }
     )
@@ -93,7 +93,7 @@ class Transaction::MergeWithDuplicateTest < ActiveSupport::TestCase
     records = @posted_entry.transaction.reload.extra["manual_merge"]
     assert_equal 2, records.size
     assert_includes records.map { |r| r["merged_from_external_id"] }, prior_ext_id
-    assert_includes records.map { |r| r["merged_from_external_id"] }, "enable_banking_PDNG123"
+    assert_includes records.map { |r| r["merged_from_external_id"] }, "simplefin_PDNG123"
   end
 
   test "migrates legacy single-object manual_merge to array on second merge" do
@@ -101,9 +101,9 @@ class Transaction::MergeWithDuplicateTest < ActiveSupport::TestCase
     @posted_entry.transaction.update!(
       extra: {
         "manual_merge" => {
-          "merged_from_external_id" => "enable_banking_LEGACY",
+          "merged_from_external_id" => "simplefin_LEGACY",
           "merged_at"               => 1.day.ago.iso8601,
-          "source"                  => "enable_banking"
+          "source"                  => "simplefin"
         }
       }
     )
@@ -113,8 +113,8 @@ class Transaction::MergeWithDuplicateTest < ActiveSupport::TestCase
     records = @posted_entry.transaction.reload.extra["manual_merge"]
     assert_kind_of Array, records
     assert_equal 2, records.size
-    assert_includes records.map { |r| r["merged_from_external_id"] }, "enable_banking_LEGACY"
-    assert_includes records.map { |r| r["merged_from_external_id"] }, "enable_banking_PDNG123"
+    assert_includes records.map { |r| r["merged_from_external_id"] }, "simplefin_LEGACY"
+    assert_includes records.map { |r| r["merged_from_external_id"] }, "simplefin_PDNG123"
   end
 
   test "inherits date from pending entry onto posted entry" do
@@ -203,7 +203,7 @@ class Transaction::MergeWithDuplicateTest < ActiveSupport::TestCase
 
     @pending_entry.transaction.merge_with_duplicate!
 
-    assert_equal "enable_banking_PDNG123",
+    assert_equal "simplefin_PDNG123",
                  @posted_entry.transaction.reload.extra.dig("manual_merge", 0, "merged_from_external_id")
   end
 

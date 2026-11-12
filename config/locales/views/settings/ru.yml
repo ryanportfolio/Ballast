@@ -278,40 +278,6 @@ ru:
       drawer_trust_statement: Доступ только для чтения. Sure никогда не может перемещать
         деньги, а ваши учетные данные хранятся в зашифрованном виде.
       empty_filter: Провайдеры, соответствующие фильтру, не найдены.
-      enable_banking_panel:
-        add_connection: Добавить подключение
-        application_id_label: ID приложения
-        application_id_placeholder_new: Введите ID приложения
-        application_id_placeholder_update: Введите новый ID для обновления
-        callback_url_instruction: Для URL обратного вызова используйте %{callback_url}.
-        client_certificate_label: Клиентский сертификат (с приватным ключом)
-        keep_client_certificate_hint: "Оставьте пустым, чтобы сохранить текущий сертификат"
-        config_locked_message: Отключите все связанные банки перед изменением этих
-          учётных данных.
-        config_locked_title: Конфигурация заблокирована
-        configured: Настроено
-        connect_bank: Подключить банк
-        connected_bank: Подключённый банк
-        connection: Подключение
-        connection_error: Ошибка подключения
-        country_label: Страна
-        ready_to_link: Готово к связыванию счетов
-        reconnect: Переподключить
-        remove: Удалить
-        remove_confirm: Вы уверены, что хотите удалить это подключение?
-        save_and_connect: Сохранить и подключить
-        select_country: Выберите страну...
-        session_expired_reconnect: Сессия истекла - переподключитесь
-        session_expires: 'Сессия истекает: %{date}'
-        step_1_html: Перейдите на %{link} и получите ваши учётные данные разработчика.
-        step_2: Выберите вашу страну и вставьте ID приложения + клиентский сертификат
-          ниже.
-        step_3: Сохраните, затем используйте Добавить подключение, чтобы связать ваш
-          банк.
-        sync: Синхронизировать
-        syncing: Синхронизация
-        unknown: Неизвестно
-        update_connection: Обновить подключение
       encryption_error:
         message: Синхронизация банка требует настройки шифрования Active Record. Установите
           primary_key, deterministic_key и key_derivation_salt в ваших учетных данных
@@ -332,12 +298,6 @@ ru:
       meta:
         last_synced: Синхронизировано %{time} назад
         no_recent_sync: Синхронизация просрочена
-        reconsent_needed:
-          few: Повторное согласие требуется через %{count} дня
-          many: Повторное согласие требуется через %{count} дней
-          one: Повторное согласие требуется через %{count} день
-          other: Повторное согласие требуется через %{count} дня
-        reconsent_required: Требуется повторное согласие
         sync_error: Ошибка синхронизации
       not_authorized: Не авторизован
       not_found: Провайдер не найден.
@@ -380,16 +340,10 @@ ru:
       sync_provider_in_progress: Синхронизация начата.
       sync_provider_no_items: Нет доступных подключений для синхронизации.
       taglines:
-        brex: Синхронизируйте операции по счетам Brex Cash и корпоративным картам Brex с доступом
-          только для чтения.
-        enable_banking: Синхронизируйте европейские банковские счета через открытый
-          банкинг PSD2.
-        mercury: Синхронизируйте ваши бизнес-счета Mercury автоматически.
         plaid: Подключите тысячи финансовых учреждений США через Plaid.
         plaid_eu: Подключите европейские финансовые учреждения через Plaid (PSD2 /
           Open Banking).
         simplefin: Подключите банковские счета США через открытый протокол SimpleFIN.
-        wise: Автоматически синхронизируйте мультивалютные балансы Wise и международные переводы.
       update:
         no_changes: Изменений не было
         updated_successfully: Настройки поставщика успешно обновлены

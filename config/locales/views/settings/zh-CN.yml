@@ -278,10 +278,6 @@ zh-CN:
       meta:
         sync_error: 同步错误
         no_recent_sync: 同步已逾期
-        reconsent_required: 需要重新授权
-        reconsent_needed:
-          one: 1 天后需要重新授权
-          other: "%{count} 天后需要重新授权"
         last_synced: 于 %{time} 前同步
       sync_all: 全部同步
       sync_all_in_progress: 正在同步所有已连接的提供商…
@@ -291,9 +287,6 @@ zh-CN:
       recently_synced: 刚刚已同步，请稍后再试。
       taglines:
         simplefin: 通过开放的 SimpleFIN 协议连接美国银行账户。
-        enable_banking: 通过 PSD2 开放银行连接欧洲银行账户。
-        mercury: 自动同步您的 Mercury 商业银行账户。
-        brex: 以只读方式同步 Brex 现金和公司卡活动。
         plaid: 通过 Plaid 连接数千家美国金融机构。
         plaid_eu: 通过 Plaid 连接欧洲金融机构（PSD2 / Open Banking）。
       search_filters:
@@ -310,37 +303,6 @@ zh-CN:
         message: 银行同步需要配置 Active Record 加密。请在 Rails 凭据或环境变量中设置 primary_key、deterministic_key 和 key_derivation_salt。
       provider_form:
         save_and_connect: 保存并连接
-      enable_banking_panel:
-        callback_url_instruction: 回调 URL 请使用 %{callback_url}。
-        connection_error: 连接错误
-        step_1_html: 前往 %{link} 并获取您的开发者凭据。
-        step_2: 选择您的国家/地区，并将 Application ID + Client Certificate 粘贴到下方。
-        step_3: 保存后使用“添加连接”链接您的银行。
-        config_locked_title: 配置已锁定
-        config_locked_message: 在更改这些凭据之前，请先断开所有已连接的银行。
-        application_id_label: Application ID
-        application_id_placeholder_new: 输入 application ID
-        application_id_placeholder_update: 输入新 ID 以更新
-        client_certificate_label: Client Certificate（包含 Private Key）
-        keep_client_certificate_hint: "留空以保留当前证书"
-        save_and_connect: 保存并连接
-        update_connection: 更新连接
-        connected_bank: 已连接的银行
-        session_expires: 会话过期时间：%{date}
-        unknown: 未知
-        connection: 连接
-        session_expired_reconnect: 会话已过期 - 重新连接
-        configured: 已配置
-        ready_to_link: 准备链接账户
-        sync: 同步
-        reconnect: 重新连接
-        connect_bank: 连接银行
-        remove: 移除
-        remove_confirm: 确定要移除此连接吗？
-        add_connection: 添加连接
-        syncing: 正在同步
-        select_country: 选择国家/地区...
-        country_label: 国家/地区
       simplefin_panel:
         step_1_html: 前往 %{link} 获取一次性设置令牌。
         step_2: 将令牌粘贴到下方并连接。

@@ -198,16 +198,12 @@ class Settings::ProvidersController < ApplicationController
     end
 
     # Hardcoded family-scoped panels — provider connections are managed through
-    # their own models (SimplefinItem, EnableBankingItem, etc.) rather than global
+    # their own models (such as SimplefinItem) rather than global
     # settings, so they need custom UI per-provider for connection management,
     # status display, and sync actions. The configuration registry excludes
     # them (see prepare_show_context).
     FAMILY_PANELS = [
-      { key: "simplefin",      title: "SimpleFIN",       turbo_id: "simplefin",      partial: "simplefin_panel" },
-      { key: "enable_banking", title: "Enable Banking",  turbo_id: "enable_banking", partial: "enable_banking_panel" },
-      { key: "wise",           title: "Wise",            turbo_id: "wise",           partial: "wise_panel" },
-      { key: "mercury",        title: "Mercury",         turbo_id: "mercury",        partial: "mercury_panel" },
-      { key: "brex",           title: "Brex",            turbo_id: "brex",           partial: "brex_panel" }
+      { key: "simplefin",      title: "SimpleFIN",       turbo_id: "simplefin",      partial: "simplefin_panel" }
     ].freeze
 
     FAMILY_PANEL_KEYS = FAMILY_PANELS.map { |p| p[:key] }.freeze
@@ -215,25 +211,13 @@ class Settings::ProvidersController < ApplicationController
 
     # Maps panel key → ActiveRecord model name for sync health queries
     PANEL_SYNCABLE_TYPES = {
-      "simplefin"      => "SimplefinItem",
-      "enable_banking" => "EnableBankingItem",
-      "wise"           => "WiseItem",
-      "mercury"        => "MercuryItem",
-      "brex"           => "BrexItem"
+      "simplefin"      => "SimplefinItem"
     }.freeze
 
     def load_provider_items(provider_key)
       case provider_key
       when "simplefin"
         @simplefin_items = Current.family.simplefin_items.ordered
-      when "enable_banking"
-        @enable_banking_items = Current.family.enable_banking_items.ordered
-      when "wise"
-        @wise_items = Current.family.wise_items.active.ordered.includes(:syncs, :wise_accounts)
-      when "mercury"
-        @mercury_items = Current.family.mercury_items.active.ordered.includes(:syncs, :mercury_accounts)
-      when "brex"
-        @brex_items = Current.family.brex_items.active.ordered.includes(:syncs, :brex_accounts)
       end
     end
 
@@ -249,19 +233,6 @@ class Settings::ProvidersController < ApplicationController
 
       # Providers page only needs to know whether any SimpleFIN connections exist with valid credentials
       @simplefin_items = Current.family.simplefin_items.where.not(access_url: [ nil, "" ]).ordered.select(:id)
-      @enable_banking_items = Current.family.enable_banking_items.ordered # Enable Banking panel needs session info for status display
-      @wise_items = Current.family.wise_items.active.ordered
-      @mercury_items = Current.family.mercury_items.active.ordered
-      @brex_items = Current.family.brex_items.active.ordered
-
-      # Wallet uploads are managed on iOS. Only expose linked accounts the
-      # current admin can access, including connections that need repair.
-      accessible_account_ids = Current.family.accounts.accessible_by(Current.user).pluck(:id).to_set
-      @financekit_connections = Current.family.financekit_items.where(status: %w[active repair_required])
-        .ordered.includes(:accounts).filter_map do |item|
-          accounts = item.accounts.select { |account| accessible_account_ids.include?(account.id) && !account.pending_deletion? }
-          { item: item, accounts: accounts } if accounts.any?
-        end
 
       @provider_sync_health = compute_provider_sync_health(family_panel_items)
 
@@ -280,11 +251,7 @@ class Settings::ProvidersController < ApplicationController
     # on instance_variable_get for control flow.
     def family_panel_items
       {
-        "simplefin"      => @simplefin_items,
-        "enable_banking" => @enable_banking_items,
-        "wise"           => @wise_items,
-        "mercury"        => @mercury_items,
-        "brex"           => @brex_items
+        "simplefin"      => @simplefin_items
       }
     end
 
@@ -347,17 +314,6 @@ class Settings::ProvidersController < ApplicationController
         }
       end
 
-      wallet_entry = {
-        provider_key: "financekit", title: Provider::Metadata.for(:financekit)[:name],
-        turbo_id: "financekit", partial: "financekit_panel", maturity: :beta,
-        external_link: {
-          text: t("settings.providers.financekit.app_store"), href: nil,
-          tooltip: t("settings.providers.financekit.coming_soon")
-        },
-        sync_supported: false,
-        summary: view_context.financekit_provider_summary(@financekit_connections)
-      }
-
-      (configuration_entries + family_entries + [ wallet_entry ]).sort_by { |entry| entry[:title].downcase }
+      (configuration_entries + family_entries).sort_by { |entry| entry[:title].downcase }
     end
 end

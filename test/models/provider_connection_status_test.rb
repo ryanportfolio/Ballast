@@ -20,8 +20,8 @@ class ProviderConnectionStatusTest < ActiveSupport::TestCase
   end
 
   test "status summary is computed without calling provider item summary" do
-    provider = ProviderConnectionStatus::PROVIDERS.find { |entry| entry[:association] == :mercury_items }
-    item = mercury_items(:one)
+    provider = ProviderConnectionStatus::PROVIDERS.find { |entry| entry[:association] == :plaid_items }
+    item = plaid_items(:one)
     completed_sync = item.syncs.create!(
       status: "completed",
       created_at: 1.hour.ago,
@@ -58,19 +58,28 @@ class ProviderConnectionStatusTest < ActiveSupport::TestCase
   end
 
   test "account counts use provider account links instead of linked account fallback" do
-    provider = ProviderConnectionStatus::PROVIDERS.find { |entry| entry[:association] == :mercury_items }
-    item = mercury_items(:one)
-    linked_provider_account = item.mercury_accounts.create!(
-      account_id: "merc_acc_savings_2",
-      name: "Mercury Savings",
-      currency: "USD"
+    provider = ProviderConnectionStatus::PROVIDERS.find { |entry| entry[:association] == :simplefin_items }
+    item = SimplefinItem.create!(family: families(:dylan_family), name: "SimpleFIN", access_url: "https://example.com/access")
+    item.simplefin_accounts.create!(
+      account_id: "sf_acc_checking_1",
+      name: "SimpleFIN Checking",
+      currency: "USD",
+      account_type: "checking",
+      current_balance: 100
+    )
+    linked_provider_account = item.simplefin_accounts.create!(
+      account_id: "sf_acc_savings_2",
+      name: "SimpleFIN Savings",
+      currency: "USD",
+      account_type: "savings",
+      current_balance: 200
     )
     AccountProvider.create!(
       account: accounts(:other_asset),
       provider: linked_provider_account
     )
 
-    item.association(:mercury_accounts).reset
+    item.association(:simplefin_accounts).reset
 
     status = ProviderConnectionStatus.new(provider, item, syncing: false).to_h
 

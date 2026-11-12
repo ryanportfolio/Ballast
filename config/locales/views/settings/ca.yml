@@ -266,39 +266,6 @@ ca:
       drawer_trust_statement: Accés només de lectura. Sure mai no pot moure diners
         i les teves credencials s'emmagatzemen xifrades.
       empty_filter: Cap proveïdor coincideix amb el teu filtre.
-      enable_banking_panel:
-        add_connection: Afegeix connexió
-        application_id_label: ID d'aplicació
-        application_id_placeholder_new: Introdueix l'ID d'aplicació
-        application_id_placeholder_update: Introdueix el nou ID per actualitzar
-        callback_url_instruction: Per a l'URL de retorn de trucada, fes servir %{callback_url}.
-        client_certificate_label: Certificat de client (amb clau privada)
-        keep_client_certificate_hint: "Deixa-ho en blanc per mantenir el certificat actual"
-        config_locked_message: Desconnecta tots els bancs vinculats abans de canviar
-          aquestes credencials.
-        config_locked_title: Configuració bloquejada
-        configured: Configurat
-        connect_bank: Connecta banc
-        connected_bank: Banc connectat
-        connection: Connexió
-        connection_error: Error de connexió
-        country_label: País
-        ready_to_link: Llest per enllaçar comptes
-        reconnect: Reconnecta
-        remove: Elimina
-        remove_confirm: Segur que vols eliminar aquesta connexió?
-        save_and_connect: Desa i connecta
-        select_country: Selecciona país...
-        session_expired_reconnect: Sessió expirada — reconnecta
-        session_expires: 'La sessió expira: %{date}'
-        step_1_html: Ves a %{link} i obtén les teves credencials de desenvolupador.
-        step_2: Tria el teu país i enganxa l'ID d'aplicació + certificat de client
-          a sota.
-        step_3: Desa, després utilitza Afegeix connexió per enllaçar el teu banc.
-        sync: Sincronitza
-        syncing: Sincronitzant
-        unknown: Desconegut
-        update_connection: Actualitza connexió
       encryption_error:
         message: La sincronització bancària requereix Active Record encryption configurat.
           Estableix primary_key, deterministic_key i key_derivation_salt a les teves
@@ -319,10 +286,6 @@ ca:
       meta:
         last_synced: Sincronitzat fa %{time}
         no_recent_sync: Sincronització endarrerida
-        reconsent_needed:
-          one: Cal renovar el consentiment en %{count} dia
-          other: Cal renovar el consentiment en %{count} dies
-        reconsent_required: Cal renovar el consentiment
         sync_error: Error de sincronització
       not_authorized: No autoritzat
       not_found: Proveïdor no trobat.
@@ -364,18 +327,11 @@ ca:
       sync_provider_in_progress: Sincronització iniciada.
       sync_provider_no_items: No hi ha connexions disponibles per sincronitzar.
       taglines:
-        brex: Sincronitza l'activitat d'efectiu i targeta corporativa de Brex amb
-          accés de només lectura.
-        enable_banking: Sincronitza comptes bancaris europeus mitjançant l'open banking
-          PSD2.
-        mercury: Sincronitza automàticament els teus comptes bancaris empresarials
-          de Mercury.
         plaid: Connecta milers d'entitats financeres dels EUA mitjançant Plaid.
         plaid_eu: Connecta entitats financeres europees mitjançant Plaid (PSD2
           / Open Banking).
         simplefin: Connecta comptes bancaris dels EUA mitjançant el protocol obert
           SimpleFIN.
-        wise: Sincronitza automàticament els teus saldos multidivisa i les transferències internacionals de Wise.
       update:
         no_changes: No s'ha fet cap canvi
         updated_successfully: Configuració del proveïdor actualitzada correctament

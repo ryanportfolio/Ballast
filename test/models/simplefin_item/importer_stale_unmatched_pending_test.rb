@@ -32,8 +32,8 @@ class SimplefinItem::ImporterStaleUnmatchedPendingTest < ActiveSupport::TestCase
     assert_equal 1, stats["stale_unmatched_pending"]
   end
 
-  test "counts a stale entry pending under any provider, not only SimpleFIN and Plaid" do
-    stale_entry("enable_banking" => { "pending" => true })
+  test "counts a stale entry pending under any pending provider, not only SimpleFIN" do
+    stale_entry("plaid" => { "pending" => true })
 
     track
 

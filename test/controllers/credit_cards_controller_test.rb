@@ -142,77 +142,26 @@ class CreditCardsControllerTest < ActionDispatch::IntegrationTest
     assert_nil @account.reload.credit_card.statement_close_day
   end
 
-  test "updates enable banking balance interpretation flag when linked" do
-    enable_banking_account = create_linked_enable_banking_account
-
-    get edit_credit_card_path(@account)
-    assert_response :success
-    assert_match "treat_balance_as_available_credit", response.body
-    assert_match I18n.t("credit_cards.form.treat_balance_as_available_credit_label"), response.body
+  test "handles malformed SimpleFIN params without error" do
+    create_linked_simplefin_account
 
     patch credit_card_path(@account), params: {
       account: {
         name: @account.name,
         accountable_type: "CreditCard",
-        enable_banking: { treat_balance_as_available_credit: "1" }
-      }
-    }
-
-    assert_redirected_to @account
-    assert enable_banking_account.reload.treat_balance_as_available_credit?
-  end
-
-  test "clears enable banking balance interpretation flag when toggled off" do
-    enable_banking_account = create_linked_enable_banking_account
-    enable_banking_account.update!(treat_balance_as_available_credit: true)
-
-    patch credit_card_path(@account), params: {
-      account: {
-        name: @account.name,
-        accountable_type: "CreditCard",
-        enable_banking: { treat_balance_as_available_credit: "0" }
-      }
-    }
-
-    assert_redirected_to @account
-    assert_not enable_banking_account.reload.treat_balance_as_available_credit?
-  end
-
-  test "does not persist enable banking flag when the account update fails" do
-    enable_banking_account = create_linked_enable_banking_account
-
-    patch credit_card_path(@account), params: {
-      account: {
-        name: "",
-        accountable_type: "CreditCard",
-        enable_banking: { treat_balance_as_available_credit: "1" }
-      }
-    }
-
-    assert_response :unprocessable_entity
-    assert_not enable_banking_account.reload.treat_balance_as_available_credit?
-  end
-
-  test "handles malformed enable banking params without error" do
-    create_linked_enable_banking_account
-
-    patch credit_card_path(@account), params: {
-      account: {
-        name: @account.name,
-        accountable_type: "CreditCard",
-        enable_banking: "bogus"
+        simplefin: "bogus"
       }
     }
 
     assert_redirected_to @account
   end
 
-  test "ignores enable banking params for accounts without an enable banking link" do
+  test "ignores SimpleFIN params for accounts without a SimpleFIN link" do
     patch credit_card_path(@account), params: {
       account: {
         name: "Still works",
         accountable_type: "CreditCard",
-        enable_banking: { treat_balance_as_available_credit: "1" }
+        simplefin: { balance_sign_override: "credit" }
       }
     }
 
@@ -290,26 +239,6 @@ class CreditCardsControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
-    def create_linked_enable_banking_account
-      enable_banking_item = EnableBankingItem.create!(
-        family: @account.family,
-        name: "Test EB",
-        country_code: "FR",
-        application_id: "app_id",
-        client_certificate: "cert"
-      )
-      enable_banking_account = EnableBankingAccount.create!(
-        enable_banking_item: enable_banking_item,
-        name: "Linked card",
-        uid: "hash_cc",
-        currency: "EUR",
-        current_balance: 900.00,
-        credit_limit: 1000.00
-      )
-      AccountProvider.create!(account: @account, provider: enable_banking_account)
-      enable_banking_account
-    end
-
     def create_linked_simplefin_account
       simplefin_item = SimplefinItem.create!(
         family: @account.family,

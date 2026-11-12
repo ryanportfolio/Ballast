@@ -157,7 +157,7 @@ This single command generates:
 | **UI location** | `/settings/providers` (always) | `/settings/providers` (self-hosted only) |
 | **ENV variable support** | ❌ No (per-family can't use ENV) | ✅ Yes (fallback) |
 | **Use case** | User brings own API key | Platform provides API access |
-| **Examples** | SimpleFIN, YNAB || Plaid, OpenAI, TwelveData |
+| **Examples** | SimpleFIN, YNAB | Plaid, OpenAI, TwelveData |
 
 ---
 

@@ -379,10 +379,10 @@ class SyncTest < ActiveSupport::TestCase
     Sync.for_family(family).incomplete.find_each(&:destroy)
     assert_not Sync.any_incomplete_for?(family)
 
-    mercury_item = mercury_items(:one)
-    incomplete = Sync.create!(syncable: mercury_item, status: :pending)
+    plaid_item = plaid_items(:one)
+    incomplete = Sync.create!(syncable: plaid_item, status: :pending)
     assert Sync.any_incomplete_for?(family),
-           "any_incomplete_for? should report true for an in-flight Mercury sync"
+           "any_incomplete_for? should report true for an in-flight Plaid sync"
 
     incomplete.update!(status: :completed)
     assert_not Sync.any_incomplete_for?(family)

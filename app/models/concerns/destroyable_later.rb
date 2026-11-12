@@ -12,8 +12,8 @@
 #
 # Both writes use update_column, skipping validations (item models declare no
 # save callbacks for it to skip). Setting the flag must not fail on a validation
-# unrelated to deletion: BrexItem checks base_url against an allowlist on every
-# save, so a row that predates an allowlist change would otherwise be
+# unrelated to deletion: an item that checks a field against an allowlist on
+# every save would leave a row that predates an allowlist change
 # undeletable. Restoring it must not fail on a model whose validations skip a
 # check while scheduled_for_deletion is set, and mask the enqueue error with
 # its own.

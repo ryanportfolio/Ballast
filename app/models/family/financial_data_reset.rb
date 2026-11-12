@@ -40,10 +40,6 @@ class Family::FinancialDataReset
   ].freeze
   STATUS_COUNT_KEYS = (COUNT_KEYS - %i[syncs]) + %i[plaid_items]
   PROVIDER_ITEM_ASSOCIATIONS = %i[
-    financekit_items
-    brex_items
-    enable_banking_items
-    mercury_items
     plaid_items
     simplefin_items
   ].freeze
@@ -146,7 +142,6 @@ class Family::FinancialDataReset
       scope(:tags).destroy_all
       scope(:merchants).destroy_all
       delete_provider_items!
-      family.financekit_account_lineages.destroy_all
       scope(:accounts).destroy_all
     end
 

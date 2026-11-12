@@ -60,33 +60,9 @@ module SettingsHelper
     when "simplefin"
       return { status: :off } unless @simplefin_items&.any?
       sync_based_summary(key)
-    when "enable_banking"
-      return { status: :off } unless @enable_banking_items&.any?
-      enable_banking_summary
-    when "wise"
-      return { status: :off } unless @wise_items&.any?
-      sync_based_summary(key)
-    when "mercury"
-      return { status: :off } unless @mercury_items&.any?
-      sync_based_summary(key)
-    when "brex"
-      return { status: :off } unless @brex_items&.any?
-      sync_based_summary(key)
     else
       { status: :off }
     end
-  end
-
-  def financekit_provider_summary(connections)
-    return { status: :off } if connections.empty?
-
-    items = connections.map { |connection| connection[:item] }
-    count = connections.flat_map { |connection| connection[:accounts].map(&:id) }.uniq.size
-    {
-      status: items.any? { |item| item.status == "repair_required" } ? :warn : :ok,
-      meta: t("settings.providers.financekit.linked_accounts", count: count),
-      last_synced_at: items.filter_map(&:last_imported_at).max
-    }
   end
 
   def settings_nav_footer
@@ -187,37 +163,6 @@ module SettingsHelper
       end
 
       base.merge(last_synced_at: last_synced_at)
-    end
-
-    def enable_banking_summary
-      health = @provider_sync_health&.dig("enable_banking") || {}
-      last_synced_at = health[:last_synced_at]
-
-      return { status: :err, meta: t("settings.providers.meta.sync_error"), last_synced_at: nil } if health[:error]
-
-      valid_items = @enable_banking_items&.reject(&:needs_authorization?) || []
-
-      # All items have expired, missing or rejected sessions — need re-authorization
-      if valid_items.empty?
-        return { status: :warn, meta: t("settings.providers.meta.reconsent_required"), last_synced_at: last_synced_at }
-      end
-
-      expiring = valid_items.find do |item|
-        item.session_expires_at.present? && item.session_expires_at < 7.days.from_now
-      end
-
-      if expiring
-        days = [ ((expiring.session_expires_at - Time.current) / 1.day).ceil, 1 ].max
-        return { status: :warn, meta: t("settings.providers.meta.reconsent_needed", count: days), last_synced_at: last_synced_at }
-      end
-
-      return { status: :warn, meta: t("settings.providers.meta.no_recent_sync"), last_synced_at: last_synced_at } if health[:stale]
-
-      if last_synced_at.present?
-        { status: :ok, meta: t("settings.providers.meta.last_synced", time: concise_time_ago(last_synced_at)), last_synced_at: last_synced_at }
-      else
-        { status: :ok, last_synced_at: nil }
-      end
     end
 
     def setting_name(setting)

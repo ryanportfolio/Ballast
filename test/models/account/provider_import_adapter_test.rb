@@ -1471,7 +1471,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   end
 
   test "clears pending flag, preserves pending date, and records old external_id when claiming pending entry with nil extra" do
-    # Enable Banking booked transactions often have nil extra (no FX, no MCC).
+    # Booked transactions often have nil extra (no FX, no MCC).
     # The deep_merge path is skipped, so we must clear the pending flag explicitly.
     pending_date = Date.today - 2.days
     pending_entry = @adapter.import_transaction(
@@ -1480,8 +1480,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: pending_date,
       name: "Supermarket",
-      source: "enable_banking",
-      extra: { "enable_banking" => { "pending" => true } }
+      source: "plaid",
+      extra: { "plaid" => { "pending" => true } }
     )
 
     assert pending_entry.transaction.pending?, "should be pending before claim"
@@ -1493,8 +1493,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,   # booked date is later than pending date
         name: "Supermarket Posted",
-        source: "enable_banking",
-        extra: nil  # typical for simple Enable Banking booked transactions
+        source: "plaid",
+        extra: nil  # typical for simple booked transactions
       )
 
       assert_equal pending_entry.id, posted_entry.id, "should claim the pending entry"
@@ -1529,8 +1529,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: pending_date,
       name: "Coffee Shop",
-      source: "enable_banking",
-      extra: { "enable_banking" => { "pending" => true } }
+      source: "plaid",
+      extra: { "plaid" => { "pending" => true } }
     )
 
     # First sync: claim the pending entry
@@ -1540,7 +1540,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: booked_date,
       name: "Coffee Shop Posted",
-      source: "enable_banking",
+      source: "plaid",
       extra: nil
     )
 
@@ -1552,7 +1552,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: booked_date,
         name: "Coffee Shop Posted",
-        source: "enable_banking",
+        source: "plaid",
         extra: nil
       )
 
@@ -2158,8 +2158,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
   end
 
   # =========================================================================
-  # Same-external-id pending → booked (e.g. Revolut Italy via Enable Banking)
-  # Some ASPSPs reuse the same transaction_id for pending and booked, so the
+  # Same-external-id pending → booked
+  # Some banks reuse the same transaction_id for pending and booked, so the
   # entry is found by find_or_initialize_by (persisted), bypassing auto-claim.
   # =========================================================================
 
@@ -2170,8 +2170,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today - 2.days,
       name: "Piero Fiorista",
-      source: "enable_banking",
-      extra: { "enable_banking" => { "pending" => true } }
+      source: "plaid",
+      extra: { "plaid" => { "pending" => true } }
     )
     assert pending_entry.transaction.pending?, "entry should start as pending"
 
@@ -2184,7 +2184,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,
         name: "Piero Fiorista",
-        source: "enable_banking",
+        source: "plaid",
         extra: nil
       )
 
@@ -2201,8 +2201,8 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today - 3.days,
       name: "Clean Center",
-      source: "enable_banking",
-      extra: { "enable_banking" => { "pending" => true } }
+      source: "plaid",
+      extra: { "plaid" => { "pending" => true } }
     )
     assert pending_entry.transaction.pending?, "entry should start as pending"
 
@@ -2219,7 +2219,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,
         name: "Clean Center",
-        source: "enable_banking",
+        source: "plaid",
         extra: nil
       )
 
@@ -2305,10 +2305,10 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       amount: 12.0,
       currency: "EUR",
       date: Date.today,
-      name: "Wise transfer",
-      source: "wise",
-      extra: { "exchange_rate" => "1.05", "wise" => { "status" => "pending" } },
-      replace_extra_namespaces: [ "wise" ]
+      name: "Bank transfer",
+      source: "plaid",
+      extra: { "exchange_rate" => "1.05", "plaid" => { "status" => "pending" } },
+      replace_extra_namespaces: [ "plaid" ]
     )
 
     # The user corrects the rate by hand, which protects the entry.
@@ -2320,17 +2320,17 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       amount: 12.0,
       currency: "EUR",
       date: Date.today,
-      name: "Wise transfer",
-      source: "wise",
-      extra: { "exchange_rate" => "1.05", "wise" => { "status" => "outgoing_payment_sent" } },
-      replace_extra_namespaces: [ "wise" ]
+      name: "Bank transfer",
+      source: "plaid",
+      extra: { "exchange_rate" => "1.05", "plaid" => { "status" => "outgoing_payment_sent" } },
+      replace_extra_namespaces: [ "plaid" ]
     )
 
     refreshed = entry.reload.transaction
 
     assert_equal "1.23", refreshed.extra["exchange_rate"].to_s,
       "the provider must not overwrite a rate the user typed"
-    assert_equal "outgoing_payment_sent", refreshed.extra.dig("wise", "status"),
+    assert_equal "outgoing_payment_sent", refreshed.extra.dig("plaid", "status"),
       "the provider's own namespace should still refresh"
   end
 
@@ -2350,7 +2350,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,
         name: "Scalar Provider",
-        source: "enable_banking",
+        source: "plaid",
         extra: { "simplefin" => "oops", "plaid" => { "pending" => true } }
       )
     end
@@ -2366,10 +2366,10 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today - 2.days,
       name: "Scalar Stored",
-      source: "enable_banking",
-      extra: { "enable_banking" => { "pending" => true } }
+      source: "plaid",
+      extra: { "plaid" => { "pending" => true } }
     )
-    pending_entry.transaction.update!(extra: { "simplefin" => "oops", "enable_banking" => { "pending" => true } })
+    pending_entry.transaction.update!(extra: { "simplefin" => "oops", "plaid" => { "pending" => true } })
     assert pending_entry.transaction.reload.pending?, "entry should start as pending"
 
     assert_no_difference "@account.entries.count" do
@@ -2379,7 +2379,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,
         name: "Scalar Stored",
-        source: "enable_banking",
+        source: "plaid",
         extra: nil
       )
 
@@ -2395,10 +2395,10 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today - 3.days,
       name: "Scalar User Modified",
-      source: "enable_banking",
-      extra: { "enable_banking" => { "pending" => true } }
+      source: "plaid",
+      extra: { "plaid" => { "pending" => true } }
     )
-    pending_entry.transaction.update!(extra: { "simplefin" => "oops", "enable_banking" => { "pending" => true } })
+    pending_entry.transaction.update!(extra: { "simplefin" => "oops", "plaid" => { "pending" => true } })
     pending_entry.mark_user_modified!
 
     assert_no_difference "@account.entries.count" do
@@ -2408,7 +2408,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         currency: "EUR",
         date: Date.today,
         name: "Scalar User Modified",
-        source: "enable_banking",
+        source: "plaid",
         extra: nil
       )
 
@@ -2427,10 +2427,10 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today - 1.day,
       name: "False Flag",
-      source: "enable_banking",
-      extra: { "enable_banking" => { "pending" => true } }
+      source: "plaid",
+      extra: { "plaid" => { "pending" => true } }
     )
-    pending_entry.transaction.update!(extra: { "enable_banking" => { "pending" => "false" } })
+    pending_entry.transaction.update!(extra: { "plaid" => { "pending" => "false" } })
     assert_not pending_entry.transaction.reload.pending?, "\"false\" does not mark a transaction pending"
 
     @adapter.import_transaction(
@@ -2439,11 +2439,11 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "EUR",
       date: Date.today,
       name: "False Flag",
-      source: "enable_banking",
+      source: "plaid",
       extra: nil
     )
 
-    assert_equal "false", pending_entry.transaction.reload.extra.dig("enable_banking", "pending"),
+    assert_equal "false", pending_entry.transaction.reload.extra.dig("plaid", "pending"),
       "a flag that does not mark the transaction pending is not cleared"
   end
 

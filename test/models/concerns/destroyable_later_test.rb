@@ -73,18 +73,16 @@ class DestroyableLaterTest < ActiveSupport::TestCase
   end
 
   # A validation unrelated to deletion must not make a connection undeletable.
-  # BrexItem validates base_url against an allowlist on every save, so a row
-  # written before the allowlist changed would fail update!.
+  # An item that checks a field against an allowlist on every save would fail
+  # update! for a row written before the allowlist changed.
   test "flags an item that fails an unrelated validation" do
-    item = BrexItem.create!(family: families(:dylan_family), name: "Legacy Brex", token: "tok")
-    item.update_column(:base_url, "https://legacy-proxy.example.com")
-    assert_not item.valid?
+    @item.stubs(:valid?).returns(false)
 
-    assert_enqueued_with(job: DestroyJob, args: [ item ]) do
-      assert item.destroy_later
+    assert_enqueued_with(job: DestroyJob, args: [ @item ]) do
+      assert @item.destroy_later
     end
 
-    assert item.reload.scheduled_for_deletion?
+    assert @item.reload.scheduled_for_deletion?
   end
 
   # A restore that re-ran validations would raise RecordInvalid here for an
@@ -106,6 +104,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
     binance_items coinbase_items coinspot_items coinstats_items kraken_items onchain_wallet_items
     ibkr_items indexa_capital_items questrade_items snaptrade_items trade_republic_items trading212_items
     akahu_items fio_items lunchflow_items monobank_items redbark_items sophtron_items up_items
+    brex_items enable_banking_items mercury_items wise_items
   ].freeze
 
   test "every model with a scheduled_for_deletion column uses the concern" do
@@ -114,7 +113,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
       .select { |table| connection.column_exists?(table, :scheduled_for_deletion) }
       .map { |table| table.classify.constantize }
 
-    assert_operator models.size, :>=, 6
+    assert_operator models.size, :>=, 2
 
     models.each do |model|
       assert_equal DestroyableLater, model.instance_method(:destroy_later).owner,

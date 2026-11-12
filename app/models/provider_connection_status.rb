@@ -2,13 +2,8 @@
 
 class ProviderConnectionStatus
   PROVIDERS = [
-    { key: "financekit", type: "FinancekitItem", association: :financekit_items, accounts: :financekit_account_lineages },
     { key: "plaid", type: "PlaidItem", association: :plaid_items, accounts: :plaid_accounts },
-    { key: "simplefin", type: "SimplefinItem", association: :simplefin_items, accounts: :simplefin_accounts },
-    { key: "enable_banking", type: "EnableBankingItem", association: :enable_banking_items, accounts: :enable_banking_accounts },
-    { key: "mercury", type: "MercuryItem", association: :mercury_items, accounts: :mercury_accounts },
-    { key: "brex", type: "BrexItem", association: :brex_items, accounts: :brex_accounts },
-    { key: "wise", type: "WiseItem", association: :wise_items, accounts: :wise_accounts }
+    { key: "simplefin", type: "SimplefinItem", association: :simplefin_items, accounts: :simplefin_accounts }
   ].freeze
 
   class << self
@@ -182,10 +177,6 @@ class ProviderConnectionStatus
     end
 
     def sync_status_summary
-      if provider[:key] == "financekit"
-        return item.last_imported_at ? "Wallet publisher imported" : "Waiting for Wallet publisher"
-      end
-
       stats = latest_completed_sync_stats
       counts = accounts_payload
       total = stats.fetch("total_accounts", counts[:total_count]).to_i

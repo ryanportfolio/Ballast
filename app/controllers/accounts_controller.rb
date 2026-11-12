@@ -16,16 +16,8 @@ class AccountsController < ApplicationController
           .with_attached_logo
           .includes(:accountable, :account_providers, :plaid_account, :simplefin_account)
           .order(:name)
-    @financekit_accounts = Current.family.accounts
-      .where(id: @accessible_account_ids).where.not(status: :pending_deletion)
-      .joins(:account_providers).where(account_providers: { provider_type: "FinancekitAccountLineage" })
-      .distinct.with_attached_logo.includes(:accountable, account_providers: :provider).order(:name)
     @plaid_items = visible_provider_items(family.plaid_items.ordered.with_attached_logo.includes(:plaid_accounts))
     @simplefin_items = visible_provider_items(family.simplefin_items.ordered.with_attached_logo)
-    @enable_banking_items = visible_provider_items(family.enable_banking_items.ordered.with_attached_logo)
-    @mercury_items = visible_provider_items(family.mercury_items.ordered.with_attached_logo.includes(:mercury_accounts))
-    @brex_items = visible_provider_items(family.brex_items.ordered.with_attached_logo.includes(:accounts, brex_accounts: :account_provider))
-    @wise_items = visible_provider_items(family.wise_items.ordered.includes(:wise_accounts, :accounts))
 
     preload_latest_sync_metadata_for_index!
 
@@ -261,8 +253,6 @@ class AccountsController < ApplicationController
   def unlink
     begin
       Account.transaction do
-        @account.provider_account_for("FinancekitAccountLineage")&.disconnect!
-
         # Detach holdings from provider links before destroying them
         provider_link_ids = @account.account_providers.pluck(:id)
         if provider_link_ids.any?
@@ -443,14 +433,10 @@ class AccountsController < ApplicationController
     def preload_latest_sync_metadata_for_index!
       items = [
         @plaid_items,
-        @simplefin_items,
-        @enable_banking_items,
-        @mercury_items,
-        @brex_items,
-        @wise_items
+        @simplefin_items
       ].flatten.compact
 
-      accounts = @manual_accounts.to_a + @financekit_accounts.to_a
+      accounts = @manual_accounts.to_a
       items.each do |item|
         next unless item.respond_to?(:accounts)
         accounts.concat(item.accounts)
@@ -556,50 +542,6 @@ class AccountsController < ApplicationController
       @plaid_items.each do |item|
         latest_sync = item.latest_sync_record
         @plaid_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Enable Banking sync stats
-      @enable_banking_sync_stats_map = {}
-      @enable_banking_latest_sync_error_map = {}
-      @enable_banking_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @enable_banking_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-        @enable_banking_latest_sync_error_map[item.id] = latest_sync&.error
-      end
-
-      # Mercury sync stats
-      @mercury_sync_stats_map = {}
-      @mercury_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @mercury_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Brex sync stats
-      @brex_sync_stats_map = {}
-      @brex_account_counts_map = {}
-      @brex_institutions_count_map = {}
-      @brex_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @brex_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-        brex_accounts = item.brex_accounts.to_a
-        linked_count = brex_accounts.count { |brex_account| brex_account.account_provider.present? }
-        total_count = brex_accounts.count
-        @brex_account_counts_map[item.id] = {
-          linked: linked_count,
-          unlinked: total_count - linked_count,
-          total: total_count
-        }
-        @brex_institutions_count_map[item.id] = brex_accounts
-          .filter_map(&:institution_metadata)
-          .uniq { |institution| institution["name"] || institution["institution_name"] }
-          .count
-      end
-
-      # Wise sync stats
-      @wise_sync_stats_map = {}
-      @wise_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @wise_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
       end
     end
 end

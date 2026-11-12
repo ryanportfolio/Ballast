@@ -23,7 +23,7 @@
 # matter here is a family being told their data was deleted when it was not.
 #
 # The vocabulary lives here rather than in any one provider because it is a
-# contract with API clients: FinanceKit's capabilities response advertises the
+# contract with API clients: a capabilities response advertises the
 # dispositions this build supports, and a client feature-detects rather than
 # hardcoding. Adding a second provider should not change the wire format.
 module ProviderDisconnectable

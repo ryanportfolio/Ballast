@@ -7,42 +7,16 @@ class Settings::ProviderPanelsTest < ActionDispatch::IntegrationTest
     sign_in users(:family_admin)
   end
 
-  test "Wise and Brex list their setup steps in the shared partial" do
-    %w[wise brex].each do |provider_key|
-      get connect_form_settings_providers_path(provider_key: provider_key)
+  test "SimpleFIN lists its setup steps in the shared partial" do
+    get connect_form_settings_providers_path(provider_key: "simplefin")
 
-      assert_response :success
-      assert_select "turbo-frame##{provider_key}-connect-form p", { text: I18n.t("settings.providers.setup_steps.eyebrow") }, provider_key
-    end
+    assert_response :success
+    assert_select "turbo-frame#simplefin-connect-form p", text: I18n.t("settings.providers.setup_steps.eyebrow")
   end
 
-  test "Wise and Brex show a rejected save in an error alert" do
-    patch wise_item_url(wise_items(:one)), params: { wise_item: { name: "" } }, headers: { "Turbo-Frame" => "wise-providers-panel" }
-    assert_error_alert "wise-providers-panel"
-
-    post brex_items_url, params: { brex_item: { name: "Brex", token: "" } }, headers: { "Turbo-Frame" => "brex-providers-panel" }
-    assert_error_alert "brex-providers-panel"
-  end
-
-  test "sync and disconnect actions are named DS buttons" do
-    family = families(:dylan_family)
-    EnableBankingItem.create!(family: family, name: "Live", country_code: "FI", application_id: "app",
-                              client_certificate: "cert", session_id: "live", session_expires_at: 1.day.from_now)
-    EnableBankingItem.create!(family: family, name: "Expired", country_code: "FI", application_id: "app",
-                              client_certificate: "cert", session_id: "expired", session_expires_at: 1.day.ago)
-
-    %w[brex enable_banking mercury].each do |provider_key|
-      get connect_form_settings_providers_path(provider_key: provider_key)
-
-      assert_response :success
-      buttons = css_select("turbo-frame##{provider_key}-connect-form button")
-      assert buttons.any?, "#{provider_key} renders no buttons"
-      buttons.each do |button|
-        assert (button["aria-label"].presence || button.text.squish.presence), "#{provider_key} has a button without a name: #{button.to_html}"
-        assert_includes button["class"].to_s.split, "focus-ring", "#{provider_key} has a button without a focus ring: #{button.to_html}"
-      end
-      assert_select "turbo-frame##{provider_key}-connect-form button[data-turbo-confirm]", { minimum: 1 }, "#{provider_key} disconnects without confirming"
-    end
+  test "SimpleFIN shows a rejected save in an error alert" do
+    post simplefin_items_url, params: { source: "panel", simplefin_item: { setup_token: "" } }, as: :turbo_stream
+    assert_error_alert "simplefin-providers-panel"
   end
 
   private

@@ -959,7 +959,7 @@ class Transaction::SearchTest < ActiveSupport::TestCase
 
     # One pending transaction per provider in PENDING_PROVIDERS. Regression for the
     # status filter only checking a short provider list and silently dropping
-    # enable_banking pending transactions.
+    # other providers' pending transactions.
     pending_by_provider = Transaction::PENDING_PROVIDERS.index_with do |provider|
       entry = create_transaction(account: @checking_account, amount: 100, kind: "standard")
       entry.entryable.update!(extra: { provider => { "pending" => true } })

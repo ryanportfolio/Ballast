@@ -10,7 +10,6 @@ fr:
     appearance: Apparence
     appearances: Apparence
     bank_sync: Synchronisation bancaire
-    brex_items: Brex
     budget_categories: Catégories budgétaires
     budgets: Budgets
     categories: Catégories
@@ -24,7 +23,6 @@ fr:
     debug: Débogage
     debugs: Débogage
     depositories: Comptes espèces
-    enable_banking_items: Activer les services bancaires
     exports: Exports
     family_exports: Exportations
     family_merchants: Marchands
@@ -44,7 +42,6 @@ fr:
     loans: Prêts
     mcp: Serveur MCP
     merchants: Marchands
-    mercury_items: Mercury
     messages: Messages
     mfa: Authentification à deux facteurs
     onboardings: Intégration

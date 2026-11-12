@@ -10,7 +10,6 @@ zh-TW:
     appearance: 外觀
     appearances: 外觀
     bank_sync: 銀行同步
-    brex_items: Brex
     budget_categories: 預算分類
     budgets: 預算
     categories: 分類管理
@@ -23,7 +22,6 @@ zh-TW:
     debug: 偵錯
     debugs: 偵錯
     depositories: 現金帳戶
-    enable_banking_items: Enable Banking
     exports: 匯出
     family_exports: 匯出
     family_merchants: 商家管理
@@ -43,7 +41,6 @@ zh-TW:
     loans: 貸款
     mcp: MCP Server
     merchants: 商家管理
-    mercury_items: Mercury
     messages: 訊息
     mfa: 雙重驗證
     onboardings: 新手導覽

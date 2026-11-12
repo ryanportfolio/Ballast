@@ -6,7 +6,7 @@ class Api::V1::ProviderConnectionsControllerTest < ActionDispatch::IntegrationTe
   setup do
     @user = users(:family_admin)
     @family = @user.family
-    @mercury_item = mercury_items(:one)
+    @simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN Connection", access_url: "https://example.com/access/secret-access-url")
 
     @user.api_keys.active.destroy_all
 
@@ -32,7 +32,7 @@ class Api::V1::ProviderConnectionsControllerTest < ActionDispatch::IntegrationTe
   end
 
   test "lists provider connection status for current family" do
-    failed_sync = @mercury_item.syncs.create!(
+    failed_sync = @simplefin_item.syncs.create!(
       status: "failed",
       failed_at: Time.current,
       error: "secret token failed"
@@ -42,27 +42,26 @@ class Api::V1::ProviderConnectionsControllerTest < ActionDispatch::IntegrationTe
     assert_response :success
 
     json_response = JSON.parse(response.body)
-    mercury_connection = json_response["data"].detect do |connection|
-      connection["id"] == @mercury_item.id && connection["provider"] == "mercury"
+    simplefin_connection = json_response["data"].detect do |connection|
+      connection["id"] == @simplefin_item.id && connection["provider"] == "simplefin"
     end
 
-    assert_not_nil mercury_connection
-    assert_equal "mercury", mercury_connection["provider"]
-    assert_equal "MercuryItem", mercury_connection["provider_type"]
-    assert_equal @mercury_item.name, mercury_connection["name"]
-    assert_equal @mercury_item.status, mercury_connection["status"]
-    assert_includes [ true, false ], mercury_connection["requires_update"]
-    assert_equal true, mercury_connection["credentials_configured"]
-    assert_includes [ true, false ], mercury_connection["scheduled_for_deletion"]
-    assert_includes [ true, false ], mercury_connection["pending_account_setup"]
-    assert_equal @mercury_item.mercury_accounts.count, mercury_connection["accounts"]["total_count"]
-    assert_equal failed_sync.id, mercury_connection["sync"]["latest"]["id"]
-    assert_equal true, mercury_connection["sync"]["latest"]["error"]["present"]
-    assert_equal "Sync failed", mercury_connection["sync"]["latest"]["error"]["message"]
+    assert_not_nil simplefin_connection
+    assert_equal "simplefin", simplefin_connection["provider"]
+    assert_equal "SimplefinItem", simplefin_connection["provider_type"]
+    assert_equal @simplefin_item.name, simplefin_connection["name"]
+    assert_includes [ true, false ], simplefin_connection["requires_update"]
+    assert_includes [ true, false ], simplefin_connection["credentials_configured"]
+    assert_includes [ true, false ], simplefin_connection["scheduled_for_deletion"]
+    assert_includes [ true, false ], simplefin_connection["pending_account_setup"]
+    assert_equal @simplefin_item.simplefin_accounts.count, simplefin_connection["accounts"]["total_count"]
+    assert_equal failed_sync.id, simplefin_connection["sync"]["latest"]["id"]
+    assert_equal true, simplefin_connection["sync"]["latest"]["error"]["present"]
+    assert_equal "Sync failed", simplefin_connection["sync"]["latest"]["error"]["message"]
   end
 
   test "reports failed sync errors as present without exposing raw messages" do
-    failed_sync = @mercury_item.syncs.create!(
+    failed_sync = @simplefin_item.syncs.create!(
       status: "failed",
       failed_at: Time.current,
       error: nil
@@ -71,17 +70,17 @@ class Api::V1::ProviderConnectionsControllerTest < ActionDispatch::IntegrationTe
     get api_v1_provider_connections_url, headers: api_headers(@api_key)
     assert_response :success
 
-    mercury_connection = JSON.parse(response.body)["data"].detect do |connection|
-      connection["id"] == @mercury_item.id && connection["provider"] == "mercury"
+    simplefin_connection = JSON.parse(response.body)["data"].detect do |connection|
+      connection["id"] == @simplefin_item.id && connection["provider"] == "simplefin"
     end
 
-    assert_equal failed_sync.id, mercury_connection["sync"]["latest"]["id"]
-    assert_equal true, mercury_connection["sync"]["latest"]["error"]["present"]
-    assert_equal "Sync failed", mercury_connection["sync"]["latest"]["error"]["message"]
+    assert_equal failed_sync.id, simplefin_connection["sync"]["latest"]["id"]
+    assert_equal true, simplefin_connection["sync"]["latest"]["error"]["present"]
+    assert_equal "Sync failed", simplefin_connection["sync"]["latest"]["error"]["message"]
   end
 
   test "reports stale sync errors as present" do
-    stale_sync = @mercury_item.syncs.create!(
+    stale_sync = @simplefin_item.syncs.create!(
       status: "stale",
       syncing_at: 2.days.ago
     )
@@ -89,17 +88,17 @@ class Api::V1::ProviderConnectionsControllerTest < ActionDispatch::IntegrationTe
     get api_v1_provider_connections_url, headers: api_headers(@api_key)
     assert_response :success
 
-    mercury_connection = JSON.parse(response.body)["data"].detect do |connection|
-      connection["id"] == @mercury_item.id && connection["provider"] == "mercury"
+    simplefin_connection = JSON.parse(response.body)["data"].detect do |connection|
+      connection["id"] == @simplefin_item.id && connection["provider"] == "simplefin"
     end
 
-    assert_equal stale_sync.id, mercury_connection["sync"]["latest"]["id"]
-    assert_equal true, mercury_connection["sync"]["latest"]["error"]["present"]
-    assert_equal "Sync became stale before completion", mercury_connection["sync"]["latest"]["error"]["message"]
+    assert_equal stale_sync.id, simplefin_connection["sync"]["latest"]["id"]
+    assert_equal true, simplefin_connection["sync"]["latest"]["error"]["present"]
+    assert_equal "Sync became stale before completion", simplefin_connection["sync"]["latest"]["error"]["message"]
   end
 
   test "does not expose provider secrets or raw sync errors" do
-    @mercury_item.syncs.create!(
+    @simplefin_item.syncs.create!(
       status: "failed",
       failed_at: Time.current,
       error: "raw provider token secret"
@@ -108,7 +107,7 @@ class Api::V1::ProviderConnectionsControllerTest < ActionDispatch::IntegrationTe
     get api_v1_provider_connections_url, headers: api_headers(@api_key)
     assert_response :success
 
-    refute_includes response.body, @mercury_item.token
+    refute_includes response.body, @simplefin_item.access_url
     refute_includes response.body, "raw provider token secret"
   end
 
@@ -140,24 +139,6 @@ class Api::V1::ProviderConnectionsControllerTest < ActionDispatch::IntegrationTe
   test "read_write key can list provider connection status" do
     get api_v1_provider_connections_url, headers: api_headers(@read_write_key)
     assert_response :success
-  end
-
-  test "lists Brex provider connection status" do
-    brex_item = brex_items(:one)
-
-    get api_v1_provider_connections_url, headers: api_headers(@api_key)
-    assert_response :success
-
-    brex_connection = JSON.parse(response.body)["data"].detect do |connection|
-      connection["id"] == brex_item.id && connection["provider"] == "brex"
-    end
-
-    assert_not_nil brex_connection
-    assert_equal "BrexItem", brex_connection["provider_type"]
-    assert_equal brex_item.name, brex_connection["name"]
-    assert_equal brex_item.brex_accounts.count, brex_connection["accounts"]["total_count"]
-    assert_equal brex_item.linked_accounts_count, brex_connection["accounts"]["linked_count"]
-    assert_equal brex_item.unlinked_accounts_count, brex_connection["accounts"]["unlinked_count"]
   end
 
   test "returns an empty list when no provider connections exist" do

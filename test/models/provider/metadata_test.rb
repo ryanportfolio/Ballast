@@ -29,14 +29,14 @@ class Provider::MetadataTest < ActiveSupport::TestCase
     Setting.stubs(:brand_fetch_client_id).returns("test-client-id")
     Setting.stubs(:brand_fetch_logo_size).returns(40)
 
-    assert_equal "https://cdn.brandfetch.io/wise.com/icon/fallback/404/w/40/h/40?c=test-client-id",
-                 Provider::Metadata.logo_url(:wise)
+    assert_equal "https://cdn.brandfetch.io/simplefin.org/icon/fallback/404/w/40/h/40?c=test-client-id",
+                 Provider::Metadata.logo_url(:simplefin)
   end
 
   test "logo_url is nil when Brandfetch is not configured" do
     Setting.stubs(:brand_fetch_client_id).returns(nil)
 
-    assert_nil Provider::Metadata.logo_url(:wise)
+    assert_nil Provider::Metadata.logo_url(:simplefin)
   end
 
   test "logo_url is nil for providers without a domain" do
