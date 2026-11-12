@@ -348,9 +348,8 @@ class SecurityTest < ActiveSupport::TestCase
     )
   end
 
-  # Every crypto integration stores the prefixed form — the on-chain wallets,
-  # Kraken, CoinStats and Binance all write "CRYPTO:BTC" — and this answered nil
-  # for all of them, so none of their securities carried a logo.
+  # Crypto integrations store the prefixed form ("CRYPTO:BTC"), and this
+  # answered nil for all of them, so none of their securities carried a logo.
   test "resolves the base asset from a prefixed crypto ticker" do
     security = Security.new(ticker: "CRYPTO:BTC", exchange_operating_mic: Provider::BinancePublic::BINANCE_MIC)
 

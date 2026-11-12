@@ -10,15 +10,12 @@ ru:
     appearance: Внешний вид
     appearances: Внешний вид
     bank_sync: Синхронизация с банком
-    binance_items: Binance
     brex_items: Brex
     budget_categories: Категории бюджета
     budgets: Бюджеты
     categories: Категории
     categorize: Категоризация
     chats: Чаты
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: Кредитные карты
     cryptos: Криптовалюта
     dashboard: Панель управления
@@ -41,7 +38,6 @@ ru:
     investments: Инвестиции
     invitations: Приглашения
     invite_codes: Коды приглашений
-    kraken_items: Kraken
     llm_usage: Использование LLM
     llm_usages: Использование LLM
     loans: Кредиты

@@ -10,15 +10,12 @@ tr:
     appearance: Görünüm
     appearances: Görünüm
     bank_sync: Banka Senkronizasyonu
-    binance_items: Binance
     brex_items: Brex
     budget_categories: Bütçe kategorileri
     budgets: Bütçeler
     categories: Kategoriler
     categorize: Kategorize et
     chats: Sohbetler
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: Kredi kartları
     cryptos: Kripto
     dashboard: Panel
@@ -41,7 +38,6 @@ tr:
     investments: Yatırımlar
     invitations: Davetler
     invite_codes: Davet kodları
-    kraken_items: Kraken
     llm_usage: LLM Kullanımı
     llm_usages: LLM Kullanımı
     loans: Krediler

@@ -51,8 +51,8 @@ class SnaptradeAccount::HoldingsProcessorTest < ActiveSupport::TestCase
   # row. SnapTrade's holding goes on the row for the exchange it reports, and
   # the other provider's holding keeps its quantity and its provider.
   test "a sync leaves another provider's holding of the same ticker alone" do
-    item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    other_provider = AccountProvider.create!(account: @account, provider: item.coinstats_accounts.create!(name: "Other provider", currency: "USD"))
+    item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    other_provider = AccountProvider.create!(account: @account, provider: item.simplefin_accounts.create!(name: "Other provider", currency: "USD", account_type: "investment", current_balance: 0))
     theirs = Security.create!(ticker: "DUPO", name: "Other provider's row")
     listed = Security.create!(ticker: "DUPO", name: "Listed row", exchange_operating_mic: "XNYS")
     theirs_holding = @account.holdings.create!(security: theirs, date: Date.current, qty: 3, price: 100, amount: 300,

@@ -27,9 +27,9 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
       entryable: Valuation.new(kind: "opening_anchor")
     )
 
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     # The provider's last snapshot, before the split: 10 shares at $100 each.
     @account.holdings.create!(
@@ -208,12 +208,14 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
   end
 
   test "preserves calculated history for provider-sourced holdings on reverse materialization" do
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(
       name: "Brokerage",
-      currency: "USD"
+      currency: "USD",
+      account_type: "investment",
+      current_balance: 0
     )
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     Holding.create!(
       account: @account,
@@ -240,12 +242,14 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
   test "cleans up calculated current-day holdings when a provider snapshot exists in another currency" do
     ExchangeRate.create!(from_currency: "EUR", to_currency: "USD", date: Date.current, rate: 1.2)
 
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(
       name: "Brokerage",
-      currency: "USD"
+      currency: "USD",
+      account_type: "investment",
+      current_balance: 0
     )
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     Holding.create!(
       account: @account,
@@ -272,12 +276,14 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
       ExchangeRate.create!(from_currency: "EUR", to_currency: "USD", date: date, rate: 1.2)
     end
 
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(
       name: "Brokerage",
-      currency: "USD"
+      currency: "USD",
+      account_type: "investment",
+      current_balance: 0
     )
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     [ Date.yesterday, Date.current ].each do |date|
       Holding.create!(
@@ -301,9 +307,9 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
   end
 
   test "carries forward provider cost_basis to calculated rows past the provider snapshot date" do
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     # Provider snapshot two days ago with known cost basis, but no trades.
     # This mirrors IBKR Flex where the export ends on Friday but today is Sunday.
@@ -331,9 +337,9 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
   end
 
   test "does not overwrite an existing calculated cost_basis with provider carry-forward" do
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     Holding.create!(
       account: @account,
@@ -370,9 +376,9 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
   end
 
   test "refreshes stale provider carry-forward when a newer provider snapshot arrives" do
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     # With no entries, start_date = yesterday, so materializer only descends to
     # yesterday. Use an older date so the second snapshot doesn't land on a date
@@ -420,9 +426,9 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
   end
 
   test "does not overwrite a zero-valued manual cost_basis with provider carry-forward" do
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     Holding.create!(
       account: @account, security: @aapl,
@@ -452,9 +458,9 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
     snap_date = 2.days.ago.to_date
     ExchangeRate.create!(from_currency: "EUR", to_currency: "USD", date: snap_date, rate: 1.2)
 
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "EUR")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "EUR", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     Holding.create!(
       account: @account, security: @aapl,
@@ -476,9 +482,9 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
     snap_date = 2.days.ago.to_date
     # No ExchangeRate created — EUR→USD conversion will raise Money::ConversionError
 
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "EUR")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "EUR", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     Holding.create!(
       account: @account, security: @aapl,
@@ -500,12 +506,14 @@ class Holding::MaterializerTest < ActiveSupport::TestCase
   test "preserves same-day non-provider holdings for securities absent from the provider snapshot" do
     ExchangeRate.create!(from_currency: "EUR", to_currency: "USD", date: Date.current, rate: 1.2)
 
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(
       name: "Brokerage",
-      currency: "USD"
+      currency: "USD",
+      account_type: "investment",
+      current_balance: 0
     )
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     Holding.create!(
       account: @account,

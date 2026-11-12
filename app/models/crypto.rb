@@ -2,8 +2,8 @@ class Crypto < ApplicationRecord
   include Accountable
 
   # Subtypes differentiate how crypto is held:
-  # - wallet: Self-custody or provider-synced wallets (CoinStats, etc.)
-  # - exchange: Centralized exchanges with trade history (Coinbase, Kraken, etc.)
+  # - wallet: Self-custody or provider-synced wallets
+  # - exchange: Centralized exchanges with trade history
   SUBTYPES = {
     "wallet" => { short: "Wallet", long: "Crypto Wallet" },
     "exchange" => { short: "Exchange", long: "Crypto Exchange" }

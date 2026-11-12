@@ -116,13 +116,13 @@ class Portfolio::FlowClassifierTest < ActiveSupport::TestCase
   test "Contribution and Withdrawal labels are external in the direction of the money" do
     deposit = create_labelled_transaction(account: @brokerage, label: "Contribution", amount: -1000)
     withdrawal = create_labelled_transaction(account: @brokerage, label: "Withdrawal", amount: 250)
-    # Kraken's ledger writes these with kind funds_movement and no Transfer
-    # row; the label still decides.
-    kraken_deposit = create_labelled_transaction(account: @brokerage, label: "Contribution", amount: -300, kind: "funds_movement")
+    # A provider ledger can write these with kind funds_movement and no
+    # Transfer row; the label still decides.
+    ledger_deposit = create_labelled_transaction(account: @brokerage, label: "Contribution", amount: -300, kind: "funds_movement")
 
     assert_equal :external_inflow, @family_scope.classify(deposit)
     assert_equal :external_outflow, @family_scope.classify(withdrawal)
-    assert_equal :external_inflow, @family_scope.classify(kraken_deposit)
+    assert_equal :external_inflow, @family_scope.classify(ledger_deposit)
   end
 
   test "a linked transfer is internal at family scope and external at account scope" do

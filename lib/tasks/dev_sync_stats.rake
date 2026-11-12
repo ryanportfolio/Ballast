@@ -42,19 +42,17 @@ module DevSyncStatsHelpers
     stats["unlinked_accounts"] = stats["total_accounts"] - stats["linked_accounts"]
 
     # Add transaction stats for most providers
-    unless provider_name == "coinstats"
-      stats.merge!(
-        "tx_seen" => rand(50..500),
-        "tx_imported" => rand(10..100),
-        "tx_updated" => rand(0..50),
-        "tx_skipped" => rand(0..5)
-      )
-      # Ensure seen = imported + updated
-      stats["tx_seen"] = stats["tx_imported"] + stats["tx_updated"]
-    end
+    stats.merge!(
+      "tx_seen" => rand(50..500),
+      "tx_imported" => rand(10..100),
+      "tx_updated" => rand(0..50),
+      "tx_skipped" => rand(0..5)
+    )
+    # Ensure seen = imported + updated
+    stats["tx_seen"] = stats["tx_imported"] + stats["tx_updated"]
 
     # Add holdings stats for investment-capable providers
-    if %w[simplefin plaid coinstats].include?(provider_name)
+    if %w[simplefin plaid].include?(provider_name)
       stats["holdings_found"] = rand(5..50)
     end
 
@@ -123,7 +121,6 @@ namespace :dev do
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin")
       DevSyncStatsHelpers.generate_fake_stats_for_items(LunchflowItem, "lunchflow")
       DevSyncStatsHelpers.generate_fake_stats_for_items(EnableBankingItem, "enable_banking")
-      DevSyncStatsHelpers.generate_fake_stats_for_items(CoinstatsItem, "coinstats")
       DevSyncStatsHelpers.generate_fake_stats_for_items(SophtronItem, "sophtron")
 
       puts "Done! Refresh your browser to see the sync summaries."
@@ -154,7 +151,6 @@ namespace :dev do
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin", include_issues: true)
       DevSyncStatsHelpers.generate_fake_stats_for_items(LunchflowItem, "lunchflow", include_issues: true)
       DevSyncStatsHelpers.generate_fake_stats_for_items(EnableBankingItem, "enable_banking", include_issues: true)
-      DevSyncStatsHelpers.generate_fake_stats_for_items(CoinstatsItem, "coinstats", include_issues: true)
       DevSyncStatsHelpers.generate_fake_stats_for_items(SophtronItem, "sophtron", include_issues: true)
       puts "Done! Refresh your browser to see the sync summaries with issues."
     end
@@ -253,26 +249,6 @@ namespace :dev do
       end
       puts "    Created 2 SophtronAccounts"
 
-      # Create a fake CoinStats item
-      coinstats_item = family.coinstats_items.create!(
-        name: "Test CoinStats Connection",
-        api_key: "test-coinstats-key-#{SecureRandom.hex(16)}",
-        institution_name: "CoinStats"
-      )
-      puts "  Created CoinstatsItem: #{coinstats_item.name}"
-
-      # Create fake CoinStats accounts (wallets)
-      3.times do |i|
-        coinstats_item.coinstats_accounts.create!(
-          name: "Test Wallet #{i + 1}",
-          account_id: "test-wallet-#{SecureRandom.hex(8)}",
-          currency: "USD",
-          current_balance: rand(100..10000),
-          account_type: %w[wallet exchange defi].sample
-        )
-      end
-      puts "    Created 3 CoinstatsAccounts"
-
       # Create a fake EnableBanking item
       begin
         enable_banking_item = family.enable_banking_items.create!(
@@ -308,7 +284,6 @@ namespace :dev do
       DevSyncStatsHelpers.generate_fake_stats_for_items(SimplefinItem, "simplefin", include_issues: true)
       DevSyncStatsHelpers.generate_fake_stats_for_items(PlaidItem, "plaid", include_issues: false)
       DevSyncStatsHelpers.generate_fake_stats_for_items(LunchflowItem, "lunchflow", include_issues: false)
-      DevSyncStatsHelpers.generate_fake_stats_for_items(CoinstatsItem, "coinstats", include_issues: true)
       DevSyncStatsHelpers.generate_fake_stats_for_items(EnableBankingItem, "enable_banking", include_issues: false)
       DevSyncStatsHelpers.generate_fake_stats_for_items(SophtronItem, "sophtron", include_issues: false)
 
@@ -329,7 +304,6 @@ namespace :dev do
       count += SimplefinItem.where("name LIKE ?", "Test %").destroy_all.count
       count += PlaidItem.where("name LIKE ?", "Test %").destroy_all.count
       count += LunchflowItem.where("name LIKE ?", "Test %").destroy_all.count
-      count += CoinstatsItem.where("name LIKE ?", "Test %").destroy_all.count
       count += EnableBankingItem.where("name LIKE ? OR institution_name LIKE ?", "Test %", "Test %").destroy_all.count
       count += SophtronItem.where("name LIKE ?", "Test %").destroy_all.count
 

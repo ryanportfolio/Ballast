@@ -42,7 +42,6 @@ class Provider::MetadataTest < ActiveSupport::TestCase
   test "logo_url is nil for providers without a domain" do
     Setting.stubs(:brand_fetch_client_id).returns("test-client-id")
 
-    assert_nil Provider::Metadata.logo_url(:onchain_wallet)
     assert_nil Provider::Metadata.logo_url(:unknown_provider)
   end
 end

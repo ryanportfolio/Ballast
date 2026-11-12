@@ -255,11 +255,11 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Test Brex Connection"
   end
 
-  test "lists active Wise and CoinSpot connections under your connections" do
+  test "lists active Wise connections under your connections" do
     get settings_providers_url
 
     assert_response :success
-    %w[wise coinspot].each do |key|
+    %w[wise].each do |key|
       assert_select "details##{key}-connection"
       assert_select "a[href=?]", connect_form_settings_providers_path(provider_key: key), count: 0
     end
@@ -290,13 +290,13 @@ class Settings::ProvidersControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "lists Wise and CoinSpot as available when the family has no connections" do
+  test "lists Wise as available when the family has no connections" do
     sign_in users(:empty)
 
     get settings_providers_url
 
     assert_response :success
-    %w[wise coinspot].each do |key|
+    %w[wise].each do |key|
       assert_select "details##{key}-connection", count: 0
       assert_select "a[href=?]", connect_form_settings_providers_path(provider_key: key)
     end

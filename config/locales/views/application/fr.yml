@@ -26,10 +26,6 @@ fr:
       ensure_admin:
         not_authorized: Aucun
     providers:
-      binance_panel:
-        no_withdraw_body: N'activez pas les autorisations de retrait lors de la création
-          de votre clé API Binance. Sure n'a besoin que d'un accès en lecture.
-        no_withdraw_title: Clé en lecture seule uniquement
       clear_filter: Effacer les filtres
       connect: Se connecter
       drawer_trust_statement: Accès en lecture seule. Sure ne pourra jamais
@@ -149,34 +145,6 @@ fr:
         token_placeholder_existing: Laisser vide pour conserver le jeton actuel
         token_placeholder_new: Entrez votre jeton de service Web IBKR Flex
         update_configuration: Mettre à jour la configuration
-      kraken_panel:
-        add_connection: Ajouter une connexion Kraken
-        api_key_label: Clé API
-        api_key_placeholder: Collez votre clé API Kraken
-        api_secret_label: Clé privée
-        api_secret_placeholder: Collez votre clé privée Kraken
-        connection_name_label: Nom de la connexion
-        connection_name_placeholder: Kraken principal
-        default_connection_name: Kraken
-        disconnect: Déconnecter
-        disconnect_confirm: Êtes-vous sûr de vouloir déconnecter %{name} ?
-        keep_api_key_placeholder: Laissez vide pour conserver la clé API existante
-        keep_api_secret_placeholder: Laisser vide pour conserver la clé privée existante
-        read_only_body: N’accordez pas d’autorisations de négociation, d’annulation,
-          de retrait, d’exportation, de grand livre, de gain, de jalonnement ou de
-          transfert. Sure importe uniquement les soldes, les holdings et les transactions
-          au comptant.
-        read_only_title: Synchronisation d'échange en lecture seule uniquement
-        setup_accounts: Configurer le compte
-        step1_html: Accédez aux <a href="https://pro.kraken.com/app/settings/api"
-          target="_blank" rel="noopener noreferrer" class="underline">Paramètres de
-          l'API Kraken</a>
-        step2: Créez une clé API avec Query Funds et Query Closed Orders & Trades
-          uniquement.
-        step3: Collez la clé API et la clé privée ci-dessous.
-        sync: Synchroniser
-        syncing: Synchronisation...
-        update_connection: Mettre à jour la connexion
       lunchflow_panel:
         api_key_label: Clé API
         api_key_placeholder_new: Collez la clé API ici
@@ -239,21 +207,14 @@ fr:
       sync_provider_in_progress: La synchronisation a commencé.
       sync_provider_no_items: Aucune connexion disponible pour synchroniser.
       taglines:
-        binance: Synchronisez vos soldes spot Binance à l'aide d'une clé API en lecture
-          seule.
         brex: Synchronisez l'activité des espèces Brex et des cartes d'entreprise
           avec un accès en lecture seule.
-        coinbase: Importez vos holdings cryptographiques Coinbase et suivez les performances.
-        coinstats: Suivez l’intégralité de votre portefeuille de crypto-monnaies sur
-          les portefeuilles et les échanges.
         enable_banking: Synchronisez les comptes bancaires européens via l'open banking
           PSD2.
         ibkr: Synchronisez les comptes d'investissement Interactive Brokers via les
           importations Flex Query.
         indexa_capital: Suivez votre portefeuille d'investissement automatisé Indexa
           Capital.
-        kraken: Synchronisez les soldes Kraken et les transactions au comptant à l'aide
-          d'une clé API en lecture seule.
         lunchflow: Connectez plus de 20 000 banques dans plus de 40 pays (Royaume-Uni,
           UE, États-Unis et plus !)
         mercury: Synchronisez automatiquement vos comptes bancaires professionnels

@@ -211,15 +211,9 @@ class Settings::ProvidersController < ApplicationController
       { key: "redbark",        title: "Redbark",         turbo_id: "redbark",        partial: "redbark_panel" },
       { key: "simplefin",      title: "SimpleFIN",       turbo_id: "simplefin",      partial: "simplefin_panel" },
       { key: "enable_banking", title: "Enable Banking",  turbo_id: "enable_banking", partial: "enable_banking_panel" },
-      { key: "coinstats",      title: "CoinStats",       turbo_id: "coinstats",      partial: "coinstats_panel" },
       { key: "wise",           title: "Wise",            turbo_id: "wise",           partial: "wise_panel" },
       { key: "mercury",        title: "Mercury",         turbo_id: "mercury",        partial: "mercury_panel" },
       { key: "brex",           title: "Brex",            turbo_id: "brex",           partial: "brex_panel" },
-      { key: "coinbase",       title: "Coinbase",        turbo_id: "coinbase",       partial: "coinbase_panel" },
-      { key: "binance",        title: "Binance",         turbo_id: "binance",        partial: "binance_panel" },
-      { key: "kraken",         title: "Kraken",          turbo_id: "kraken",         partial: "kraken_panel" },
-      { key: "coinspot",       title: "CoinSpot",        turbo_id: "coinspot",       partial: "coinspot_panel" },
-      { key: "onchain_wallet", title: "On-chain wallets", turbo_id: "onchain_wallet", partial: "onchain_wallet_panel" },
       { key: "snaptrade",      title: "SnapTrade",       turbo_id: "snaptrade",      partial: "snaptrade_panel", auto_open: "manage" },
       { key: "ibkr",           title: "Interactive Brokers", turbo_id: "ibkr",      partial: "ibkr_panel" },
       { key: "trading212",     title: "Trading 212",     turbo_id: "trading212", partial: "trading212_panel" },
@@ -242,15 +236,9 @@ class Settings::ProvidersController < ApplicationController
       "lunchflow"      => "LunchflowItem",
       "redbark"        => "RedbarkItem",
       "enable_banking" => "EnableBankingItem",
-      "coinstats"      => "CoinstatsItem",
       "wise"           => "WiseItem",
       "mercury"        => "MercuryItem",
       "brex"           => "BrexItem",
-      "coinbase"       => "CoinbaseItem",
-      "binance"        => "BinanceItem",
-      "kraken"         => "KrakenItem",
-      "coinspot"       => "CoinspotItem",
-      "onchain_wallet" => "OnchainWalletItem",
       "snaptrade"      => "SnaptradeItem",
       "questrade"      => "QuestradeItem",
       "ibkr"           => "IbkrItem",
@@ -278,24 +266,12 @@ class Settings::ProvidersController < ApplicationController
         @redbark_items = Current.family.redbark_items.ordered
       when "enable_banking"
         @enable_banking_items = Current.family.enable_banking_items.ordered
-      when "coinstats"
-        @coinstats_items = Current.family.coinstats_items.ordered
       when "wise"
         @wise_items = Current.family.wise_items.active.ordered.includes(:syncs, :wise_accounts)
       when "mercury"
         @mercury_items = Current.family.mercury_items.active.ordered.includes(:syncs, :mercury_accounts)
       when "brex"
         @brex_items = Current.family.brex_items.active.ordered.includes(:syncs, :brex_accounts)
-      when "coinbase"
-        @coinbase_items = Current.family.coinbase_items.ordered
-      when "binance"
-        @binance_items = Current.family.binance_items.active.ordered
-      when "kraken"
-        @kraken_items = Current.family.kraken_items.active.ordered
-      when "coinspot"
-        @coinspot_items = Current.family.coinspot_items.active.ordered
-      when "onchain_wallet"
-        @onchain_wallet_items = Current.family.onchain_wallet_items.active.ordered
       when "snaptrade"
         @snaptrade_items = Current.family.snaptrade_items.includes(:snaptrade_accounts).ordered
       when "ibkr"
@@ -333,20 +309,14 @@ class Settings::ProvidersController < ApplicationController
       @enable_banking_items = Current.family.enable_banking_items.ordered # Enable Banking panel needs session info for status display
       # Providers page only needs to know whether any Sophtron connections exist with valid credentials
       @sophtron_items = Current.family.sophtron_items.where.not(user_id: [ nil, "" ], access_key: [ nil, "" ]).ordered.select(:id)
-      @coinstats_items = Current.family.coinstats_items.ordered # CoinStats panel needs account info for status display
       @wise_items = Current.family.wise_items.active.ordered
       @mercury_items = Current.family.mercury_items.active.ordered
       @brex_items = Current.family.brex_items.active.ordered
-      @coinbase_items = Current.family.coinbase_items.ordered # Coinbase panel needs name and sync info for status display
       @snaptrade_items = Current.family.snaptrade_items.ordered
       @ibkr_items = Current.family.ibkr_items.ordered.select(:id)
       @trading212_items = Current.family.trading212_items.ordered
       @trade_republic_items = Current.family.trade_republic_items.active.ordered.includes(:trade_republic_accounts)
       @indexa_capital_items = Current.family.indexa_capital_items.ordered.select(:id)
-      @binance_items = Current.family.binance_items.active.ordered
-      @kraken_items = Current.family.kraken_items.active.ordered
-      @coinspot_items = Current.family.coinspot_items.active.ordered
-      @onchain_wallet_items = Current.family.onchain_wallet_items.active.ordered
       @questrade_items = Current.family.questrade_items.active.ordered.select(:id)
       @fio_items = Current.family.fio_items.active.ordered
 
@@ -384,15 +354,9 @@ class Settings::ProvidersController < ApplicationController
         "lunchflow"      => @lunchflow_items,
         "redbark"        => @redbark_items,
         "enable_banking" => @enable_banking_items,
-        "coinstats"      => @coinstats_items,
         "wise"           => @wise_items,
         "mercury"        => @mercury_items,
         "brex"           => @brex_items,
-        "coinbase"       => @coinbase_items,
-        "binance"        => @binance_items,
-        "kraken"         => @kraken_items,
-        "coinspot"       => @coinspot_items,
-        "onchain_wallet" => @onchain_wallet_items,
         "snaptrade"      => @snaptrade_items,
         "questrade"      => @questrade_items,
         "ibkr"           => @ibkr_items,

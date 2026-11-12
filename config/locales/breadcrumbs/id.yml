@@ -10,7 +10,6 @@ id:
     appearance: Tampilan
     appearances: Tampilan
     bank_sync: Sinkronisasi Bank
-    binance_items: Binance
     brex_items: Brex
     budget_categories: Kategori anggaran
     budgets: Anggaran
@@ -19,8 +18,6 @@ id:
     changelog: Yang baru
     chats: Obrolan
     classifier: Pengklasifikasi
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: Kartu kredit
     cryptos: Kripto
     dashboard: Dasbor
@@ -44,7 +41,6 @@ id:
     investments: Investasi
     invitations: Undangan
     invite_codes: Kode undangan
-    kraken_items: Kraken
     llm_usage: Penggunaan LLM
     llm_usages: Penggunaan LLM
     loans: Pinjaman

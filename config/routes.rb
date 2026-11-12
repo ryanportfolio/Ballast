@@ -82,86 +82,6 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :coinbase_items, only: [ :index, :new, :create, :show, :edit, :update, :destroy ] do
-    collection do
-      get :preload_accounts
-      get :select_accounts
-      post :link_accounts
-      get :select_existing_account
-      post :link_existing_account
-    end
-
-    member do
-      post :sync
-      get :setup_accounts
-      post :complete_account_setup
-    end
-  end
-
-  resources :binance_items, only: [ :index, :new, :create, :show, :edit, :update, :destroy ] do
-    collection do
-      get :select_accounts
-      post :link_accounts
-      get :select_existing_account
-      post :link_existing_account
-    end
-
-    member do
-      post :sync
-      get :setup_accounts
-      post :complete_account_setup
-    end
-  end
-
-  resources :kraken_items, only: [ :create, :update, :destroy ] do
-    collection do
-      get :select_accounts
-      post :link_accounts
-      get :select_existing_account
-      post :link_existing_account
-    end
-
-    member do
-      post :sync
-      get :setup_accounts
-      post :complete_account_setup
-    end
-  end
-
-  resources :coinspot_items, only: [ :create, :update, :destroy ] do
-    collection do
-      get :select_accounts
-      post :link_accounts
-      get :select_existing_account
-      post :link_existing_account
-    end
-
-    member do
-      post :sync
-      get :setup_accounts
-      post :complete_account_setup
-    end
-  end
-
-  # Self-custody / on-chain wallets
-  resources :onchain_wallet_items, only: [ :update, :destroy ] do
-    collection do
-      get :new_wallet
-      post :preview_wallet
-      post :link_wallet
-      post :enable_crypto_prices
-    end
-
-    member do
-      post :sync
-      get :manage
-      get :review_tokens
-      post :update_tokens
-      delete :disconnect_wallet
-      delete :disconnect_asset
-    end
-  end
-
   resources :snaptrade_items, only: [ :index, :show, :destroy ] do
     collection do
       get :preload_accounts
@@ -234,17 +154,6 @@ Rails.application.routes.draw do
       post :initiate_qr_login
       post :poll_qr_login
       post :cancel_qr_login
-    end
-  end
-
-  # CoinStats routes
-  resources :coinstats_items, only: [ :index, :new, :create, :update, :destroy ] do
-    collection do
-      post :link_wallet
-      post :link_exchange
-    end
-    member do
-      post :sync
     end
   end
 

@@ -438,11 +438,10 @@ class Provider::FamilyGenerator < Rails::Generators::NamedBase
       return
     end
 
-    # Add to empty check - find the existing pattern and append our check
-    content = content.gsub(
-      /@coinstats_items\.empty\? %>/,
-      "@coinstats_items.empty? && #{items_var}.empty? %>"
-    )
+    # Add to empty check - append our check to the end of the existing condition
+    content = content.sub(/(<% if @manual_accounts\.empty\?.*?) %>/) do
+      "#{Regexp.last_match(1)} && #{items_var}.empty? %>"
+    end
 
     # Add provider section before manual_accounts
     section = <<~ERB

@@ -789,7 +789,7 @@ class InvestmentStatementTest < ActiveSupport::TestCase
 
     # Manual buy/sell (Trade::CreateForm) and provider trades. The manual form
     # folds the fee into the entry amount; pass `fee_in_amount: false` for the
-    # Kraken / Binance-spot shape whose amount excludes it.
+    # provider shape whose amount excludes it.
     def create_portfolio_trade(account:, security: create_portfolio_security, qty:, price:, fee: 0, label: nil, date: Date.current, fee_in_amount: true, excluded: false)
       label ||= qty.negative? ? "Sell" : "Buy"
       amount = qty.to_d * price.to_d

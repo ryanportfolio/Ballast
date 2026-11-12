@@ -238,19 +238,19 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
   test "search input filters provider cards by name" do
     visit settings_providers_path
 
-    find('[data-providers-filter-target="input"]').set("Coinbase")
+    find('[data-providers-filter-target="input"]').set("Akahu")
 
-    assert_selector "a[data-providers-filter-target='card']", text: /Coinbase/i
-    assert_no_selector "a[data-providers-filter-target='card']", text: /Binance/i
+    assert_selector "a[data-providers-filter-target='card']", text: /Akahu/i
+    assert_no_selector "a[data-providers-filter-target='card']", text: /Sophtron/i
   end
 
   test "kind chip narrows the grid to providers of that kind" do
     visit settings_providers_path
 
-    click_on "Crypto"
+    click_on "Investment"
 
-    assert_selector "a[data-providers-filter-target='card']", text: /Coinbase/i
-    assert_no_selector "a[data-providers-filter-target='card']", text: /SimpleFIN/i
+    assert_selector "a[data-providers-filter-target='card']", text: /Sophtron/i
+    assert_no_selector "a[data-providers-filter-target='card']", text: /Enable Banking/i
   end
 
   test "search shows the empty filter message when no provider matches" do

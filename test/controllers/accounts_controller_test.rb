@@ -2,7 +2,6 @@ require "test_helper"
 
 class AccountsControllerTest < ActionDispatch::IntegrationTest
   include ActionView::RecordIdentifier
-  include OnchainTestHelper
   include EntriesTestHelper
   include TradeRepublicSessionTestHelper
 
@@ -61,65 +60,6 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
                   edit_plaid_item_path(plaid_items(:one), add_accounts: true),
                   text: "Konten hinzufügen",
                   count: 1
-  end
-
-  test "index renders kraken items" do
-    kraken_item = kraken_items(:one)
-    get accounts_url
-    assert_response :success
-    assert_select "##{dom_id(kraken_item)}"
-  end
-
-  test "index renders on-chain wallet items" do
-    register_fake_chain!
-    item = create_onchain_wallet_item(family: @user.family)
-    onchain_account = create_onchain_wallet_account(item: item)
-    onchain_account.ensure_account_provider!(accounts(:investment))
-
-    get accounts_url
-
-    assert_response :success
-    # Without this the wallet is invisible here: its accounts carry a provider
-    # link, so Account.manual excludes them, and no provider section claimed them.
-    assert_select "##{dom_id(item, :accounts_index)}"
-    # The card carries the same actions menu every other provider card does.
-    assert_select "form[action=?]", sync_onchain_wallet_item_path(item)
-    assert_select "form[action=?]", onchain_wallet_item_path(item)
-  ensure
-    unregister_fake_chain!
-  end
-
-  test "index does not leak wallet accounts a member was never given" do
-    register_fake_chain!
-    admin = users(:family_admin)
-    member = users(:family_member)
-    item = create_onchain_wallet_item(family: admin.family)
-
-    shared = accounts(:investment)
-    unshared = accounts(:credit_card)
-    [ shared, unshared ].each_with_index do |account, index|
-      account.update!(owner: admin)
-      account.account_shares.destroy_all
-      row = create_onchain_wallet_account(
-        item: item,
-        address: "#{OnchainTestHelper::FAKE_ADDRESS}#{index}"
-      )
-      row.ensure_account_provider!(account)
-    end
-    shared.account_shares.create!(user: member, permission: "read_only")
-
-    sign_in member
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{dom_id(item, :accounts_index)}"
-    # The item is surfaced as soon as ONE of its accounts is accessible, so
-    # rendering them all would hand a partially-authorised member the names and
-    # balances of accounts nobody shared with them.
-    assert_includes response.body, shared.name
-    assert_not_includes response.body, unshared.name
-  ensure
-    unregister_fake_chain!
   end
 
   # #3630. A provider card is admitted for a member as soon as ONE of its
@@ -326,45 +266,6 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Hidden Broker 235"
-  end
-
-  test "a partially shared member sees only their account on a Kraken card" do
-    item = kraken_items(:one)
-    shared, unshared = link_two_accounts_to(item) do |k_item, index|
-      k_item.kraken_accounts.create!(
-        name: "Kraken #{index}", account_id: "kraken_235_#{index}", account_type: "combined",
-        currency: "USD", current_balance: 1, extra: {}
-      )
-    end
-
-    sign_in users(:family_member)
-    get accounts_url
-
-    assert_response :success
-    assert_select "##{dom_id(item)}"
-    assert_select "turbo-frame##{dom_id(shared)}", count: 1
-    assert_select "turbo-frame##{dom_id(unshared)}", count: 0
-  end
-
-  test "a partially shared member does not see stale-rate warnings for an unshared Kraken account" do
-    item = kraken_items(:one)
-    shared, unshared = link_two_accounts_to(item) do |k_item, index|
-      k_item.kraken_accounts.create!(
-        name: "Kraken #{index}", account_id: "kraken_stale_#{index}", account_type: "combined",
-        currency: "USD", current_balance: 1,
-        extra: index.zero? ? {} : { "kraken" => { "stale_rate" => "true", "rate_target_date" => "2001-02-03" } }
-      )
-    end
-
-    sign_in users(:family_member)
-    get accounts_url
-    assert_response :success
-    assert_select "##{dom_id(item)}"
-    assert_not_includes response.body, "2001-02-03"
-
-    sign_in users(:family_admin)
-    get accounts_url
-    assert_includes response.body, "2001-02-03"
   end
 
   test "a partially shared member does not see a Trade Republic connection's data-quality totals" do

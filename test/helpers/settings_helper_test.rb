@@ -50,7 +50,7 @@ class SettingsHelperTest < ActionView::TestCase
   end
 
   # A key provider_summary doesn't handle falls through to { status: :off },
-  # which lists a connected provider under Available. Wise and CoinSpot
+  # which lists a connected provider under Available. Wise
   # shipped that way. One key at a time, so a branch that reads another
   # provider's items fails too.
   test "provider_summary is not off for any connected family panel provider" do

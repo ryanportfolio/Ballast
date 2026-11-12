@@ -29,35 +29,18 @@ class AccountsController < ApplicationController
     @monobank_items = visible_provider_items(family.monobank_items.ordered.with_attached_logo.includes(:monobank_accounts))
     @fio_items = visible_provider_items(family.fio_items.active.ordered.with_attached_logo.includes(:fio_accounts))
     @enable_banking_items = visible_provider_items(family.enable_banking_items.ordered.with_attached_logo)
-    @coinstats_items = visible_provider_items(family.coinstats_items.ordered.with_attached_logo.includes(:coinstats_accounts, :accounts))
     @mercury_items = visible_provider_items(family.mercury_items.ordered.with_attached_logo.includes(:mercury_accounts))
     @brex_items = visible_provider_items(family.brex_items.ordered.with_attached_logo.includes(:accounts, brex_accounts: :account_provider))
-    @coinbase_items = visible_provider_items(family.coinbase_items.ordered.with_attached_logo.includes(:coinbase_accounts, :accounts))
     @snaptrade_items = visible_provider_items(family.snaptrade_items.ordered.with_attached_logo.includes(:snaptrade_accounts))
     @ibkr_items = visible_provider_items(family.ibkr_items.ordered.with_attached_logo.includes(:ibkr_accounts))
     @indexa_capital_items = visible_provider_items(family.indexa_capital_items.ordered.with_attached_logo.includes(:indexa_capital_accounts))
     @sophtron_items = visible_provider_items(family.sophtron_items.ordered.with_attached_logo.includes(:sophtron_accounts))
-    @onchain_wallet_items = visible_provider_items(
-      family.onchain_wallet_items.ordered.includes(:accounts, onchain_wallet_accounts: { account_provider: :account })
-    )
-    @binance_items = visible_provider_items(family.binance_items.ordered.with_attached_logo.includes(:binance_accounts, :accounts))
-    @kraken_items = visible_provider_items(family.kraken_items.ordered.with_attached_logo.includes(:kraken_accounts, :accounts))
-    @coinspot_items = visible_provider_items(family.coinspot_items.ordered.with_attached_logo.includes(:coinspot_accounts, :accounts))
     @trading212_items = visible_provider_items(family.trading212_items.ordered.with_attached_logo.includes(:trading212_accounts)).sort_by(&:created_at)
     @questrade_items = visible_provider_items(family.questrade_items.ordered.with_attached_logo.includes(:accounts, questrade_accounts: :account_provider))
     @wise_items = visible_provider_items(family.wise_items.ordered.includes(:wise_accounts, :accounts))
     @trade_republic_items = visible_provider_items(
       family.trade_republic_items.ordered.includes(trade_republic_accounts: { account_provider: :account })
     )
-
-    # An on-chain item is admitted as soon as ONE of its accounts is accessible,
-    # so the card is told which of them this viewer may actually see. nil is the
-    # admin case, which visible_provider_items already lets through whole.
-    allowed_ids = Current.user&.admin? ? nil : @accessible_account_ids
-    @onchain_wallet_cards = @onchain_wallet_items.to_h do |item|
-      visible = item.accounts_visible_to(allowed_ids)
-      [ item.id, { accounts: visible, address_count: item.address_count_for(visible) } ]
-    end
 
     preload_latest_sync_metadata_for_index!
 
@@ -489,22 +472,16 @@ class AccountsController < ApplicationController
         @monobank_items,
         @fio_items,
         @enable_banking_items,
-        @coinstats_items,
         @mercury_items,
         @brex_items,
-        @coinbase_items,
         @snaptrade_items,
         @ibkr_items,
         @indexa_capital_items,
         @sophtron_items,
-        @binance_items,
-        @kraken_items,
-        @coinspot_items,
         @trading212_items,
         @questrade_items,
         @wise_items,
-        @trade_republic_items,
-        @onchain_wallet_items
+        @trade_republic_items
       ].flatten.compact
 
       accounts = @manual_accounts.to_a + @financekit_accounts.to_a
@@ -652,13 +629,6 @@ class AccountsController < ApplicationController
         @enable_banking_latest_sync_error_map[item.id] = latest_sync&.error
       end
 
-      # CoinStats sync stats
-      @coinstats_sync_stats_map = {}
-      @coinstats_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @coinstats_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
       # Sophtron sync stats
       @sophtron_sync_stats_map = {}
       @sophtron_items.each do |item|
@@ -701,50 +671,11 @@ class AccountsController < ApplicationController
           .count
       end
 
-      # Coinbase sync stats
-      @coinbase_sync_stats_map = {}
-      @coinbase_unlinked_count_map = {}
-
-      coinbase_item_ids = @coinbase_items.map(&:id)
-      coinbase_unlinked_counts_by_item_id =
-        if coinbase_item_ids.any?
-          CoinbaseAccount.where(coinbase_item_id: coinbase_item_ids)
-            .left_joins(:account_provider)
-            .where(account_providers: { id: nil })
-            .group(:coinbase_item_id)
-            .count
-        else
-          {}
-        end
-
-      @coinbase_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @coinbase_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-
-        # Count unlinked accounts
-        @coinbase_unlinked_count_map[item.id] = coinbase_unlinked_counts_by_item_id[item.id].to_i
-      end
-
       # IndexaCapital sync stats
       @indexa_capital_sync_stats_map = {}
       @indexa_capital_items.each do |item|
         latest_sync = item.latest_sync_record
         @indexa_capital_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Binance sync stats
-      @binance_sync_stats_map = {}
-      @binance_unlinked_count_map = {}
-      @binance_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @binance_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-
-        # Count unlinked accounts
-        count = item.binance_accounts
-          .left_joins(:account_provider)
-          .where(account_providers: { id: nil })
-          .count
-        @binance_unlinked_count_map[item.id] = count
       end
 
       # Questrade sync stats and account counts

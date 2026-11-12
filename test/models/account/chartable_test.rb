@@ -69,9 +69,9 @@ class Account::ChartableTest < ActiveSupport::TestCase
     account.entries.destroy_all
     account.holdings.destroy_all
 
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     account.holdings.create!(
       security: securities(:aapl),
@@ -112,9 +112,9 @@ class Account::ChartableTest < ActiveSupport::TestCase
     account.entries.destroy_all
     account.holdings.destroy_all
 
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     account.holdings.create!(
       security: securities(:aapl),
@@ -171,9 +171,9 @@ class Account::ChartableTest < ActiveSupport::TestCase
     account.entries.destroy_all
     account.holdings.destroy_all
 
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 8.days.ago.to_date
     account.set_opening_anchor_balance(balance: 0, date: opening_date)
@@ -236,9 +236,9 @@ class Account::ChartableTest < ActiveSupport::TestCase
     account.entries.destroy_all
     account.holdings.destroy_all
 
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 8.days.ago.to_date
     account.set_opening_anchor_balance(balance: 1500, date: opening_date)
@@ -279,9 +279,9 @@ class Account::ChartableTest < ActiveSupport::TestCase
     account.entries.destroy_all
     account.holdings.destroy_all
 
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     trade_date = 8.days.ago.to_date
     account.entries.create!(
@@ -321,9 +321,9 @@ class Account::ChartableTest < ActiveSupport::TestCase
     account.entries.destroy_all
     account.holdings.destroy_all
 
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 8.days.ago.to_date
     account.set_opening_anchor_balance(balance: 5000, date: opening_date)
@@ -364,9 +364,9 @@ class Account::ChartableTest < ActiveSupport::TestCase
     account.entries.destroy_all
     account.holdings.destroy_all
 
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 2.years.ago.to_date
     account.set_opening_anchor_balance(balance: 0, date: opening_date)
@@ -407,9 +407,9 @@ class Account::ChartableTest < ActiveSupport::TestCase
     account.entries.destroy_all
     account.holdings.destroy_all
 
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     early_trade_date = 15.days.ago.to_date
     later_anchor_date = 8.days.ago.to_date

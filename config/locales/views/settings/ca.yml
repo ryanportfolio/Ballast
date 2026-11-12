@@ -261,52 +261,7 @@ ca:
         lede: Connecta comptes externs perquè transaccions, saldos i posicions flueixin
           automàticament a Sure.
         page_title: Sincronització bancària
-      binance_panel:
-        api_key_label: Clau API
-        api_key_placeholder: Enganxa la teva clau API de Binance
-        api_secret_label: Secret de l'API
-        api_secret_placeholder: Enganxa el teu secret de l'API de Binance
-        connect_button: Connecta Binance
-        disconnect: Desconnecta
-        disconnect_confirm: Segur que vols desconnectar Binance?
-        ip_hint_body: 'Afegeix la IP de sortida del servidor de l''aplicació a la
-          llista blanca de la clau API de Binance:'
-        ip_hint_contact_admin: Contacta amb el teu administrador per obtenir la IP
-          de sortida del servidor de l'aplicació.
-        ip_hint_title: Cal incloure la IP a la llista blanca
-        no_withdraw_body: No activis permisos de retirada en crear la teva clau API
-          de Binance. Sure només necessita accés de lectura.
-        no_withdraw_title: Només clau de lectura
-        setup_instructions: 'Per connectar Binance, crea una clau API de només lectura:'
-        step1_html: Ves a <a href="https://www.binance.com/en/my/settings/api-management"
-          target="_blank" rel="noopener noreferrer" class="underline">Binance API
-          Management</a>
-        step2: Crea una nova clau API només amb el permís Enable Reading
-        step3: Enganxa la teva clau API i secret a sota
-        sync: Sincronitza
-        syncing: Sincronitzant...
-        historical_import: Configuració de la importació històrica
-        sync_start_date_label: Importa dades des del
-        sync_start_date_help: Selecciona fins a quina data vols obtenir l'historial d'operacions.
       clear_filter: Neteja filtres
-      coinbase_panel:
-        api_key_label: Clau API
-        api_key_placeholder: Introdueix la teva clau API de Coinbase
-        api_secret_label: Secret de l'API
-        api_secret_placeholder: Introdueix el teu secret de l'API de Coinbase
-        connect_button: Connecta Coinbase
-        disconnect: Desconnecta
-        disconnect_confirm: Segur que vols desconnectar aquesta connexió de Coinbase?
-          Els teus comptes sincronitzats passaran a ser comptes manuals.
-        setup_instructions: 'Per connectar Coinbase:'
-        step1_html: Ves a <a href="https://portal.cdp.coinbase.com/projects/api-keys"
-          target="_blank" rel="noopener noreferrer" class="text-primary underline">Coinbase
-          API Settings</a>
-        step2: Crea una nova clau API amb permisos de només lectura (veure comptes,
-          veure transaccions)
-        step3: Copia la teva clau API i secret de l'API i enganxa'ls a sota
-        sync: Sincronitza
-        syncing: Sincronitzant...
       connect: Connecta
       drawer_trust_statement: Accés només de lectura. Sure mai no pot moure diners
         i les teves credencials s'emmagatzemen xifrades.
@@ -430,31 +385,6 @@ ca:
         token_placeholder_existing: Deixa en blanc per mantenir el Token actual
         token_placeholder_new: Introdueix el teu Token d'IBKR Flex Web Service
         update_configuration: Actualitza la configuració
-      kraken_panel:
-        add_connection: Afegeix connexió Kraken
-        api_key_label: Clau API
-        api_key_placeholder: Enganxa la teva clau API de Kraken
-        api_secret_label: Clau privada
-        api_secret_placeholder: Enganxa la teva clau privada de Kraken
-        connection_name_label: Nom de la connexió
-        connection_name_placeholder: Kraken principal
-        default_connection_name: Kraken
-        disconnect: Desconnecta
-        disconnect_confirm: Segur que vols desconnectar %{name}?
-        keep_api_key_placeholder: Deixa en blanc per mantenir la clau API existent
-        keep_api_secret_placeholder: Deixa en blanc per mantenir la clau privada existent
-        read_only_body: No atorguis permisos de trading, cancel·lació, retirada, exportació,
-          llibre major, Earn, staking o transferència. Sure només importa saldos,
-          posicions i operacions spot.
-        read_only_title: Sincronització només de lectura amb l'exchange
-        setup_accounts: Configura compte
-        step1_html: Ves a <a href="https://pro.kraken.com/app/settings/api" target="_blank"
-          rel="noopener noreferrer" class="underline">Kraken API settings</a>
-        step2: Crea una clau API només amb Query Funds i Query Closed Orders & Trades.
-        step3: Enganxa la clau API i la clau privada a sota.
-        sync: Sincronitza
-        syncing: Sincronitzant...
-        update_connection: Actualitza connexió
       lunchflow_panel:
         api_key_label: Clau API
         api_key_placeholder_new: Enganxa la clau API aquí
@@ -520,22 +450,14 @@ ca:
       sync_provider_in_progress: Sincronització iniciada.
       sync_provider_no_items: No hi ha connexions disponibles per sincronitzar.
       taglines:
-        binance: Sincronitza els teus saldos spot de Binance utilitzant una clau API
-          de només lectura.
         brex: Sincronitza l'activitat d'efectiu i targeta corporativa de Brex amb
           accés de només lectura.
-        coinbase: Importa les teves posicions cripto de Coinbase i fes el seguiment
-          del rendiment.
-        coinstats: Fes el seguiment de tota la teva cartera cripto a través de carteres
-          i exchanges.
         enable_banking: Sincronitza comptes bancaris europeus mitjançant l'open banking
           PSD2.
         ibkr: Sincronitza comptes d'inversió d'Interactive Brokers mitjançant importacions
           Flex Query.
         indexa_capital: Fes el seguiment de la teva cartera d'inversió automatitzada
           d'Indexa Capital.
-        kraken: Sincronitza saldos i operacions spot de Kraken utilitzant una clau
-          API de només lectura.
         lunchflow: Connecta més de 20.000 bancs de més de 40 països (Regne Unit, UE,
           EUA i més!).
         mercury: Sincronitza automàticament els teus comptes bancaris empresarials
@@ -552,8 +474,6 @@ ca:
         monobank: Sincronitza targetes i guardioles (jars) de Monobank amb un token API personal.
         fio: Sincronitza un compte de Fio banka amb un token API de només lectura.
         wise: Sincronitza automàticament els teus saldos multidivisa i les transferències internacionals de Wise.
-        coinspot: Sincronitza saldos, valors en AUD, transferències, dipòsits, retirades i historial d'ordres de CoinSpot amb una clau API de només lectura.
-        onchain_wallet: Fes el seguiment de carteres Bitcoin, EVM, Solana, Cosmos i Polkadot d'autocustòdia a partir de les seves adreces públiques.
         trading212: Sincronitza la teva cartera d'inversió de Trading 212 amb una clau API de només lectura.
         trade_republic: Sincronitza el teu compte d'inversió de Trade Republic mitjançant un inici de sessió web segur de només lectura.
         questrade: Sincronitza els teus comptes d'inversió de Questrade directament a través de l'API de Questrade.
@@ -566,43 +486,6 @@ ca:
         message: Aquesta instal·lació autoallotjada no té configurades claus de xifratge explícites d'Active Record. Configura primary_key, deterministic_key i key_derivation_salt abans de desar credencials de proveïdors en producció.
       provider_form:
         save_and_connect: Desa i connecta
-      coinspot_panel:
-        step1_html: Ves a la <a href="https://www.coinspot.com.au/my/api" target="_blank" rel="noopener noreferrer" class="underline">configuració de l'API de CoinSpot</a>
-        step2: Crea una clau API amb accés de només lectura a saldos i historial.
-        step3: Enganxa la clau API i el secret a continuació.
-        read_only_title: Només sincronització de lectura amb l'exchange
-        read_only_body: No atorguis permisos d'enviament, retirada, trading ni transferència. Sure només importa saldos, valors en AUD, transferències, dipòsits, retirades i l'historial d'ordres executades.
-        default_connection_name: CoinSpot
-        add_connection: Afegeix una connexió de CoinSpot
-        update_connection: Actualitza la connexió
-        connection_name_label: Nom de la connexió
-        connection_name_placeholder: CoinSpot principal
-        api_key_label: Clau API
-        api_key_placeholder: Enganxa la teva clau API de CoinSpot
-        keep_api_key_placeholder: Deixa-ho en blanc per mantenir la clau API existent
-        api_secret_label: Secret de l'API
-        api_secret_placeholder: Enganxa el teu secret de l'API de CoinSpot
-        keep_api_secret_placeholder: Deixa-ho en blanc per mantenir el secret de l'API existent
-        setup_accounts: Configura el compte
-        syncing: Sincronitzant...
-        sync: Sincronitza
-        disconnect: Desconnecta
-        disconnect_confirm: Segur que vols desconnectar %{name}?
-      onchain_wallet_panel:
-        add_wallet: Afegeix una cartera
-        advanced: Avançat
-        disconnect_all: Desconnecta totes les carteres
-        disconnect_all_confirm: Això elimina totes les adreces seguides i els seus comptes. Vols continuar?
-        etherscan_api_key_label: Clau API d'Etherscan (opcional)
-        etherscan_api_key_placeholder: Enganxa una clau API d'Etherscan
-        etherscan_hint: Les lectures d'Ethereum funcionen sense clau. Afegir una clau d'Etherscan només augmenta el límit de sol·licituds per a Ethereum.
-        keep_etherscan_api_key: Deixa-ho en blanc per mantenir la clau existent
-        manage_wallets: Gestiona les carteres
-        keyless_body: Sure només llegeix dades públiques de la cadena de blocs. No intervenen claus, frases de recuperació ni signatures, i no es pot gastar res.
-        keyless_title: Només lectura, sense claus
-        save: Desa
-        sync_start_date_hint: Les transferències anteriors a aquesta data s'ignoren. Deixa-ho en blanc per importar tot el que mostri l'explorador.
-        sync_start_date_label: Ignora les transferències anteriors al
       akahu_panel:
         step_1_html: Ves a %{link} i crea una aplicació personal.
         step_2: Copia el teu token d'aplicació i el token d'usuari.

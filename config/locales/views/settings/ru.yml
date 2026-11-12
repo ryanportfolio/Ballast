@@ -277,54 +277,7 @@ ru:
         lede: Подключите внешние счета, чтобы операции, балансы и активы автоматически
           поступали в Sure.
         page_title: Синхронизация с банком
-      binance_panel:
-        api_key_label: API-ключ
-        api_key_placeholder: Вставьте ваш API-ключ Binance
-        api_secret_label: Секретный ключ API
-        api_secret_placeholder: Вставьте ваш секретный ключ API Binance
-        connect_button: Подключить Binance
-        disconnect: Отключить
-        disconnect_confirm: Вы уверены, что хотите отключить Binance?
-        historical_import: Настройки исторического импорта
-        ip_hint_body: 'Добавьте IP-адрес выхода сервера приложения в белый список
-          API-ключа Binance:'
-        ip_hint_contact_admin: Свяжитесь с вашим администратором, чтобы получить IP-адрес
-          выхода сервера приложения.
-        ip_hint_title: Требуется белый список IP
-        no_withdraw_body: Не включайте разрешения на вывод средств при создании вашего
-          API-ключа Binance. Sure требуется только доступ для чтения.
-        no_withdraw_title: Только ключ для чтения
-        setup_instructions: 'Чтобы подключить Binance, создайте API-ключ только для
-          чтения:'
-        step1_html: Перейдите на <a href="https://www.binance.com/en/my/settings/api-management"
-          target="_blank" rel="noopener noreferrer" class="underline">Управление API
-          Binance</a>
-        step2: Создайте новый API-ключ с разрешением только для чтения
-        step3: Вставьте ваш API-ключ и секретный ключ ниже
-        sync: Синхронизировать
-        sync_start_date_help: Выберите, с какой даты начинать загрузку исторических
-          сделок.
-        sync_start_date_label: Импортировать данные с
-        syncing: Синхронизация...
       clear_filter: Очистить фильтры
-      coinbase_panel:
-        api_key_label: API-ключ
-        api_key_placeholder: Введите ваш API-ключ Coinbase
-        api_secret_label: Секретный ключ API
-        api_secret_placeholder: Введите ваш секретный ключ API Coinbase
-        connect_button: Подключить Coinbase
-        disconnect: Отключить
-        disconnect_confirm: Вы уверены, что хотите отключить это подключение Coinbase?
-          Ваши синхронизированные счета станут ручными счетами.
-        setup_instructions: 'Чтобы подключить Coinbase:'
-        step1_html: Перейдите на <a href="https://portal.cdp.coinbase.com/projects/api-keys"
-          target="_blank" rel="noopener noreferrer" class="text-primary underline">Настройки
-          API Coinbase</a>
-        step2: Создайте новый API-ключ с разрешениями только для чтения (просмотр
-          счетов, просмотр операций)
-        step3: Скопируйте ваш API-ключ и секретный ключ API и вставьте их ниже
-        sync: Синхронизировать
-        syncing: Синхронизация...
       connect: Подключить
       drawer_trust_statement: Доступ только для чтения. Sure никогда не может перемещать
         деньги, а ваши учетные данные хранятся в зашифрованном виде.
@@ -448,34 +401,6 @@ ru:
         token_placeholder_existing: Оставьте пустым, чтобы сохранить текущий токен
         token_placeholder_new: Введите ваш токен веб-сервиса IBKR Flex
         update_configuration: Обновить конфигурацию
-      kraken_panel:
-        add_connection: Добавить подключение Kraken
-        api_key_label: API-ключ
-        api_key_placeholder: Вставьте ваш API-ключ Kraken
-        api_secret_label: Приватный ключ
-        api_secret_placeholder: Вставьте ваш приватный ключ Kraken
-        connection_name_label: Название подключения
-        connection_name_placeholder: Основное Kraken
-        default_connection_name: Kraken
-        disconnect: Отключить
-        disconnect_confirm: Вы уверены, что хотите отключить %{name}?
-        keep_api_key_placeholder: Оставьте пустым, чтобы сохранить существующий API-ключ
-        keep_api_secret_placeholder: Оставьте пустым, чтобы сохранить существующий
-          приватный ключ
-        read_only_body: Не предоставляйте разрешения на торговлю, отмену, вывод средств,
-          экспорт, книгу, Earn, стейкинг или переводы. Sure импортирует только балансы,
-          активы и спотовые торговые операции.
-        read_only_title: Только синхронизация биржи для чтения
-        setup_accounts: Настроить счёт
-        step1_html: Перейдите на <a href="https://pro.kraken.com/app/settings/api"
-          target="_blank" rel="noopener noreferrer" class="underline">настройки API
-          Kraken</a>
-        step2: Создайте API-ключ только с разрешениями Query Funds и Query Closed Orders
-          & Trades.
-        step3: Вставьте API-ключ и приватный ключ ниже.
-        sync: Синхронизировать
-        syncing: Синхронизация...
-        update_connection: Обновить подключение
       lunchflow_panel:
         api_key_label: API-ключ
         api_key_placeholder_new: Вставьте API-ключ здесь
@@ -545,20 +470,14 @@ ru:
       sync_provider_no_items: Нет доступных подключений для синхронизации.
       taglines:
         akahu: Синхронизация финансовых учреждений Новой Зеландии через Akahu.
-        binance: Синхронизируйте ваши спотовые балансы Binance с использованием API-ключа
-          только для чтения.
         brex: Синхронизируйте операции по счетам Brex Cash и корпоративным картам Brex с доступом
           только для чтения.
-        coinbase: Импортируйте ваши криптоактивы Coinbase и отслеживайте доходность.
-        coinstats: Отслеживайте весь ваш криптопортфель через кошельки и биржи.
         enable_banking: Синхронизируйте европейские банковские счета через открытый
           банкинг PSD2.
         ibkr: Синхронизируйте инвестиционные счета Interactive Brokers через Flex
           Query импорт.
         indexa_capital: Отслеживайте ваш автоматизированный инвестиционный портфель
           Indexa Capital.
-        kraken: Синхронизируйте балансы Kraken и спотовые торговые операции с использованием
-          API-ключа только для чтения.
         lunchflow: Подключите более 20 000 банков из более чем 40 стран (Великобритания,
           ЕС, США и другие!)
         mercury: Синхронизируйте ваши бизнес-счета Mercury автоматически.
@@ -572,8 +491,6 @@ ru:
         monobank: Синхронизируйте карты и «банки» Monobank из Украины с помощью персонального API-токена.
         fio: Синхронизируйте счёт Fio banka с помощью API-токена только для чтения.
         wise: Автоматически синхронизируйте мультивалютные балансы Wise и международные переводы.
-        coinspot: Синхронизируйте балансы CoinSpot, стоимость в AUD, переводы, пополнения, выводы и историю ордеров с помощью API-ключа только для чтения.
-        onchain_wallet: Отслеживайте некастодиальные кошельки Bitcoin, EVM, Solana, Cosmos и Polkadot по их публичным адресам.
         trading212: Синхронизируйте инвестиционный портфель Trading 212 с помощью API-ключа только для чтения.
         trade_republic: Синхронизируйте инвестиционный счёт Trade Republic через защищённый веб-вход только для чтения.
         questrade: Синхронизируйте инвестиционные счета Questrade напрямую через Questrade API.
@@ -588,43 +505,6 @@ ru:
       provider_setup_encryption_warning:
         title: Отсутствуют ключи шифрования
         message: В этой самостоятельно размещённой установке не заданы явные ключи шифрования Active Record. Настройте primary_key, deterministic_key и key_derivation_salt, прежде чем сохранять учётные данные провайдеров в продакшене.
-      coinspot_panel:
-        step1_html: Перейдите в <a href="https://www.coinspot.com.au/my/api" target="_blank" rel="noopener noreferrer" class="underline">настройки API CoinSpot</a>
-        step2: Создайте API-ключ с доступом только для чтения к балансам и истории.
-        step3: Вставьте API-ключ и секретный ключ ниже.
-        read_only_title: Только синхронизация биржи для чтения
-        read_only_body: Не предоставляйте разрешения на отправку, вывод средств, торговлю или переводы. Sure импортирует только балансы, стоимость в AUD, переводы, пополнения, выводы и историю исполненных ордеров.
-        default_connection_name: CoinSpot
-        add_connection: Добавить подключение CoinSpot
-        update_connection: Обновить подключение
-        connection_name_label: Название подключения
-        connection_name_placeholder: Основной CoinSpot
-        api_key_label: API-ключ
-        api_key_placeholder: Вставьте ваш API-ключ CoinSpot
-        keep_api_key_placeholder: Оставьте пустым, чтобы сохранить текущий API-ключ
-        api_secret_label: Секретный ключ API
-        api_secret_placeholder: Вставьте ваш секретный ключ API CoinSpot
-        keep_api_secret_placeholder: Оставьте пустым, чтобы сохранить текущий секретный ключ API
-        setup_accounts: Настроить счёт
-        syncing: Синхронизация...
-        sync: Синхронизировать
-        disconnect: Отключить
-        disconnect_confirm: Вы уверены, что хотите отключить %{name}?
-      onchain_wallet_panel:
-        add_wallet: Добавить кошелёк
-        advanced: Дополнительно
-        disconnect_all: Отключить все кошельки
-        disconnect_all_confirm: Все отслеживаемые адреса и их счета будут удалены. Продолжить?
-        etherscan_api_key_label: API-ключ Etherscan (необязательно)
-        etherscan_api_key_placeholder: Вставьте API-ключ Etherscan
-        etherscan_hint: Данные Ethereum читаются и без ключа. Ключ Etherscan лишь повышает лимит запросов для Ethereum.
-        keep_etherscan_api_key: Оставьте пустым, чтобы сохранить текущий ключ
-        manage_wallets: Управление кошельками
-        keyless_body: Sure только читает публичные данные блокчейна. Ключи, сид-фразы и подписи не используются, и ничего не может быть потрачено.
-        keyless_title: Только чтение, ключи не нужны
-        save: Сохранить
-        sync_start_date_hint: Переводы до этой даты игнорируются. Оставьте пустым, чтобы импортировать всё, что показывает обозреватель блокчейна.
-        sync_start_date_label: Игнорировать переводы до
       monobank_panel:
         step_1_html: Перейдите на %{link}, войдите через приложение Monobank и создайте персональный токен.
         step_2: Скопируйте токен — он показывается только один раз.

@@ -179,19 +179,19 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
   end
 
   test "keeps a provider-supplied logo when adding the website" do
-    merchant = ProviderMerchant.create!(source: "coinstats", name: "Binance", provider_merchant_id: "cs_binance", logo_url: "https://coinstats.app/binance.png")
-    create_transaction(account: @account, name: "Binance transfer", merchant: merchant)
+    merchant = ProviderMerchant.create!(source: "plaid", name: "Acme Exchange", provider_merchant_id: "plaid_acme", logo_url: "https://plaid.example/acme.png")
+    create_transaction(account: @account, name: "Acme Exchange transfer", merchant: merchant)
 
     provider_response = provider_success_response([
-      EnhancedMerchant.new(merchant_id: merchant.id, business_url: "binance.com")
+      EnhancedMerchant.new(merchant_id: merchant.id, business_url: "acme.example")
     ])
     @llm_provider.expects(:enhance_provider_merchants).returns(provider_response).once
 
     result = ProviderMerchant::Enhancer.new(@family).enhance
 
     assert_equal 1, result[:enhanced]
-    assert_equal "binance.com", merchant.reload.website_url
-    assert_equal "https://coinstats.app/binance.png", merchant.logo_url
+    assert_equal "acme.example", merchant.reload.website_url
+    assert_equal "https://plaid.example/acme.png", merchant.logo_url
   end
 
   private

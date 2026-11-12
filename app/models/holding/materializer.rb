@@ -73,7 +73,7 @@ class Holding::Materializer
         existing = existing_holdings_map[key]
 
         # Skip provider-sourced holdings - they have authoritative data from the provider
-        # (e.g., Coinbase, SimpleFIN) and should not be overwritten by calculated holdings
+        # (e.g., SimpleFIN) and should not be overwritten by calculated holdings
         if existing&.account_provider_id.present?
           Rails.logger.debug(
             "Holding::Materializer - Skipping provider-sourced holding id=#{existing.id} " \

@@ -319,12 +319,8 @@ es:
         simplefin: Conecta cuentas bancarias de EE. UU. mediante el protocolo abierto SimpleFIN.
         lunchflow: Conecta más de 20 000 bancos de más de 40 países (Reino Unido, UE, EE. UU. y más).
         enable_banking: Sincroniza cuentas bancarias europeas mediante open banking PSD2.
-        coinstats: Controla todo tu portafolio cripto entre monederos y exchanges.
         mercury: Sincroniza automáticamente tus cuentas bancarias de empresa de Mercury.
         brex: Sincroniza el efectivo y la actividad de tarjetas corporativas de Brex con acceso de solo lectura.
-        coinbase: Importa tus posiciones cripto de Coinbase y controla su rendimiento.
-        binance: Sincroniza tus saldos spot de Binance con una clave API de solo lectura.
-        kraken: Sincroniza saldos y operaciones spot de Kraken con una clave API de solo lectura.
         snaptrade: Conecta cuentas de bróker mediante la red de agregación SnapTrade.
         ibkr: Sincroniza cuentas de inversión de Interactive Brokers mediante importaciones de Flex Query.
         questrade: Sincroniza tus cuentas de inversión de Questrade directamente mediante la API de Questrade.
@@ -347,64 +343,6 @@ es:
         message: Las claves de cifrado de Active Record no están configuradas. Por favor, asegúrate de que las credenciales de cifrado (active_record_encryption.primary_key, active_record_encryption.deterministic_key y active_record_encryption.key_derivation_salt) estén correctamente configuradas en tus credenciales de Rails o variables de entorno antes de usar proveedores de sincronización.
       provider_form:
         save_and_connect: Guardar y conectar
-      coinbase_panel:
-        setup_instructions: 'Para conectar Coinbase:'
-        step1_html: Ve a los <a href="https://portal.cdp.coinbase.com/projects/api-keys" target="_blank" class="text-primary underline">Ajustes de API de Coinbase</a>
-        step2: Crea una nueva clave API con permisos de solo lectura (ver cuentas, ver transacciones)
-        step3: Copia tu clave API y tu secreto de API y pégalos a continuación
-        api_key_label: Clave API
-        api_key_placeholder: Introduce tu clave API de Coinbase
-        api_secret_label: Secreto de API
-        api_secret_placeholder: Introduce tu secreto de API de Coinbase
-        connect_button: Conectar Coinbase
-        syncing: Sincronizando...
-        sync: Sincronizar
-        disconnect: Desconectar
-        disconnect_confirm: ¿Estás seguro de que deseas desconectar esta conexión de Coinbase? Tus cuentas sincronizadas pasarán a ser cuentas manuales.
-      binance_panel:
-        setup_instructions: 'Para conectar Binance, crea una clave API de solo lectura:'
-        step1_html: Ve a <a href="https://www.binance.com/en/my/settings/api-management" target="_blank" rel="noopener noreferrer" class="underline">Binance API Management</a>
-        step2: Crea una nueva clave API solo con el permiso Enable Reading (lectura)
-        step3: Pega tu API Key y tu Secret abajo
-        no_withdraw_title: Solo claves de lectura
-        no_withdraw_body: No actives permisos de retirada al crear tu clave API de Binance. Sure solo necesita acceso de lectura.
-        ip_hint_title: Se requiere lista blanca de IP
-        ip_hint_body: 'Añade la IP de salida del servidor de la aplicación a la lista blanca de la clave API de Binance:'
-        ip_hint_contact_admin: Contacta con tu administrador para obtener la IP de salida del servidor de la aplicación.
-        api_key_label: API Key
-        api_key_placeholder: Pega tu API Key de Binance
-        api_secret_label: API Secret
-        api_secret_placeholder: Pega tu API Secret de Binance
-        connect_button: Conectar Binance
-        syncing: Sincronizando...
-        sync: Sincronizar
-        historical_import: Ajustes de importación histórica
-        sync_start_date_label: Importar datos desde
-        sync_start_date_help: Selecciona hasta cuándo retroceder para obtener operaciones históricas.
-        disconnect: Desconectar
-        disconnect_confirm: ¿Seguro que quieres desconectar Binance?
-      kraken_panel:
-        step1_html: Ve a los <a href="https://pro.kraken.com/app/settings/api" target="_blank" rel="noopener noreferrer" class="underline">ajustes de API de Kraken</a>
-        step2: Crea una clave API solo con Query Funds y Query Closed Orders & Trades.
-        step3: Pega la clave API y la clave privada abajo.
-        read_only_title: Sincronización de exchange solo en lectura
-        read_only_body: No concedas permisos de trading, cancelación, retirada, exportación, libro mayor, Earn, staking ni transferencias. Sure solo importa saldos, posiciones y operaciones spot ejecutadas.
-        default_connection_name: Kraken
-        add_connection: Añadir conexión de Kraken
-        update_connection: Actualizar conexión
-        connection_name_label: Nombre de la conexión
-        connection_name_placeholder: Kraken principal
-        api_key_label: API Key
-        api_key_placeholder: Pega tu clave API de Kraken
-        keep_api_key_placeholder: Deja en blanco para conservar la clave API actual
-        api_secret_label: Clave privada
-        api_secret_placeholder: Pega tu clave privada de Kraken
-        keep_api_secret_placeholder: Deja en blanco para conservar la clave privada actual
-        setup_accounts: Configurar cuenta
-        syncing: Sincronizando...
-        sync: Sincronizar
-        disconnect: Desconectar
-        disconnect_confirm: ¿Seguro que quieres desconectar %{name}?
       enable_banking_panel:
         callback_url_instruction: Para la URL de retorno (callback), utiliza %{callback_url}.
         connection_error: Error de conexión
@@ -525,5 +463,3 @@ es:
         accounts_tab: Cuentas
         status_configured_suffix: para gestionar las cuentas detectadas.
         not_configured: Sin configurar.
-      show:
-        coinbase_title: Coinbase

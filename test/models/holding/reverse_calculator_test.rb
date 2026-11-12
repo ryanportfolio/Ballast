@@ -419,9 +419,9 @@ class Holding::ReverseCalculatorTest < ActiveSupport::TestCase
       entryable: Valuation.new(kind: "opening_anchor")
     )
 
-    coinstats_item = @account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
     @account.holdings.create!(
       security: security, date: 2.days.ago.to_date, qty: 10, price: 100, amount: 1000,
       currency: "USD", account_provider: account_provider
@@ -449,9 +449,9 @@ class Holding::ReverseCalculatorTest < ActiveSupport::TestCase
     Security::Price.create!(security: security, date: 1.day.ago.to_date, price: 50)
     Security::Price.create!(security: security, date: Date.current, price: 50)
 
-    coinstats_item = @account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
     @account.holdings.create!(
       security: security, date: 10.days.ago.to_date, qty: 10, price: 100, amount: 1000,
       currency: "USD", account_provider: account_provider

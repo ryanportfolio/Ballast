@@ -55,9 +55,9 @@ class Holding::PortfolioSnapshotTest < ActiveSupport::TestCase
     create_trade(@aapl, account: @account, qty: 10, price: 100, date: 5.days.ago)
     create_trade(@msft, account: @account, qty: 5, price: 200, date: 5.days.ago)
 
-    coinstats_item = @account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     @account.holdings.create!(
       security: @aapl,

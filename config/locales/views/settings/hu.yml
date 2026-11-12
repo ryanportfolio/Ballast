@@ -253,12 +253,8 @@ hu:
         simplefin: US bankszámlák csatlakoztatása az open SimpleFIN protokollon keresztül.
         lunchflow: 40+ ország 20 000+ bankjának csatlakoztatása (Egyesült Királyság, EU, USA stb.!)
         enable_banking: Európai bankszámlák szinkronizálása PSD2 open banking révén.
-        coinstats: Teljes kriptoportfólió nyomon követése tárcákon és tőzsdéken keresztül.
         mercury: Mercury üzleti bankszámlák automatikus szinkronizálása.
         brex: Brex készpénz és vállalati kártya tevékenység szinkronizálása csak olvasási hozzáféréssel.
-        coinbase: Coinbase kriptoeszközök importálása és teljesítmény nyomon követése.
-        binance: Binance spot egyenlegek szinkronizálása csak olvasási API-kulccsal.
-        kraken: Kraken egyenlegek és spot ügyletek szinkronizálása csak olvasási API-kulccsal.
         snaptrade: Brókeri számlák csatlakoztatása a SnapTrade aggregációs hálózaton keresztül.
         ibkr: Interactive Brokers befektetési számlák szinkronizálása Flex Query importálással.
         indexa_capital: Indexa Capital automatizált befektetési portfólió nyomon követése.
@@ -275,67 +271,9 @@ hu:
           investment: Befektetések
       empty_filter: Nincs a szűrőnek megfelelő szolgáltató.
       clear_filter: Szűrők törlése
-      show:
-        coinbase_title: Coinbase
       encryption_error:
         title: Titkosítási konfiguráció szükséges
         message: Az Active Record titkosítási kulcsok nincsenek konfigurálva. Kérjük, gondoskodj arról, hogy a titkosítási hitelesítő adatok (active_record_encryption.primary_key, active_record_encryption.deterministic_key és active_record_encryption.key_derivation_salt) megfelelően be legyenek állítva a Rails hitelesítő adataiban vagy a környezeti változókban, mielőtt szinkronizálási szolgáltatókat használnál.
-      coinbase_panel:
-        setup_instructions: "A Coinbase csatlakoztatásához:"
-        step1_html: Nyisd meg a <a href="https://portal.cdp.coinbase.com/projects/api-keys" target="_blank" rel="noopener noreferrer" class="text-primary underline">Coinbase API beállításait</a>
-        step2: Hozz létre egy új, csak olvasási jogosultsággal rendelkező API-kulcsot (számlák és tranzakciók megtekintése)
-        step3: Másold ki az API-kulcsot és az API-titkot, majd illeszd be az alábbiakba
-        api_key_label: API-kulcs
-        api_key_placeholder: Add meg a Coinbase API-kulcsodat
-        api_secret_label: API-titok
-        api_secret_placeholder: Add meg a Coinbase API-titkodat
-        connect_button: Coinbase csatlakoztatása
-        syncing: Szinkronizálás...
-        sync: Szinkronizálás
-        disconnect: Lecsatlakozás
-        disconnect_confirm: Biztosan le szeretnéd választani ezt a Coinbase-kapcsolatot? A szinkronizált számlák manuális számlákká válnak.
-      binance_panel:
-        setup_instructions: "A Binance csatlakoztatásához hozz létre egy csak olvasási jogosultsággal rendelkező API-kulcsot:"
-        step1_html: 'Nyisd meg a <a href="https://www.binance.com/en/my/settings/api-management" target="_blank" rel="noopener noreferrer" class="underline">Binance API-kezelőjét</a>'
-        step2: "Hozz létre egy új API-kulcsot, csak olvasási engedéllyel"
-        step3: "Illeszd be az API-kulcsodat és az API-titkodat az alábbiakba"
-        no_withdraw_warning: "Figyelmeztetés: NE engedélyezd a kifizetési jogosultságot"
-        no_withdraw_title: "Csak olvasható kulcs"
-        no_withdraw_body: "Ne engedélyezd a kifizetési jogosultságot a Binance API-kulcs létrehozásakor. A Sure csak olvasási hozzáférést igényel."
-        ip_hint_title: "IP-cím-engedélyezési lista szükséges"
-        ip_hint_body: "Add hozzá az alkalmazásszerver kimenő IP-címét a Binance API-kulcs engedélyezési listájához:"
-        ip_hint_contact_admin: "Az alkalmazásszerver kimenő IP-címéért fordulj a rendszergazdádhoz."
-        api_key_label: API-kulcs
-        api_key_placeholder: Illeszd be a Binance API-kulcsodat
-        api_secret_label: API-titok
-        api_secret_placeholder: Illeszd be a Binance API-titkodat
-        connect_button: Binance csatlakoztatása
-        syncing: Szinkronizálás...
-        sync: Szinkronizálás
-        disconnect: Lecsatlakozás
-        disconnect_confirm: "Biztosan le szeretnéd választani a Binance-t?"
-      kraken_panel:
-        step1_html: 'Nyisd meg a <a href="https://pro.kraken.com/app/settings/api" target="_blank" rel="noopener noreferrer" class="underline">Kraken API-beállításait</a>'
-        step2: "Hozz létre egy API-kulcsot csak Lekérdezési alapok és Lekérdezési zárt megbízások & ügyletek jogosultsággal."
-        step3: "Illeszd be az API-kulcsot és a privát kulcsot az alábbiakba."
-        read_only_title: "Csak olvasási tőzsdei szinkronizálás"
-        read_only_body: "Ne adj kereskedési, visszavonási, kifizetési, exportálási, főkönyvi, Earn, staking vagy átutalási jogosultságot. A Sure csak egyenlegeket, pozíciókat és spot ügyletek adatait importálja."
-        default_connection_name: Kraken
-        add_connection: Kraken-kapcsolat hozzáadása
-        update_connection: Kapcsolat frissítése
-        connection_name_label: Kapcsolat neve
-        connection_name_placeholder: Fő Kraken
-        api_key_label: API-kulcs
-        api_key_placeholder: Illeszd be a Kraken API-kulcsodat
-        keep_api_key_placeholder: Hagyd üresen a meglévő API-kulcs megtartásához
-        api_secret_label: Privát kulcs
-        api_secret_placeholder: Illeszd be a Kraken privát kulcsodat
-        keep_api_secret_placeholder: Hagyd üresen a meglévő privát kulcs megtartásához
-        setup_accounts: Számla beállítása
-        syncing: Szinkronizálás...
-        sync: Szinkronizálás
-        disconnect: Lecsatlakozás
-        disconnect_confirm: "Biztosan le szeretnéd választani a(z) %{name}-t?"
       enable_banking_panel:
         callback_url_instruction: "A visszahívási URL-hez használd a következőt: %{callback_url}."
         connection_error: Kapcsolódási hiba

@@ -422,7 +422,7 @@ class SnaptradeDataHelpersTest < ActiveSupport::TestCase
     end
 
     def other_provider_account
-      item = families(:dylan_family).coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-      item.coinstats_accounts.create!(name: "Other provider", currency: "USD")
+      item = families(:dylan_family).simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+      item.simplefin_accounts.create!(name: "Other provider", currency: "USD", account_type: "investment", current_balance: 0)
     end
 end

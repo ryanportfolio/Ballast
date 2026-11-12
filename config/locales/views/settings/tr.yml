@@ -286,54 +286,7 @@ tr:
         lede: İşlemlerin, bakiyelerin ve varlıkların otomatik olarak Sure'a akması
           için harici hesapları bağlayın.
         page_title: Banka senkronizasyonu
-      binance_panel:
-        api_key_label: API Anahtarı
-        api_key_placeholder: Binance API Anahtarınızı yapıştırın
-        api_secret_label: API Gizli Anahtarı
-        api_secret_placeholder: Binance API Gizli Anahtarınızı yapıştırın
-        connect_button: Binance'a Bağlan
-        disconnect: Bağlantıyı kes
-        disconnect_confirm: Binance bağlantısını kesmek istediğinizden emin misiniz?
-        historical_import: Geçmiş İçe Aktarma Ayarları
-        ip_hint_body: 'Uygulama sunucusunun çıkış IP adresini Binance API Anahtarı
-          beyaz listesine ekleyin:'
-        ip_hint_contact_admin: Uygulama sunucusunun çıkış IP adresini almak için yöneticinizle
-          iletişime geçin.
-        ip_hint_title: IP beyaz listeye alma gerekli
-        no_withdraw_body: Binance API anahtarınızı oluştururken çekme izinlerini etkinleştirmeyin.
-          Sure yalnızca okuma erişimine ihtiyaç duyar.
-        no_withdraw_title: Yalnızca salt okunur anahtar
-        setup_instructions: 'Binance''ı bağlamak için salt okunur bir API anahtarı
-          oluşturun:'
-        step1_html: <a href="https://www.binance.com/en/my/settings/api-management"
-          target="_blank" rel="noopener noreferrer" class="underline">Binance API
-          Yönetimi</a> sayfasına gidin
-        step2: Yalnızca Okumayı Etkinleştir izniyle yeni bir API anahtarı oluşturun
-        step3: API Anahtarınızı ve Gizli Anahtarınızı aşağıya yapıştırın
-        sync: Senkronize et
-        sync_start_date_help: Geçmiş işlemlerin ne kadar geriye gidilerek alınacağını
-          seçin.
-        sync_start_date_label: Verileri içe aktar
-        syncing: Senkronize ediliyor...
       clear_filter: Filtreleri temizle
-      coinbase_panel:
-        api_key_label: API Anahtarı
-        api_key_placeholder: Coinbase API anahtarınızı girin
-        api_secret_label: API Gizli Anahtarı
-        api_secret_placeholder: Coinbase API gizli anahtarınızı girin
-        connect_button: Coinbase'e Bağlan
-        disconnect: Bağlantıyı kes
-        disconnect_confirm: Bu Coinbase bağlantısını kesmek istediğinizden emin misiniz?
-          Senkronize hesaplarınız manuel hesaplara dönüşecektir.
-        setup_instructions: 'Coinbase''i bağlamak için:'
-        step1_html: <a href="https://portal.cdp.coinbase.com/projects/api-keys"
-          target="_blank" rel="noopener noreferrer" class="text-primary underline">Coinbase
-          API Ayarları</a> sayfasına gidin
-        step2: Salt okunur izinlerle (hesapları görüntüleme, işlemleri görüntüleme)
-          yeni bir API anahtarı oluşturun
-        step3: API anahtarınızı ve API gizli anahtarınızı kopyalayıp aşağıya yapıştırın
-        sync: Senkronize et
-        syncing: Senkronize ediliyor...
       connect: Bağlan
       drawer_trust_statement: Salt okunur erişim. Sure asla para transferi yapamaz
         ve kimlik bilgileriniz şifrelenmiş olarak saklanır.
@@ -457,33 +410,6 @@ tr:
         token_placeholder_existing: Mevcut Token'ı korumak için boş bırakın
         token_placeholder_new: IBKR Flex Web Service Token'ınızı girin
         update_configuration: Yapılandırmayı Güncelle
-      kraken_panel:
-        add_connection: Kraken bağlantısı ekle
-        api_key_label: API Anahtarı
-        api_key_placeholder: Kraken API anahtarınızı yapıştırın
-        api_secret_label: Özel Anahtar
-        api_secret_placeholder: Kraken özel anahtarınızı yapıştırın
-        connection_name_label: Bağlantı adı
-        connection_name_placeholder: Ana Kraken
-        default_connection_name: Kraken
-        disconnect: Bağlantıyı kes
-        disconnect_confirm: "%{name} bağlantısını kesmek istediğinizden emin misiniz?"
-        keep_api_key_placeholder: Mevcut API anahtarını korumak için boş bırakın
-        keep_api_secret_placeholder: Mevcut özel anahtarı korumak için boş bırakın
-        read_only_body: İşlem yapma, iptal etme, çekme, dışa aktarma, defter, Earn,
-          stake etme veya transfer izinleri vermeyin. Sure yalnızca bakiyeleri, varlıkları
-          ve spot işlem gerçekleşmelerini içe aktarır.
-        read_only_title: Salt okunur borsa senkronizasyonu
-        setup_accounts: Hesabı kur
-        step1_html: <a href="https://pro.kraken.com/app/settings/api" target="_blank"
-          rel="noopener noreferrer" class="underline">Kraken API ayarları</a> sayfasına
-          gidin
-        step2: Yalnızca Query Funds ve Query Closed Orders & Trades izinleriyle bir
-          API anahtarı oluşturun.
-        step3: API anahtarını ve özel anahtarı aşağıya yapıştırın.
-        sync: Senkronize et
-        syncing: Senkronize ediliyor...
-        update_connection: Bağlantıyı güncelle
       lunchflow_panel:
         api_key_label: API Anahtarı
         api_key_placeholder_new: API anahtarını buraya yapıştırın
@@ -554,20 +480,13 @@ tr:
       sync_provider_no_items: Senkronize edilecek bağlantı yok.
       taglines:
         akahu: Akahu üzerinden Yeni Zelanda finans kurumlarını senkronize edin.
-        binance: Salt okunur bir API anahtarı kullanarak Binance spot bakiyelerinizi
-          senkronize edin.
         brex: Salt okunur erişimle Brex nakit ve kurumsal kart hareketlerinizi senkronize
           edin.
-        coinbase: Coinbase kripto varlıklarınızı içe aktarın ve performansı takip
-          edin.
-        coinstats: Tüm kripto portföyünüzü cüzdanlar ve borsalar genelinde takip edin.
         enable_banking: PSD2 açık bankacılığı üzerinden Avrupa banka hesaplarınızı
           senkronize edin.
         ibkr: Flex Query içe aktarmaları yoluyla Interactive Brokers yatırım hesaplarınızı
           senkronize edin.
         indexa_capital: Indexa Capital otomatik yatırım portföyünüzü takip edin.
-        kraken: Salt okunur bir API anahtarı kullanarak Kraken bakiyelerinizi ve spot
-          işlem gerçekleşmelerinizi senkronize edin.
         lunchflow: 40'tan fazla ülkeden 20 bin+ bankayı bağlayın (İngiltere, AB, ABD
           ve daha fazlası!)
         mercury: Mercury işletme bankacılığı hesaplarınızı otomatik olarak senkronize
@@ -585,8 +504,6 @@ tr:
         redbark: Avustralya banka hesaplarını Redbark açık bankacılık ile senkronize edin.
         monobank: Ukrayna Monobank kartlarını ve kumbaralarını kişisel bir API token ile senkronize edin.
         fio: Bir Fio banka hesabını salt okunur bir API token ile senkronize edin.
-        coinspot: CoinSpot bakiyelerini, AUD değerlerini, transferleri, para yatırma, para çekme ve emir geçmişini salt okunur bir API anahtarıyla senkronize edin.
-        onchain_wallet: Gözetimsiz Bitcoin, EVM, Solana, Cosmos ve Polkadot cüzdanlarını herkese açık adresleri üzerinden takip edin.
         trading212: Trading 212 yatırım portföyünüzü salt okunur bir API anahtarıyla senkronize edin.
         trade_republic: Trade Republic yatırım hesabınızı güvenli, salt okunur web girişiyle senkronize edin.
       up_panel:
@@ -601,43 +518,6 @@ tr:
       provider_setup_encryption_warning:
         title: Şifreleme anahtarları eksik
         message: Bu kendi sunucunuzda barındırılan kurulumda açık Active Record şifreleme anahtarları yapılandırılmamış. Üretim ortamında sağlayıcı kimlik bilgilerini kaydetmeden önce primary_key, deterministic_key ve key_derivation_salt değerlerini yapılandırın.
-      coinspot_panel:
-        step1_html: <a href="https://www.coinspot.com.au/my/api" target="_blank" rel="noopener noreferrer" class="underline">CoinSpot API ayarlarına</a> gidin
-        step2: Bakiyelere ve geçmişe salt okunur erişimi olan bir API anahtarı oluşturun.
-        step3: API anahtarını ve gizli anahtarı aşağıya yapıştırın.
-        read_only_title: Salt okunur borsa senkronizasyonu
-        read_only_body: Gönderme, para çekme, alım satım veya transfer izinleri vermeyin. Sure yalnızca bakiyeleri, AUD değerlerini, transferleri, para yatırma, para çekme ve tamamlanmış emir geçmişini içe aktarır.
-        default_connection_name: CoinSpot
-        add_connection: CoinSpot bağlantısı ekle
-        update_connection: Bağlantıyı güncelle
-        connection_name_label: Bağlantı adı
-        connection_name_placeholder: Ana CoinSpot
-        api_key_label: API Anahtarı
-        api_key_placeholder: CoinSpot API anahtarınızı yapıştırın
-        keep_api_key_placeholder: Mevcut API anahtarını korumak için boş bırakın
-        api_secret_label: API Gizli Anahtarı
-        api_secret_placeholder: CoinSpot API gizli anahtarınızı yapıştırın
-        keep_api_secret_placeholder: Mevcut API gizli anahtarını korumak için boş bırakın
-        setup_accounts: Hesabı kur
-        syncing: Senkronize ediliyor...
-        sync: Senkronize et
-        disconnect: Bağlantıyı kes
-        disconnect_confirm: '%{name} bağlantısını kesmek istediğinizden emin misiniz?'
-      onchain_wallet_panel:
-        add_wallet: Cüzdan ekle
-        advanced: Gelişmiş
-        disconnect_all: Tüm cüzdanların bağlantısını kes
-        disconnect_all_confirm: Bu işlem takip edilen tüm adresleri ve bunlara ait hesapları kaldırır. Devam edilsin mi?
-        etherscan_api_key_label: Etherscan API anahtarı (isteğe bağlı)
-        etherscan_api_key_placeholder: Bir Etherscan API anahtarı yapıştırın
-        etherscan_hint: Ethereum verileri anahtar olmadan da okunabilir. Etherscan anahtarı eklemek yalnızca Ethereum için hız sınırını yükseltir.
-        keep_etherscan_api_key: Mevcut anahtarı korumak için boş bırakın
-        manage_wallets: Cüzdanları yönet
-        keyless_body: Sure yalnızca herkese açık zincir verilerini okur. Hiçbir anahtar, kurtarma ifadesi veya imza kullanılmaz ve hiçbir şey harcanamaz.
-        keyless_title: Salt okunur, anahtar gerekmez
-        save: Kaydet
-        sync_start_date_hint: Bu tarihten önceki transferler yok sayılır. Blok gezgininin bildirdiği her şeyi içe aktarmak için boş bırakın.
-        sync_start_date_label: Şu tarihten önceki transferleri yok say
       monobank_panel:
         step_1_html: '%{link} adresine gidin, Monobank uygulamasıyla giriş yapın ve kişisel bir token oluşturun.'
         step_2: Token'ı kopyalayın — yalnızca bir kez gösterilir.

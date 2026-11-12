@@ -6,18 +6,14 @@ require "test_helper"
 # behaviour is tested per provider in AccountsControllerTest; this keeps
 # every card, including one added later, on the same path.
 class ProviderItemCardsTest < ActiveSupport::TestCase
-  # The on-chain wallet's _item partial is its Settings > Providers row; its
-  # accounts-page card is _wallet_card, checked separately below.
-  NOT_CARDS = %w[app/views/onchain_wallet_items/_onchain_wallet_item.html.erb].freeze
-
-  CARDS = Dir[Rails.root.join("app/views/*_items/_*_item.html.erb")].map { |path| path.delete_prefix("#{Rails.root}/") }.sort - NOT_CARDS
+  CARDS = Dir[Rails.root.join("app/views/*_items/_*_item.html.erb")].map { |path| path.delete_prefix("#{Rails.root}/") }.sort
 
   CARD_PARTIALS = CARDS.map { |card| card.delete_prefix("app/views/").sub(%r{/_}, "/").delete_suffix(".html.erb") }
 
   RENDER_SOURCES = Dir[Rails.root.join("{app,lib}/**/*.{rb,erb,tt}")].sort
 
   test "there are cards to check" do
-    assert_operator CARDS.size, :>=, 20
+    assert_operator CARDS.size, :>=, 19
   end
 
   CARDS.each do |card|
@@ -63,9 +59,9 @@ class ProviderItemCardsTest < ActiveSupport::TestCase
       end
     end
 
-    # The 12 admin-only controller responses. Sync completions, jobs and the
+    # The 8 admin-only controller responses. Sync completions, jobs and the
     # SimpleFIN syncer no longer render a card at all.
-    assert_operator sites.size, :>=, 12, "found only #{sites.size} render sites; has the scan stopped matching?"
+    assert_operator sites.size, :>=, 8, "found only #{sites.size} render sites; has the scan stopped matching?"
   end
 
   test "no provider card is rendered by model, which cannot pass visible_accounts" do
@@ -74,15 +70,6 @@ class ProviderItemCardsTest < ActiveSupport::TestCase
     RENDER_SOURCES.each do |file|
       assert_no_match by_model, File.read(file), "#{file.delete_prefix("#{Rails.root}/")} renders a provider card by model"
     end
-  end
-
-  # The on-chain wallet card is rendered by name with a card built in the
-  # controller from accounts_visible_to, not from the item's own accounts.
-  test "the on-chain wallet card lists only the accounts it is given" do
-    source = Rails.root.join("app/views/onchain_wallet_items/_wallet_card.html.erb").read
-
-    assert_includes source, 'render "accounts/index/account_groups", accounts: card[:accounts]'
-    assert_no_match(/onchain_wallet_item\.accounts\b/, source)
   end
 
   test "the accounts index gives every provider card its visible accounts" do

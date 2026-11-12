@@ -10,7 +10,7 @@
   ) %>
 <% end %>
 
-<% if @manual_accounts.empty? && @financekit_accounts.empty? && @plaid_items.empty? && @simplefin_items.empty? && @lunchflow_items.empty? && @redbark_items.empty? && @akahu_items.empty? && @up_items.empty? && @monobank_items.empty? && @fio_items.empty? && @enable_banking_items.empty? && @coinstats_items.empty? && @coinbase_items.empty? && @mercury_items.empty? && @brex_items.empty? && @ibkr_items.empty? && @snaptrade_items.empty? && @indexa_capital_items.empty? && @sophtron_items.empty? && @binance_items.empty? && @kraken_items.empty? && @coinspot_items.empty? && @questrade_items.empty? && @wise_items.empty? && @onchain_wallet_items.empty? && @trade_republic_items.empty? && @trading212_items.empty? %>
+<% if @manual_accounts.empty? && @financekit_accounts.empty? && @plaid_items.empty? && @simplefin_items.empty? && @lunchflow_items.empty? && @redbark_items.empty? && @akahu_items.empty? && @up_items.empty? && @monobank_items.empty? && @fio_items.empty? && @enable_banking_items.empty? && @mercury_items.empty? && @brex_items.empty? && @ibkr_items.empty? && @snaptrade_items.empty? && @indexa_capital_items.empty? && @sophtron_items.empty? && @questrade_items.empty? && @wise_items.empty? && @trade_republic_items.empty? && @trading212_items.empty? %>
   <%= render "empty" %>
 <% else %>
   <div class="space-y-2">
@@ -66,22 +66,6 @@
       <% end %>
     <% end %>
 
-    <% if @coinstats_items.any? %>
-      <% @coinstats_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @onchain_wallet_items.any? %>
-      <%# Rendered by name rather than as a collection: the model's default
-          partial is the provider settings row, and this is the accounts card. %>
-      <% @onchain_wallet_items.sort_by(&:created_at).each do |onchain_wallet_item| %>
-        <%= render "onchain_wallet_items/wallet_card",
-                   onchain_wallet_item: onchain_wallet_item,
-                   card: @onchain_wallet_cards.fetch(onchain_wallet_item.id) %>
-      <% end %>
-    <% end %>
-
     <% if @sophtron_items.any? %>
       <% @sophtron_items.sort_by(&:created_at).each do |item| %>
         <%= render item, visible_accounts: visible_card_accounts(item) %>
@@ -96,30 +80,6 @@
 
     <% if @brex_items.any? %>
       <% @brex_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @coinbase_items.any? %>
-      <% @coinbase_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @binance_items.any? %>
-      <% @binance_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @kraken_items.any? %>
-      <% @kraken_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @coinspot_items.any? %>
-      <% @coinspot_items.sort_by(&:created_at).each do |item| %>
         <%= render item, visible_accounts: visible_card_accounts(item) %>
       <% end %>
     <% end %>

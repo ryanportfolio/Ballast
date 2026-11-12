@@ -9,15 +9,12 @@ uk:
     appearance: Зовнішній вигляд
     appearances: Зовнішній вигляд
     bank_sync: Синхронізація з банком
-    binance_items: Binance
     brex_items: Brex
     budget_categories: Категорії бюджету
     budgets: Бюджети
     categories: Категорії
     categorize: Класифікація
     chats: Чати
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: Кредитні картки
     cryptos: Криптовалюта
     dashboard: Дашборд
@@ -40,7 +37,6 @@ uk:
     investments: Інвестиції
     invitations: Запрошення
     invite_codes: Інвіт-коди
-    kraken_items: Kraken
     llm_usage: Використання LLM
     llm_usages: Використання LLM
     loans: Позики

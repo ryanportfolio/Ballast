@@ -477,9 +477,9 @@ class Account::MarketDataImporterTest < ActiveSupport::TestCase
 
     security = Security.create!(ticker: "PE500", exchange_operating_mic: "XPAR")
 
-    coinstats_item = family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account_provider = AccountProvider.create!(account: account, provider: coinstats_account)
+    simplefin_item = family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: account, provider: simplefin_account)
 
     account.holdings.create!(
       security: security,
@@ -521,8 +521,8 @@ class Account::MarketDataImporterTest < ActiveSupport::TestCase
     family = Family.create!(name: "Smith", currency: "USD")
     account = family.accounts.create!(name: "Brokerage", currency: "USD", balance: 0, accountable: Investment.new)
     security = Security.create!(ticker: "OLDPROV", exchange_operating_mic: "XNAS")
-    provider_item = family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    provider_account = provider_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
+    provider_item = family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    provider_account = provider_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
     account_provider = AccountProvider.create!(account: account, provider: provider_account)
     held_date = 10.days.ago.to_date
 

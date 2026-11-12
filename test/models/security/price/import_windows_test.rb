@@ -68,8 +68,8 @@ class Security::Price::ImportWindowsTest < ActiveSupport::TestCase
     family = Family.create!(name: "Smith", currency: "USD")
     account = family.accounts.create!(name: "Brokerage", currency: "USD", balance: 0, accountable: Investment.new)
     security = Security.create!(ticker: "LINKED", exchange_operating_mic: "XNAS")
-    provider_item = family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    provider_account = provider_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
+    provider_item = family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    provider_account = provider_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
     account_provider = AccountProvider.create!(account: account, provider: provider_account)
     first_held_date = 20.days.ago.to_date
     sold_date = 10.days.ago.to_date

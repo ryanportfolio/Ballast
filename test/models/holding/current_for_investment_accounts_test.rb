@@ -12,9 +12,9 @@ class Holding::CurrentForInvestmentAccountsTest < ActiveSupport::TestCase
   end
 
   test "returns the latest provider import day while preserving per-security price dates" do
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
 
     current_holding = create_holding("AAPL", date: Date.current, account_provider: account_provider)
     stale_holding = create_holding("STALE", date: 1.day.ago.to_date, account_provider: account_provider)
@@ -40,14 +40,14 @@ class Holding::CurrentForInvestmentAccountsTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
     first_provider = AccountProvider.create!(
       account: @account,
-      provider: coinstats_item.coinstats_accounts.create!(name: "First", currency: "USD")
+      provider: simplefin_item.simplefin_accounts.create!(name: "First", currency: "USD", account_type: "investment", current_balance: 0)
     )
     second_provider = AccountProvider.create!(
       account: other_account,
-      provider: coinstats_item.coinstats_accounts.create!(name: "Second", currency: "USD")
+      provider: simplefin_item.simplefin_accounts.create!(name: "Second", currency: "USD", account_type: "investment", current_balance: 0)
     )
 
     current_first = create_holding("AAPL", date: Date.current, account_provider: first_provider)
@@ -68,9 +68,9 @@ class Holding::CurrentForInvestmentAccountsTest < ActiveSupport::TestCase
   end
 
   test "selects provider and manual holdings independently when queried together" do
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "USD")
-    account_provider = AccountProvider.create!(account: @account, provider: coinstats_account)
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = AccountProvider.create!(account: @account, provider: simplefin_account)
     provider_holding = create_holding("AAPL", date: Date.current, account_provider: account_provider)
 
     manual_account = create_manual_account
@@ -99,10 +99,10 @@ class Holding::CurrentForInvestmentAccountsTest < ActiveSupport::TestCase
   end
 
   test "a linked account's calculated rows neither move nor join its latest provider day" do
-    coinstats_item = @family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
+    simplefin_item = @family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
     account_provider = AccountProvider.create!(
       account: @account,
-      provider: coinstats_item.coinstats_accounts.create!(name: "Brokerage", currency: "USD")
+      provider: simplefin_item.simplefin_accounts.create!(name: "Brokerage", currency: "USD", account_type: "investment", current_balance: 0)
     )
 
     provider_holding = create_holding("AAPL", date: 1.day.ago.to_date, account_provider: account_provider)

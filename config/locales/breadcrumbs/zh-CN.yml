@@ -10,7 +10,6 @@ zh-CN:
     appearance: 外观
     appearances: 外观
     bank_sync: 银行同步
-    binance_items: Binance
     brex_items: Brex
     budget_categories: 预算分类
     budgets: 预算
@@ -19,8 +18,6 @@ zh-CN:
     changelog: 更新日志
     chats: 聊天
     classifier: 分类器
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: 信用卡
     cryptos: 加密资产
     dashboard: 仪表盘
@@ -44,7 +41,6 @@ zh-CN:
     investments: 投资
     invitations: 邀请
     invite_codes: 邀请码
-    kraken_items: Kraken
     llm_usage: LLM 用量
     llm_usages: LLM 用量
     loans: 贷款

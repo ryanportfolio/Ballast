@@ -47,7 +47,7 @@ class InvestmentStatement::Totals
     #
     # Several providers store the same income as a Transaction carrying the
     # same label instead (Trading212, IBKR, Questrade, SnapTrade, Indexa
-    # Capital, Kraken's fiat staking and earn rows), so income reads the label
+    # Capital), so income reads the label
     # from whichever of the two the entry is. Only those labelled
     # Transactions are joined in, and pending ones are left out until they
     # post. A Transaction has no trades row, so it never reaches the

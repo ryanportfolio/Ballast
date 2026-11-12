@@ -10,15 +10,12 @@ it:
     appearance: Aspetto
     appearances: Aspetto
     bank_sync: Sincronizzazione bancaria
-    binance_items: Binance
     brex_items: Brex
     budget_categories: Categorie budget
     budgets: Budget
     categories: Categorie
     categorize: Categorizza
     chats: Chat
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: Carte di credito
     cryptos: Crypto
     dashboard: Dashboard
@@ -41,7 +38,6 @@ it:
     investments: Investimenti
     invitations: Inviti
     invite_codes: Codici invito
-    kraken_items: Kraken
     llm_usage: Utilizzo LLM
     llm_usages: Utilizzo LLM
     loans: Prestiti

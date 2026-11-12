@@ -10,15 +10,12 @@ vi:
     appearance: Giao diện
     appearances: Giao diện
     bank_sync: Đồng bộ ngân hàng
-    binance_items: Binance
     brex_items: Brex
     budget_categories: Danh mục ngân sách
     budgets: Ngân sách
     categories: Danh mục
     categorize: Phân loại
     chats: Trò chuyện
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: Thẻ tín dụng
     cryptos: Tiền mã hóa
     dashboard: Bảng điều khiển
@@ -41,7 +38,6 @@ vi:
     investments: Đầu tư
     invitations: Lời mời
     invite_codes: Mã mời
-    kraken_items: Kraken
     llm_usage: Sử dụng LLM
     llm_usages: Sử dụng LLM
     loans: Khoản vay

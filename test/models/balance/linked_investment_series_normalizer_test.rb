@@ -147,9 +147,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 8.days.ago.to_date
     account.family.update!(date_format: "%Y-%m-%d")
@@ -194,9 +194,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 7.days.ago.to_date
     account.set_opening_anchor_balance(balance: 0, date: opening_date)
@@ -239,9 +239,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     first_activity_date = 10.days.ago.to_date
     account.entries.create!(
@@ -282,9 +282,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 7.days.ago.to_date
     account.set_opening_anchor_balance(balance: 5000, date: opening_date)
@@ -324,9 +324,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     raw_series = Series.new(
       start_date: 30.days.ago.to_date,
@@ -350,9 +350,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     two_years_ago = 2.years.ago.to_date
     account.set_opening_anchor_balance(balance: 0, date: two_years_ago)
@@ -393,9 +393,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 8.days.ago.to_date
     account.set_opening_anchor_balance(balance: 5000, date: opening_date)
@@ -435,9 +435,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     opening_date = 8.days.ago.to_date
     account.set_opening_anchor_balance(balance: 5000, date: opening_date)
@@ -477,9 +477,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     early_trade_date = 15.days.ago.to_date
     later_anchor_date = 8.days.ago.to_date
@@ -521,9 +521,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account.account_providers.create!(provider: simplefin_account)
 
     anchor_date = 15.days.ago.to_date
 
@@ -564,9 +564,9 @@ class Balance::LinkedInvestmentSeriesNormalizerTest < ActiveSupport::TestCase
       currency: "USD",
       accountable: Investment.new
     )
-    coinstats_item = account.family.coinstats_items.create!(name: "CoinStats", api_key: "test-key")
-    coinstats_account = coinstats_item.coinstats_accounts.create!(name: "Provider", currency: "USD")
-    account_provider = account.account_providers.create!(provider: coinstats_account)
+    simplefin_item = account.family.simplefin_items.create!(name: "SimpleFIN", access_url: "https://example.com/access")
+    simplefin_account = simplefin_item.simplefin_accounts.create!(name: "Provider", currency: "USD", account_type: "investment", current_balance: 0)
+    account_provider = account.account_providers.create!(provider: simplefin_account)
 
     # Real pre-existing balance, anchored before the provider started syncing.
     anchor_date = 30.days.ago.to_date

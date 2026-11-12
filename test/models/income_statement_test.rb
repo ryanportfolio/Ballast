@@ -671,7 +671,7 @@ class IncomeStatementTest < ActiveSupport::TestCase
   test "includes transactions from default taxable crypto accounts" do
     # Create a crypto account (default taxable)
     crypto_account = @family.accounts.create!(
-      name: "Coinbase",
+      name: "Crypto Exchange",
       currency: @family.currency,
       balance: 5000,
       accountable: Crypto.new

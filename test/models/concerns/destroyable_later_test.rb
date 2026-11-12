@@ -102,13 +102,18 @@ class DestroyableLaterTest < ActiveSupport::TestCase
 
   # Every table with the flag gets its destroy_later from here, so a new provider
   # (or a local override) can't reintroduce the unguarded version.
+  # Tables Ballast keeps after deleting the provider code that used them.
+  REMOVED_PROVIDER_TABLES = %w[
+    binance_items coinbase_items coinspot_items coinstats_items kraken_items onchain_wallet_items
+  ].freeze
+
   test "every model with a scheduled_for_deletion column uses the concern" do
     connection = ActiveRecord::Base.connection
-    models = connection.tables
+    models = (connection.tables - REMOVED_PROVIDER_TABLES)
       .select { |table| connection.column_exists?(table, :scheduled_for_deletion) }
       .map { |table| table.classify.constantize }
 
-    assert_operator models.size, :>=, 24
+    assert_operator models.size, :>=, 19
 
     models.each do |model|
       assert_equal DestroyableLater, model.instance_method(:destroy_later).owner,

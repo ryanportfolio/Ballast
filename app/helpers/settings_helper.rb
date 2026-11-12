@@ -78,9 +78,6 @@ module SettingsHelper
     when "enable_banking"
       return { status: :off } unless @enable_banking_items&.any?
       enable_banking_summary
-    when "coinstats"
-      return { status: :off } unless @coinstats_items&.any?
-      sync_based_summary(key)
     when "wise"
       return { status: :off } unless @wise_items&.any?
       sync_based_summary(key)
@@ -92,21 +89,6 @@ module SettingsHelper
       sync_based_summary(key)
     when "brex"
       return { status: :off } unless @brex_items&.any?
-      sync_based_summary(key)
-    when "coinbase"
-      return { status: :off } unless @coinbase_items&.any?
-      sync_based_summary(key)
-    when "binance"
-      return { status: :off } unless @binance_items&.any?
-      sync_based_summary(key)
-    when "kraken"
-      return { status: :off } unless @kraken_items&.any?
-      sync_based_summary(key)
-    when "coinspot"
-      return { status: :off } unless @coinspot_items&.any?
-      sync_based_summary(key)
-    when "onchain_wallet"
-      return { status: :off } unless @onchain_wallet_items&.any?
       sync_based_summary(key)
     when "trading212"
       return { status: :off } unless @trading212_items&.any?

@@ -10,15 +10,12 @@ ca:
     appearance: Aparença
     appearances: Aparença
     bank_sync: Sincronització bancària
-    binance_items: Binance
     brex_items: Brex
     budget_categories: Categories del pressupost
     budgets: Pressupostos
     categories: Categories
     categorize: Categoritza
     chats: Xats
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: Targetes de crèdit
     cryptos: Cripto
     dashboard: Tauler
@@ -41,7 +38,6 @@ ca:
     investments: Inversions
     invitations: Invitacions
     invite_codes: Codis d'invitació
-    kraken_items: Kraken
     llm_usage: Ús d'LLM
     llm_usages: Ús d'LLM
     loans: Préstecs

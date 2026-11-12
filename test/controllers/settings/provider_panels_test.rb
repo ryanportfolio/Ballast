@@ -30,29 +30,22 @@ class Settings::ProviderPanelsTest < ActionDispatch::IntegrationTest
   test "provider warnings are titled alerts" do
     TradeRepublicItem.stubs(:encryption_ready?).returns(false)
 
-    { "trade_republic" => "settings.providers.trade_republic_panel.encryption_warning.title",
-      "kraken" => "settings.providers.kraken_panel.read_only_title",
-      "coinspot" => "settings.providers.coinspot_panel.read_only_title" }.each do |provider_key, title_key|
+    { "trade_republic" => "settings.providers.trade_republic_panel.encryption_warning.title" }.each do |provider_key, title_key|
       get connect_form_settings_providers_path(provider_key: provider_key)
 
       assert_response :success
       assert_select "turbo-frame##{provider_key}-connect-form p", { text: titled_alert(:warning, title_key) }, provider_key
     end
-
-    get new_wallet_onchain_wallet_items_path
-    assert_response :success
-    assert_select "p", text: titled_alert(:info, "settings.providers.onchain_wallet_panel.keyless_title")
   end
 
   test "sync and disconnect actions are named DS buttons" do
     family = families(:dylan_family)
-    CoinbaseItem.create!(family: family, name: "Coinbase", api_key: "key", api_secret: "secret")
     EnableBankingItem.create!(family: family, name: "Live", country_code: "FI", application_id: "app",
                               client_certificate: "cert", session_id: "live", session_expires_at: 1.day.from_now)
     EnableBankingItem.create!(family: family, name: "Expired", country_code: "FI", application_id: "app",
                               client_certificate: "cert", session_id: "expired", session_expires_at: 1.day.ago)
 
-    %w[binance brex coinbase enable_banking kraken mercury].each do |provider_key|
+    %w[brex enable_banking mercury].each do |provider_key|
       get connect_form_settings_providers_path(provider_key: provider_key)
 
       assert_response :success

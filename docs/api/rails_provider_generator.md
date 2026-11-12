@@ -655,7 +655,7 @@ Edit the generated panel view `app/views/settings/providers/_my_bank_panel.html.
 ### Example 1: Simple API Key Provider
 
 ```bash
-rails g provider:family coinbase api_key:text:secret
+rails g provider:family example_api api_key:text:secret
 ```
 
 Result: Basic provider with just an API key field.

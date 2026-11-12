@@ -10,7 +10,6 @@ zh-TW:
     appearance: 外觀
     appearances: 外觀
     bank_sync: 銀行同步
-    binance_items: Binance
     brex_items: Brex
     budget_categories: 預算分類
     budgets: 預算
@@ -18,8 +17,6 @@ zh-TW:
     categorize: 分類
     changelog: 更新日誌
     chats: 對話
-    coinbase_items: Coinbase
-    coinstats_items: CoinStats
     credit_cards: 信用卡
     cryptos: 加密貨幣
     dashboard: 儀表板
@@ -43,7 +40,6 @@ zh-TW:
     investments: 投資
     invitations: 邀請
     invite_codes: 邀請碼
-    kraken_items: Kraken
     llm_usage: LLM 使用量
     llm_usages: LLM 使用量
     loans: 貸款
