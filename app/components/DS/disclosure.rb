@@ -11,7 +11,7 @@ class DS::Disclosure < DesignSystemComponent
   #
   # `:card` — `<details>` itself becomes a `bg-container shadow-border-xs
   # rounded-xl` card; the summary inherits the container (no own bg).
-  # Use for provider-item rows (simplefin, lunchflow, plaid, etc.) where
+  # Use for provider-item rows (simplefin, plaid, etc.) where
   # each card is the surface and the summary is custom rich content.
   #
   # `:card_inset` — `<details>` is `bg-surface-inset rounded-xl` (no

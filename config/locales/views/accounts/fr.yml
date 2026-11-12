@@ -16,7 +16,6 @@ fr:
       exclude_from_reports: Exclure de tous les rapports
       excluded_from_reports_indicator: Exclu des rapports
       include_in_reports: Inclure dans les rapports
-      link_lunchflow: Lier avec Lunch Flow
       link_provider: Lier avec un fournisseur
       remove_default: Retirer par défaut
       set_default: Définir par défaut
@@ -82,7 +81,6 @@ fr:
         connected_entry: Lier un compte
         connected_entry_eu: Lier un compte européen
         link_with_provider: Lier avec %{provider}
-        lunchflow_entry: Lier un compte Lunch Flow
         manual_entry: Saisir le solde du compte
         title: Comment voulez-vous l'ajouter ?
       title: Que voulez-vous ajouter ?

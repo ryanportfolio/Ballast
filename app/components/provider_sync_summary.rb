@@ -3,7 +3,7 @@
 # Reusable sync summary component for provider items.
 #
 # This component displays sync statistics in a collapsible panel that can be used
-# by any provider (SimpleFIN, Plaid, Lunchflow, etc.) to show their sync results.
+# by any provider (SimpleFIN, Plaid, etc.) to show their sync results.
 #
 # @example Basic usage
 #   <%= render ProviderSyncSummary.new(

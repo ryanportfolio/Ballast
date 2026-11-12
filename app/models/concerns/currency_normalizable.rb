@@ -1,7 +1,7 @@
 # Provides currency normalization and validation for provider data imports
 #
 # This concern provides a shared method to parse and normalize currency codes
-# from external providers (Plaid, SimpleFIN, LunchFlow, Enable Banking), ensuring:
+# from external providers (Plaid, SimpleFIN, Enable Banking), ensuring:
 # - Consistent uppercase formatting (e.g., "eur" -> "EUR")
 # - Validation against Money gem's known currencies (not just 3-letter format)
 # - Proper handling of nil, empty, and invalid values (e.g., "XXX")

@@ -28,8 +28,8 @@ rails g provider:global <PROVIDER_NAME> field:type[:secret] ...
 ### Quick Examples
 
 ```bash
-# Per-family: Each family has their own Lunchflow API key
-rails g provider:family lunchflow api_key:text:secret base_url:string
+# Per-family: Each family has their own GoCardless API key
+rails g provider:family gocardless api_key:text:secret base_url:string
 
 # Global: All families share the same Plaid credentials
 rails g provider:global plaid \
@@ -54,7 +54,7 @@ rails g provider:global plaid \
 - ✅ Provider charges per-customer
 - ✅ Users bring their own API keys
 - ✅ Data isolation required between families
-- ✅ Examples: Lunch Flow, SimpleFIN, YNAB, personal bank APIs
+- ✅ Examples: SimpleFIN, YNAB, personal bank APIs
 
 ---
 
@@ -157,7 +157,7 @@ This single command generates:
 | **UI location** | `/settings/providers` (always) | `/settings/providers` (self-hosted only) |
 | **ENV variable support** | ❌ No (per-family can't use ENV) | ✅ Yes (fallback) |
 | **Use case** | User brings own API key | Platform provides API access |
-| **Examples** | Lunch Flow, SimpleFIN, YNAB | Plaid, OpenAI, TwelveData |
+| **Examples** | SimpleFIN, YNAB || Plaid, OpenAI, TwelveData |
 
 ---
 

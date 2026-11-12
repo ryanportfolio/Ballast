@@ -34,29 +34,6 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
     assert_parses ActionView::Template::Handlers::ERB::Erubi.new(generated).src
   end
 
-  # Renders a generated view the way Rails would, from a real view path, so relative
-  # translation keys and strict locals behave as they do in the app. Redbark has the
-  # model, routes, fixtures and translations the generated views call, so it stands
-  # in for a new provider here. The view sits at the app's own path, prepended so it
-  # renders instead of Redbark's: under any other prefix its relative keys would
-  # resolve in a scope the app does not have.
-  def render_generated_view(generated, partial: nil, template: nil, **options)
-    Dir.mktmpdir do |dir|
-      virtual_path = partial ? partial.sub(%r{([^/]+)\z}, '_\\1') : template
-      file = File.join(dir, "#{virtual_path}.html.erb")
-      FileUtils.mkdir_p(File.dirname(file))
-      File.write(file, generated)
-
-      controller = Class.new(ApplicationController) { prepend_view_path dir }
-      target = partial ? { partial: partial } : { template: template, layout: false }
-      html = controller.renderer.render(**target, **options)
-      # Missing keys render a placeholder rather than raising in test, so a key
-      # the app does not define would otherwise pass unnoticed.
-      assert_not_includes html, "translation_missing"
-      html
-    end
-  end
-
   test "the unlinking scaffold renders to valid Ruby and carries the disposition seam" do
     rendered = render_template("unlinking_concern.rb.tt", class_name: "Gocardless", file_name: "gocardless")
 
@@ -84,12 +61,12 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
   test "appends to a single-line enum" do
     result = append(<<~RUBY)
       class ProviderMerchant < Merchant
-        enum :source, { plaid: "plaid", redbark: "redbark" }
+        enum :source, { plaid: "plaid", simplefin: "simplefin" }
       end
     RUBY
 
     assert_parses result
-    assert_includes result, 'redbark: "redbark", gocardless: "gocardless" }'
+    assert_includes result, 'simplefin: "simplefin", gocardless: "gocardless" }'
   end
 
   test "appends to a multiline enum without putting the entry after the expression ends" do
@@ -97,18 +74,18 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
       class DataEnrichment < ApplicationRecord
         enum :source, {
           plaid: "plaid",
-          redbark: "redbark"
+          simplefin: "simplefin"
         }
       end
     RUBY
 
     assert_parses result
     # The comma must attach to the previous entry, and the new entry take its indentation.
-    assert_includes result, %(    redbark: "redbark",\n    gocardless: "gocardless"\n)
+    assert_includes result, %(    simplefin: "simplefin",\n    gocardless: "gocardless"\n)
   end
 
   test "does not double the comma on a single-line enum with a trailing comma" do
-    result = append('enum :source, { plaid: "plaid", redbark: "redbark", }')
+    result = append('enum :source, { plaid: "plaid", simplefin: "simplefin", }')
 
     assert_parses "x = #{result}"
     assert_not_includes result, ",,"
@@ -119,7 +96,7 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
       class DataEnrichment < ApplicationRecord
         enum :source, {
           plaid: "plaid",
-          redbark: "redbark",
+          simplefin: "simplefin",
         }
       end
     RUBY
@@ -229,12 +206,12 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
   test "separates the new family panel from the previous last entry" do
     result = Provider::FamilyGenerator.append_family_panel_entry(<<~RUBY, key: "gocardless", title: "Gocardless")
       FAMILY_PANELS = [
-        { key: "akahu", title: "Akahu", turbo_id: "akahu", partial: "akahu_panel" }
+        { key: "simplefin", title: "SimpleFIN", turbo_id: "simplefin", partial: "simplefin_panel" }
       ].freeze
     RUBY
 
     assert_parses result
-    assert_includes result, %(partial: "akahu_panel" },\n  { key: "gocardless")
+    assert_includes result, %(partial: "simplefin_panel" },\n  { key: "gocardless")
   end
 
   test "returns nil when there are no family panels to update" do
@@ -277,12 +254,12 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
   test "keeps a space before the arrow when the new key is longer than the column" do
     result = Provider::FamilyGenerator.append_panel_syncable_type(<<~RUBY, key: "gocardless_bank_data", class_name: "GocardlessBankData")
       PANEL_SYNCABLE_TYPES = {
-        "up" => "UpItem"
+        "wise" => "WiseItem"
       }.freeze
     RUBY
 
     assert_parses result
-    assert_includes result, %(  "up" => "UpItem",\n  "gocardless_bank_data" => "GocardlessBankDataItem"\n}.freeze)
+    assert_includes result, %(  "wise" => "WiseItem",\n  "gocardless_bank_data" => "GocardlessBankDataItem"\n}.freeze)
   end
 
   test "reserved item columns exclude family but include family_id" do
@@ -319,52 +296,11 @@ class Provider::FamilyGeneratorTest < ActiveSupport::TestCase
     assert_includes generated, "<%= tag.div id: dom_id(gocardless_item) do %>"
   end
 
-  test "the generated item card renders the visible accounts it is given" do
-    Current.session = Session.create!(user: users(:family_admin))
-    item = redbark_items(:one)
-    linked = accounts(:depository)
-    generated = render_template("item_partial.html.erb.tt", file_name: "redbark")
-    render_card = lambda do |visible|
-      render_generated_view(generated, partial: "redbark_items/redbark_item",
-                                       locals: { redbark_item: item.reload, visible_accounts: visible.call })
-    end
-
-    before = render_card.call(-> { item.accounts.to_a })
-    AccountProvider.create!(account: linked, provider: redbark_accounts(:savings_account))
-    after = render_card.call(-> { item.accounts.to_a })
-    other = render_card.call(-> { [ accounts(:investment) ] })
-
-    assert_includes after, item.name
-    assert_not_includes before, linked.name
-    assert_includes after, linked.name
-    assert_not_includes after, accounts(:investment).name
-    # The card lists the accounts it is given, not every account on the connection.
-    assert_includes other, accounts(:investment).name
-    assert_not_includes other, linked.name
-  end
-
-  test "the generated setup accounts view is plain ERB that renders" do
+  test "the generated setup accounts view is plain ERB" do
     assert_plain_erb render_template("setup_accounts.html.erb.tt", file_name: "gocardless")
-
-    item = redbark_items(:one)
-    html = render_generated_view(render_template("setup_accounts.html.erb.tt", file_name: "redbark"),
-                                 template: "redbark_items/setup_accounts",
-                                 assigns: { redbark_item: item, unlinked_accounts: item.redbark_accounts })
-
-    assert_includes html, redbark_accounts(:savings_account).name
-    assert_includes html, "/redbark_items/#{item.id}/complete_account_setup"
   end
 
-  test "the generated select existing account view is plain ERB that renders" do
+  test "the generated select existing account view is plain ERB" do
     assert_plain_erb render_template("select_existing_account.html.erb.tt", file_name: "gocardless")
-
-    account = accounts(:depository)
-    html = render_generated_view(render_template("select_existing_account.html.erb.tt", file_name: "redbark"),
-                                 template: "redbark_items/select_existing_account",
-                                 assigns: { account: account, redbark_accounts: [ redbark_accounts(:savings_account) ] })
-
-    assert_includes html, account.name
-    assert_includes html, redbark_accounts(:savings_account).name
-    assert_includes html, "/redbark_items/link_existing_account"
   end
 end

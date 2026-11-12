@@ -34,7 +34,7 @@ class MercuryItem < ApplicationRecord
   # TODO: Implement data import from provider API
   # This method should fetch the latest data from the provider and import it.
   # May need provider-specific validation (e.g., session validity checks).
-  # See LunchflowItem#import_latest_lunchflow_data or EnableBankingItem#import_latest_enable_banking_data for examples.
+  # See EnableBankingItem#import_latest_enable_banking_data for an example.
   def import_latest_mercury_data
     provider = mercury_provider
     unless provider

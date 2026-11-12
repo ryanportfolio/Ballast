@@ -42,13 +42,11 @@ id:
     llm_usage: Penggunaan LLM
     llm_usages: Penggunaan LLM
     loans: Pinjaman
-    lunchflow_items: Lunch Flow
     mcp: Server MCP
     merchants: Merchant
     mercury_items: Mercury
     messages: Pesan
     mfa: Autentikasi dua faktor
-    monobank_items: Monobank
     onboardings: Onboarding
     other_assets: Aset lainnya
     other_liabilities: Liabilitas lainnya
@@ -61,7 +59,6 @@ id:
     properties: Properti
     providers: Penyedia
     recurring_transactions: Transaksi berulang
-    redbark_items: Redbark
     registrations: Daftar
     reports: Laporan
     rules: Aturan
@@ -70,7 +67,6 @@ id:
     self_hosting: Self-Hosting
     sessions: Masuk
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Pemisahan transaksi
     system_health: Kesehatan Sistem
     tags: Tag

@@ -7,7 +7,7 @@ require "rails/generators/active_record"
 #   rails g provider:family NAME field:type:secret field:type ... [--type=banking|investment]
 #
 # Examples:
-#   rails g provider:family lunchflow api_key:text:secret base_url:string --type=banking
+#   rails g provider:family gocardless api_key:text:secret base_url:string --type=banking
 #   rails g provider:family my_broker access_token:text:secret --type=investment
 #
 # Field format:
@@ -595,7 +595,7 @@ class Provider::FamilyGenerator < Rails::Generators::NamedBase
   #   - appending before the closing brace of a MULTI-LINE hash puts the entry on its own
   #     line after Ruby has already ended the expression
   #   - a hash written with a TRAILING COMMA already supplies the separator, so adding
-  #     another yields `redbark: "redbark",,`
+  #     another yields `simplefin: "simplefin",,`
   #   - an EMPTY hash needs no separator, so adding one yields `{, gocardless: "..."}`
   def self.append_source_enum_entry(content, name)
     match = content.match(/(enum :source, \{)([^}]*)(\})/m)
@@ -608,7 +608,7 @@ class Provider::FamilyGenerator < Rails::Generators::NamedBase
     entry = "#{name}: \"#{name}\""
 
     # A hash written with a trailing comma already supplies the separator, and an empty
-    # hash needs none at all. Emitting one regardless yields `redbark: "redbark",,` or
+    # hash needs none at all. Emitting one regardless yields `simplefin: "simplefin",,` or
     # `{, gocardless: "gocardless"}`: the same class of syntax error this method exists
     # to prevent.
     separator = (core.empty? || core.end_with?(",")) ? "" : ","

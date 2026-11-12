@@ -249,11 +249,9 @@ hu:
       recently_synced: Nemrég szinkronizálva. Próbáld újra egy pillanat múlva.
       taglines:
         simplefin: US bankszámlák csatlakoztatása az open SimpleFIN protokollon keresztül.
-        lunchflow: 40+ ország 20 000+ bankjának csatlakoztatása (Egyesült Királyság, EU, USA stb.!)
         enable_banking: Európai bankszámlák szinkronizálása PSD2 open banking révén.
         mercury: Mercury üzleti bankszámlák automatikus szinkronizálása.
         brex: Brex készpénz és vállalati kártya tevékenység szinkronizálása csak olvasási hozzáféréssel.
-        sophtron: US és kanadai bankok és közüzemi szolgáltatók csatlakoztatása.
         plaid: Ezernyi US pénzintézet csatlakoztatása Plaid-en keresztül.
         plaid_eu: Európai pénzintézetek csatlakoztatása Plaid-en keresztül (PSD2 / Open Banking).
       search_filters:
@@ -299,17 +297,6 @@ hu:
         syncing: "Szinkronizálás"
         select_country: "Ország kiválasztása..."
         country_label: "Ország"
-      lunchflow_panel:
-        step_1_html: "Menj a(z) %{link} oldalra és hozz létre egy API-kulcsot."
-        step_2: "Illeszd be a kulcsodat alább és csatlakozz."
-        step_3: "Ezután menj a Számlák menübe a szinkronizált számlák összekapcsolásához."
-        api_key_label: "API-kulcs"
-        api_key_placeholder_new: "Illeszd be ide az API-kulcsot"
-        api_key_placeholder_update: "Add meg az új API-kulcsot a frissítéshez"
-        base_url_label: "Alap URL (nem kötelező)"
-        base_url_placeholder: "https://lunchflow.app/api/v1 (alapértelmezett)"
-        save_and_connect: "Mentés és csatlakozás"
-        update_connection: "Kapcsolat frissítése"
       simplefin_panel:
         step_1_html: "Menj a(z) %{link} oldalra egy egyszeri beállítási tokenért."
         step_2: "Illeszd be a tokent alább és csatlakozz."

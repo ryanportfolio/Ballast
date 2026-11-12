@@ -39,7 +39,6 @@ ca:
     llm_usage: Ús d'LLM
     llm_usages: Ús d'LLM
     loans: Préstecs
-    lunchflow_items: Lunch Flow
     merchants: Comerços
     mercury_items: Mercury
     messages: Missatges
@@ -63,7 +62,6 @@ ca:
     self_hosting: Self hosting
     sessions: Inici de sessió
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Divisió
     tags: Etiquetes
     trades: Operacions
@@ -76,7 +74,5 @@ ca:
     changelog: Novetats
     feedback: Comentaris
     mcp: Servidor MCP
-    monobank_items: Monobank
     plan: Pla
-    redbark_items: Redbark
     system_health: Estat del sistema

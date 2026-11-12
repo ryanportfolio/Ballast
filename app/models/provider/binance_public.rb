@@ -46,7 +46,7 @@ class Provider::BinancePublic < Provider
   # Binance pair.
   QUOTE_SEPARATOR = /[-\/_ ]\z/
 
-  # Symbol prefix applied by holdings processors (SimpleFIN, Lunchflow) to
+  # Symbol prefix applied by holdings processors (SimpleFIN) to
   # distinguish crypto from stock tickers.
   CRYPTO_PREFIX = "CRYPTO:".freeze
 

@@ -9,7 +9,6 @@ uk:
     account:
       complete_setup: "Завершити налаштування"
       edit: "Редагувати"
-      link_lunchflow: "Пов'язати з Lunch Flow"
       link_provider: "Пов'язати з постачальником"
       unlink_provider: "Від'єднати від постачальника"
       change_simplefin_account: "Змінити рахунок SimpleFIN"
@@ -74,7 +73,6 @@ uk:
         connected_entry: "Прив'язати рахунок"
         connected_entry_eu: "Прив'язати рахунок ЄС"
         link_with_provider: "Пов'язати з %{provider}"
-        lunchflow_entry: "Прив'язати рахунок Lunch Flow"
         manual_entry: "Ввести баланс рахунку"
         title: "Як би ви хотіли його додати?"
       title: "Що б ви хотіли додати?"

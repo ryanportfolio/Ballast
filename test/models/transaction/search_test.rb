@@ -958,7 +958,7 @@ class Transaction::SearchTest < ActiveSupport::TestCase
     confirmed = create_transaction(account: @checking_account, amount: 100, kind: "standard")
 
     # One pending transaction per provider in PENDING_PROVIDERS. Regression for the
-    # status filter only checking simplefin/plaid/lunchflow and silently dropping
+    # status filter only checking a short provider list and silently dropping
     # enable_banking pending transactions.
     pending_by_provider = Transaction::PENDING_PROVIDERS.index_with do |provider|
       entry = create_transaction(account: @checking_account, amount: 100, kind: "standard")

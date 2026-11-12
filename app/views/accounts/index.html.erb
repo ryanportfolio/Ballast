@@ -10,7 +10,7 @@
   ) %>
 <% end %>
 
-<% if @manual_accounts.empty? && @financekit_accounts.empty? && @plaid_items.empty? && @simplefin_items.empty? && @lunchflow_items.empty? && @redbark_items.empty? && @akahu_items.empty? && @up_items.empty? && @monobank_items.empty? && @fio_items.empty? && @enable_banking_items.empty? && @mercury_items.empty? && @brex_items.empty? && @sophtron_items.empty? && @wise_items.empty? %>
+<% if @manual_accounts.empty? && @financekit_accounts.empty? && @plaid_items.empty? && @simplefin_items.empty? && @enable_banking_items.empty? && @mercury_items.empty? && @brex_items.empty? && @wise_items.empty? %>
   <%= render "empty" %>
 <% else %>
   <div class="space-y-2">
@@ -30,44 +30,8 @@
       <% end %>
     <% end %>
 
-    <% if @lunchflow_items.any? %>
-      <% @lunchflow_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @redbark_items.any? %>
-      <% @redbark_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @akahu_items.any? %>
-      <% @akahu_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @up_items.any? %>
-      <% @up_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @monobank_items.any? %>
-      <% @monobank_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
     <% if @enable_banking_items.any? %>
       <% @enable_banking_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @sophtron_items.any? %>
-      <% @sophtron_items.sort_by(&:created_at).each do |item| %>
         <%= render item, visible_accounts: visible_card_accounts(item) %>
       <% end %>
     <% end %>
@@ -86,12 +50,6 @@
 
     <% if @wise_items.any? %>
       <% @wise_items.sort_by(&:created_at).each do |item| %>
-        <%= render item, visible_accounts: visible_card_accounts(item) %>
-      <% end %>
-    <% end %>
-
-    <% if @fio_items.any? %>
-      <% @fio_items.sort_by(&:created_at).each do |item| %>
         <%= render item, visible_accounts: visible_card_accounts(item) %>
       <% end %>
     <% end %>

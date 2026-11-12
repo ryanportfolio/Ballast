@@ -42,8 +42,8 @@ class Provider::Base
   # Override in subclasses to provide connection metadata for UI
   # @param family [Family] The family to check connection availability for
   # @return [Array<Hash>] Array of connection configurations with keys:
-  #   - key: Unique identifier (e.g., "lunchflow", "plaid_us")
-  #   - name: Display name (e.g., "Lunch Flow", "Plaid")
+  #   - key: Unique identifier (e.g., "simplefin", "plaid_us")
+  #   - name: Display name (e.g., "SimpleFIN", "Plaid")
   #   - description: User-facing description
   #   - can_connect: Boolean, whether family can connect to this provider
   #   - new_account_path: Proc that generates path for new account flow

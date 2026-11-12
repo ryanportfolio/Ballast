@@ -62,7 +62,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       name: "Transfer to Savings",
-      source: "up",
+      source: "simplefin",
       kind: "funds_movement"
     )
 
@@ -78,7 +78,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.today,
       name: "Home Loan Repayment",
-      source: "up",
+      source: "simplefin",
       kind: "funds_movement"
     )
 
@@ -191,7 +191,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment Received",
-      source: "up"
+      source: "simplefin"
     )
     checking_entry = @adapter.import_transaction(
       external_id: "up_checking_outflow_1",
@@ -199,7 +199,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment",
-      source: "up"
+      source: "simplefin"
     )
 
     @family.auto_match_transfers!
@@ -208,14 +208,14 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     transfer.confirm!
     assert_equal "loan_payment", checking_entry.transaction.reload.kind
 
-    # Up flags the outgoing leg as an internal transfer (transferAccount).
+    # The provider flags the outgoing leg as an internal transfer.
     @adapter.import_transaction(
       external_id: "up_checking_outflow_1",
       amount: 150.00,
       currency: "USD",
       date: Date.current,
       name: "Loan Repayment",
-      source: "up",
+      source: "simplefin",
       kind: "funds_movement"
     )
 
@@ -301,7 +301,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.current,
       name: "Round Up",
-      source: "up"
+      source: "simplefin"
     )
     assert_equal "standard", entry.transaction.kind
 
@@ -311,7 +311,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       currency: "USD",
       date: Date.current,
       name: "Round Up",
-      source: "up",
+      source: "simplefin",
       kind: "funds_movement"
     )
 
@@ -323,17 +323,17 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     amounts.each_with_index do |amount, i|
       Account::ProviderImportAdapter.new(accounts(:loan)).import_transaction(
         external_id: "up_loan_inflow_batch_#{i}", amount: -amount, currency: "USD",
-        date: Date.current, name: "Loan Repayment Received", source: "up"
+        date: Date.current, name: "Loan Repayment Received", source: "simplefin"
       )
       @adapter.import_transaction(
         external_id: "up_checking_outflow_batch_#{i}", amount: amount, currency: "USD",
-        date: Date.current, name: "Loan Repayment", source: "up"
+        date: Date.current, name: "Loan Repayment", source: "simplefin"
       )
     end
     @family.auto_match_transfers!
     Transfer.pending.find_each(&:confirm!)
 
-    # Up flags the outgoing legs as internal transfers, so the kind is derived
+    # The provider flags the outgoing legs as internal transfers, so the kind is derived
     # from each leg's transfer; without the hint the adapter derives nothing.
     reimport = lambda do |kind|
       ActiveRecord::Base.uncached do
@@ -341,7 +341,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
           amounts.each_with_index do |amount, i|
             Account::ProviderImportAdapter.new(@account).import_transaction(
               external_id: "up_checking_outflow_batch_#{i}", amount: amount, currency: "USD",
-              date: Date.current, name: "Loan Repayment", source: "up", kind: kind
+              date: Date.current, name: "Loan Repayment", source: "simplefin", kind: kind
             )
           end
         end
@@ -553,15 +553,15 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     end
   end
 
-  # Issue #2925: Akahu (and sometimes Plaid) supply a website but no logo.
+  # Issue #2925: some providers supply a website but no logo.
   test "creates a website-only merchant with a Brandfetch logo" do
     Setting.stubs(:brand_fetch_client_id).returns("test_client_id")
     Setting.stubs(:brand_fetch_logo_size).returns(40)
 
     merchant = @adapter.find_or_create_merchant(
-      provider_merchant_id: "akahu_merchant_123",
+      provider_merchant_id: "simplefin_merchant_123",
       name: "Countdown",
-      source: "akahu",
+      source: "simplefin",
       website_url: "https://www.countdown.co.nz"
     )
 
@@ -1227,19 +1227,19 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     # Provider syncs a matching transaction - should claim the manual entry, not create new
     assert_no_difference "@account.entries.count" do
       entry = @adapter.import_transaction(
-        external_id: "lunchflow_12345",
+        external_id: "simplefin_12345",
         amount: 42.50,
         currency: "USD",
         date: Date.today,
-        name: "Coffee Shop - Lunchflow",
-        source: "lunchflow"
+        name: "Coffee Shop - SimpleFIN",
+        source: "simplefin"
       )
 
       # Should be the same entry, now claimed by the provider
       assert_equal manual_entry.id, entry.id
-      assert_equal "lunchflow_12345", entry.external_id
-      assert_equal "lunchflow", entry.source
-      assert_equal "Coffee Shop - Lunchflow", entry.name
+      assert_equal "simplefin_12345", entry.external_id
+      assert_equal "simplefin", entry.source
+      assert_equal "Coffee Shop - SimpleFIN", entry.name
     end
   end
 
@@ -1296,12 +1296,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     # Provider syncs similar transaction but different date - should create new entry
     assert_difference "@account.entries.count", 1 do
       entry = @adapter.import_transaction(
-        external_id: "lunchflow_different_date",
+        external_id: "simplefin_different_date",
         amount: 50.00,
         currency: "USD",
         date: Date.today,
         name: "Restaurant",
-        source: "lunchflow"
+        source: "simplefin"
       )
 
       # Should be a different entry
@@ -1322,12 +1322,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     # Provider syncs similar transaction but different amount - should create new entry
     assert_difference "@account.entries.count", 1 do
       entry = @adapter.import_transaction(
-        external_id: "lunchflow_different_amount",
+        external_id: "simplefin_different_amount",
         amount: 51.00,
         currency: "USD",
         date: Date.today,
         name: "Restaurant",
-        source: "lunchflow"
+        source: "simplefin"
       )
 
       # Should be a different entry
@@ -1348,12 +1348,12 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     # Provider syncs similar transaction but different currency - should create new entry
     assert_difference "@account.entries.count", 1 do
       entry = @adapter.import_transaction(
-        external_id: "lunchflow_different_currency",
+        external_id: "simplefin_different_currency",
         amount: 50.00,
         currency: "USD",
         date: Date.today,
         name: "Restaurant",
-        source: "lunchflow"
+        source: "simplefin"
       )
 
       # Should be a different entry
@@ -1372,20 +1372,20 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
       source: "simplefin"
     )
 
-    # Provider (Lunchflow) syncs matching transaction - should create new entry, not claim SimpleFin's
+    # Another provider (Plaid) syncs matching transaction - should create new entry, not claim SimpleFin's
     assert_difference "@account.entries.count", 1 do
       entry = @adapter.import_transaction(
-        external_id: "lunchflow_gas",
+        external_id: "plaid_gas",
         amount: 30.00,
         currency: "USD",
         date: Date.today,
         name: "Gas Station",
-        source: "lunchflow"
+        source: "plaid"
       )
 
       # Should be a different entry because SimpleFin already claimed it
       assert_not_equal simplefin_entry.id, entry.id
-      assert_equal "lunchflow", entry.source
+      assert_equal "plaid", entry.source
       assert_equal "simplefin", simplefin_entry.reload.source
     end
   end
@@ -1413,17 +1413,17 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
     # Provider syncs matching transaction - should claim the oldest one
     assert_no_difference "@account.entries.count" do
       entry = @adapter.import_transaction(
-        external_id: "lunchflow_parking",
+        external_id: "simplefin_parking",
         amount: 20.00,
         currency: "USD",
         date: Date.today,
         name: "Parking - Provider",
-        source: "lunchflow"
+        source: "simplefin"
       )
 
       # Should claim the older entry
       assert_equal older_entry.id, entry.id
-      assert_equal "lunchflow_parking", entry.external_id
+      assert_equal "simplefin_parking", entry.external_id
 
       # Newer entry should remain unclaimed
       assert_nil newer_entry.reload.external_id
@@ -2351,7 +2351,7 @@ class Account::ProviderImportAdapterTest < ActiveSupport::TestCase
         date: Date.today,
         name: "Scalar Provider",
         source: "enable_banking",
-        extra: { "simplefin" => "oops", "akahu" => { "pending" => true } }
+        extra: { "simplefin" => "oops", "plaid" => { "pending" => true } }
       )
     end
 

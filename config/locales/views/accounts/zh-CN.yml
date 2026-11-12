@@ -9,7 +9,6 @@ zh-CN:
     account:
       complete_setup: 完成设置
       edit: 编辑
-      link_lunchflow: 连接 Lunch Flow
       link_provider: 连接提供商
       unlink_provider: 取消与提供商的连接
       change_simplefin_account: 更改 SimpleFIN 账户
@@ -65,7 +64,6 @@ zh-CN:
         connected_entry: 连接账户
         connected_entry_eu: 连接欧盟账户
         link_with_provider: 连接 %{provider}
-        lunchflow_entry: 连接 Lunch Flow 账户
         manual_entry: 手动输入账户余额
         title: 您希望如何添加？
       title: 您想添加什么？

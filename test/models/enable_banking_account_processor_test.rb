@@ -26,7 +26,7 @@ class EnableBankingAccountProcessorTest < ActiveSupport::TestCase
     assert_equal BigDecimal("500"), acct.cash_balance,
       "a sync whose balance fetch failed must not zero the account"
     assert_equal BigDecimal("500"), acct.balance
-    # Parity/invariant check, not regression coverage: unlike Lunch Flow, the
+    # Parity/invariant check, not regression coverage: the
     # EB *processor* never had a currency-reset defect (its fallback chain
     # already preferred the stored value), so this assertion also passes on
     # main. The EB currency regression test lives at the model layer below.

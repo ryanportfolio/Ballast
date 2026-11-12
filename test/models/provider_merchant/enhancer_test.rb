@@ -14,7 +14,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
 
   test "batches holds one LLM call's worth of merchants each" do
     3.times do |i|
-      merchant = ProviderMerchant.create!(source: "lunchflow", name: "Shop #{i}", provider_merchant_id: "lf_shop_#{i}")
+      merchant = ProviderMerchant.create!(source: "simplefin", name: "Shop #{i}", provider_merchant_id: "lf_shop_#{i}")
       create_transaction(account: @account, name: "Shop #{i}", merchant: merchant)
     end
     unenhanced = @family.assigned_merchants.where(type: "ProviderMerchant", website_url: [ nil, "" ]).pluck(:id)
@@ -30,7 +30,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
 
   test "enhance with merchant_ids sends only those merchants" do
     first, second = 2.times.map do |i|
-      ProviderMerchant.create!(source: "lunchflow", name: "Shop #{i}", provider_merchant_id: "lf_shop_#{i}").tap do |merchant|
+      ProviderMerchant.create!(source: "simplefin", name: "Shop #{i}", provider_merchant_id: "lf_shop_#{i}").tap do |merchant|
         create_transaction(account: @account, name: "Shop #{i}", merchant: merchant)
       end
     end
@@ -44,7 +44,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
   end
 
   test "enhances provider merchants with website and logo" do
-    merchant = ProviderMerchant.create!(source: "lunchflow", name: "Walmart", provider_merchant_id: "lf_walmart")
+    merchant = ProviderMerchant.create!(source: "simplefin", name: "Walmart", provider_merchant_id: "lf_walmart")
     create_transaction(account: @account, name: "Walmart purchase", merchant: merchant)
 
     provider_response = provider_success_response([
@@ -61,7 +61,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
   end
 
   test "skips merchants when LLM returns null" do
-    merchant = ProviderMerchant.create!(source: "lunchflow", name: "Local Diner", provider_merchant_id: "lf_local")
+    merchant = ProviderMerchant.create!(source: "simplefin", name: "Local Diner", provider_merchant_id: "lf_local")
     create_transaction(account: @account, name: "Local diner", merchant: merchant)
 
     provider_response = provider_success_response([
@@ -77,15 +77,15 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
   end
 
   test "deduplicates merchants by website_url" do
-    lunchflow_merchant = ProviderMerchant.create!(source: "lunchflow", name: "Walmart", provider_merchant_id: "lf_walmart")
+    simplefin_merchant = ProviderMerchant.create!(source: "simplefin", name: "Walmart", provider_merchant_id: "lf_walmart")
     ai_merchant = ProviderMerchant.create!(source: "ai", name: "Walmart", website_url: "walmart.com",
       logo_url: "https://cdn.brandfetch.io/walmart.com/icon/fallback/lettermark/w/40/h/40?c=test_client_id")
 
-    txn1 = create_transaction(account: @account, name: "Walmart purchase 1", merchant: lunchflow_merchant).transaction
+    txn1 = create_transaction(account: @account, name: "Walmart purchase 1", merchant: simplefin_merchant).transaction
     txn2 = create_transaction(account: @account, name: "Walmart purchase 2", merchant: ai_merchant).transaction
 
     provider_response = provider_success_response([
-      EnhancedMerchant.new(merchant_id: lunchflow_merchant.id, business_url: "walmart.com")
+      EnhancedMerchant.new(merchant_id: simplefin_merchant.id, business_url: "walmart.com")
     ])
 
     @llm_provider.expects(:enhance_provider_merchants).returns(provider_response).once
@@ -94,11 +94,11 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
 
     assert_equal 1, result[:enhanced]
     assert_equal 1, result[:deduplicated]
-    assert_equal "walmart.com", lunchflow_merchant.reload.website_url
+    assert_equal "walmart.com", simplefin_merchant.reload.website_url
 
-    # AI merchant's transactions should be reassigned to the lunchflow merchant
-    assert_equal lunchflow_merchant.id, txn2.reload.merchant_id
-    assert_equal lunchflow_merchant.id, txn1.reload.merchant_id
+    # AI merchant's transactions should be reassigned to the simplefin merchant
+    assert_equal simplefin_merchant.id, txn2.reload.merchant_id
+    assert_equal simplefin_merchant.id, txn1.reload.merchant_id
   end
 
   test "returns zero counts when no LLM provider" do
@@ -120,7 +120,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
   end
 
   test "skips merchants that already have website_url" do
-    merchant = ProviderMerchant.create!(source: "lunchflow", name: "Amazon", provider_merchant_id: "lf_amazon", website_url: "amazon.com")
+    merchant = ProviderMerchant.create!(source: "simplefin", name: "Amazon", provider_merchant_id: "lf_amazon", website_url: "amazon.com")
     create_transaction(account: @account, name: "Amazon order", merchant: merchant)
 
     # Should not call LLM because no merchants need enhancement
@@ -134,7 +134,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
   # Issue #2925: a website that arrived before Brandfetch was configured left the
   # merchant without a logo, and the enhancer never selected it again.
   test "backfills logos for merchants that already have a website without calling the LLM" do
-    merchant = ProviderMerchant.create!(source: "akahu", name: "Amazon", provider_merchant_id: "ak_amazon", website_url: "amazon.com")
+    merchant = ProviderMerchant.create!(source: "simplefin", name: "Amazon", provider_merchant_id: "ak_amazon", website_url: "amazon.com")
     merchant.update_column(:logo_url, nil)
     create_transaction(account: @account, name: "Amazon order", merchant: merchant)
 
@@ -162,7 +162,7 @@ class ProviderMerchant::EnhancerTest < ActiveSupport::TestCase
   # A logo backfill failure is cosmetic and must not abort the enhance run —
   # otherwise it would skip LLM enhancement and deduplication for the family.
   test "a logo backfill failure does not prevent enhancement" do
-    merchant = ProviderMerchant.create!(source: "lunchflow", name: "Walmart", provider_merchant_id: "lf_walmart")
+    merchant = ProviderMerchant.create!(source: "simplefin", name: "Walmart", provider_merchant_id: "lf_walmart")
     create_transaction(account: @account, name: "Walmart purchase", merchant: merchant)
     ProviderMerchant.stubs(:backfill_logos).raises(StandardError, "boom")
 

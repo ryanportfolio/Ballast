@@ -13,7 +13,7 @@ class ProviderItemCardsTest < ActiveSupport::TestCase
   RENDER_SOURCES = Dir[Rails.root.join("{app,lib}/**/*.{rb,erb,tt}")].sort
 
   test "there are cards to check" do
-    assert_operator CARDS.size, :>=, 13
+    assert_operator CARDS.size, :>=, 6
   end
 
   CARDS.each do |card|
@@ -59,9 +59,9 @@ class ProviderItemCardsTest < ActiveSupport::TestCase
       end
     end
 
-    # The 8 admin-only controller responses. Sync completions, jobs and the
+    # The 5 admin-only controller responses. Sync completions, jobs and the
     # SimpleFIN syncer no longer render a card at all.
-    assert_operator sites.size, :>=, 8, "found only #{sites.size} render sites; has the scan stopped matching?"
+    assert_operator sites.size, :>=, 5, "found only #{sites.size} render sites; has the scan stopped matching?"
   end
 
   test "no provider card is rendered by model, which cannot pass visible_accounts" do

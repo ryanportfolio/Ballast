@@ -39,7 +39,6 @@ tr:
     llm_usage: LLM Kullanımı
     llm_usages: LLM Kullanımı
     loans: Krediler
-    lunchflow_items: Lunch Flow
     mcp: MCP Sunucusu
     merchants: Satıcılar
     mercury_items: Mercury
@@ -64,7 +63,6 @@ tr:
     self_hosting: Kendi Barındırma
     sessions: Giriş yap
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Bölme
     tags: Etiketler
     trades: Alım Satımlar
@@ -76,7 +74,5 @@ tr:
     vehicles: Araçlar
     changelog: Yenilikler
     feedback: Geri bildirim
-    monobank_items: Monobank
     plan: Plan
-    redbark_items: Redbark
     system_health: Sistem Durumu

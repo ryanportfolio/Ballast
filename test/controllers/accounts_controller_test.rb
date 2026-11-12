@@ -1055,7 +1055,7 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "unlink preserves the provider account record" do
-    provider_account = lunchflow_accounts(:investment_account)
+    provider_account = create_simplefin_investment_account
     investment = accounts(:investment)
     AccountProvider.create!(account: investment, provider: provider_account)
     investment.reload
@@ -1068,13 +1068,13 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_not investment.linked?
     assert_redirected_to accounts_path
     # The provider account should still exist (not destroyed)
-    assert LunchflowAccount.exists?(provider_account.id), "LunchflowAccount should be preserved after unlink"
+    assert SimplefinAccount.exists?(provider_account.id), "SimplefinAccount should be preserved after unlink"
     # But AccountProvider should be gone
-    assert_not AccountProvider.exists?(provider_type: "LunchflowAccount", provider_id: provider_account.id)
+    assert_not AccountProvider.exists?(provider_type: "SimplefinAccount", provider_id: provider_account.id)
   end
 
   test "unlink detaches holdings from the provider" do
-    provider_account = lunchflow_accounts(:investment_account)
+    provider_account = create_simplefin_investment_account
     investment = accounts(:investment)
     ap = AccountProvider.create!(account: investment, provider: provider_account)
 
@@ -1257,6 +1257,11 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
       shared.account_shares.create!(user: member, permission: "read_only")
 
       [ shared, unshared ]
+    end
+
+    def create_simplefin_investment_account
+      item = SimplefinItem.create!(family: families(:dylan_family), name: "Unlink test", access_url: "https://example.com/access")
+      item.simplefin_accounts.create!(name: "Brokerage", account_id: "sf_unlink", currency: "USD", current_balance: 1000, account_type: "investment")
     end
 end
 

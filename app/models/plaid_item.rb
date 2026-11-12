@@ -120,7 +120,7 @@ class PlaidItem < ApplicationRecord
   # manually to "re-sync" the already fetched data
   #
   # `as_of` is captured once and passed down, so every account in one sync
-  # dates a rate change the same way, as RedbarkItem#process_accounts does.
+  # dates a rate change the same way.
   def process_accounts(as_of: Date.current)
     plaid_accounts.each do |plaid_account|
       PlaidAccount::Processor.new(plaid_account, as_of: as_of).process

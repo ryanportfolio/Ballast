@@ -39,7 +39,6 @@ it:
     llm_usage: Utilizzo LLM
     llm_usages: Utilizzo LLM
     loans: Prestiti
-    lunchflow_items: Lunch Flow
     mcp: Server MCP
     merchants: Esercenti
     mercury_items: Mercury
@@ -65,7 +64,6 @@ it:
     self_hosting: Self-Hosting
     sessions: Accedi
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Suddivisione
     tags: Etichette
     trades: Operazioni

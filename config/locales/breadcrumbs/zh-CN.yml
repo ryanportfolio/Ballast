@@ -42,13 +42,11 @@ zh-CN:
     llm_usage: LLM 用量
     llm_usages: LLM 用量
     loans: 贷款
-    lunchflow_items: Lunch Flow
     mcp: MCP 服务器
     merchants: 商户
     mercury_items: Mercury
     messages: 消息
     mfa: 双重验证
-    monobank_items: Monobank
     onboardings: 入门
     other_assets: 其他资产
     other_liabilities: 其他负债
@@ -61,7 +59,6 @@ zh-CN:
     properties: 房产
     providers: 提供商
     recurring_transactions: 循环交易
-    redbark_items: Redbark
     registrations: 注册
     reports: 报表
     rules: 规则
@@ -70,7 +67,6 @@ zh-CN:
     self_hosting: 自托管
     sessions: 登录
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: 拆分
     system_health: 系统健康
     tags: 标签

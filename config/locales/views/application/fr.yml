@@ -4,15 +4,6 @@ fr:
     uploads:
       handle_qif_upload:
         qif_uploaded: Aucun
-  lunchflow_items:
-    link_accounts:
-      no_api_key: Aucun
-    link_existing_account:
-      no_api_key: Aucun
-    select_accounts:
-      no_credentials_configured: Aucun
-    select_existing_account:
-      no_credentials_configured: Aucun
   number:
     currency:
       format:
@@ -72,17 +63,6 @@ fr:
         connected: connecté
         last_synced: Dernière synchronisation il y a %{time}
         needs_attention: a besoin d'attention
-      lunchflow_panel:
-        api_key_label: Clé API
-        api_key_placeholder_new: Collez la clé API ici
-        api_key_placeholder_update: Saisissez la nouvelle clé API à mettre à jour
-        base_url_label: URL de base (facultatif)
-        base_url_placeholder: https://lunchflow.app/api/v1 (par défaut)
-        save_and_connect: Enregistrez et connectez-vous
-        step_1_html: Accédez à %{link} et créez une clé API.
-        step_2: Collez votre clé ci-dessous et connectez-vous.
-        step_3: Dirigez-vous ensuite vers Comptes pour lier vos comptes synchronisés.
-        update_connection: Mettre à jour la connexion
       maturity:
         alpha: Alpha
         beta: Bêta
@@ -138,8 +118,6 @@ fr:
           avec un accès en lecture seule.
         enable_banking: Synchronisez les comptes bancaires européens via l'open banking
           PSD2.
-        lunchflow: Connectez plus de 20 000 banques dans plus de 40 pays (Royaume-Uni,
-          UE, États-Unis et plus !)
         mercury: Synchronisez automatiquement vos comptes bancaires professionnels
           Mercury.
         plaid: Connectez des milliers d'institutions financières américaines via Plaid.
@@ -147,7 +125,6 @@ fr:
           / Open Banking).
         simplefin: Connectez les comptes bancaires américains via le protocole ouvert
           SimpleFIN.
-        sophtron: Connectez les banques et les services publics américains et canadiens.
   simplefin_items:
     select_existing_account:
       check_provider_health: Aucun

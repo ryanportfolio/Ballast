@@ -292,10 +292,6 @@ fr:
         save: Enregistrer
         unconfirmed_email_notice_html: Vous avez demandé à changer votre e-mail pour %{email}. Veuillez confirmer via l'e-mail reçu pour que le changement prenne effet. Si vous n'avez pas reçu l'e-mail, vérifiez vos spams ou %{resend_link}.
     providers:
-      akahu_panel:
-        step_1_html: Allez sur %{link} et créez une application personnelle.
-        step_2: Copiez votre jeton d'application et votre jeton d'utilisateur.
-        step_3: Collez les jetons ci-dessous, enregistrez, puis liez vos comptes synchronisés.
       bank_sync:
         lede: Connectez des comptes externes pour que les transactions, les soldes et les holdings soient automatiquement transférés vers Sure.
         page_title: Synchronisation bancaire
@@ -353,10 +349,6 @@ fr:
           active: Synchronisation active
           repair_required: 'Réparation requise : ouvrez l''app iOS Sure'
         summary: Synchronisation Wallet
-      fio_panel:
-        step_1_html: Connectez-vous à la banque en ligne %{link} et ouvrez Settings → API.
-        step_2: Créez un jeton avec un accès en lecture seule (« Sledování účtu »). Il nécessite une authentification forte et reste valable jusqu'à 180 jours.
-        step_3: 'Collez le jeton ci-dessous et enregistrez. Un jeton donne accès à un seul compte : ajoutez donc une connexion par compte Fio.'
       groups:
         available: Disponibles
         empty_available: Tous les fournisseurs disponibles sont connectés.
@@ -366,17 +358,6 @@ fr:
         connected: connecté
         last_synced: Dernière synchronisation il y a %{time}
         needs_attention: requiert de l'attention
-      lunchflow_panel:
-        api_key_label: Clé API
-        api_key_placeholder_new: Collez la clé API ici
-        api_key_placeholder_update: Saisissez la nouvelle clé API pour mettre à jour
-        base_url_label: URL de base (Facultatif)
-        base_url_placeholder: https://lunchflow.app/api/v1 (par défaut)
-        save_and_connect: Enregistrer et connecter
-        step_1_html: Allez sur %{link} et créez une clé API.
-        step_2: Collez votre clé ci-dessous et connectez-vous.
-        step_3: Ensuite, allez dans Comptes pour lier vos comptes synchronisés.
-        update_connection: Mettre à jour la connexion
       maturity:
         alpha: Alpha
         beta: Bêta
@@ -388,10 +369,6 @@ fr:
           other: Consentement requis dans %{count} jours
         reconsent_required: Consentement requis
         sync_error: Erreur de synchro
-      monobank_panel:
-        step_1_html: Rendez-vous sur %{link}, connectez-vous avec l'app Monobank et générez un jeton personnel.
-        step_2: 'Copiez le jeton : il n''est affiché qu''une seule fois.'
-        step_3: Collez le jeton ci-dessous, enregistrez, puis liez les cartes et cagnottes que vous souhaitez suivre.
       not_authorized: Non autorisé
       not_found: Fournisseur non trouvé.
       plaid_eu_panel:
@@ -436,25 +413,14 @@ fr:
       sync_provider_in_progress: Synchronisation démarrée.
       sync_provider_no_items: Aucune connexion disponible pour la synchronisation.
       taglines:
-        akahu: Synchronisez les institutions financières de Nouvelle-Zélande via Akahu.
         brex: Synchronisez l'activité de vos cartes de crédit et comptes de trésorerie Brex en lecture seule.
         enable_banking: Synchronisez les comptes bancaires européens via l'open banking PSD2.
         financekit: Synchronisez (certains) comptes FinanceKit via l'app iOS Sure.
-        fio: Synchronisez un compte Fio banka avec un jeton d'API en lecture seule.
-        lunchflow: Connectez plus de 20k banques dans plus de 40 pays (UK, UE, USA, etc.)
         mercury: Synchronisez automatiquement vos comptes professionnels Mercury.
-        monobank: Synchronisez des cartes et cagnottes Monobank (Ukraine) avec un jeton d'API personnel.
         plaid: Connectez des milliers d'institutions financières américaines via Plaid.
         plaid_eu: Connectez des institutions financières européennes via Plaid (PSD2 / Open Banking).
-        redbark: Synchronisez des comptes bancaires australiens via l'open banking Redbark.
         simplefin: Connectez des comptes bancaires américains via le protocole ouvert SimpleFIN.
-        sophtron: Connectez vos banques et services publics américains et canadiens.
-        up: Synchronisez des comptes bancaires australiens Up avec un jeton d'accès personnel.
         wise: Synchronisez automatiquement vos soldes multi-devises Wise et vos transferts internationaux.
-      up_panel:
-        step_1_html: Allez sur %{link} et générez un jeton d'accès personnel.
-        step_2: Copiez votre jeton d'accès personnel.
-        step_3: Collez le jeton ci-dessous, enregistrez, puis liez vos comptes synchronisés.
       update:
         no_changes: Aucune modification n'a été apportée
         updated_successfully: Paramètres du fournisseur mis à jour avec succès

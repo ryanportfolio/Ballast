@@ -121,14 +121,14 @@ class SimplefinItem::ImporterTest < ActiveSupport::TestCase
 
   # Both steps read every provider's flag and decide "pending" the same way, so
   # the sync must count for review before it excludes: run through their one
-  # caller and the stale Lunch Flow entry is reported and then excluded, rather
+  # caller and the stale Plaid entry is reported and then excluded, rather
   # than excluded by the first step and invisible to the second. Swap the two
   # calls and stale_unmatched_pending goes to nil here.
   test "stale pending review counts every provider's flag before the exclusion hides it" do
     account = @family.accounts.create!(name: "Stale pending", balance: 0, currency: "USD", accountable: Depository.new)
     create_pending_entry(account, "simplefin_maybe", "simplefin", "maybe", 10)
     create_pending_entry(account, "simplefin_false", "simplefin", "off", 11)
-    create_pending_entry(account, "lunchflow_pending", "lunchflow", true, 12)
+    create_pending_entry(account, "plaid_pending", "plaid", true, 12)
 
     @importer.send(:review_and_exclude_stale_pending, account)
 

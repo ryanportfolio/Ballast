@@ -57,23 +57,8 @@ module SettingsHelper
     when "plaid", "plaid_eu"
       configured = @provider_configurations&.find { |c| c.provider_key.to_s.casecmp(key).zero? }&.configured?
       configured ? { status: :ok } : { status: :off }
-    when "akahu"
-      return { status: :off } unless @akahu_items&.any?
-      sync_based_summary(key)
-    when "up"
-      return { status: :off } unless @up_items&.any?
-      sync_based_summary(key)
-    when "monobank"
-      return { status: :off } unless @monobank_items&.any?
-      sync_based_summary(key)
-    when "fio"
-      return { status: :off } unless @fio_items&.any?
-      sync_based_summary(key)
     when "simplefin"
       return { status: :off } unless @simplefin_items&.any?
-      sync_based_summary(key)
-    when "lunchflow"
-      return { status: :off } unless @lunchflow_items&.any?
       sync_based_summary(key)
     when "enable_banking"
       return { status: :off } unless @enable_banking_items&.any?
@@ -84,14 +69,8 @@ module SettingsHelper
     when "mercury"
       return { status: :off } unless @mercury_items&.any?
       sync_based_summary(key)
-    when "redbark"
-      return { status: :off } unless @redbark_items&.any?
-      sync_based_summary(key)
     when "brex"
       return { status: :off } unless @brex_items&.any?
-      sync_based_summary(key)
-    when "sophtron"
-      return { status: :off } unless @sophtron_items&.any?
       sync_based_summary(key)
     else
       { status: :off }

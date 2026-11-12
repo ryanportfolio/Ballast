@@ -3,18 +3,11 @@
 class ProviderConnectionStatus
   PROVIDERS = [
     { key: "financekit", type: "FinancekitItem", association: :financekit_items, accounts: :financekit_account_lineages },
-    { key: "akahu", type: "AkahuItem", association: :akahu_items, accounts: :akahu_accounts },
-    { key: "up", type: "UpItem", association: :up_items, accounts: :up_accounts },
-    { key: "monobank", type: "MonobankItem", association: :monobank_items, accounts: :monobank_accounts },
-    { key: "fio", type: "FioItem", association: :fio_items, accounts: :fio_accounts },
     { key: "plaid", type: "PlaidItem", association: :plaid_items, accounts: :plaid_accounts },
     { key: "simplefin", type: "SimplefinItem", association: :simplefin_items, accounts: :simplefin_accounts },
-    { key: "lunchflow", type: "LunchflowItem", association: :lunchflow_items, accounts: :lunchflow_accounts },
     { key: "enable_banking", type: "EnableBankingItem", association: :enable_banking_items, accounts: :enable_banking_accounts },
     { key: "mercury", type: "MercuryItem", association: :mercury_items, accounts: :mercury_accounts },
     { key: "brex", type: "BrexItem", association: :brex_items, accounts: :brex_accounts },
-    { key: "sophtron", type: "SophtronItem", association: :sophtron_items, accounts: :sophtron_accounts },
-    { key: "redbark", type: "RedbarkItem", association: :redbark_items, accounts: :redbark_accounts },
     { key: "wise", type: "WiseItem", association: :wise_items, accounts: :wise_accounts }
   ].freeze
 

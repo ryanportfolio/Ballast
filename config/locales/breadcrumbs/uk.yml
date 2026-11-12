@@ -38,7 +38,6 @@ uk:
     llm_usage: Використання LLM
     llm_usages: Використання LLM
     loans: Позики
-    lunchflow_items: Lunch Flow
     mcp: MCP-сервер
     merchants: Продавці
     mercury_items: Mercury
@@ -63,7 +62,6 @@ uk:
     self_hosting: Self-Hosting
     sessions: Вхід
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Розділення
     tags: Теги
     trades: Угоди
@@ -75,7 +73,5 @@ uk:
     vehicles: Транспорт
     changelog: Що нового
     feedback: Відгук
-    monobank_items: Monobank
     plan: План
-    redbark_items: Redbark
     system_health: Стан системи

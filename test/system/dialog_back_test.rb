@@ -70,28 +70,6 @@ class DialogBackTest < ApplicationSystemTestCase
     assert_no_selector "dialog[open]"
   end
 
-  # Turbo drops temporary elements as it caches a page, and a frame visit with
-  # data-turbo-action caches the live page right after the frame renders. Lunch
-  # Flow's link opened the modal frame that way, so its modal went as it opened.
-  test "Lunch Flow's link opens its modal and the modal stays open" do
-    # Without an API key the link opens the setup modal, and nothing calls Lunch
-    # Flow.
-    lunchflow_items(:one).update!(api_key: nil)
-    visit accounts_url
-    click_on I18n.t("accounts.index.new_account")
-    # Each click waits for the modal frame to finish loading. A link clicked
-    # before that loses any data-turbo-action, so this test would pass with the
-    # attribute back on Lunch Flow's link. People don't click that fast.
-    assert_selector "turbo-frame#modal[complete]", visible: :all
-    click_link Depository.singular_display_name
-    assert_selector "turbo-frame#modal[complete]", visible: :all
-    click_link I18n.t("accounts.new.method_selector.link_with_provider", provider: "Lunch Flow")
-
-    title = I18n.t("lunchflow_items.setup_required.title")
-    assert_selector "dialog:modal", text: title
-    assert_not has_no_selector?("dialog:modal", text: title, wait: 1), "The modal went as it opened"
-  end
-
   # Visited directly, the drawer is the page, so Back has to bring it back.
   test "going back to a drawer visited directly restores it as a modal" do
     visit transfer_url(@transfer)

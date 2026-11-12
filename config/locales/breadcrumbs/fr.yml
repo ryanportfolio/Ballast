@@ -42,13 +42,11 @@ fr:
     llm_usage: Utilisation du LLM
     llm_usages: Utilisation du LLM
     loans: Prêts
-    lunchflow_items: Lunch Flow
     mcp: Serveur MCP
     merchants: Marchands
     mercury_items: Mercury
     messages: Messages
     mfa: Authentification à deux facteurs
-    monobank_items: Monobank
     onboardings: Intégration
     other_assets: Autres actifs
     other_liabilities: Autres passifs
@@ -61,7 +59,6 @@ fr:
     properties: Propriétés
     providers: Fournisseurs
     recurring_transactions: Récurrent
-    redbark_items: Redbark
     registrations: Inscrivez-vous
     reports: Rapports
     rules: Règles
@@ -70,7 +67,6 @@ fr:
     self_hosting: Auto-hébergement
     sessions: Connectez-vous
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Diviser
     system_health: Santé du système
     tags: Balises

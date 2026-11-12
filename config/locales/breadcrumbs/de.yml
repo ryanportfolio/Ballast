@@ -41,7 +41,6 @@ de:
     llm_usage: LLM-Nutzung
     llm_usages: LLM-Nutzung
     loans: Kredite
-    lunchflow_items: Lunch Flow
     mcp: MCP-Server
     merchants: Händler
     mercury_items: Mercury
@@ -59,7 +58,6 @@ de:
     properties: Immobilien
     providers: Anbieter
     recurring_transactions: Wiederkehrend
-    redbark_items: Redbark
     registrations: Registrieren
     reports: Berichte
     rules: Regeln
@@ -68,7 +66,6 @@ de:
     self_hosting: Self-Hosting
     sessions: Anmelden
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Aufteilung
     system_health: Systemstatus
     tags: Tags

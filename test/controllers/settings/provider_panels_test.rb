@@ -1,14 +1,14 @@
 require "test_helper"
 
-# The bank sync drawers follow the Up panel: setup steps come from the shared
+# The bank sync drawers share one layout: setup steps come from the shared
 # setup_steps partial, messages are DS::Alerts and item actions are DS::Buttons.
 class Settings::ProviderPanelsTest < ActionDispatch::IntegrationTest
   setup do
     sign_in users(:family_admin)
   end
 
-  test "Wise, Brex and Redbark list their setup steps in the shared partial" do
-    %w[wise brex redbark].each do |provider_key|
+  test "Wise and Brex list their setup steps in the shared partial" do
+    %w[wise brex].each do |provider_key|
       get connect_form_settings_providers_path(provider_key: provider_key)
 
       assert_response :success
@@ -16,15 +16,12 @@ class Settings::ProviderPanelsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "Wise, Brex and Redbark show a rejected save in an error alert" do
+  test "Wise and Brex show a rejected save in an error alert" do
     patch wise_item_url(wise_items(:one)), params: { wise_item: { name: "" } }, headers: { "Turbo-Frame" => "wise-providers-panel" }
     assert_error_alert "wise-providers-panel"
 
     post brex_items_url, params: { brex_item: { name: "Brex", token: "" } }, headers: { "Turbo-Frame" => "brex-providers-panel" }
     assert_error_alert "brex-providers-panel"
-
-    post redbark_items_url, params: { redbark_item: { api_key: "" } }, headers: { "Turbo-Frame" => "redbark-providers-panel" }
-    assert_error_alert "redbark-providers-panel"
   end
 
   test "sync and disconnect actions are named DS buttons" do

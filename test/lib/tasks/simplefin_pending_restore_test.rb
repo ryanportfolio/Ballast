@@ -51,7 +51,7 @@ class SimplefinPendingRestoreTest < ActiveSupport::TestCase
   end
 
   test "leaves entries flagged pending by other providers alone" do
-    entry = excluded_entry("lunchflow" => { "pending" => true })
+    entry = excluded_entry("enable_banking" => { "pending" => true })
 
     restore
 

@@ -277,11 +277,6 @@ tr:
           ettiniz. Değişikliğin geçerli olması için lütfen e-postanıza gidip onaylayın.
           E-postayı almadıysanız lütfen spam klasörünüzü kontrol edin veya %{resend_link}.
     providers:
-      akahu_panel:
-        step_1_html: "%{link} adresine gidin ve kişisel bir uygulama oluşturun."
-        step_2: Uygulama token'ınızı ve kullanıcı token'ınızı kopyalayın.
-        step_3: Token'ları aşağıya yapıştırın, kaydedin, ardından senkronize hesaplarınızı
-          bağlayın.
       bank_sync:
         lede: İşlemlerin, bakiyelerin ve varlıkların otomatik olarak Sure'a akması
           için harici hesapları bağlayın.
@@ -337,17 +332,6 @@ tr:
         connected: bağlı
         last_synced: Son senkronizasyon %{time} önce
         needs_attention: dikkat gerekiyor
-      lunchflow_panel:
-        api_key_label: API Anahtarı
-        api_key_placeholder_new: API anahtarını buraya yapıştırın
-        api_key_placeholder_update: Güncellemek için yeni API anahtarı girin
-        base_url_label: Temel URL (İsteğe Bağlı)
-        base_url_placeholder: https://lunchflow.app/api/v1 (varsayılan)
-        save_and_connect: Kaydet ve bağlan
-        step_1_html: "%{link} adresine gidin ve bir API anahtarı oluşturun."
-        step_2: Anahtarınızı aşağıya yapıştırın ve bağlanın.
-        step_3: Ardından senkronize hesaplarınızı bağlamak için Hesaplar'a gidin.
-        update_connection: Bağlantıyı güncelle
       maturity:
         alpha: Alfa
         beta: Beta
@@ -403,30 +387,18 @@ tr:
       sync_provider_in_progress: Senkronizasyon başladı.
       sync_provider_no_items: Senkronize edilecek bağlantı yok.
       taglines:
-        akahu: Akahu üzerinden Yeni Zelanda finans kurumlarını senkronize edin.
         brex: Salt okunur erişimle Brex nakit ve kurumsal kart hareketlerinizi senkronize
           edin.
         enable_banking: PSD2 açık bankacılığı üzerinden Avrupa banka hesaplarınızı
           senkronize edin.
-        lunchflow: 40'tan fazla ülkeden 20 bin+ bankayı bağlayın (İngiltere, AB, ABD
-          ve daha fazlası!)
         mercury: Mercury işletme bankacılığı hesaplarınızı otomatik olarak senkronize
           edin.
         plaid: Plaid üzerinden binlerce ABD finans kurumunu bağlayın.
         plaid_eu: Plaid üzerinden (PSD2 / Açık Bankacılık) Avrupa finans kurumlarını
           bağlayın.
         simplefin: Açık SimpleFIN protokolü üzerinden ABD banka hesaplarını bağlayın.
-        sophtron: ABD ve Kanada bankalarını ve kurumlarını bağlayın.
         wise: Wise çoklu para birimi bakiyelerinizi ve uluslararası transferlerinizi
           otomatik olarak senkronize edin.
-        redbark: Avustralya banka hesaplarını Redbark açık bankacılık ile senkronize edin.
-        monobank: Ukrayna Monobank kartlarını ve kumbaralarını kişisel bir API token ile senkronize edin.
-        fio: Bir Fio banka hesabını salt okunur bir API token ile senkronize edin.
-      up_panel:
-        step_1_html: "%{link} adresine gidin ve kişisel bir erişim token'ı oluşturun."
-        step_2: Kişisel erişim token'ınızı kopyalayın.
-        step_3: Token'ı aşağıya yapıştırın, kaydedin, ardından senkronize hesaplarınızı
-          bağlayın.
       update:
         no_changes: Herhangi bir değişiklik yapılmadı
         updated_successfully: Sağlayıcı ayarları başarıyla güncellendi
@@ -434,14 +406,6 @@ tr:
       provider_setup_encryption_warning:
         title: Şifreleme anahtarları eksik
         message: Bu kendi sunucunuzda barındırılan kurulumda açık Active Record şifreleme anahtarları yapılandırılmamış. Üretim ortamında sağlayıcı kimlik bilgilerini kaydetmeden önce primary_key, deterministic_key ve key_derivation_salt değerlerini yapılandırın.
-      monobank_panel:
-        step_1_html: '%{link} adresine gidin, Monobank uygulamasıyla giriş yapın ve kişisel bir token oluşturun.'
-        step_2: Token'ı kopyalayın — yalnızca bir kez gösterilir.
-        step_3: Token'ı aşağıya yapıştırıp kaydedin, ardından takip etmek istediğiniz kartları ve kumbaraları bağlayın.
-      fio_panel:
-        step_1_html: '%{link} internet bankacılığına giriş yapın ve Settings → API bölümünü açın.'
-        step_2: Salt okunur erişimli bir token oluşturun ("Sledování účtu"). Bu işlem güçlü kimlik doğrulama gerektirir ve token en fazla 180 gün geçerlidir.
-        step_3: Token'ı aşağıya yapıştırıp kaydedin. Bir token yalnızca bir hesaba erişir; bu nedenle her Fio hesabı için ayrı bir bağlantı ekleyin.
     securities:
       show:
         disable_mfa: 2FA'yı devre dışı bırak

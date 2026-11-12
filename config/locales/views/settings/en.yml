@@ -428,18 +428,11 @@ en:
       recently_synced: Synced recently. Try again in a moment.
       taglines:
         financekit: Sync (some) FinanceKit accounts through the Sure iOS app.
-        akahu: Sync New Zealand financial institutions via Akahu.
         simplefin: Connect US bank accounts via the open SimpleFIN protocol.
-        lunchflow: Connect 20k+ banks from 40+ countries (UK, EU, USA and more!)
-        redbark: Sync Australian bank accounts via Redbark open banking.
-        up: Sync Australian Up bank accounts with a personal access token.
-        monobank: Sync Ukrainian Monobank cards and jars with a personal API token.
-        fio: Sync a Fio banka account with a read-only API token.
         enable_banking: Sync European bank accounts via PSD2 open banking.
         wise: Sync your Wise multi-currency balances and international transfers automatically.
         mercury: Sync your Mercury business banking accounts automatically.
         brex: Sync Brex cash and corporate card activity with read-only access.
-        sophtron: Connect US & Canadian banks and utilities.
         plaid: Connect thousands of US financial institutions via Plaid.
         plaid_eu: Connect European financial institutions via Plaid (PSD2 / Open Banking).
       search_filters:
@@ -487,33 +480,6 @@ en:
         syncing: "Syncing"
         select_country: "Select country..."
         country_label: "Country"
-      lunchflow_panel:
-        step_1_html: "Go to %{link} and create an API key."
-        step_2: "Paste your key below and connect."
-        step_3: "Then head to Accounts to link your synced accounts."
-        api_key_label: "API Key"
-        api_key_placeholder_new: "Paste API key here"
-        api_key_placeholder_update: "Enter new API key to update"
-        base_url_label: "Base URL (Optional)"
-        base_url_placeholder: "https://lunchflow.app/api/v1 (default)"
-        save_and_connect: "Save and connect"
-        update_connection: "Update connection"
-      akahu_panel:
-        step_1_html: "Go to %{link} and create a personal app."
-        step_2: "Copy your app token and user token."
-        step_3: "Paste the tokens below, save, then link your synced accounts."
-      up_panel:
-        step_1_html: "Go to %{link} and generate a personal access token."
-        step_2: "Copy your personal access token."
-        step_3: "Paste the token below, save, then link your synced accounts."
-      monobank_panel:
-        step_1_html: "Go to %{link}, sign in with the Monobank app and generate a personal token."
-        step_2: "Copy the token — it is shown only once."
-        step_3: "Paste the token below, save, then link the cards and jars you want to track."
-      fio_panel:
-        step_1_html: "Sign in to %{link} internet banking and open Settings → API."
-        step_2: 'Create a token with read-only access ("Sledování účtu"). It needs strong authorization and is valid for up to 180 days.'
-        step_3: "Paste the token below and save. One token reaches one account, so add a connection per Fio account."
       simplefin_panel:
         step_1_html: "Go to %{link} for a one-time setup token."
         step_2: "Paste the token below and connect."

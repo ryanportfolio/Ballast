@@ -9,8 +9,7 @@ class ProviderItemSyncCompleteEventsTest < ActiveSupport::TestCase
   include Turbo::Broadcastable::TestHelper
 
   PROVIDERS = %w[
-    fio_item
-    lunchflow_item mercury_item monobank_item plaid_item redbark_item
+    mercury_item plaid_item
     wise_item
   ].freeze
 
@@ -41,25 +40,5 @@ class ProviderItemSyncCompleteEventsTest < ActiveSupport::TestCase
 
     assert_not_includes targets, ActionView::RecordIdentifier.dom_id(item)
     assert_includes targets, "sync-toast"
-  end
-
-  # Providers without fixtures, built with only what their validations need.
-  {
-    "akahu_item" => { app_token: "app", user_token: "user" },
-    "sophtron_item" => { user_id: "user", access_key: "key" },
-    "up_item" => { access_token: "token" }
-  }.each do |provider, attributes|
-    test "a #{provider} sync completion sends the toast, not the card" do
-      item = families(:dylan_family).public_send(provider.pluralize).create!(name: "Connection", **attributes)
-      Current.reset
-
-      streams = capture_turbo_stream_broadcasts(item.family) do
-        "#{provider.camelize}::SyncCompleteEvent".constantize.new(item).broadcast
-      end
-      targets = streams.map { |stream| stream["target"] }
-
-      assert_not_includes targets, ActionView::RecordIdentifier.dom_id(item)
-      assert_includes targets, "sync-toast"
-    end
   end
 end

@@ -2,7 +2,6 @@
 nl:
   accounts:
     account:
-      link_lunchflow: Koppel met Lunch Flow
       link_provider: Koppel met provider
       unlink_provider: Verbreek verbinding met provider
       troubleshoot: Problemen oplossen
@@ -42,7 +41,6 @@ nl:
         connected_entry: Account koppelen
         connected_entry_eu: EU-account koppelen
         link_with_provider: "Koppel met %{provider}"
-        lunchflow_entry: Koppel Lunch Flow account
         manual_entry: Voer accountsaldo in
         title: Hoe wilt u het toevoegen?
       title: Wat wilt u toevoegen?

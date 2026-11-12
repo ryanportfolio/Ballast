@@ -22,16 +22,9 @@ class AccountsController < ApplicationController
       .distinct.with_attached_logo.includes(:accountable, account_providers: :provider).order(:name)
     @plaid_items = visible_provider_items(family.plaid_items.ordered.with_attached_logo.includes(:plaid_accounts))
     @simplefin_items = visible_provider_items(family.simplefin_items.ordered.with_attached_logo)
-    @lunchflow_items = visible_provider_items(family.lunchflow_items.ordered.with_attached_logo.includes(:lunchflow_accounts))
-    @redbark_items = visible_provider_items(family.redbark_items.ordered.with_attached_logo.includes(:redbark_accounts))
-    @akahu_items = visible_provider_items(family.akahu_items.ordered.with_attached_logo.includes(:akahu_accounts))
-    @up_items = visible_provider_items(family.up_items.ordered.with_attached_logo.includes(:up_accounts))
-    @monobank_items = visible_provider_items(family.monobank_items.ordered.with_attached_logo.includes(:monobank_accounts))
-    @fio_items = visible_provider_items(family.fio_items.active.ordered.with_attached_logo.includes(:fio_accounts))
     @enable_banking_items = visible_provider_items(family.enable_banking_items.ordered.with_attached_logo)
     @mercury_items = visible_provider_items(family.mercury_items.ordered.with_attached_logo.includes(:mercury_accounts))
     @brex_items = visible_provider_items(family.brex_items.ordered.with_attached_logo.includes(:accounts, brex_accounts: :account_provider))
-    @sophtron_items = visible_provider_items(family.sophtron_items.ordered.with_attached_logo.includes(:sophtron_accounts))
     @wise_items = visible_provider_items(family.wise_items.ordered.includes(:wise_accounts, :accounts))
 
     preload_latest_sync_metadata_for_index!
@@ -45,10 +38,6 @@ class AccountsController < ApplicationController
   end
 
   def new
-    # Get all registered providers with any credentials configured
-    @provider_configs = Provider::Factory.registered_adapters.flat_map do |adapter_class|
-      adapter_class.connection_configs(family: family)
-    end
   end
 
   def sync_all
@@ -455,16 +444,9 @@ class AccountsController < ApplicationController
       items = [
         @plaid_items,
         @simplefin_items,
-        @lunchflow_items,
-        @redbark_items,
-        @akahu_items,
-        @up_items,
-        @monobank_items,
-        @fio_items,
         @enable_banking_items,
         @mercury_items,
         @brex_items,
-        @sophtron_items,
         @wise_items
       ].flatten.compact
 
@@ -576,34 +558,6 @@ class AccountsController < ApplicationController
         @plaid_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
       end
 
-      # Lunchflow sync stats
-      @lunchflow_sync_stats_map = {}
-      @lunchflow_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @lunchflow_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Akahu sync stats
-      @akahu_sync_stats_map = {}
-      @akahu_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @akahu_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Up sync stats
-      @up_sync_stats_map = {}
-      @up_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @up_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Monobank sync stats
-      @monobank_sync_stats_map = {}
-      @monobank_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @monobank_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
       # Enable Banking sync stats
       @enable_banking_sync_stats_map = {}
       @enable_banking_latest_sync_error_map = {}
@@ -611,20 +565,6 @@ class AccountsController < ApplicationController
         latest_sync = item.latest_sync_record
         @enable_banking_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
         @enable_banking_latest_sync_error_map[item.id] = latest_sync&.error
-      end
-
-      # Sophtron sync stats
-      @sophtron_sync_stats_map = {}
-      @sophtron_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @sophtron_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Redbark sync stats
-      @redbark_sync_stats_map = {}
-      @redbark_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @redbark_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
       end
 
       # Mercury sync stats
@@ -660,13 +600,6 @@ class AccountsController < ApplicationController
       @wise_items.each do |item|
         latest_sync = item.latest_sync_record
         @wise_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
-      end
-
-      # Fio sync stats
-      @fio_sync_stats_map = {}
-      @fio_items.each do |item|
-        latest_sync = item.latest_sync_record
-        @fio_sync_stats_map[item.id] = latest_sync&.sync_stats || {}
       end
     end
 end

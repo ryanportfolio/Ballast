@@ -375,15 +375,11 @@ pt-PT:
       sync_provider_in_progress: Sincronização iniciada.
       recently_synced: Sincronizado recentemente. Tente novamente daqui a um momento.
       taglines:
-        akahu: Sincronize instituições financeiras da Nova Zelândia via Akahu.
         simplefin: Ligue contas bancárias dos EUA através do protocolo aberto SimpleFIN.
-        lunchflow: Ligue 20 mil+ bancos de 40+ países (RU, UE, EUA e mais!)
-        redbark: Sincronize contas bancárias australianas através do open banking Redbark.
         enable_banking: Sincronize contas bancárias europeias através do open banking PSD2.
         wise: Sincronize automaticamente os seus saldos multi-moeda Wise e transferências internacionais.
         mercury: Sincronize automaticamente as suas contas bancárias empresariais Mercury.
         brex: Sincronize o numerário e a atividade do cartão empresarial Brex com acesso apenas de leitura.
-        sophtron: Ligue bancos e utilities dos EUA e do Canadá.
         plaid: Ligue milhares de instituições financeiras dos EUA via Plaid.
         plaid_eu: Ligue instituições financeiras europeias via Plaid (PSD2 / Open Banking).
       search_filters:
@@ -431,25 +427,6 @@ pt-PT:
         syncing: "A sincronizar"
         select_country: "Selecione o país..."
         country_label: "País"
-      lunchflow_panel:
-        step_1_html: "Aceda a %{link} e crie uma chave de API."
-        step_2: "Cole abaixo a sua chave e ligue."
-        step_3: "Depois, aceda a Contas para ligar as suas contas sincronizadas."
-        api_key_label: "Chave de API"
-        api_key_placeholder_new: "Cole aqui a chave de API"
-        api_key_placeholder_update: "Introduza a nova chave de API para atualizar"
-        base_url_label: "URL Base (Opcional)"
-        base_url_placeholder: "https://lunchflow.app/api/v1 (predefinido)"
-        save_and_connect: "Guardar e ligar"
-        update_connection: "Atualizar ligação"
-      akahu_panel:
-        step_1_html: "Aceda a %{link} e crie uma aplicação pessoal."
-        step_2: "Copie o seu token de aplicação e token de utilizador."
-        step_3: "Cole abaixo os tokens, guarde e, em seguida, ligue as suas contas sincronizadas."
-      up_panel:
-        step_1_html: "Aceda a %{link} e gere um token de acesso pessoal."
-        step_2: "Copie o seu token de acesso pessoal."
-        step_3: "Cole abaixo o token, guarde e, em seguida, ligue as suas contas sincronizadas."
       simplefin_panel:
         step_1_html: "Aceda a %{link} para obter um token de configuração de utilização única."
         step_2: "Cole abaixo o token e ligue."

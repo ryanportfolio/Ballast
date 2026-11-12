@@ -313,17 +313,6 @@ ca:
         connected: connectats
         last_synced: Última sincronització fa %{time}
         needs_attention: necessita atenció
-      lunchflow_panel:
-        api_key_label: Clau API
-        api_key_placeholder_new: Enganxa la clau API aquí
-        api_key_placeholder_update: Introdueix la nova clau API per actualitzar
-        base_url_label: URL base (opcional)
-        base_url_placeholder: https://lunchflow.app/api/v1 (per defecte)
-        save_and_connect: Desa i connecta
-        step_1_html: Ves a %{link} i crea una clau API.
-        step_2: Enganxa la teva clau a sota i connecta.
-        step_3: Després ves a Comptes per enllaçar els teus comptes sincronitzats.
-        update_connection: Actualitza connexió
       maturity:
         alpha: Alfa
         beta: Beta
@@ -379,8 +368,6 @@ ca:
           accés de només lectura.
         enable_banking: Sincronitza comptes bancaris europeus mitjançant l'open banking
           PSD2.
-        lunchflow: Connecta més de 20.000 bancs de més de 40 països (Regne Unit, UE,
-          EUA i més!).
         mercury: Sincronitza automàticament els teus comptes bancaris empresarials
           de Mercury.
         plaid: Connecta milers d'entitats financeres dels EUA mitjançant Plaid.
@@ -388,11 +375,6 @@ ca:
           / Open Banking).
         simplefin: Connecta comptes bancaris dels EUA mitjançant el protocol obert
           SimpleFIN.
-        sophtron: Connecta bancs i serveis dels EUA i Canadà.
-        akahu: Sincronitza entitats financeres de Nova Zelanda mitjançant Akahu.
-        redbark: Sincronitza comptes bancaris australians mitjançant l'open banking de Redbark.
-        monobank: Sincronitza targetes i guardioles (jars) de Monobank amb un token API personal.
-        fio: Sincronitza un compte de Fio banka amb un token API de només lectura.
         wise: Sincronitza automàticament els teus saldos multidivisa i les transferències internacionals de Wise.
       update:
         no_changes: No s'ha fet cap canvi
@@ -403,22 +385,6 @@ ca:
         message: Aquesta instal·lació autoallotjada no té configurades claus de xifratge explícites d'Active Record. Configura primary_key, deterministic_key i key_derivation_salt abans de desar credencials de proveïdors en producció.
       provider_form:
         save_and_connect: Desa i connecta
-      akahu_panel:
-        step_1_html: Ves a %{link} i crea una aplicació personal.
-        step_2: Copia el teu token d'aplicació i el token d'usuari.
-        step_3: Enganxa els tokens a continuació, desa i després enllaça els comptes sincronitzats.
-      up_panel:
-        step_1_html: Ves a %{link} i genera un token d'accés personal.
-        step_2: Copia el teu token d'accés personal.
-        step_3: Enganxa el token a continuació, desa i després enllaça els comptes sincronitzats.
-      monobank_panel:
-        step_1_html: Ves a %{link}, inicia sessió amb l'aplicació de Monobank i genera un token personal.
-        step_2: 'Copia el token: només es mostra una vegada.'
-        step_3: Enganxa el token a continuació, desa i després enllaça les targetes i guardioles (jars) que vulguis seguir.
-      fio_panel:
-        step_1_html: Inicia sessió a la banca en línia de %{link} i obre Settings → API.
-        step_2: Crea un token amb accés de només lectura ("Sledování účtu"). Requereix autenticació reforçada i és vàlid fins a 180 dies.
-        step_3: Enganxa el token a continuació i desa. Cada token dona accés a un sol compte, així que afegeix una connexió per cada compte de Fio.
     securities:
       show:
         page_title: Seguretat

@@ -240,10 +240,6 @@ de:
         syncing: Sync läuft
         unknown: Unbekannt
         update_connection: Verbindung aktualisieren
-      akahu_panel:
-        step_1_html: Geh zu %{link} und leg eine persönliche App an.
-        step_2: Kopier deinen App-Token und deinen User-Token.
-        step_3: Füg die Tokens unten ein, speichere und verknüpf dann deine synchronisierten Konten.
       bank_sync:
         lede: Verbinde externe Konten, damit Transaktionen, Salden und Bestände automatisch in Sure landen.
         page_title: Bank-Sync
@@ -264,17 +260,6 @@ de:
         connected: verbunden
         last_synced: Sync vor %{time}
         needs_attention: mit Problemen
-      lunchflow_panel:
-        api_key_label: API-Key
-        api_key_placeholder_new: API-Key hier einfügen
-        api_key_placeholder_update: Neuen API-Key eintragen, um ihn zu ändern
-        base_url_label: Basis-URL (optional)
-        base_url_placeholder: https://lunchflow.app/api/v1 (Standard)
-        save_and_connect: Speichern und verbinden
-        step_1_html: Geh zu %{link} und leg einen API-Key an.
-        step_2: Füg deinen Key unten ein und verbinde.
-        step_3: Geh danach zu den Konten, um deine synchronisierten Konten zu verknüpfen.
-        update_connection: Verbindung aktualisieren
       maturity:
         alpha: Alpha
         beta: Beta
@@ -326,21 +311,13 @@ de:
       sync_provider_in_progress: Sync gestartet.
       sync_provider_no_items: Keine Verbindungen zum Synchronisieren vorhanden.
       taglines:
-        akahu: Synchronisiert neuseeländische Banken über Akahu.
         brex: Synchronisiert Guthaben und Firmenkartenumsätze bei Brex mit reinem Lesezugriff.
         enable_banking: Synchronisiert europäische Bankkonten über PSD2-Open-Banking.
-        lunchflow: Verbindet über 20.000 Banken aus mehr als 40 Ländern (Großbritannien, EU, USA und weitere).
         mercury: Synchronisiert deine Geschäftskonten bei Mercury automatisch.
         plaid: Verbindet Tausende US-Finanzinstitute über Plaid.
         plaid_eu: Verbindet europäische Finanzinstitute über Plaid (PSD2 / Open Banking).
-        redbark: Synchronisiert australische Bankkonten über Redbark Open Banking.
         simplefin: Verbindet US-Bankkonten über das offene SimpleFIN-Protokoll.
-        sophtron: Verbindet Banken und Versorger in den USA & Kanada.
         wise: Synchronisiert deine Wise-Guthaben in mehreren Währungen und internationale Überweisungen automatisch.
-      up_panel:
-        step_1_html: Geh zu %{link} und erzeug einen persönlichen Zugriffstoken.
-        step_2: Kopier deinen persönlichen Zugriffstoken.
-        step_3: Füg den Token unten ein, speichere und verknüpf dann deine synchronisierten Konten.
       update:
         no_changes: Es wurde nichts geändert
         updated_successfully: Anbietereinstellungen gespeichert

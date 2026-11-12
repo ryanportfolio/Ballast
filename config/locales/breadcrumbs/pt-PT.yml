@@ -41,7 +41,6 @@ pt-PT:
     llm_usage: Utilização de AI
     llm_usages: Utilização de AI
     loans: Empréstimos
-    lunchflow_items: Lunch Flow
     mcp: Servidor MCP
     merchants: Comerciantes
     mercury_items: Mercury
@@ -59,7 +58,6 @@ pt-PT:
     properties: Imóveis
     providers: Serviços
     recurring_transactions: Recorrentes
-    redbark_items: Redbark
     registrations: Registar
     reports: Relatórios
     rules: Regras
@@ -68,7 +66,6 @@ pt-PT:
     self_hosting: Self-Hosting
     sessions: Iniciar sessão
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Divisão
     tags: Etiquetas
     trades: Negociações

@@ -15,12 +15,6 @@ class TransactionTest < ActiveSupport::TestCase
     assert transaction.pending?
   end
 
-  test "pending? is true when extra.lunchflow.pending is truthy" do
-    transaction = Transaction.new(extra: { "lunchflow" => { "pending" => true } })
-
-    assert transaction.pending?
-  end
-
   test "pending? is false when no provider pending metadata is present" do
     transaction = Transaction.new(extra: { "plaid" => { "pending" => false } })
 
@@ -88,18 +82,18 @@ class TransactionTest < ActiveSupport::TestCase
   test "provider-specific SQL only considers the requested pending namespaces" do
     account = families(:empty).accounts.create! name: "Provider pending scope", balance: 0,
       currency: "USD", accountable: Depository.new
-    akahu_pending = create_transaction(account: account, amount: 10).entryable
-    akahu_pending.update!(extra: { "akahu" => { "pending" => "maybe" } })
-    akahu_false = create_transaction(account: account, amount: 11).entryable
-    akahu_false.update!(extra: { "akahu" => { "pending" => "off" } })
+    simplefin_pending = create_transaction(account: account, amount: 10).entryable
+    simplefin_pending.update!(extra: { "simplefin" => { "pending" => "maybe" } })
+    simplefin_false = create_transaction(account: account, amount: 11).entryable
+    simplefin_false.update!(extra: { "simplefin" => { "pending" => "off" } })
     other_provider = create_transaction(account: account, amount: 12).entryable
-    other_provider.update!(extra: { "simplefin" => { "pending" => true } })
+    other_provider.update!(extra: { "plaid" => { "pending" => true } })
 
-    matches = Transaction.where(Transaction.pending_sql("transactions", providers: [ :akahu ]))
+    matches = Transaction.where(Transaction.pending_sql("transactions", providers: [ :simplefin ]))
 
-    assert_equal [ akahu_pending.id ], matches.pluck(:id)
-    assert_equal [ akahu_pending.id ], Transaction.where(
-      Transaction.pending_sql("transactions", providers: [ "akahu", "unsupported" ])
+    assert_equal [ simplefin_pending.id ], matches.pluck(:id)
+    assert_equal [ simplefin_pending.id ], Transaction.where(
+      Transaction.pending_sql("transactions", providers: [ "simplefin", "unsupported" ])
     ).pluck(:id)
     assert_empty Transaction.where(Transaction.pending_sql("transactions", providers: [])).pluck(:id)
   end
@@ -111,13 +105,13 @@ class TransactionTest < ActiveSupport::TestCase
 
     [ true, false, nil, "true", "false", "no", "False", "Off", " false", "", "0", "1", "t", "f", "maybe", 1, 0 ].each do |flag|
       transaction = create_transaction(account: account, amount: 10).entryable
-      transaction.update!(extra: { "up" => { "pending" => flag }, "plaid" => { "pending" => true } })
-      expected = Transaction.new(extra: { "up" => { "pending" => flag } }).pending?
+      transaction.update!(extra: { "simplefin" => { "pending" => flag }, "plaid" => { "pending" => true } })
+      expected = Transaction.new(extra: { "simplefin" => { "pending" => flag } }).pending?
 
-      assert_equal expected, Transaction.where(Transaction.pending_sql(providers: %w[up])).exists?(transaction.id),
-        "pending_sql(providers: up) disagrees with pending? on #{flag.inspect}"
-      assert_equal !expected, Transaction.where(Transaction.not_pending_sql(providers: %w[up])).exists?(transaction.id),
-        "not_pending_sql(providers: up) disagrees with pending? on #{flag.inspect}"
+      assert_equal expected, Transaction.where(Transaction.pending_sql(providers: %w[simplefin])).exists?(transaction.id),
+        "pending_sql(providers: simplefin) disagrees with pending? on #{flag.inspect}"
+      assert_equal !expected, Transaction.where(Transaction.not_pending_sql(providers: %w[simplefin])).exists?(transaction.id),
+        "not_pending_sql(providers: simplefin) disagrees with pending? on #{flag.inspect}"
     end
   end
 

@@ -331,11 +331,6 @@ pl:
           Sprawdź pocztę i potwierdź zmianę, aby zaczęła obowiązywać. Jeśli nie otrzymałeś
           wiadomości, sprawdź folder ze spamem albo %{resend_link}.
     providers:
-      akahu_panel:
-        step_1_html: Przejdź do %{link} i utwórz aplikację osobistą.
-        step_2: Skopiuj token aplikacji i token użytkownika.
-        step_3: Wklej tokeny poniżej, zapisz, a następnie połącz zsynchronizowane
-          konta.
       bank_sync:
         lede: Połącz konta zewnętrzne, aby transakcje, salda i posiadane aktywa trafiały
           do Sure automatycznie.
@@ -397,17 +392,6 @@ pl:
         connected: połączone
         last_synced: Ostatnio zsynchronizowano %{time} temu
         needs_attention: wymaga uwagi
-      lunchflow_panel:
-        api_key_label: API Key
-        api_key_placeholder_new: Wklej tutaj klucz API
-        api_key_placeholder_update: Wpisz nowy klucz API, aby zaktualizować
-        base_url_label: Adres bazowy URL (opcjonalnie)
-        base_url_placeholder: https://lunchflow.app/api/v1 (domyślny)
-        save_and_connect: Zapisz i połącz
-        step_1_html: Przejdź do %{link} i utwórz klucz API.
-        step_2: Wklej swój klucz poniżej i połącz.
-        step_3: Następnie przejdź do Kont, aby połączyć zsynchronizowane konta.
-        update_connection: Zaktualizuj połączenie
       maturity:
         alpha: Alfa
         beta: Beta
@@ -421,12 +405,6 @@ pl:
           other: Wymagana ponowna zgoda za %{count} dni
         reconsent_required: Wymagana ponowna zgoda
         sync_error: Błąd synchronizacji
-      monobank_panel:
-        step_1_html: Przejdź do %{link}, zaloguj się aplikacją Monobank i wygeneruj
-          token osobisty.
-        step_2: Skopiuj token — jest pokazywany tylko raz.
-        step_3: Wklej token poniżej, zapisz, a następnie połącz karty i skarbonki,
-          które chcesz śledzić.
       not_authorized: Brak autoryzacji
       not_found: Nie znaleziono dostawcy.
       plaid_eu_panel:
@@ -475,29 +453,17 @@ pl:
       sync_provider_in_progress: Synchronizacja rozpoczęta.
       sync_provider_no_items: Brak połączeń do synchronizacji.
       taglines:
-        akahu: Synchronizuj nowozelandzkie instytucje finansowe przez Akahu.
         brex: Synchronizuj środki i aktywność kart firmowych Brex z dostępem tylko
           do odczytu.
         enable_banking: Synchronizuj europejskie konta bankowe przez otwartą bankowość
           PSD2.
-        lunchflow: Połącz ponad 20 tys. banków z ponad 40 krajów (Wielka Brytania,
-          UE, USA i więcej!)
         mercury: Synchronizuj automatycznie swoje firmowe konta bankowe Mercury.
-        monobank: Synchronizuj ukraińskie karty i skarbonki Monobank za pomocą osobistego
-          tokenu API.
         plaid: Połącz tysiące amerykańskich instytucji finansowych przez Plaid.
         plaid_eu: Połącz europejskie instytucje finansowe przez Plaid (PSD2 / otwarta
           bankowość).
-        redbark: Synchronizuj australijskie konta bankowe przez otwartą bankowość
-          Redbark.
         simplefin: Połącz amerykańskie konta bankowe przez otwarty protokół SimpleFIN.
-        sophtron: Połącz amerykańskie i kanadyjskie banki oraz dostawców usług.
         wise: Synchronizuj automatycznie swoje wielowalutowe salda i przelewy międzynarodowe
           Wise.
-      up_panel:
-        step_1_html: Przejdź do %{link} i wygeneruj osobisty token dostępu.
-        step_2: Skopiuj swój osobisty token dostępu.
-        step_3: Wklej token poniżej, zapisz, a następnie połącz zsynchronizowane konta.
       update:
         no_changes: Nie wprowadzono żadnych zmian
         updated_successfully: Ustawienia dostawcy zostały zaktualizowane

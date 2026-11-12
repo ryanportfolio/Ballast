@@ -105,6 +105,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
   REMOVED_PROVIDER_TABLES = %w[
     binance_items coinbase_items coinspot_items coinstats_items kraken_items onchain_wallet_items
     ibkr_items indexa_capital_items questrade_items snaptrade_items trade_republic_items trading212_items
+    akahu_items fio_items lunchflow_items monobank_items redbark_items sophtron_items up_items
   ].freeze
 
   test "every model with a scheduled_for_deletion column uses the concern" do
@@ -113,7 +114,7 @@ class DestroyableLaterTest < ActiveSupport::TestCase
       .select { |table| connection.column_exists?(table, :scheduled_for_deletion) }
       .map { |table| table.classify.constantize }
 
-    assert_operator models.size, :>=, 13
+    assert_operator models.size, :>=, 6
 
     models.each do |model|
       assert_equal DestroyableLater, model.instance_method(:destroy_later).owner,

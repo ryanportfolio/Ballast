@@ -313,13 +313,10 @@ es:
       sync_provider_in_progress: Sincronización iniciada.
       recently_synced: Sincronizado hace poco. Inténtalo de nuevo en un momento.
       taglines:
-        akahu: Sincroniza instituciones financieras de Nueva Zelanda a través de Akahu.
         simplefin: Conecta cuentas bancarias de EE. UU. mediante el protocolo abierto SimpleFIN.
-        lunchflow: Conecta más de 20 000 bancos de más de 40 países (Reino Unido, UE, EE. UU. y más).
         enable_banking: Sincroniza cuentas bancarias europeas mediante open banking PSD2.
         mercury: Sincroniza automáticamente tus cuentas bancarias de empresa de Mercury.
         brex: Sincroniza el efectivo y la actividad de tarjetas corporativas de Brex con acceso de solo lectura.
-        sophtron: Conecta bancos y suministros de EE. UU. y Canadá.
         plaid: Conecta miles de instituciones financieras de EE. UU. a través de Plaid.
         plaid_eu: Conecta instituciones financieras europeas a través de Plaid (PSD2 / Open Banking).
       search_filters:
@@ -367,25 +364,6 @@ es:
         syncing: Sincronizando
         select_country: Selecciona un país...
         country_label: País
-      lunchflow_panel:
-        step_1_html: Ve a %{link} y crea una clave API.
-        step_2: Pega tu clave abajo y conecta.
-        step_3: Después ve a Cuentas para vincular tus cuentas sincronizadas.
-        api_key_label: API Key
-        api_key_placeholder_new: Pega aquí la clave API
-        api_key_placeholder_update: Introduce una nueva clave API para actualizarla
-        base_url_label: URL base (opcional)
-        base_url_placeholder: https://lunchflow.app/api/v1 (predeterminada)
-        save_and_connect: Guardar y conectar
-        update_connection: Actualizar conexión
-      akahu_panel:
-        step_1_html: Ve a %{link} y crea una aplicación personal.
-        step_2: Copia tu token de aplicación y tu token de usuario.
-        step_3: Pega los tokens abajo, guarda y luego vincula tus cuentas sincronizadas.
-      up_panel:
-        step_1_html: Ve a %{link} y genera un token de acceso personal.
-        step_2: Copia tu token de acceso personal.
-        step_3: Pega el token abajo, guarda y luego vincula tus cuentas sincronizadas.
       simplefin_panel:
         step_1_html: Ve a %{link} para obtener un token de configuración de un solo uso.
         step_2: Pega el token abajo y conecta.

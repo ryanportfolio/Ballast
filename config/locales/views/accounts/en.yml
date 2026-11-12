@@ -9,7 +9,6 @@ en:
     account:
       complete_setup: Complete setup
       edit: Edit
-      link_lunchflow: Link with Lunch Flow
       link_provider: Link with provider
       unlink_provider: Unlink from provider
       change_simplefin_account: Change SimpleFIN account
@@ -77,7 +76,6 @@ en:
         connected_entry: Link account
         connected_entry_eu: Link EU account
         link_with_provider: "Link with %{provider}"
-        lunchflow_entry: Link Lunch Flow account
         manual_entry: Enter account balance
         title: How would you like to add it?
       title: What would you like to add?

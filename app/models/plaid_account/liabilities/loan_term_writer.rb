@@ -9,8 +9,7 @@
 # - blanked a stored value whenever the payload omitted the field, because
 #   the omission arrived as nil.
 #
-# `Enrichable#enrich_attributes` answers the first two, as it already does for
-# `RedbarkAccount::LoanDetailsProcessor#write`; `compact` answers the third.
+# `Enrichable#enrich_attributes` answers the first two; `compact` answers the third.
 #
 # A variable loan's new rate is a row in `variable_rate_schedule` dated to the
 # sync's `as_of`, which each including processor supplies, rather than a new

@@ -54,13 +54,11 @@ namespace :security do
     # Provider items
     results[:plaid_items] = backfill_model(PlaidItem, %i[access_token raw_payload raw_institution_payload], batch_size, dry_run)
     results[:simplefin_items] = backfill_model(SimplefinItem, %i[access_url raw_payload raw_institution_payload], batch_size, dry_run)
-    results[:lunchflow_items] = backfill_model(LunchflowItem, %i[api_key raw_payload raw_institution_payload], batch_size, dry_run)
     results[:enable_banking_items] = backfill_model(EnableBankingItem, %i[client_certificate session_id raw_payload raw_institution_payload], batch_size, dry_run)
 
     # Provider accounts
     results[:plaid_accounts] = backfill_model(PlaidAccount, %i[raw_payload raw_transactions_payload raw_holdings_payload raw_liabilities_payload], batch_size, dry_run)
     results[:simplefin_accounts] = backfill_model(SimplefinAccount, %i[raw_payload raw_transactions_payload raw_holdings_payload], batch_size, dry_run)
-    results[:lunchflow_accounts] = backfill_model(LunchflowAccount, %i[raw_payload raw_transactions_payload], batch_size, dry_run)
     results[:enable_banking_accounts] = backfill_model(EnableBankingAccount, %i[raw_payload raw_transactions_payload], batch_size, dry_run)
     results[:mercury_accounts] = backfill_model(MercuryAccount, %i[raw_payload raw_transactions_payload], batch_size, dry_run)
 

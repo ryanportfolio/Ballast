@@ -107,9 +107,9 @@ class EnableBankingAccount < ApplicationRecord
       current_balance: nil,
       # Preserve an established currency when the snapshot omits or mangles it
       # (normalized, so blank/invalid stored values still fall through) —
-      # EUR only for records that never had a valid currency. Mirrors the
-      # equivalent Lunch Flow fix; PSD2 payloads usually carry currency, so
-      # this is parity/safety rather than an observed failure.
+      # EUR only for records that never had a valid currency. PSD2
+      # payloads usually carry currency, so this is a safety net rather than a
+      # fix for an observed failure.
       currency: parse_currency(snapshot[:currency]) || parse_currency(currency) || "EUR",
       name: build_account_name(snapshot),
       account_id: snapshot[:uid],

@@ -235,10 +235,10 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
   test "search input filters provider cards by name" do
     visit settings_providers_path
 
-    find('[data-providers-filter-target="input"]').set("Akahu")
+    find('[data-providers-filter-target="input"]').set("Wise")
 
-    assert_selector "a[data-providers-filter-target='card']", text: /Akahu/i
-    assert_no_selector "a[data-providers-filter-target='card']", text: /Sophtron/i
+    assert_selector "a[data-providers-filter-target='card']", text: /Wise/i
+    assert_no_selector "a[data-providers-filter-target='card']", text: /Brex/i
   end
 
   test "kind chip narrows the grid to providers of that kind" do
@@ -246,7 +246,7 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
 
     click_on "Investment"
 
-    assert_selector "a[data-providers-filter-target='card']", text: /Sophtron/i
+    assert_selector "a[data-providers-filter-target='card']", text: /SimpleFIN/i
     assert_no_selector "a[data-providers-filter-target='card']", text: /Enable Banking/i
   end
 

@@ -39,7 +39,6 @@ vi:
     llm_usage: Sử dụng LLM
     llm_usages: Sử dụng LLM
     loans: Khoản vay
-    lunchflow_items: Lunch Flow
     merchants: Nhà cung cấp
     mercury_items: Mercury
     messages: Tin nhắn
@@ -63,7 +62,6 @@ vi:
     self_hosting: Tự lưu trữ
     sessions: Đăng nhập
     simplefin_items: SimpleFIN
-    sophtron_items: Sophtron
     splits: Phân chia
     tags: Nhãn
     trades: Giao dịch chứng khoán

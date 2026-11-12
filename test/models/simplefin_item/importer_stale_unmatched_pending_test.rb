@@ -33,7 +33,7 @@ class SimplefinItem::ImporterStaleUnmatchedPendingTest < ActiveSupport::TestCase
   end
 
   test "counts a stale entry pending under any provider, not only SimpleFIN and Plaid" do
-    stale_entry("lunchflow" => { "pending" => true })
+    stale_entry("enable_banking" => { "pending" => true })
 
     track
 

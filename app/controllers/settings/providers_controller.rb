@@ -198,23 +198,16 @@ class Settings::ProvidersController < ApplicationController
     end
 
     # Hardcoded family-scoped panels — provider connections are managed through
-    # their own models (SimplefinItem, LunchflowItem, etc.) rather than global
+    # their own models (SimplefinItem, EnableBankingItem, etc.) rather than global
     # settings, so they need custom UI per-provider for connection management,
     # status display, and sync actions. The configuration registry excludes
     # them (see prepare_show_context).
     FAMILY_PANELS = [
-      { key: "akahu",          title: "Akahu",           turbo_id: "akahu",          partial: "akahu_panel" },
-      { key: "up",             title: "Up",              turbo_id: "up",             partial: "up_panel" },
-      { key: "monobank",       title: "Monobank",        turbo_id: "monobank",       partial: "monobank_panel" },
-      { key: "fio",            title: "Fio banka",       turbo_id: "fio",            partial: "fio_panel" },
-      { key: "lunchflow",      title: "Lunch Flow",      turbo_id: "lunchflow",      partial: "lunchflow_panel" },
-      { key: "redbark",        title: "Redbark",         turbo_id: "redbark",        partial: "redbark_panel" },
       { key: "simplefin",      title: "SimpleFIN",       turbo_id: "simplefin",      partial: "simplefin_panel" },
       { key: "enable_banking", title: "Enable Banking",  turbo_id: "enable_banking", partial: "enable_banking_panel" },
       { key: "wise",           title: "Wise",            turbo_id: "wise",           partial: "wise_panel" },
       { key: "mercury",        title: "Mercury",         turbo_id: "mercury",        partial: "mercury_panel" },
-      { key: "brex",           title: "Brex",            turbo_id: "brex",           partial: "brex_panel" },
-      { key: "sophtron",       title: "Sophtron",        turbo_id: "sophtron",       partial: "sophtron_panel" }
+      { key: "brex",           title: "Brex",            turbo_id: "brex",           partial: "brex_panel" }
     ].freeze
 
     FAMILY_PANEL_KEYS = FAMILY_PANELS.map { |p| p[:key] }.freeze
@@ -222,36 +215,17 @@ class Settings::ProvidersController < ApplicationController
 
     # Maps panel key → ActiveRecord model name for sync health queries
     PANEL_SYNCABLE_TYPES = {
-      "akahu"          => "AkahuItem",
-      "up"             => "UpItem",
-      "monobank"       => "MonobankItem",
-      "fio"            => "FioItem",
       "simplefin"      => "SimplefinItem",
-      "lunchflow"      => "LunchflowItem",
-      "redbark"        => "RedbarkItem",
       "enable_banking" => "EnableBankingItem",
       "wise"           => "WiseItem",
       "mercury"        => "MercuryItem",
-      "brex"           => "BrexItem",
-      "sophtron"       => "SophtronItem"
+      "brex"           => "BrexItem"
     }.freeze
 
     def load_provider_items(provider_key)
       case provider_key
-      when "akahu"
-        @akahu_items = Current.family.akahu_items.active.ordered
-      when "up"
-        @up_items = Current.family.up_items.active.ordered
-      when "monobank"
-        @monobank_items = Current.family.monobank_items.active.ordered
-      when "fio"
-        @fio_items = Current.family.fio_items.active.ordered
       when "simplefin"
         @simplefin_items = Current.family.simplefin_items.ordered
-      when "lunchflow"
-        @lunchflow_items = Current.family.lunchflow_items.ordered
-      when "redbark"
-        @redbark_items = Current.family.redbark_items.ordered
       when "enable_banking"
         @enable_banking_items = Current.family.enable_banking_items.ordered
       when "wise"
@@ -260,8 +234,6 @@ class Settings::ProvidersController < ApplicationController
         @mercury_items = Current.family.mercury_items.active.ordered.includes(:syncs, :mercury_accounts)
       when "brex"
         @brex_items = Current.family.brex_items.active.ordered.includes(:syncs, :brex_accounts)
-      when "sophtron"
-        @sophtron_items = Current.family.sophtron_items.ordered
       end
     end
 
@@ -275,20 +247,12 @@ class Settings::ProvidersController < ApplicationController
       end
       @provider_configurations = [] unless Current.user.manages_instance_settings?
 
-      @akahu_items = Current.family.akahu_items.active.ordered
-      @up_items = Current.family.up_items.active.ordered
-      @monobank_items = Current.family.monobank_items.active.ordered
-      # Providers page only needs to know whether any SimpleFin/Lunchflow connections exist with valid credentials
+      # Providers page only needs to know whether any SimpleFIN connections exist with valid credentials
       @simplefin_items = Current.family.simplefin_items.where.not(access_url: [ nil, "" ]).ordered.select(:id)
-      @lunchflow_items = Current.family.lunchflow_items.where.not(api_key: [ nil, "" ]).ordered.select(:id)
-      @redbark_items = Current.family.redbark_items.where.not(api_key: [ nil, "" ]).ordered.select(:id)
       @enable_banking_items = Current.family.enable_banking_items.ordered # Enable Banking panel needs session info for status display
-      # Providers page only needs to know whether any Sophtron connections exist with valid credentials
-      @sophtron_items = Current.family.sophtron_items.where.not(user_id: [ nil, "" ], access_key: [ nil, "" ]).ordered.select(:id)
       @wise_items = Current.family.wise_items.active.ordered
       @mercury_items = Current.family.mercury_items.active.ordered
       @brex_items = Current.family.brex_items.active.ordered
-      @fio_items = Current.family.fio_items.active.ordered
 
       # Wallet uploads are managed on iOS. Only expose linked accounts the
       # current admin can access, including connections that need repair.
@@ -316,18 +280,11 @@ class Settings::ProvidersController < ApplicationController
     # on instance_variable_get for control flow.
     def family_panel_items
       {
-        "akahu"          => @akahu_items,
-        "up"             => @up_items,
-        "monobank"       => @monobank_items,
-        "fio"            => @fio_items,
         "simplefin"      => @simplefin_items,
-        "lunchflow"      => @lunchflow_items,
-        "redbark"        => @redbark_items,
         "enable_banking" => @enable_banking_items,
         "wise"           => @wise_items,
         "mercury"        => @mercury_items,
-        "brex"           => @brex_items,
-        "sophtron"       => @sophtron_items
+        "brex"           => @brex_items
       }
     end
 

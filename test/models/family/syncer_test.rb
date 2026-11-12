@@ -8,11 +8,7 @@ class Family::SyncerTest < ActiveSupport::TestCase
 
   test "syncs provider items and manual accounts" do
     family_sync = syncs(:family)
-    @family.akahu_items.create!(
-      name: "Test Akahu",
-      app_token: "app_token",
-      user_token: "user_token"
-    )
+    @family.simplefin_items.create!(name: "Test SimpleFIN", access_url: "https://example.com/access")
 
     manual_accounts_count = @family.accounts.manual.count
     syncer = Family::Syncer.new(@family)
