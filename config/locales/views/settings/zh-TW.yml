@@ -45,7 +45,6 @@ zh-TW:
         actions:
           mark_stale: 標記為過期
           mark_failed: 標記為失敗
-          release_claim: 釋放佔用
       cancel:
         cancelled: '%{type} 已標記為遺失。'
         not_cancellable: 目前無法修改此作業 — 背景工作可能仍在佇列中或執行中。請等背景工作閒置滿 30 分鐘後再試。

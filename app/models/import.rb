@@ -33,16 +33,15 @@ class Import < ApplicationRecord
 
   # Shared CSV upload/content limit for web and API imports, including preflight.
   MAX_CSV_SIZE = 10.megabytes
-  MAX_PDF_SIZE = 25.megabytes
   ALLOWED_CSV_MIME_TYPES = %w[text/csv text/plain application/vnd.ms-excel application/csv].freeze
-  ALLOWED_PDF_MIME_TYPES = %w[application/pdf].freeze
 
+  # Document categories the AI providers' PDF processors classify into.
   DOCUMENT_TYPES = %w[bank_statement credit_card_statement investment_statement financial_document contract other].freeze
 
-  TYPES = %w[TransactionImport TradeImport AccountImport MintImport ActualImport YnabImport CategoryImport RuleImport MerchantImport PdfImport QifImport SureImport].freeze
+  TYPES = %w[TransactionImport TradeImport AccountImport CategoryImport RuleImport MerchantImport].freeze
   # Imports that write family-wide configuration (categories, tags, rules,
   # merchants), which guests may view but not change.
-  FAMILY_CONFIG_TYPES = %w[CategoryImport MerchantImport RuleImport SureImport].freeze
+  FAMILY_CONFIG_TYPES = %w[CategoryImport MerchantImport RuleImport].freeze
   SIGNAGE_CONVENTIONS = %w[inflows_positive inflows_negative]
   SEPARATORS = [ [ "Comma (,)", "," ], [ "Semicolon (;)", ";" ] ].freeze
 
@@ -80,16 +79,12 @@ class Import < ApplicationRecord
 
   belongs_to :family
   belongs_to :account, optional: true
-  belongs_to :account_statement, optional: true
-  belongs_to :import_session, optional: true
 
   before_validation :set_default_number_format
   before_validation :ensure_utf8_encoding
   before_save :ensure_utf8_encoding
-  normalizes :client_chunk_id, with: ->(value) { value.strip.presence }
 
   scope :ordered, -> { order(created_at: :desc) }
-  scope :ordered_by_sequence, -> { order(:sequence, :created_at) }
 
   enum :status, {
     pending: "pending",
@@ -105,15 +100,10 @@ class Import < ApplicationRecord
   validates :col_sep, inclusion: { in: SEPARATORS.map(&:last) }
   validates :signage_convention, inclusion: { in: SIGNAGE_CONVENTIONS }, allow_nil: true
   validates :number_format, presence: true, inclusion: { in: NUMBER_FORMATS.keys }
-  validates :sequence, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
-  validates :client_chunk_id, length: { maximum: 255 }, allow_blank: true
-  validates :checksum, length: { is: 64 }, allow_blank: true
   validate :custom_column_import_requires_identifier
   validates :rows_to_skip, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate :account_belongs_to_family
-  validate :import_session_belongs_to_family
-  validate :session_chunk_metadata
-  validate :session_payloads_are_json_objects
+  validate :payloads_are_json_objects
   validate :rows_to_skip_within_file_bounds
 
   has_many :rows, dependent: :destroy
@@ -129,14 +119,11 @@ class Import < ApplicationRecord
     # the commit and the status write, so the truthful terminal state is
     # complete (re-enabling retry there would double-import types without row
     # dedup, e.g. TradeImport). Reverts that died the same way go to
-    # revert_failed so the revert can be retried. PdfImports are excluded
-    # (their statuses double as processing claims, see PdfImport.clean), and
-    # so are session-owned chunks — ImportSession.clean reconciles those
-    # within the session flow.
+    # revert_failed so the revert can be retried. Only the CSV types in TYPES
+    # are swept: rows of import types Ballast removed can't be loaded.
     def clean
       where(status: [ :importing, :reverting ])
-        .where.not(type: "PdfImport")
-        .where(import_session_id: nil)
+        .where(type: TYPES)
         .where("updated_at < ?", STUCK_AFTER.ago)
         .includes(:family)
         .find_each do |import|
@@ -330,12 +317,11 @@ class Import < ApplicationRecord
     Import.transaction do
       accounts.destroy_all
       entries.destroy_all
-      revert_derived_state!
     end
 
     family.sync_later
 
-    update! status: status_after_revert
+    update! status: :pending
   rescue => error
     update! status: :revert_failed, error: error.message
   end
@@ -370,14 +356,7 @@ class Import < ApplicationRecord
     []
   end
 
-  # Returns false for import types that don't need CSV column mapping (e.g., PdfImport).
-  # Override in subclasses that handle data extraction differently.
-  def requires_csv_workflow?
-    true
-  end
-
-  # Subclasses that require CSV workflow must override this.
-  # Non-CSV imports (e.g., PdfImport) can return [].
+  # Every import type must override this.
   def column_keys
     raise NotImplementedError, "Subclass must implement column_keys"
   end
@@ -500,18 +479,11 @@ class Import < ApplicationRecord
     ids = [ account_id ]
     ids += mappings.accounts.where.not(mappable_id: nil).pluck(:mappable_id)
     ids += entries.distinct.pluck(:account_id)
-    ids += preexisting_target_account_ids
     ids = ids.compact.uniq - accounts.pluck(:id)
     return true if ids.empty?
     return false if user.nil?
 
     (ids - family.accounts.writable_by(user).where(id: ids).pluck(:id)).empty?
-  end
-
-  # Existing family accounts the import resolves on its own at publish time
-  # (e.g. by name). Subclasses that do this override it.
-  def preexisting_target_account_ids
-    []
   end
 
   def has_unassigned_account?
@@ -545,56 +517,11 @@ class Import < ApplicationRecord
     )
   end
 
-  # Returns date formats that can successfully parse the file's date samples,
-  # filtered to dates within reasonable_date_range.
-  # Result: array of { label:, format:, preview: } hashes.
-  # Subclasses should override #raw_date_samples to provide date strings.
-  def valid_date_formats_with_preview
-    first_sample = raw_date_samples.find(&:present?)
-    return [] if first_sample.blank?
-
-    Family::DATE_FORMATS.filter_map do |label, fmt|
-      parsed = try_parse_date_sample(first_sample, format: fmt)
-      next unless parsed
-      next unless self.class.reasonable_date_range.cover?(Date.parse(parsed))
-
-      { label: label, format: fmt, preview: parsed }
-    end
-  end
-
-  # Returns raw date strings from the import file for format detection/preview.
-  # Subclasses should override to extract dates from their specific format.
-  def raw_date_samples
-    []
-  end
-
-  # Attempts to parse a raw date sample with the given strptime format.
-  # Returns ISO 8601 date string or nil. Subclasses can override for
-  # format-specific normalization (e.g. QIF apostrophe dates).
-  def try_parse_date_sample(sample, format:)
-    Date.strptime(sample, format).iso8601
-  rescue Date::Error, ArgumentError
-    nil
-  end
-
   def max_row_count
     10000
   end
 
   private
-    # Hook for import types that also maintain state outside their own rows and
-    # entries -- PdfImport records statement reconciliation on entries it did
-    # not create, and destroying its own entries does not unwind that. Runs
-    # inside revert's transaction, so a failure here rolls the whole revert back.
-    def revert_derived_state!
-    end
-
-    # Where the record lands once its data is gone. Most imports return to
-    # pending with their rows intact, ready to be published again.
-    def status_after_revert
-      :pending
-    end
-
     # Commit signal for import types whose records hang off the family rather
     # than the import itself (Category/Merchant/Rule imports create no entries
     # or accounts, so the base data_committed? can't see them). import! runs as
@@ -820,21 +747,7 @@ class Import < ApplicationRecord
       errors.add(:account, "must belong to your family")
     end
 
-    def import_session_belongs_to_family
-      return if import_session.nil?
-      return if import_session.family_id == family_id
-
-      errors.add(:import_session, "must belong to your family")
-    end
-
-    def session_chunk_metadata
-      return if import_session.nil?
-
-      errors.add(:sequence, "must be present for import session chunks") if sequence.blank?
-      errors.add(:checksum, "must be present for import session chunks") if checksum.blank?
-    end
-
-    def session_payloads_are_json_objects
+    def payloads_are_json_objects
       errors.add(:summary, "must be an object") unless summary.is_a?(Hash)
       errors.add(:error_details, "must be an object") unless error_details.is_a?(Hash)
     end

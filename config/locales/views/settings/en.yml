@@ -45,7 +45,6 @@ en:
         actions:
           mark_stale: "Mark stale"
           mark_failed: "Mark failed"
-          release_claim: "Release claim"
       cancel:
         cancelled: "%{type} marked as lost."
         not_cancellable: "This operation can't be modified right now — its job may still be queued or running. Try again once it has been idle for 30 minutes."

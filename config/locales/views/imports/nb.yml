@@ -10,8 +10,6 @@ nb:
           detaljer.
         title: Rengjør dataene dine
     configurations:
-      mint_import:
-        date_format_label: Datoformat
       show:
         description: Velg kolonnene som tilsvarer hvert felt i CSV-filen din.
         title: Konfigurer importen din
@@ -85,7 +83,6 @@ nb:
       description: Du kan manuelt importere ulike typer data via CSV eller bruke en av
         våre importmaler som Mint.
       import_accounts: Importer kontoer
-      import_mint: Importer fra Mint
       import_portfolio: Importer investeringer
       import_transactions: Importer transaksjoner
       resume: Fortsett %{type}
@@ -97,6 +94,5 @@ nb:
       title: Bekreft importdataene dine
       summary_item_label: Element
       summary_count_label: Antall
-      empty_summary: Vi fant ingen poster som kan importeres i denne filen. Den kan være tom, eller linjene samsvarer ikke med det forventede eksportformatet (hver linje skal være et JSON-objekt med nøklene «type» og «data», med typer denne importen støtter).
       publish_import: Publiser import
       back_to_imports: Tilbake til importer

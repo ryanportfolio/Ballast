@@ -76,7 +76,6 @@ fr:
         actions:
           mark_failed: Marquer en échec
           mark_stale: Marquer comme obsolète
-          release_claim: Libérer la réservation
         ago: il y a %{time}
         confirm: Marquer cette opération comme perdue ? L'enregistrement passe à un statut terminal afin de pouvoir être relancé. Les données sous-jacentes ne sont pas modifiées.
         missing_value: "-"

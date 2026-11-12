@@ -3,7 +3,7 @@ require "test_helper"
 # A "Send email notification" action records the transactions its rule already
 # matches as delivered when it is created, so the rule only ever emails what
 # appears afterwards. These tests cover the moments an email action comes into
-# being: a new rule, an action added to an existing rule, and the importers.
+# being: a new rule, an action added to an existing rule, and a rule CSV import.
 class Rule::NotificationBaselineOnCreateTest < ActiveSupport::TestCase
   include EntriesTestHelper, ActiveJob::TestHelper
 
@@ -119,34 +119,6 @@ class Rule::NotificationBaselineOnCreateTest < ActiveSupport::TestCase
     assert_equal [], emailed_ids(rule) { RuleJob.perform_now(rule) }
   end
 
-  test "a Sure import naming a new email rule twice still records its baseline" do
-    Family::DataImporter.new(@family, [ rule_ndjson("cafe"), rule_ndjson("cafe") ].join("\n")).import!
-
-    rule = @family.rules.find_by!(name: "Cafe alerts")
-    assert_equal [ @bakery.id, @cafe.id ].sort, delivered_ids(rule)
-    assert_equal [], emailed_ids(rule) { RuleJob.perform_now(rule) }
-  end
-
-  test "a Sure import records the baseline for a new email rule" do
-    Family::DataImporter.new(@family, rule_ndjson("cafe")).import!
-
-    rule = @family.rules.find_by!(name: "Cafe alerts")
-    assert_equal [ @bakery.id, @cafe.id ].sort, delivered_ids(rule)
-  end
-
-  test "an identical Sure re-import keeps the baseline, so a pending match is still emailed" do
-    session = @family.import_sessions.create!(expected_chunks: 2)
-    Family::DataImporter.new(@family, rule_ndjson("cafe"), import_session: session).import!
-    rule = @family.rules.find_by!(name: "Cafe alerts")
-    pending = create_transaction(date: Date.current, account: @account, amount: 5, name: "Cafe express").transaction
-
-    Family::DataImporter.new(@family, rule_ndjson("cafe"), import_session: session).import!
-
-    assert_equal rule.id, @family.rules.find_by!(name: "Cafe alerts").id, "the re-import should update the same rule"
-    assert_not_includes delivered_ids(rule), pending.id
-    assert_equal [ pending.id ], emailed_ids(rule) { RuleJob.perform_now(Rule.find(rule.id)) }
-  end
-
   test "a rule reports a stored email action, even once it is marked for replacement" do
     rule = Rule.find(create_rule(actions: [ { action_type: "send_email_notification" } ]).id)
 
@@ -189,21 +161,6 @@ class Rule::NotificationBaselineOnCreateTest < ActiveSupport::TestCase
       import = @family.imports.create!(type: "RuleImport", raw_file_str: csv, col_sep: ",")
       import.generate_rows_from_csv
       import.send(:import!)
-    end
-
-    def rule_ndjson(value)
-      {
-        type: "Rule",
-        version: 1,
-        data: {
-          id: "rule-cafe",
-          name: "Cafe alerts",
-          resource_type: "transaction",
-          active: true,
-          conditions: [ { condition_type: "transaction_name", operator: "like", value: value } ],
-          actions: [ { action_type: "send_email_notification" } ]
-        }
-      }.to_json
     end
 
     def delivered_ids(rule)

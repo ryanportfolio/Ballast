@@ -199,8 +199,8 @@ class AutoMatchesControllerTest < ActionDispatch::IntegrationTest
 
   # cleanup_pending_auto_matches! used to match every Transfer.pending for
   # the family, so disabling the toggle would also destroy a pending transfer
-  # that arrived with a kind already set by an import path
-  # (Family::DataImporter, Demo::Generator) -- not a genuine auto-match
+  # that arrived with a kind already set by another path
+  # (e.g. Demo::Generator) -- not a genuine auto-match
   # suggestion.
   test "update_settings disabling destroys genuine pending auto-matches but preserves imported pending transfers with a kind already set" do
     genuine_outflow = create_transaction(date: Date.current, account: accounts(:depository), amount: 500, kind: "standard")

@@ -33,7 +33,6 @@
     <% if console.cancellable?(operation) %>
       <% action_key = case operation
          when Sync then "mark_stale"
-         when PdfImport then "release_claim"
          else "mark_failed"
          end %>
       <%= button_to cancel_settings_background_jobs_path(record_type: operation.class.base_class.name, id: operation.id),

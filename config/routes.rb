@@ -222,20 +222,18 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :imports, only: %i[index new show create update destroy] do
+  resources :imports, only: %i[index new show create destroy] do
     member do
       post :publish
       put :revert
       put :apply_template
       post :cancel
-      get :summary
     end
 
     resource :upload, only: %i[show update], module: :import
     resource :configuration, only: %i[show update], module: :import
     resource :clean, only: :show, module: :import
     resource :confirm, only: :show, module: :import
-    resource :qif_category_selection, only: %i[show update], module: :import
 
     resources :rows, only: %i[show update], module: :import
     resources :mappings, only: :update, module: :import
@@ -482,10 +480,6 @@ Rails.application.routes.draw do
       resources :imports, only: [ :index, :show, :create ] do
         post :preflight, on: :collection
         get :rows, on: :member
-      end
-      resources :import_sessions, only: [ :show, :create ] do
-        post :chunks, on: :member, action: :create_chunk
-        post :publish, on: :member
       end
       resource :usage, only: [ :show ], controller: :usage
       resource :cash_flow, only: [ :show ], controller: :cash_flows

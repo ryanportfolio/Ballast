@@ -317,104 +317,25 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "user can access pdf import file within their own family" do
-    import = imports(:pdf)
-    import.pdf_file.attach(io: StringIO.new("%PDF-1.4 Family A Import"), filename: "import.pdf", content_type: "application/pdf")
+  test "import attachments are denied even within the same family" do
+    blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("date,amount,name\n01/15/2024,5.00,Coffee"),
+      filename: "import.csv",
+      content_type: "text/csv"
+    )
+    ActiveStorage::Attachment.insert!(
+      {
+      name: "import_file",
+      record_type: "Import",
+      record_id: imports(:transaction).id,
+      blob_id: blob.id,
+      created_at: Time.current
+      }
+    )
 
     sign_in @user_a
 
-    get rails_blob_path(import.pdf_file)
-
-    assert_response :redirect
-    follow_redirect!
-    assert_response :success
-  end
-
-  test "user cannot access pdf import file from a different family" do
-    import = imports(:pdf)
-    import.pdf_file.attach(io: StringIO.new("%PDF-1.4 Family A Import"), filename: "import.pdf", content_type: "application/pdf")
-
-    sign_in @user_b
-
-    get rails_blob_path(import.pdf_file)
-
-    assert_response :not_found
-  end
-
-  test "user cannot access pdf import file linked to a statement they cannot view" do
-    statement = AccountStatement.create_from_upload!(
-      family: @user_a.family,
-      account: accounts(:other_asset),
-      file: uploaded_file(
-        filename: "private_import_statement.pdf",
-        content_type: "application/pdf",
-        content: "%PDF-1.4 Private Import Statement"
-      )
-    )
-    import = imports(:pdf)
-    import.update!(account_statement: statement)
-    import.pdf_file.attach(io: StringIO.new("%PDF-1.4 Private Import"), filename: "import.pdf", content_type: "application/pdf")
-
-    sign_in users(:family_member)
-
-    get rails_blob_path(import.pdf_file)
-
-    assert_response :not_found
-  end
-
-  test "user can access pdf import file linked to a statement they can view" do
-    statement = AccountStatement.create_from_upload!(
-      family: @user_a.family,
-      account: accounts(:depository),
-      file: uploaded_file(
-        filename: "viewable_import_statement.pdf",
-        content_type: "application/pdf",
-        content: "%PDF-1.4 Viewable Import Statement"
-      )
-    )
-    import = imports(:pdf)
-    import.update!(account_statement: statement)
-    import.pdf_file.attach(io: StringIO.new("%PDF-1.4 Viewable Import"), filename: "import.pdf", content_type: "application/pdf")
-
-    sign_in @user_a
-
-    get rails_blob_path(import.pdf_file)
-
-    assert_response :redirect
-    follow_redirect!
-    assert_response :success
-  end
-
-  test "member can access pdf import file linked to a statement on an account shared with them" do
-    statement = AccountStatement.create_from_upload!(
-      family: @user_a.family,
-      account: accounts(:credit_card),
-      file: uploaded_file(
-        filename: "shared_import_statement.pdf",
-        content_type: "application/pdf",
-        content: "%PDF-1.4 Shared Import Statement"
-      )
-    )
-    import = imports(:pdf)
-    import.update!(account_statement: statement)
-    import.pdf_file.attach(io: StringIO.new("%PDF-1.4 Shared Import"), filename: "import.pdf", content_type: "application/pdf")
-
-    sign_in users(:family_member)
-
-    get rails_blob_path(import.pdf_file)
-
-    assert_response :redirect
-    follow_redirect!
-    assert_response :success
-  end
-
-  test "user cannot access sure import file from a different family" do
-    import = SureImport.create!(family: @user_a.family)
-    import.ndjson_file.attach(io: StringIO.new("{}\n"), filename: "import.ndjson", content_type: "application/x-ndjson")
-
-    sign_in @user_b
-
-    get rails_blob_path(import.ndjson_file)
+    get rails_blob_path(blob)
 
     assert_response :not_found
   end

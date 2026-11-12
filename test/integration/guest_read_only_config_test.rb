@@ -58,7 +58,7 @@ class GuestReadOnlyConfigTest < ActionDispatch::IntegrationTest
 
   test "guest cannot import family configuration" do
     assert_no_difference("Import.count") do
-      %w[CategoryImport MerchantImport RuleImport SureImport].each do |type|
+      %w[CategoryImport MerchantImport RuleImport].each do |type|
         post imports_path, params: { import: { type: type } }
         assert_equal I18n.t("shared.require_non_guest"), flash[:alert]
       end
@@ -71,7 +71,7 @@ class GuestReadOnlyConfigTest < ActionDispatch::IntegrationTest
   end
 
   test "guest cannot revert, cancel or delete a family configuration import" do
-    import = family_guest.family.imports.create!(type: "SureImport", status: :complete)
+    import = family_guest.family.imports.create!(type: "RuleImport", status: :complete)
     Import.any_instance.expects(:revert_later).never
     Import.any_instance.expects(:force_fail!).never
 

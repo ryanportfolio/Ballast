@@ -452,7 +452,6 @@ tr:
         actions:
           mark_stale: Eskimiş olarak işaretle
           mark_failed: Başarısız olarak işaretle
-          release_claim: Kilidi serbest bırak
       cancel:
         cancelled: '%{type} kayıp olarak işaretlendi.'
         not_cancellable: Bu işlem şu anda değiştirilemez — işi hâlâ kuyrukta veya çalışıyor olabilir. 30 dakika boşta kaldıktan sonra tekrar deneyin.

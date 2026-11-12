@@ -1,9 +1,5 @@
 ---
 fr:
-  import:
-    uploads:
-      handle_qif_upload:
-        qif_uploaded: Aucun
   number:
     currency:
       format:

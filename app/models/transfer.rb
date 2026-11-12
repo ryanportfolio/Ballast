@@ -23,7 +23,7 @@ class Transfer < ApplicationRecord
 
   class << self
     # The outflow leg's kind for a transfer into this account. Transfer::Creator,
-    # Family::DataImporter, auto-matching, rules and manual matches all call
+    # auto-matching, rules and manual matches all call
     # it (the inflow leg is always funds_movement, see kind_for_leg).
     # from_account: an investment/crypto destination only counts as a
     # contribution when the source isn't itself an investment/crypto account,

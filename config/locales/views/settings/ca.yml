@@ -386,7 +386,6 @@ ca:
         actions:
           mark_stale: Marca com a obsoleta
           mark_failed: Marca com a fallida
-          release_claim: Allibera el bloqueig
       cancel:
         cancelled: '%{type} s''ha marcat com a perdut.'
         not_cancellable: 'Ara mateix no es pot modificar aquesta operació: pot ser que la tasca encara estigui a la cua o en execució. Torna-ho a provar quan hagi estat inactiva durant 30 minuts.'

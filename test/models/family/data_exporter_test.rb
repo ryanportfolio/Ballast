@@ -496,7 +496,7 @@ class Family::DataExporterTest < ActiveSupport::TestCase
     end
   end
 
-  test "split rule round-trips through NDJSON into another family" do
+  test "exports a split rule to NDJSON without family-specific ids" do
     split_rule = create_split_rule!
 
     Zip::File.open_buffer(@exporter.generate_export) do |zip|
@@ -508,12 +508,6 @@ class Family::DataExporterTest < ActiveSupport::TestCase
       exported_value = JSON.parse(rule_line)["data"]["actions"].first["value"].to_json
       refute_includes exported_value, @category.id
       refute_includes exported_value, @tag.id
-
-      existing_category = @other_family.categories.create!(name: "Test Category", color: "#FF0000")
-
-      Family::DataImporter.new(@other_family, rule_line).import!
-
-      assert_imported_split_rule(split_rule.name, category: existing_category)
     end
   end
 
@@ -558,12 +552,6 @@ class Family::DataExporterTest < ActiveSupport::TestCase
       assert_not splits.first.key?("category")
       assert_not splits.first.key?("category_id")
       assert_equal [ "Test Tag" ], splits.first["tags"]
-
-      Family::DataImporter.new(@other_family, rule_line).import!
-
-      split = imported_split_config(split_rule.name).first
-      assert_nil split["category_id"]
-      assert_equal [ @other_family.tags.find_by!(name: "Test Tag").id ], split["tag_ids"]
     end
   end
 

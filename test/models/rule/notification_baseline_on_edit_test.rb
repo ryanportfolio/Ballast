@@ -135,57 +135,6 @@ class Rule::NotificationBaselineOnEditTest < ActiveSupport::TestCase
     end
   end
 
-  # Review of we-promise/sure#4150 (Codex, P1). Family::DataImporter clears an
-  # existing rule's conditions with destroy_all before it saves, so an import with
-  # no conditions left nothing for the rule to see changing, and a rule with no
-  # conditions matches every transaction.
-  test "a Sure re-import that removes every condition does not email existing matches" do
-    rule = create_email_rule(conditions: [ name_condition("coffee") ])
-    assert_equal [ @coffee.id ], delivered_ids(rule)
-
-    session = @family.import_sessions.create!(expected_chunks: 1)
-    session.source_mappings.create!(family: @family, source_type: "Rule", source_id: "rule-1", target: rule)
-    ndjson = {
-      type: "Rule", version: 1,
-      data: { id: "rule-1", name: "Everything", resource_type: "transaction", active: true,
-              conditions: [], actions: [ { action_type: "send_email_notification" } ] }
-    }.to_json
-    Family::DataImporter.new(@family, ndjson, import_session: session).import!
-    assert_empty rule.reload.conditions, "precondition: the import left the rule with no conditions"
-
-    # With no conditions the rule matches every transaction the family has, so the
-    # new baseline holds more than these two; Tea house joining it is the change.
-    assert_equal [], emailed_ids(rule) { run_rule(rule) }
-    assert_includes delivered_ids(rule), @tea.id
-  end
-
-  # Review of we-promise/sure#4150 (CodeRabbit). The importer replaces every
-  # condition, so each one reads as changing even when the record holds the same
-  # criteria. Re-seeding then would record a match still waiting for the next run
-  # as delivered, and it would never be emailed.
-  test "an identical Sure re-import still emails a pending match" do
-    rule = create_email_rule(conditions: [ compound_condition("and", name_condition("coffee"), name_condition("o")) ])
-    assert_equal [ @coffee.id ], delivered_ids(rule)
-    coffee_bar = create_transaction(date: Date.current, account: @account, amount: 5, name: "Coffee bar").transaction
-
-    session = @family.import_sessions.create!(expected_chunks: 1)
-    session.source_mappings.create!(family: @family, source_type: "Rule", source_id: "rule-1", target: rule)
-    ndjson = {
-      type: "Rule", version: 1,
-      data: { id: "rule-1", name: "Coffee alerts", resource_type: "transaction", active: true,
-              conditions: [ { condition_type: "compound", operator: "and",
-                              sub_conditions: [ name_condition("o"), name_condition("coffee") ] } ],
-              actions: [ { action_type: "send_email_notification" } ] }
-    }.to_json
-
-    assert_no_difference -> { NotificationDelivery.where(rule: rule).count } do
-      Family::DataImporter.new(@family, ndjson, import_session: session).import!
-    end
-    assert_equal "Coffee alerts", rule.reload.name, "precondition: the import updated this rule"
-
-    assert_equal [ coffee_bar.id ], emailed_ids(rule) { run_rule(rule) }
-  end
-
   test "renaming an email rule does not re-seed" do
     rule = create_email_rule(conditions: [ name_condition("coffee") ])
     coffee_bar = create_transaction(date: Date.current, account: @account, amount: 5, name: "Coffee bar").transaction

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Settings::BackgroundJobsController < Admin::BaseController
-  CANCELLABLE_BASE_TYPES = [ Sync, Import, ImportSession, FamilyExport ].freeze
+  CANCELLABLE_BASE_TYPES = [ Sync, Import, FamilyExport ].freeze
 
   def show
     @breadcrumbs = [
@@ -69,7 +69,6 @@ class Settings::BackgroundJobsController < Admin::BaseController
       case record
       when Sync then record.in_progress?
       when Import then record.importing? || record.reverting?
-      when ImportSession then record.importing?
       when FamilyExport then record.pending? || record.processing?
       end
     end
@@ -78,26 +77,10 @@ class Settings::BackgroundJobsController < Admin::BaseController
       case record
       when Sync
         record.mark_stale!
-      when PdfImport
-        if record.reverting?
-          # A stuck revert may have half-deleted entries — pending would
-          # present the import as publishable again. Route it through the
-          # same revert_failed retry path as every other import.
-          record.update!(status: :revert_failed, error: cancelled_error_message)
-        else
-          # importing is the AI-processing claim — release it so the user
-          # can re-trigger, mirroring ProcessPdfJob's own reclaim.
-          record.update!(status: :pending)
-        end
       when Import
         record.update!(
           status: record.reverting? ? :revert_failed : :failed,
           error: cancelled_error_message
-        )
-      when ImportSession
-        record.update!(
-          status: :failed,
-          error_details: { "code" => "cancelled_by_admin", "message" => cancelled_error_message }
         )
       when FamilyExport
         record.update!(status: :failed)

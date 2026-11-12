@@ -1,13 +1,9 @@
 class Import::CategoryMapping < Import::Mapping
   class << self
     def mappables_by_key(import)
-      unique_values = if import.is_a?(QifImport)
-        import.row_categories
-      else
-        import.rows.map(&:category).uniq
-      end
+      unique_values = import.rows.map(&:category).uniq
 
-      # For hierarchical QIF keys like "Home:Home Improvement", look up the child
+      # For hierarchical keys like "Home:Home Improvement", look up the child
       # name ("Home Improvement") since category names are unique per family.
       lookup_names = unique_values.map { |v| leaf_category_name(v) }
       categories = import.family.categories.where(name: lookup_names).index_by(&:name)

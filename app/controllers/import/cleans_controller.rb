@@ -5,8 +5,7 @@ class Import::CleansController < ApplicationController
 
   def show
     unless @import.configured?
-      redirect_path = @import.is_a?(PdfImport) ? import_path(@import) : import_configuration_path(@import)
-      return redirect_to redirect_path, alert: t(".not_configured")
+      return redirect_to import_configuration_path(@import), alert: t(".not_configured")
     end
 
     rows = @import.rows_ordered

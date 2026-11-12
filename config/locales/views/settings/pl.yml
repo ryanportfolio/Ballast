@@ -87,7 +87,6 @@ pl:
         actions:
           mark_failed: Oznacz jako nieudane
           mark_stale: Oznacz jako nieaktualne
-          release_claim: Zwolnij przypisanie
         ago: "%{time} temu"
         confirm: Oznaczyć tę operację jako utraconą? Rekord zostanie przeniesiony
           do statusu końcowego, aby można było spróbować ponownie. Dane źródłowe pozostają

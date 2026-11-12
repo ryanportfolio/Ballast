@@ -109,7 +109,7 @@ class AutoMatchesController < ApplicationController
       family_transaction_ids = Current.family.transactions.select(:id)
       # Only clean up genuine auto-match suggestions -- both legs still
       # kind == "standard". A pending transfer imported with a kind already
-      # set (Family::DataImporter, Demo::Generator) isn't an auto-match
+      # set (Demo::Generator) isn't an auto-match
       # suggestion, so the toggle leaves it in place.
       Transfer.pending
         .where(inflow_transaction_id: family_transaction_ids)

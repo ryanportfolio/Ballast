@@ -123,7 +123,7 @@ RSpec.describe 'API V1 Imports', type: :request do
     end
 
     post 'Create import' do
-      description 'Create a new import from raw CSV content, inline Sure NDJSON content, or an uploaded Sure NDJSON file. CSV content is limited to 10MB.'
+      description 'Create a new import from raw CSV content or an uploaded CSV file. CSV content is limited to 10MB.'
       tags 'Imports'
       security [ { apiKeyAuth: [] } ]
       consumes 'application/json', 'multipart/form-data'
@@ -134,7 +134,7 @@ RSpec.describe 'API V1 Imports', type: :request do
         properties: {
           raw_file_content: {
             type: :string,
-            description: 'Raw CSV or Sure NDJSON content as a string. CSV content is limited to 10MB. Required for SureImport unless a multipart file is uploaded.'
+            description: 'Raw CSV content as a string. CSV content is limited to 10MB.'
           },
           type: {
             type: :string,
@@ -284,33 +284,6 @@ RSpec.describe 'API V1 Imports', type: :request do
 
         run_test!
       end
-
-      response '500', 'import uploaded but publish enqueue failed' do
-        schema '$ref' => '#/components/schemas/ErrorResponseWithImportId'
-
-        before do
-          allow(ImportJob).to receive(:perform_later).and_raise(StandardError, 'queue offline')
-        end
-
-        let(:body) do
-          {
-            raw_file_content: {
-              type: 'Account',
-              data: {
-                id: 'account_1',
-                name: 'Checking',
-                balance: '100',
-                currency: 'USD',
-                accountable_type: 'Depository'
-              }
-            }.to_json,
-            type: 'SureImport',
-            publish: 'true'
-          }
-        end
-
-        run_test!
-      end
     end
   end
 
@@ -318,7 +291,7 @@ RSpec.describe 'API V1 Imports', type: :request do
     parameter name: :id, in: :path, type: :string, required: true, description: 'Import ID'
 
     get 'Retrieve an import' do
-      description 'Retrieve detailed information about a specific import, including configuration, row statistics, and SureImport readback verification when available.'
+      description 'Retrieve detailed information about a specific import, including configuration and row statistics.'
       tags 'Imports'
       security [ { apiKeyAuth: [] } ]
       produces 'application/json'
@@ -400,7 +373,7 @@ RSpec.describe 'API V1 Imports', type: :request do
 
   path '/api/v1/imports/preflight' do
     post 'Validate import content without creating an import' do
-      description 'Validate CSV or Sure NDJSON import content and return counts, headers, warnings, and validation errors without persisting an import or enqueueing jobs. CSV content is limited to 10MB.'
+      description 'Validate CSV import content and return counts, headers, warnings, and validation errors without persisting an import or enqueueing jobs. CSV content is limited to 10MB.'
       tags 'Imports'
       security [ { apiKeyAuth: [] } ]
       consumes 'application/json', 'multipart/form-data'
@@ -411,12 +384,12 @@ RSpec.describe 'API V1 Imports', type: :request do
         properties: {
           raw_file_content: {
             type: :string,
-            description: 'Raw CSV or Sure NDJSON content as a string. CSV content is limited to 10MB.'
+            description: 'Raw CSV content as a string. CSV content is limited to 10MB.'
           },
           file: {
             type: :string,
             format: :binary,
-            description: 'CSV or Sure NDJSON upload when using multipart/form-data. CSV files are limited to 10MB.'
+            description: 'CSV upload when using multipart/form-data. CSV files are limited to 10MB.'
           },
           type: {
             type: :string,
@@ -501,7 +474,7 @@ RSpec.describe 'API V1 Imports', type: :request do
 
       response '422', 'missing or invalid content' do
         schema '$ref' => '#/components/schemas/ErrorResponse'
-        let(:body) { { type: 'SureImport' } }
+        let(:body) { { type: 'TransactionImport' } }
 
         run_test!
       end

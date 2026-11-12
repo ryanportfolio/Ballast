@@ -8,9 +8,7 @@ class SyncCleanerJob < ApplicationJob
   def perform
     sweep("syncs") { Sync.clean }
     sweep("imports") { Import.clean }
-    sweep("import_sessions") { ImportSession.clean }
     sweep("family_exports") { FamilyExport.clean }
-    sweep("pdf_imports") { PdfImport.clean }
   end
 
   private

@@ -15,8 +15,6 @@ pt-BR:
         description: Faça o upload de um arquivo CSV simples (como o que geramos quando você
           exporta seus dados). Mapearemos as colunas automaticamente para você.
         instructions: Selecione continuar para processar seu CSV e avançar para a etapa de limpeza.
-      mint_import:
-        date_format_label: Formato da data
       show:
         description: Selecione as colunas que correspondem a cada campo no seu CSV.
         title: Configurar sua importação
@@ -91,7 +89,6 @@ pt-BR:
         de nossos modelos de importação, como o do Mint.
       import_accounts: Importar contas
       import_categories: Importar categorias
-      import_mint: Importar do Mint
       import_portfolio: Importar investimentos
       import_transactions: Importar transações
       resume: Retomar %{type}
@@ -103,6 +100,5 @@ pt-BR:
       title: Confirmar seus dados de importação
       summary_item_label: Item
       summary_count_label: Quantidade
-      empty_summary: Não foi possível encontrar registros importáveis neste arquivo. Ele pode estar vazio, ou as linhas não correspondem ao formato de exportação esperado (cada linha deve ser um objeto JSON com as chaves «type» e «data», usando tipos suportados por esta importação).
       publish_import: Publicar importação
       back_to_imports: Voltar às importações

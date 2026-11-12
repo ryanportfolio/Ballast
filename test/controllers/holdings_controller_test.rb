@@ -243,7 +243,7 @@ class HoldingsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "remap_security brings offline security back online" do
-    # Given: the target security is marked offline (e.g. created by a failed QIF import)
+    # Given: the target security is marked offline (e.g. created by a failed import)
     msft = securities(:msft)
     msft.update!(offline: true, failed_fetch_count: 3)
 

@@ -2,7 +2,7 @@ require "sidekiq/api"
 
 # Backs the super-admin background jobs console (/settings/background_jobs).
 #
-# Combines domain truth (in-flight Sync / Import / ImportSession / FamilyExport
+# Combines domain truth (in-flight Sync / Import / FamilyExport
 # records across all families) with Sidekiq runtime truth (worker processes,
 # queue depths, jobs currently executing) so an operator can tell a running
 # job from one whose worker died and mark the latter as lost.
@@ -48,8 +48,7 @@ class BackgroundJobConsole
   def operations
     @operations ||= [
       Sync.incomplete.includes(:syncable).order(updated_at: :desc).limit(OPERATIONS_LIMIT).to_a,
-      Import.where(status: [ :importing, :reverting ]).includes(:family).order(updated_at: :desc).limit(OPERATIONS_LIMIT).to_a,
-      ImportSession.where(status: :importing).includes(:family).order(updated_at: :desc).limit(OPERATIONS_LIMIT).to_a,
+      Import.where(type: Import::TYPES, status: [ :importing, :reverting ]).includes(:family).order(updated_at: :desc).limit(OPERATIONS_LIMIT).to_a,
       FamilyExport.where(status: [ :pending, :processing ]).includes(:family).order(updated_at: :desc).limit(OPERATIONS_LIMIT).to_a
     ].flatten.sort_by(&:updated_at).reverse
   end

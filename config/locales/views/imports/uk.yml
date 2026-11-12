@@ -1,38 +1,6 @@
 ---
 uk:
   import:
-    qif_category_selections:
-      update:
-        success: "Категорії та теги збережено."
-      show:
-        title: "Налаштувати та вибрати"
-        description: "Перегляньте виявлений формат дати, а потім виберіть, які категорії та теги з вашого файлу QIF перенести до %{product_name}."
-        categories_heading: "Категорії"
-        categories_found:
-          one: "Знайдено %{count} категорію"
-          other: "Знайдено %{count} категорій"
-          few: Знайдено %{count} категорії
-          many: Знайдено %{count} категорій
-        category_name_col: "Назва категорії"
-        transactions_col: "Транзакції"
-        tags_heading: "Теги"
-        tags_found:
-          one: "Знайдено %{count} тег"
-          other: "Знайдено %{count} тегів"
-          few: Знайдено %{count} теги
-          many: Знайдено %{count} тегів
-        tag_name_col: "Назва тегу"
-        txn_count:
-          one: "%{count} транзакція"
-          other: "%{count} транзакцій"
-          few: '%{count} транзакції'
-          many: '%{count} транзакцій'
-        split_warning_title: "Виявлено розділені транзакції"
-        split_warning_description: "Цей файл QIF містить розділені транзакції. Перед імпортом перевірте виявлені категорії та теги розділень нижче."
-        split_badge: "розділено"
-        empty_state_primary: "У цьому файлі QIF не знайдено категорій або тегів."
-        empty_state_secondary: "Всі транзакції будуть імпортовані без категорій або тегів."
-        submit: "Перейти до перевірки"
     cleans:
       show:
         not_configured: "Будь ласка, налаштуйте імпорт перед продовженням."
@@ -117,47 +85,6 @@ uk:
         button_label: "Продовжити"
         description: "Завантажте CSV-файл з вашими продавцями. Ми автоматично зіставимо стовпці для вас."
         instructions: "Виберіть «Продовжити», щоб розібрати ваш CSV і перейти до кроку очищення."
-      mint_import:
-        date_format_label: "Формат дати"
-        account_optional: Рахунок (необов'язково)
-        amount: Сума
-        apply_configuration: Застосувати конфігурацію
-        category_optional: Категорія (необов'язково)
-        currency: Валюта
-        date: Дата
-        format: Формат
-        incomes_negative: Доходи є від'ємними
-        incomes_positive: Доходи є додатними
-        intro: Ми попередньо налаштували ваш імпорт Mint. Перейдіть до наступного кроку.
-        leave_empty: Залишити порожнім
-        name_optional: Назва (необов'язково)
-        select_format: Вибрати формат
-        tags_optional: Теги (необов'язково)
-      actual_import:
-        preconfigured_notice: "Ми попередньо налаштували ваш імпорт Actual Budget для вас. Будь ласка, перейдіть до наступного кроку."
-        leave_empty: "Залишити порожнім"
-        date_label: "Дата"
-        date_format_label: "Формат дати"
-        amount_label: "Сума"
-        signage_convention_label: "Правило знаків"
-        incomes_are_negative: "Доходи є від'ємними"
-        incomes_are_positive: "Доходи є додатними"
-        account_label: "Рахунок (необов'язково)"
-        name_label: "Одержувач (необов'язково)"
-        category_label: "Категорія (необов'язково)"
-        notes_label: "Нотатки (необов'язково)"
-        apply_configuration: "Застосувати конфігурацію"
-      ynab_import:
-        preconfigured_notice: "Ми попередньо налаштували ваш імпорт YNAB для вас. Будь ласка, перейдіть до наступного кроку."
-        amount_notice: "Суми визначаються автоматично зі стовпців «Відтік» та «Надходження»."
-        leave_empty: "Залишити порожнім"
-        date_label: "Дата"
-        date_format_label: "Формат дати"
-        account_label: "Рахунок (необов'язково)"
-        name_label: "Одержувач (необов'язково)"
-        category_label: "Категорія (необов'язково)"
-        notes_label: "Примітка (необов'язково)"
-        apply_configuration: "Застосувати конфігурацію"
       rule_import:
         description: "Налаштуйте імпорт правил. Правила будуть створені або оновлені на основі даних CSV."
         process_button: "Обробити правила"
@@ -171,13 +98,6 @@ uk:
         apply_template: Застосувати шаблон
         sample_caption: Зразок даних із завантаженого CSV
     confirms:
-      sure_import:
-        title: "Підтвердьте свій імпорт"
-        description: "Перегляньте дані, які будуть імпортовані з вашого файлу експорту."
-        summary: "Підсумок імпорту"
-        empty_summary: "Ми не змогли знайти жодних записів для імпорту в цьому файлі. Він може бути порожнім, або рядки можуть не відповідати очікуваному формату експорту (кожен рядок має бути об'єктом JSON з ключами «type» та «data», використовуючи типи, які підтримує цей імпорт)."
-        publish_button: "Почати імпорт"
-        cancel: "Скасувати"
       mappings:
         create_account: "Створити рахунок"
         csv_mapping_label: "%{mapping} у CSV"
@@ -197,11 +117,6 @@ uk:
         tag_mapping_description: "Призначте всі теги вашого імпортованого файлу існуючим тегам %{product_name}. Ви також можете додати нові теги або залишити їх без категорії."
         tag_mapping_title: "Призначте свої теги"
     uploads:
-      handle_qif_upload:
-        qif_uploaded: "Файл QIF успішно завантажено."
-        qif_account_required: Виберіть рахунок для імпорту QIF
-      update:
-        qif_uploaded: "Файл QIF успішно завантажено."
       show:
         csv_invalid: "Має бути дійсний CSV із заголовками та принаймні одним рядком даних"
         drop_csv_title: "Перетягніть CSV для завантаження"
@@ -214,13 +129,6 @@ uk:
         paste_csv_placeholder: "Вставте вміст вашого CSV-файлу сюди"
         download_sample_csv: "Завантажити зразок CSV"
         to_see_format: "щоб побачити необхідний формат CSV"
-        qif_title: "Завантажити файл QIF"
-        qif_description: "Виберіть рахунок, до якого належить цей файл QIF, а потім завантажте свій експорт .qif з Quicken."
-        qif_account_label: "Рахунок"
-        qif_account_placeholder: "Вибрати рахунок…"
-        qif_file_prompt: "щоб додати свій файл QIF сюди"
-        qif_file_hint: "лише файли .qif"
-        qif_submit: "Завантажити QIF"
         browse: "Огляд"
         csv_file_prompt: "щоб додати свій CSV-файл сюди"
         description: "Вставте або завантажте свій CSV-файл нижче. Будь ласка, перегляньте інструкції в таблиці нижче перед початком."
@@ -230,16 +138,6 @@ uk:
         instructions_4: "Стовпці, позначені зірочкою (*), є обов'язковими даними."
         instructions_5: "Без ком, без символів валют і без дужок у числах."
         title: "Імпортуйте свої дані"
-      sure_import:
-        title: "Імпорт з експорту"
-        description: "Завантажте файл all.ndjson з вашого експорту даних, щоб відновити свої рахунки, транзакції, категорії тощо."
-        drop_title: "Перетягніть NDJSON для завантаження"
-        drop_subtitle: "Ваш файл буде завантажено автоматично"
-        browse: "Огляд"
-        browse_hint: "щоб додати свій файл all.ndjson сюди"
-        upload_button: "Завантажити NDJSON"
-        hint_html: "Завантажте файл <strong>all.ndjson</strong> з вашого ZIP-архіву експорту даних"
-        ndjson_invalid: "Має бути дійсний NDJSON принаймні з одним записом"
   imports:
     mapping_labels:
       account_type: "Тип рахунку"
@@ -248,20 +146,11 @@ uk:
       tag: "Тег"
     dry_run_resources:
       transactions: "Транзакції"
-      balances: "Баланси"
       accounts: "Рахунки"
       categories: "Категорії"
       tags: "Теги"
       rules: "Правила"
       merchants: "Продавці"
-      recurring_transactions: "Повторювані транзакції"
-      transfers: "Перекази"
-      rejected_transfers: "Відхилені перекази"
-      trades: "Угоди"
-      holdings: "Активи"
-      valuations: "Оцінки"
-      budgets: "Бюджети"
-      budget_categories: "Бюджетні категорії"
     column_labels:
       date: "Дата"
       amount: "Сума"
@@ -281,10 +170,6 @@ uk:
       category_icon: "Іконка Lucide"
       merchant_color: "Колір"
       merchant_website: "URL-адреса веб-сайту"
-    update:
-      account_saved: "Рахунок збережено."
-      invalid_account: "Рахунок не знайдено."
-      account_locked: Цей імпорт уже застосовано, тому його рахунок змінити не можна. Якщо потрібно імпортувати дані в інше місце, спершу скасуйте імпорт.
     publish:
       started: "Ваш імпорт розпочато у фоновому режимі."
       max_rows_exceeded: "Ваш імпорт перевищує максимальну кількість рядків %{max}."
@@ -306,16 +191,6 @@ uk:
       title: "Імпорт успішний"
       description: "Ваші імпортовані дані успішно додано до програми та готові до використання."
       back_to_dashboard: "Повернутися на головну"
-      verification:
-        title: "Перевірка зчитування"
-        checked: "Перевірено"
-        mismatches: "Невідповідності"
-        status:
-          not_verified: "Не перевірено"
-          matched: "Збігається"
-          mismatch: "Невідповідність"
-          failed: "Не вдалося"
-          reverted: "Скасовано"
     importing:
       title: "Імпорт у процесі"
       description: "Ваш імпорт у процесі. Перевірте меню імпорту для оновлення статусу або натисніть «Перевірити статус», щоб оновити сторінку для оновлень. Не соромтеся продовжувати користуватися програмою."
@@ -325,33 +200,19 @@ uk:
       title: "Не вдалося скасувати імпорт"
       description: "Будь ласка, спробуйте ще раз"
       try_again: "Спробувати ще раз"
-    date_format:
-      heading: "Формат дати"
-      description: "Формат дати було автоматично визначено з вашого файлу. Змініть його, якщо дати виглядають неправильно."
-      preview: "Перша розібрана дата"
-      error_title: "Не вдалося визначити формат дати"
-      error_description: "Жоден з підтримуваних форматів дати не зміг розібрати дати в цьому файлі. Будь ласка, перевірте, чи містить файл дійсні записи дат."
     type_labels:
       transaction_import: "Імпорт транзакцій"
       trade_import: "Імпорт угод"
       account_import: "Імпорт рахунків"
-      mint_import: "Імпорт Mint"
-      actual_import: "Імпорт Actual"
-      ynab_import: "Імпорт YNAB"
-      qif_import: "Імпорт QIF"
       category_import: "Імпорт категорій"
       rule_import: "Імпорт правил"
       merchant_import: "Імпорт продавців"
-      pdf_import: "Імпорт PDF"
-      document_import: "Імпорт документів"
-      sure_import: "Імпорт Sure"
     steps:
       upload: "Завантажити"
       configure: "Налаштувати"
       clean: "Очистити"
       map: "Зіставити"
       confirm: "Підтвердити"
-      select: "Вибрати"
       progress: "Крок %{step} з %{total}"
       label: Крок %{step}
     empty:
@@ -371,16 +232,9 @@ uk:
           transaction_import: "Транзакція"
           trade_import: "Угода"
           account_import: "Рахунок"
-          mint_import: "Mint"
-          actual_import: "Actual"
-          ynab_import: "YNAB"
-          qif_import: "QIF"
           category_import: "Категорія"
           rule_import: "Правило"
           merchant_import: "Продавець"
-          pdf_import: "PDF"
-          document_import: "Документ"
-          sure_import: "Sure"
         status:
           in_progress: "В процесі"
           uploading: "Обробка рядків"
@@ -398,22 +252,12 @@ uk:
       empty: "Імпорту ще немає."
     new:
       description: "Імпортуйте з фінансового інструменту або завантажуйте файли необроблених даних."
-      tab_financial_tools: "Фінансові інструменти та файли"
-      tab_raw_data: "Необроблені дані"
-      import_ynab: "Імпорт з YNAB"
       import_accounts: "Імпорт рахунків"
       import_categories: "Імпорт категорій"
       import_merchants: "Імпорт продавців"
-      import_mint: "Імпорт з Mint"
-      import_actual: "Імпорт з Actual Budget"
       import_portfolio: "Імпорт інвестицій"
       import_rules: "Імпорт правил"
       import_transactions: "Імпорт транзакцій"
-      import_qif: "Імпорт з Quicken (QIF)"
-      import_sure: "Імпорт з Sure"
-      import_sure_description: "Файл .ndjson повного експорту"
-      import_file: "Імпорт документа"
-      import_file_description: "Аналіз на основі ШІ для PDF та завантаження файлів з можливістю пошуку"
       requires_account: "Спочатку імпортуйте рахунки, щоб розблокувати цю опцію."
       resume: "Відновити %{type}"
       sources: "Джерела"
@@ -422,17 +266,6 @@ uk:
       file_too_large: "Файл завеликий. Максимальний розмір — %{max_size}MB."
       invalid_file_type: "Недійсний тип файлу. Будь ласка, завантажте CSV-файл."
       csv_uploaded: "CSV успішно завантажено."
-      ndjson_uploaded: "Файл NDJSON успішно завантажено."
-      pdf_too_large: "PDF-файл завеликий. Максимальний розмір — %{max_size}MB."
-      pdf_processing: "Ваш PDF обробляється. Ви отримаєте електронний лист, коли аналіз буде завершено."
-      invalid_pdf: "Завантажений файл не є дійсним PDF."
-      duplicate_pdf_unavailable: "Цей PDF уже збережено як виписку, до якої ви не маєте доступу."
-      document_too_large: "Файл документа завеликий. Максимальний розмір — %{max_size}MB."
-      invalid_document_file_type: "Недійсний тип файлу документа для активного векторного сховища."
-      document_uploaded: "Документ успішно завантажено."
-      document_upload_failed: "Не вдалося завантажити документ до векторного сховища. Будь ласка, спробуйте ще раз."
-      invalid_ndjson_file_type: "Недійсний тип файлу або формат. Будь ласка, завантажте дійсний файл експорту .ndjson або .json."
-      document_provider_not_configured: "Не налаштовано векторне сховище для завантаження документів."
     show:
       finalize_upload: "Будь ласка, завершіть завантаження файлу."
       finalize_mappings: "Будь ласка, завершіть зіставлення перед продовженням."
@@ -441,94 +274,9 @@ uk:
       title: "Підтвердьте дані імпорту"
       summary_item_label: "Елемент"
       summary_count_label: "Кількість"
-      empty_summary: "Ми не змогли знайти жодних записів для імпорту в цьому файлі. Він може бути порожнім, або рядки можуть не відповідати очікуваному формату експорту (кожен рядок має бути об'єктом JSON з ключами «type» та «data», використовуючи типи, які підтримує цей імпорт)."
       publish_import: "Застосувати імпорт"
       back_to_imports: "Назад до імпорту"
     errors:
       custom_column_requires_inflow: "Імпорт користувацьких стовпців вимагає вибору стовпця надходжень"
       presumed_lost: "Позначено як невдалий після того, як фонове завдання було визнано втраченим. Імпортовані дані було скасовано — ви можете безпечно спробувати ще раз."
       interrupted: Фоновий обробник було перервано до завершення. Імпортовані дані відкочено — можна спокійно спробувати ще раз.
-    document_types:
-      bank_statement: "Банківська виписка"
-      credit_card_statement: "Виписка по кредитній картці"
-      investment_statement: "Інвестиційна виписка"
-      financial_document: "Фінансовий документ"
-      contract: "Контракт"
-      other: "Інший документ"
-      unknown: "Невідомий документ"
-    pdf_import:
-      processing_title: "Обробка вашого PDF"
-      processing_description: "Ми аналізуємо ваш документ за допомогою ШІ. Це може зайняти деякий час. Ви отримаєте електронний лист, коли аналіз буде завершено."
-      check_status: "Перевірити статус"
-      back_to_dashboard: "Повернутися на головну"
-      failed_title: "Обробка не вдалася"
-      failed_description: "Не вдалося обробити ваш PDF-документ. Будь ласка, спробуйте ще раз або зверніться до служби підтримки."
-      try_again: "Спробувати ще раз"
-      delete_import: "Видалити імпорт"
-      complete_title: "Документ проаналізовано"
-      complete_description: "Ми проаналізували ваш PDF, і ось що ми знайшли."
-      document_type_label: "Тип документа"
-      source_statement: "Джерело виписки"
-      summary_label: "Підсумок"
-      email_sent_notice: "Вам надіслано електронний лист з подальшими кроками."
-      back_to_imports: "Назад до імпорту"
-      unknown_state_title: "Невідомий стан"
-      unknown_state_description: "Цей імпорт перебуває в неочікуваному стані. Будь ласка, поверніться до імпорту."
-      processing_failed_with_message: "%{message}"
-      processing_failed_generic: "Обробка не вдалася: %{error}"
-      ready_for_review_title: "Готово до перевірки"
-      ready_for_review_description:
-        one: "%{count} транзакція з вашої виписки ще не додана на цей рахунок. Перегляньте її та додайте."
-        few: "%{count} транзакції з вашої виписки ще не додані на цей рахунок. Перегляньте їх та додайте."
-        many: "%{count} транзакцій з вашої виписки ще не додані на цей рахунок. Перегляньте їх та додайте."
-        other: "%{count} транзакції з вашої виписки ще не додані на цей рахунок. Перегляньте їх та додайте."
-      transactions_extracted: "Витягнуті транзакції"
-      transactions_extracted_count:
-        one: "%{count} транзакція"
-        other: "%{count} транзакцій"
-        few: '%{count} транзакції'
-        many: '%{count} транзакцій'
-      select_account: "Імпортувати до рахунку"
-      select_account_placeholder: "Вибрати рахунок..."
-      select_account_hint: "Виберіть, до якого рахунку імпортувати ці транзакції."
-      no_accounts: "Немає доступних рахунків. Будь ласка, спочатку створіть рахунок."
-      create_account: "Створити рахунок"
-      save_account: "Зберегти"
-      publish_transactions:
-        one: "Додати %{count} транзакцію"
-        other: "Додати %{count} транзакцій"
-        few: Додати %{count} транзакції
-        many: Додати %{count} транзакцій
-      review_transactions: "Переглянути транзакції"
-      select_account_to_continue: "Будь ласка, виберіть рахунок вище, щоб продовжити."
-      unknown_document_type: "Невідомо"
-      errors:
-        provider_not_configured: Постачальника ШІ не налаштовано
-        provider_no_pdf_support: Постачальник ШІ не підтримує обробку PDF
-      view_summary: Переглянути підсумок імпорту
-      already_recorded_note:
-        one: '%{count} транзакція вже була на цьому рахунку й була зіставлена з випискою.'
-        few: '%{count} транзакції вже були на цьому рахунку й були зіставлені з випискою.'
-        many: '%{count} транзакцій уже були на цьому рахунку й були зіставлені з випискою.'
-        other: '%{count} транзакції вже були на цьому рахунку й були зіставлені з випискою.'
-      complete_fully_reconciled:
-        one: Усі транзакції з цієї виписки вже були на вашому рахунку. %{count} транзакцію зіставлено й позначено як звірену — нічого не потрібно було імпортувати.
-        few: Усі транзакції з цієї виписки вже були на вашому рахунку. Усі %{count} зіставлено й позначено як звірені — нічого не потрібно було імпортувати.
-        many: Усі транзакції з цієї виписки вже були на вашому рахунку. Усі %{count} зіставлено й позначено як звірені — нічого не потрібно було імпортувати.
-        other: Усі транзакції з цієї виписки вже були на вашому рахунку. Усі %{count} зіставлено й позначено як звірені — нічого не потрібно було імпортувати.
-    summary:
-      title: Підсумок імпорту
-      subtitle: Що сталося з кожною транзакцією з цієї виписки в %{account}.
-      subtitle_no_account: Що сталося з кожною транзакцією з цієї виписки.
-      extracted: Знайдено у виписці
-      already_recorded: Уже записано
-      already_recorded_hint: Зіставлено з транзакцією, яка вже була на цьому рахунку, і позначено як звірену.
-      imported: Імпортовано як нові
-      awaiting_review: Очікують імпорту
-      fully_reconciled:
-        one: Нічого не потрібно було імпортувати — %{count} транзакція з виписки вже була записана.
-        few: Нічого не потрібно було імпортувати — усі %{count} транзакції вже були записані.
-        many: Нічого не потрібно було імпортувати — усі %{count} транзакцій уже були записані.
-        other: Нічого не потрібно було імпортувати — усі %{count} транзакції вже були записані.
-      statement_evidence_html: Звірено з %{statement}.
-      close: Закрити

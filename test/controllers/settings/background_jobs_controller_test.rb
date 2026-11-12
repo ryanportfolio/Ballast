@@ -63,17 +63,6 @@ class Settings::BackgroundJobsControllerTest < ActionDispatch::IntegrationTest
     assert_equal users(:sure_support_staff).id, entry.metadata["actor_user_id"]
   end
 
-  test "cancel releases a stuck PdfImport claim back to pending" do
-    sign_in users(:sure_support_staff)
-
-    pdf = imports(:pdf)
-    pdf.update_columns(status: "importing", updated_at: 1.hour.ago)
-
-    post cancel_settings_background_jobs_path(record_type: "Import", id: pdf.id)
-
-    assert_equal "pending", pdf.reload.status
-  end
-
   test "cancel marks a stuck sync as stale" do
     sign_in users(:sure_support_staff)
 
@@ -122,17 +111,6 @@ class Settings::BackgroundJobsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to settings_background_jobs_path
     assert_equal "failed", import.reload.status
-  end
-
-  test "cancel routes a stuck PdfImport revert to revert_failed, not pending" do
-    sign_in users(:sure_support_staff)
-
-    pdf = imports(:pdf)
-    pdf.update_columns(status: "reverting", updated_at: 1.hour.ago)
-
-    post cancel_settings_background_jobs_path(record_type: "Import", id: pdf.id)
-
-    assert_equal "revert_failed", pdf.reload.status
   end
 
   test "cancel refuses when the record's job is waiting in a queue" do

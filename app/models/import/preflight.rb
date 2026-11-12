@@ -43,8 +43,7 @@ class Import::Preflight
     :raw_file_content
   ] + CONFIG_PARAM_KEYS).freeze
 
-  UNSUPPORTED_PREFLIGHT_IMPORT_TYPES = %w[PdfImport QifImport].freeze
-  IMPORT_TYPES = (Import::TYPES - UNSUPPORTED_PREFLIGHT_IMPORT_TYPES).freeze
+  IMPORT_TYPES = Import::TYPES
 
   def initialize(family:, params:)
     @family = family
@@ -55,7 +54,7 @@ class Import::Preflight
     type = preflight_import_type
     return invalid_import_type_response unless type
 
-    type == "SureImport" ? sure_import_response : csv_import_response(type)
+    csv_import_response(type)
   rescue PreflightError => e
     Response.new(status: e.status, payload: e.payload)
   end
@@ -80,19 +79,6 @@ class Import::Preflight
       )
     end
 
-    def sure_import_response
-      upload_attributes = sure_import_upload_attributes
-      return missing_sure_content_response unless upload_attributes
-
-      content, filename, content_type = upload_attributes
-      Response.new(
-        status: :ok,
-        payload: {
-          data: sure_import_preflight_payload(content, filename, content_type)
-        }
-      )
-    end
-
     def csv_import_response(type)
       upload_attributes = csv_upload_attributes
       return missing_csv_content_response unless upload_attributes
@@ -101,8 +87,6 @@ class Import::Preflight
       import = family.imports.build(import_config_params.merge(type: type, raw_file_str: content))
       import.account = preflight_account if params[:account_id].present?
       apply_import_defaults(import)
-
-      return unsupported_import_type_response unless import.requires_csv_workflow?
 
       unless import.valid?
         return Response.new(
@@ -202,59 +186,6 @@ class Import::Preflight
       [ content, "import.csv", "text/csv" ]
     end
 
-    def sure_import_upload_attributes
-      if params[:file].present?
-        sure_import_file_upload_attributes(params[:file])
-      elsif params[:raw_file_content].present?
-        sure_import_raw_content_attributes(params[:raw_file_content].to_s)
-      end
-    end
-
-    def sure_import_file_upload_attributes(file)
-      raise_response sure_file_too_large_response if file.size > SureImport.max_ndjson_size
-
-      extension = File.extname(file.original_filename.to_s).downcase
-      unless SureImport::ALLOWED_NDJSON_CONTENT_TYPES.include?(file.content_type) || extension.in?(%w[.ndjson .json])
-        raise_response invalid_sure_file_type_response
-      end
-
-      [
-        file.read,
-        file.original_filename.presence || "sure-import.ndjson",
-        file.content_type.presence || "application/x-ndjson"
-      ]
-    end
-
-    def sure_import_raw_content_attributes(content)
-      raise_response sure_content_too_large_response if content.bytesize > SureImport.max_ndjson_size
-
-      [ content, "sure-import.ndjson", "application/x-ndjson" ]
-    end
-
-    def sure_import_preflight_payload(content, filename, content_type)
-      result = SureImport::Preflight.new(
-        family: family,
-        content: content
-      ).call
-      stats = result.stats
-      # result.warnings are {code, message} hashes internally, but the published
-      # OpenAPI contract documents preflight warnings as strings. Surface the
-      # human-readable message at the API boundary so the array stays homogeneous and
-      # contract-generated clients can still deserialize it.
-      warnings = result.warnings.map { |warning| warning.is_a?(Hash) ? warning[:message] : warning }
-      warnings << "No importable records were found." if stats[:rows_count].positive? && (stats[:entity_counts] || {}).values.sum.zero?
-      warnings << "Row count exceeds this import type's publish limit." if stats[:rows_count] > SureImport.max_row_count
-
-      {
-        type: "SureImport",
-        valid: result.valid?,
-        content: content_payload(filename, content_type, content),
-        stats: stats,
-        errors: result.errors,
-        warnings: warnings
-      }
-    end
-
     def content_payload(filename, content_type, content)
       {
         filename: filename,
@@ -325,16 +256,6 @@ class Import::Preflight
       )
     end
 
-    def missing_sure_content_response
-      Response.new(
-        status: :unprocessable_entity,
-        payload: {
-          error: "missing_content",
-          message: "Provide a Sure NDJSON file or raw_file_content."
-        }
-      )
-    end
-
     def csv_file_too_large_response
       Response.new(
         status: :unprocessable_entity,
@@ -365,47 +286,7 @@ class Import::Preflight
       )
     end
 
-    def sure_file_too_large_response
-      Response.new(
-        status: :unprocessable_entity,
-        payload: {
-          error: "file_too_large",
-          message: "File is too large. Maximum size is #{SureImport.max_ndjson_size / 1.megabyte}MB."
-        }
-      )
-    end
-
-    def sure_content_too_large_response
-      Response.new(
-        status: :unprocessable_entity,
-        payload: {
-          error: "content_too_large",
-          message: "Content is too large. Maximum size is #{SureImport.max_ndjson_size / 1.megabyte}MB."
-        }
-      )
-    end
-
-    def invalid_sure_file_type_response
-      Response.new(
-        status: :unprocessable_entity,
-        payload: {
-          error: "invalid_file_type",
-          message: "Invalid file type. Please upload a Sure NDJSON file."
-        }
-      )
-    end
-
     def raise_response(response)
       raise PreflightError, response
-    end
-
-    def unsupported_import_type_response
-      Response.new(
-        status: :unprocessable_entity,
-        payload: {
-          error: "unsupported_import_type",
-          message: "Preflight supports CSV import types and SureImport."
-        }
-      )
     end
 end

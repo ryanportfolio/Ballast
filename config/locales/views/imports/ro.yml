@@ -8,8 +8,6 @@ ro:
         errors_notice_mobile: Ai erori în datele tale. Atinge tooltip-ul erorii pentru a vedea detalii.
         title: Curăță-ți datele
     configurations:
-      mint_import:
-        date_format_label: Format dată
       show:
         description: Selectează coloanele care corespund fiecărui câmp din CSV-ul tău.
         title: Configurează importul
@@ -71,7 +69,6 @@ ro:
     new:
       description: Poți importa manual diverse tipuri de date prin CSV sau poți folosi unul dintre șabloanele noastre de import, cum ar fi Mint.
       import_accounts: Importă conturi
-      import_mint: Importă din Mint
       import_portfolio: Importă investiții
       import_transactions: Importă tranzacții
       resume: Reia %{type}
@@ -82,6 +79,5 @@ ro:
       title: Confirmă datele importate
       summary_item_label: Element
       summary_count_label: Număr
-      empty_summary: Nu s-au găsit înregistrări importabile în acest fișier. Fișierul poate fi gol sau liniile nu respectă formatul de export așteptat (fiecare linie trebuie să fie un obiect JSON cu cheile „type” și „data”, folosind tipuri acceptate de acest import).
       publish_import: Publică importul
       back_to_imports: Înapoi la importuri

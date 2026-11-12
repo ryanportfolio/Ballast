@@ -283,7 +283,6 @@ de:
         actions:
           mark_failed: Fehlgeschlagen markieren
           mark_stale: Veraltet markieren
-          release_claim: Sperre freigeben
         ago: vor %{time}
         confirm: Diesen Vorgang als verloren markieren? Der Eintrag bekommt einen Endstatus und lässt sich danach neu starten. Die zugrunde liegenden Daten bleiben unverändert.
         missing_value: "-"

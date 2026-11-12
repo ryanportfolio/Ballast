@@ -1,5 +1,0 @@
----
-uk:
-  pdf_import_mailer:
-    next_steps:
-      subject: "Ваш PDF-документ було проаналізовано - %{product_name}"

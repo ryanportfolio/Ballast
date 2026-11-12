@@ -38,17 +38,6 @@ class Import::RowsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "show mint row" do
-    import = @user.family.imports.create!(type: "MintImport")
-    row = import.rows.create!(source_row_number: 1, date: "01/01/2024", amount: 100, currency: "USD")
-
-    get import_row_path(import, row)
-
-    assert_row_fields(row, [ :date, :name, :amount, :currency, :category, :tags, :account, :notes ])
-
-    assert_response :success
-  end
-
   test "update" do
     patch import_row_path(@import, @row), params: {
       import_row: {

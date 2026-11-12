@@ -2,7 +2,8 @@
 Rails.application.config.to_prepare do
   module ActiveStorageAttachmentAuthorization
     extend ActiveSupport::Concern
-    # STI subclasses (PdfImport, SureImport, ...) are stored under their base class, "Import".
+    # Imports stay listed with no branch below, so any Import attachment left by an import type
+    # Ballast removed is denied (the CSV import types attach no files).
     PROTECTED_RECORD_TYPES = %w[Transaction AccountStatement FamilyExport Import FamilyDocument].freeze
 
     included do
@@ -39,8 +40,6 @@ Rails.application.config.to_prepare do
           account_statement_attachment_authorized?(attachment)
         when "FamilyExport"
           family_export_attachment_authorized?(attachment)
-        when "Import"
-          import_attachment_authorized?(attachment)
         when "FamilyDocument"
           family_record_attachment_authorized?(attachment)
         else
@@ -74,16 +73,6 @@ Rails.application.config.to_prepare do
         return false if export.nil?
 
         export.family_id == Current.family&.id && Current.user.admin?
-      rescue ActiveRecord::RecordNotFound, NoMethodError
-        false
-      end
-
-      # Mirrors ImportsController#set_import: imports linked to a statement follow its visibility.
-      def import_attachment_authorized?(attachment)
-        import = attachment.record
-        return false if import.nil? || import.family_id != Current.family&.id
-
-        import.account_statement.nil? || import.account_statement.viewable_by?(Current.user)
       rescue ActiveRecord::RecordNotFound, NoMethodError
         false
       end

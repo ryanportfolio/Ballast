@@ -1102,58 +1102,6 @@ RSpec.configure do |config|
               unassigned_mappings_count: { type: :integer, minimum: 0 }
             }
           },
-          ImportVerificationReadback: {
-            type: :object,
-            description: 'SureImport only. Expected NDJSON counts compared to family-scoped database readback after publish.',
-            properties: {
-              status: { type: :string, enum: %w[not_verified matched mismatch failed reverted] },
-              checked_at: { type: :string, format: :'date-time', nullable: true },
-              expected_record_counts: {
-                type: :object,
-                additionalProperties: { type: :integer }
-              },
-              before_counts: {
-                type: :object,
-                additionalProperties: { type: :integer }
-              },
-              after_counts: {
-                type: :object,
-                additionalProperties: { type: :integer }
-              },
-              actual_delta_counts: {
-                type: :object,
-                additionalProperties: { type: :integer }
-              },
-              checked_counts: {
-                type: :object,
-                additionalProperties: { type: :integer }
-              },
-              mismatches: {
-                type: :object,
-                additionalProperties: {
-                  type: :object,
-                  required: %w[expected actual],
-                  properties: {
-                    expected: { type: :integer },
-                    actual: { type: :integer }
-                  }
-                }
-              },
-              error: { type: :string, nullable: true }
-            }
-          },
-          ImportVerification: {
-            type: :object,
-            description: 'SureImport only. Captured at upload and completed after import publish.',
-            required: %w[expected_record_counts readback],
-            properties: {
-              expected_record_counts: {
-                type: :object,
-                additionalProperties: { type: :integer }
-              },
-              readback: { '$ref' => '#/components/schemas/ImportVerificationReadback' }
-            }
-          },
           ImportPreflightContent: {
             type: :object,
             required: %w[filename content_type byte_size],
@@ -1178,27 +1126,7 @@ RSpec.configure do |config|
               rows_count: {
                 type: :integer,
                 minimum: 0,
-                description: 'CSV parsed non-header rows, or nonblank Sure NDJSON lines.'
-              },
-              valid_rows_count: {
-                type: :integer,
-                minimum: 0,
-                description: 'SureImport only. Valid NDJSON records.'
-              },
-              invalid_rows_count: {
-                type: :integer,
-                minimum: 0,
-                description: 'SureImport only. Invalid NDJSON records. CSV malformed content returns a 422 instead.'
-              },
-              entity_counts: {
-                type: :object,
-                additionalProperties: { type: :integer },
-                nullable: true
-              },
-              record_type_counts: {
-                type: :object,
-                additionalProperties: { type: :integer },
-                nullable: true
+                description: 'CSV parsed non-header rows.'
               }
             }
           },
@@ -1293,8 +1221,7 @@ RSpec.configure do |config|
               error: { type: :string, nullable: true },
               status_detail: { '$ref' => '#/components/schemas/ImportStatusDetail' },
               configuration: { '$ref' => '#/components/schemas/ImportConfiguration' },
-              stats: { '$ref' => '#/components/schemas/ImportStats' },
-              verification: { '$ref' => '#/components/schemas/ImportVerification' }
+              stats: { '$ref' => '#/components/schemas/ImportStats' }
             }
           },
           ImportCollection: {
@@ -1324,68 +1251,6 @@ RSpec.configure do |config|
             required: %w[data],
             properties: {
               data: { '$ref' => '#/components/schemas/ImportDetail' }
-            }
-          },
-          ImportSessionChunk: {
-            type: :object,
-            required: %w[id sequence status rows_count summary created_at updated_at],
-            properties: {
-              id: { type: :string, format: :uuid },
-              sequence: { type: :integer, minimum: 1 },
-              client_chunk_id: { type: :string, nullable: true },
-              status: { type: :string, enum: %w[pending importing complete failed] },
-              rows_count: { type: :integer, minimum: 0 },
-              summary: {
-                type: :object,
-                additionalProperties: {
-                  type: :object,
-                  additionalProperties: { type: :integer }
-                }
-              },
-              error: {
-                type: :object,
-                nullable: true,
-                additionalProperties: true
-              },
-              created_at: { type: :string, format: :'date-time' },
-              updated_at: { type: :string, format: :'date-time' }
-            }
-          },
-          ImportSession: {
-            type: :object,
-            required: %w[id type status chunks_count summary chunks created_at updated_at],
-            properties: {
-              id: { type: :string, format: :uuid },
-              type: { type: :string, enum: %w[SureImport] },
-              status: { type: :string, enum: %w[pending importing complete failed] },
-              client_session_id: { type: :string, nullable: true },
-              expected_chunks: { type: :integer, nullable: true, minimum: 1 },
-              chunks_count: { type: :integer, minimum: 0 },
-              summary: {
-                type: :object,
-                additionalProperties: {
-                  type: :object,
-                  additionalProperties: { type: :integer }
-                }
-              },
-              error: {
-                type: :object,
-                nullable: true,
-                additionalProperties: true
-              },
-              chunks: {
-                type: :array,
-                items: { '$ref' => '#/components/schemas/ImportSessionChunk' }
-              },
-              created_at: { type: :string, format: :'date-time' },
-              updated_at: { type: :string, format: :'date-time' }
-            }
-          },
-          ImportSessionResponse: {
-            type: :object,
-            required: %w[data],
-            properties: {
-              data: { '$ref' => '#/components/schemas/ImportSession' }
             }
           },
           ProviderConnectionInstitution: {

@@ -2075,72 +2075,6 @@ components:
         unassigned_mappings_count:
           type: integer
           minimum: 0
-    ImportVerificationReadback:
-      type: object
-      description: SureImport only. Expected NDJSON counts compared to family-scoped
-        database readback after publish.
-      properties:
-        status:
-          type: string
-          enum:
-          - not_verified
-          - matched
-          - mismatch
-          - failed
-          - reverted
-        checked_at:
-          type: string
-          format: date-time
-          nullable: true
-        expected_record_counts:
-          type: object
-          additionalProperties:
-            type: integer
-        before_counts:
-          type: object
-          additionalProperties:
-            type: integer
-        after_counts:
-          type: object
-          additionalProperties:
-            type: integer
-        actual_delta_counts:
-          type: object
-          additionalProperties:
-            type: integer
-        checked_counts:
-          type: object
-          additionalProperties:
-            type: integer
-        mismatches:
-          type: object
-          additionalProperties:
-            type: object
-            required:
-            - expected
-            - actual
-            properties:
-              expected:
-                type: integer
-              actual:
-                type: integer
-        error:
-          type: string
-          nullable: true
-    ImportVerification:
-      type: object
-      description: SureImport only. Captured at upload and completed after import
-        publish.
-      required:
-      - expected_record_counts
-      - readback
-      properties:
-        expected_record_counts:
-          type: object
-          additionalProperties:
-            type: integer
-        readback:
-          "$ref": "#/components/schemas/ImportVerificationReadback"
     ImportPreflightContent:
       type: object
       required:
@@ -2173,26 +2107,7 @@ components:
         rows_count:
           type: integer
           minimum: 0
-          description: CSV parsed non-header rows, or nonblank Sure NDJSON lines.
-        valid_rows_count:
-          type: integer
-          minimum: 0
-          description: SureImport only. Valid NDJSON records.
-        invalid_rows_count:
-          type: integer
-          minimum: 0
-          description: SureImport only. Invalid NDJSON records. CSV malformed content
-            returns a 422 instead.
-        entity_counts:
-          type: object
-          additionalProperties:
-            type: integer
-          nullable: true
-        record_type_counts:
-          type: object
-          additionalProperties:
-            type: integer
-          nullable: true
+          description: CSV parsed non-header rows.
     ImportPreflight:
       type: object
       required:
@@ -2209,15 +2124,9 @@ components:
           - TransactionImport
           - TradeImport
           - AccountImport
-          - MintImport
-          - ActualImport
-          - YnabImport
           - CategoryImport
           - RuleImport
           - MerchantImport
-          - PdfImport
-          - QifImport
-          - SureImport
         valid:
           type: boolean
         content:
@@ -2301,15 +2210,9 @@ components:
           - TransactionImport
           - TradeImport
           - AccountImport
-          - MintImport
-          - ActualImport
-          - YnabImport
           - CategoryImport
           - RuleImport
           - MerchantImport
-          - PdfImport
-          - QifImport
-          - SureImport
         status:
           type: string
           enum:
@@ -2358,15 +2261,9 @@ components:
           - TransactionImport
           - TradeImport
           - AccountImport
-          - MintImport
-          - ActualImport
-          - YnabImport
           - CategoryImport
           - RuleImport
           - MerchantImport
-          - PdfImport
-          - QifImport
-          - SureImport
         status:
           type: string
           enum:
@@ -2395,8 +2292,6 @@ components:
           "$ref": "#/components/schemas/ImportConfiguration"
         stats:
           "$ref": "#/components/schemas/ImportStats"
-        verification:
-          "$ref": "#/components/schemas/ImportVerification"
     ImportCollection:
       type: object
       required:
@@ -2440,115 +2335,6 @@ components:
       properties:
         data:
           "$ref": "#/components/schemas/ImportDetail"
-    ImportSessionChunk:
-      type: object
-      required:
-      - id
-      - sequence
-      - status
-      - rows_count
-      - summary
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          format: uuid
-        sequence:
-          type: integer
-          minimum: 1
-        client_chunk_id:
-          type: string
-          nullable: true
-        status:
-          type: string
-          enum:
-          - pending
-          - importing
-          - complete
-          - failed
-        rows_count:
-          type: integer
-          minimum: 0
-        summary:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties:
-              type: integer
-        error:
-          type: object
-          nullable: true
-          additionalProperties: true
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    ImportSession:
-      type: object
-      required:
-      - id
-      - type
-      - status
-      - chunks_count
-      - summary
-      - chunks
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          format: uuid
-        type:
-          type: string
-          enum:
-          - SureImport
-        status:
-          type: string
-          enum:
-          - pending
-          - importing
-          - complete
-          - failed
-        client_session_id:
-          type: string
-          nullable: true
-        expected_chunks:
-          type: integer
-          nullable: true
-          minimum: 1
-        chunks_count:
-          type: integer
-          minimum: 0
-        summary:
-          type: object
-          additionalProperties:
-            type: object
-            additionalProperties:
-              type: integer
-        error:
-          type: object
-          nullable: true
-          additionalProperties: true
-        chunks:
-          type: array
-          items:
-            "$ref": "#/components/schemas/ImportSessionChunk"
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    ImportSessionResponse:
-      type: object
-      required:
-      - data
-      properties:
-        data:
-          "$ref": "#/components/schemas/ImportSession"
     ProviderConnectionInstitution:
       type: object
       required:
@@ -3676,8 +3462,6 @@ components:
           - account_statements
           - family_exports
           - imports
-          - import_sessions
-          - import_source_mappings
           - import_rows
           - import_mappings
           - accounts
@@ -3716,12 +3500,6 @@ components:
               type: integer
               minimum: 0
             imports:
-              type: integer
-              minimum: 0
-            import_sessions:
-              type: integer
-              minimum: 0
-            import_source_mappings:
               type: integer
               minimum: 0
             import_rows:
@@ -4947,266 +4725,6 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
-  "/api/v1/import_sessions":
-    post:
-      summary: Create import session
-      description: Create or idempotently retrieve a multi-file SureImport session
-        keyed by client_session_id.
-      tags:
-      - Import Sessions
-      security:
-      - apiKeyAuth: []
-      parameters: []
-      responses:
-        '201':
-          description: import session created
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ImportSessionResponse"
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '403':
-          description: insufficient scope or guest user
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '409':
-          description: client session conflict
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '422':
-          description: validation error
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                type:
-                  type: string
-                  enum:
-                  - SureImport
-                  description: Import session type. Only SureImport is supported.
-                client_session_id:
-                  type: string
-                  nullable: true
-                  description: Client-provided idempotency key for the full import
-                    session.
-                expected_chunks:
-                  type: integer
-                  minimum: 1
-                  nullable: true
-                  description: Expected number of ordered chunks before publish is
-                    allowed.
-  "/api/v1/import_sessions/{id}":
-    parameters:
-    - name: id
-      in: path
-      required: true
-      description: Import session ID
-      schema:
-        type: string
-    get:
-      summary: Retrieve import session
-      description: Retrieve import session status, chunk status, per-entity summary
-        counts, and safe error details.
-      tags:
-      - Import Sessions
-      security:
-      - apiKeyAuth: []
-      responses:
-        '200':
-          description: import session retrieved
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ImportSessionResponse"
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '403':
-          description: insufficient scope
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '404':
-          description: import session not found
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-  "/api/v1/import_sessions/{id}/chunks":
-    parameters:
-    - name: id
-      in: path
-      required: true
-      description: Import session ID
-      schema:
-        type: string
-    post:
-      summary: Upload import session chunk
-      description: Attach an ordered Sure NDJSON chunk to an import session. Chunks
-        are idempotent by sequence and client_chunk_id with content verification.
-      tags:
-      - Import Sessions
-      security:
-      - apiKeyAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - sequence
-              - raw_file_content
-              properties:
-                sequence:
-                  type: integer
-                  minimum: 1
-                  description: One-based chunk sequence. Earlier dependency chunks
-                    must have lower sequence numbers.
-                client_chunk_id:
-                  type: string
-                  nullable: true
-                  description: Client-provided idempotency key for this chunk.
-                raw_file_content:
-                  type: string
-                  description: Raw Sure NDJSON content. Each chunk is limited to 10MB.
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-              - sequence
-              - file
-              properties:
-                sequence:
-                  type: integer
-                  minimum: 1
-                  description: One-based chunk sequence. Earlier dependency chunks
-                    must have lower sequence numbers.
-                client_chunk_id:
-                  type: string
-                  nullable: true
-                  description: Client-provided idempotency key for this chunk.
-                file:
-                  type: string
-                  format: binary
-                  description: Multipart Sure NDJSON file upload. Each chunk is limited
-                    to 10MB.
-      parameters: []
-      responses:
-        '201':
-          description: chunk uploaded
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ImportSessionResponse"
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '403':
-          description: insufficient scope
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '409':
-          description: chunk conflict
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '404':
-          description: import session not found
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '422':
-          description: missing or invalid content
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-  "/api/v1/import_sessions/{id}/publish":
-    parameters:
-    - name: id
-      in: path
-      required: true
-      description: Import session ID
-      schema:
-        type: string
-    post:
-      summary: Publish import session
-      description: Queue ordered chunk processing for a SureImport session. Later
-        chunks can reference source IDs mapped by earlier chunks.
-      tags:
-      - Import Sessions
-      security:
-      - apiKeyAuth: []
-      responses:
-        '202':
-          description: import session publish queued
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ImportSessionResponse"
-        '401':
-          description: unauthorized
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '403':
-          description: insufficient scope
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '422':
-          description: max_row_count_exceeded
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '409':
-          description: missing expected chunks
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '503':
-          description: enqueue failed
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
-        '404':
-          description: import session not found
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponse"
   "/api/v1/imports":
     get:
       summary: List imports
@@ -5251,15 +4769,9 @@ paths:
           - TransactionImport
           - TradeImport
           - AccountImport
-          - MintImport
-          - ActualImport
-          - YnabImport
           - CategoryImport
           - RuleImport
           - MerchantImport
-          - PdfImport
-          - QifImport
-          - SureImport
       responses:
         '200':
           description: imports filtered by type
@@ -5269,8 +4781,8 @@ paths:
                 "$ref": "#/components/schemas/ImportCollection"
     post:
       summary: Create import
-      description: Create a new import from raw CSV content, inline Sure NDJSON content,
-        or an uploaded Sure NDJSON file. CSV content is limited to 10MB.
+      description: Create a new import from raw CSV content or an uploaded CSV file.
+        CSV content is limited to 10MB.
       tags:
       - Imports
       security:
@@ -5299,12 +4811,6 @@ paths:
                 oneOf:
                 - "$ref": "#/components/schemas/ErrorResponse"
                 - "$ref": "#/components/schemas/ErrorResponseWithImportId"
-        '500':
-          description: import uploaded but publish enqueue failed
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/ErrorResponseWithImportId"
       requestBody:
         content:
           application/json:
@@ -5313,24 +4819,17 @@ paths:
               properties:
                 raw_file_content:
                   type: string
-                  description: Raw CSV or Sure NDJSON content as a string. CSV content
-                    is limited to 10MB. Required for SureImport unless a multipart
-                    file is uploaded.
+                  description: Raw CSV content as a string. CSV content is limited
+                    to 10MB.
                 type:
                   type: string
                   enum:
                   - TransactionImport
                   - TradeImport
                   - AccountImport
-                  - MintImport
-                  - ActualImport
-                  - YnabImport
                   - CategoryImport
                   - RuleImport
                   - MerchantImport
-                  - PdfImport
-                  - QifImport
-                  - SureImport
                   description: Import type (defaults to TransactionImport)
                 account_id:
                   type: string
@@ -5424,24 +4923,17 @@ paths:
               properties:
                 raw_file_content:
                   type: string
-                  description: Raw CSV or Sure NDJSON content as a string. CSV content
-                    is limited to 10MB. Required for SureImport unless a multipart
-                    file is uploaded.
+                  description: Raw CSV content as a string. CSV content is limited
+                    to 10MB.
                 type:
                   type: string
                   enum:
                   - TransactionImport
                   - TradeImport
                   - AccountImport
-                  - MintImport
-                  - ActualImport
-                  - YnabImport
                   - CategoryImport
                   - RuleImport
                   - MerchantImport
-                  - PdfImport
-                  - QifImport
-                  - SureImport
                   description: Import type (defaults to TransactionImport)
                 account_id:
                   type: string
@@ -5540,7 +5032,7 @@ paths:
     get:
       summary: Retrieve an import
       description: Retrieve detailed information about a specific import, including
-        configuration, row statistics, and SureImport readback verification when available.
+        configuration and row statistics.
       tags:
       - Imports
       security:
@@ -5621,9 +5113,9 @@ paths:
   "/api/v1/imports/preflight":
     post:
       summary: Validate import content without creating an import
-      description: Validate CSV or Sure NDJSON import content and return counts, headers,
-        warnings, and validation errors without persisting an import or enqueueing
-        jobs. CSV content is limited to 10MB.
+      description: Validate CSV import content and return counts, headers, warnings,
+        and validation errors without persisting an import or enqueueing jobs. CSV
+        content is limited to 10MB.
       tags:
       - Imports
       security:
@@ -5662,28 +5154,22 @@ paths:
               properties:
                 raw_file_content:
                   type: string
-                  description: Raw CSV or Sure NDJSON content as a string. CSV content
-                    is limited to 10MB.
+                  description: Raw CSV content as a string. CSV content is limited
+                    to 10MB.
                 file:
                   type: string
                   format: binary
-                  description: CSV or Sure NDJSON upload when using multipart/form-data.
-                    CSV files are limited to 10MB.
+                  description: CSV upload when using multipart/form-data. CSV files
+                    are limited to 10MB.
                 type:
                   type: string
                   enum:
                   - TransactionImport
                   - TradeImport
                   - AccountImport
-                  - MintImport
-                  - ActualImport
-                  - YnabImport
                   - CategoryImport
                   - RuleImport
                   - MerchantImport
-                  - PdfImport
-                  - QifImport
-                  - SureImport
                   description: Import type to validate (defaults to TransactionImport)
                 account_id:
                   type: string
@@ -5777,28 +5263,22 @@ paths:
               properties:
                 raw_file_content:
                   type: string
-                  description: Raw CSV or Sure NDJSON content as a string. CSV content
-                    is limited to 10MB.
+                  description: Raw CSV content as a string. CSV content is limited
+                    to 10MB.
                 file:
                   type: string
                   format: binary
-                  description: CSV or Sure NDJSON upload when using multipart/form-data.
-                    CSV files are limited to 10MB.
+                  description: CSV upload when using multipart/form-data. CSV files
+                    are limited to 10MB.
                 type:
                   type: string
                   enum:
                   - TransactionImport
                   - TradeImport
                   - AccountImport
-                  - MintImport
-                  - ActualImport
-                  - YnabImport
                   - CategoryImport
                   - RuleImport
                   - MerchantImport
-                  - PdfImport
-                  - QifImport
-                  - SureImport
                   description: Import type to validate (defaults to TransactionImport)
                 account_id:
                   type: string

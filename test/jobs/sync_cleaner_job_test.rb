@@ -8,14 +8,8 @@ class SyncCleanerJobTest < ActiveSupport::TestCase
     stuck_revert = imports(:trade)
     stuck_revert.update_columns(status: "reverting", updated_at: 7.hours.ago)
 
-    stuck_pdf = imports(:pdf)
-    stuck_pdf.update_columns(status: "importing", updated_at: 7.hours.ago)
-
     stuck_export = FamilyExport.create!(family: families(:dylan_family))
     stuck_export.update_columns(status: "processing", updated_at: 3.hours.ago)
-
-    stuck_session = families(:dylan_family).import_sessions.create!(status: :importing)
-    stuck_session.update_columns(updated_at: 7.hours.ago)
 
     fresh_import = imports(:account)
     fresh_import.update_columns(status: "importing", updated_at: 1.hour.ago)
@@ -30,12 +24,7 @@ class SyncCleanerJobTest < ActiveSupport::TestCase
 
     assert_equal "revert_failed", stuck_revert.reload.status
 
-    # PdfImport's importing status is a processing claim — reclaimed, not failed
-    assert_equal "pending", stuck_pdf.reload.status
-
     assert_equal "failed", stuck_export.reload.status
-    assert_equal "failed", stuck_session.reload.status
-    assert_equal "import_interrupted", stuck_session.error_details["code"]
 
     assert_equal "importing", fresh_import.reload.status
     assert_equal "processing", fresh_export.reload.status

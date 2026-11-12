@@ -14,8 +14,6 @@ nl:
         button_label: Doorgaan
         description: Upload een eenvoudig CSV-bestand (zoals het bestand dat we genereren wanneer u uw gegevens exporteert). We zullen de kolommen automatisch voor u koppelen.
         instructions: Selecteer doorgaan om uw CSV te parsen en door te gaan naar de opschoon stap.
-      mint_import:
-        date_format_label: Datumformaat
       rule_import:
         description: Configureer uw regel import. Regels worden aangemaakt of bijgewerkt op basis van de CSV-gegevens.
         process_button: Regels verwerken
@@ -83,7 +81,6 @@ nl:
       description: U kunt handmatig verschillende soorten gegevens importeren via CSV of een van onze importsjablonen zoals Mint gebruiken.
       import_accounts: Accounts importeren
       import_categories: Categorieën importeren
-      import_mint: Importeren vanuit Mint
       import_portfolio: Investeringen importeren
       import_rules: Regels importeren
       import_transactions: Transacties importeren
@@ -95,6 +92,5 @@ nl:
       title: Uw importgegevens bevestigen
       summary_item_label: Item
       summary_count_label: Aantal
-      empty_summary: Er zijn geen importeerbare records in dit bestand gevonden. Het bestand is mogelijk leeg, of de regels voldoen niet aan het verwachte exportformaat (elke regel moet een JSON-object zijn met de sleutels „type“ en „data“, met typen die deze import ondersteunt).
       publish_import: Import publiceren
       back_to_imports: Terug naar importen
