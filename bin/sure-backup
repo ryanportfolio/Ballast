@@ -829,7 +829,7 @@ host_run() {
     echo "POSTGRES_PASSWORD=$(env_of POSTGRES_PASSWORD)"
     echo "POSTGRES_DB=$(env_of POSTGRES_DB)"
     echo "BUILD_COMMIT_SHA=$(env_of BUILD_COMMIT_SHA)"
-    for v in BACKUP_KEEP_DAYS INSTANCE_ID; do
+    for v in BACKUP_KEEP_DAYS INSTANCE_ID SURE_IMAGE_REPO; do
       val=$(env_get "${workdir}/.env" "$v")
       [ -z "$val" ] || echo "${v}=${val}"
     done

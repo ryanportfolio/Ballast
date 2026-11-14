@@ -46,6 +46,7 @@ class Assistant::Function::CreateRule < Assistant::Function
   end
 
   def call(params = {})
+    return guest_refusal if user.guest?
     return error("invalid_arguments", "conditions and actions are required.") unless params.key?("conditions") && params.key?("actions")
 
     rule = family.rules.build(resource_type: "transaction", active: false, name: params["name"].to_s.strip.presence)

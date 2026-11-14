@@ -168,6 +168,16 @@ class Api::V1::BaseController < ApplicationController
       false
     end
 
+    # Records are found through read scopes (Account.accessible_by: every
+    # account of the family). Changing one needs write access to its account,
+    # which guests never have. The key's scope is checked separately.
+    def require_account_write!(account)
+      return true if account.writable_by?(current_resource_owner)
+
+      render_json({ error: "forbidden", message: "You do not have write access to this account" }, status: :forbidden)
+      false
+    end
+
     # Consistent JSON response method
     def render_json(data, status: :ok)
       render json: data, status: status

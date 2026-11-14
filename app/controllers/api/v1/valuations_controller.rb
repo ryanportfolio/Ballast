@@ -9,6 +9,7 @@ class Api::V1::ValuationsController < Api::V1::BaseController
   before_action :ensure_read_scope, only: [ :index, :show ]
   before_action :ensure_write_scope, only: [ :create, :update ]
   before_action :set_valuation, only: [ :show, :update ]
+  before_action :ensure_account_write_permission, only: :update
 
   def index
     family = current_resource_owner.family
@@ -84,6 +85,7 @@ class Api::V1::ValuationsController < Api::V1::BaseController
     end
 
     account = current_resource_owner.family.accounts.find(valuation_account_id)
+    return unless require_account_write!(account)
     requested_upsert = upsert_requested?
     existing_write = false
 
@@ -242,6 +244,12 @@ class Api::V1::ValuationsController < Api::V1::BaseController
         error: "not_found",
         message: "Valuation not found"
       }, status: :not_found
+    end
+
+    def ensure_account_write_permission
+      return if performed?
+
+      require_account_write!(@entry.account)
     end
 
     def ensure_read_scope

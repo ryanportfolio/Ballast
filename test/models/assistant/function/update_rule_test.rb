@@ -18,6 +18,14 @@ class Assistant::Function::UpdateRuleTest < ActiveSupport::TestCase
     )
   end
 
+  test "refuses guests" do
+    result = Assistant::Function::UpdateRule.new(family_guest).call("rule_id" => @rule.id, "name" => "Guest rename")
+
+    assert_not result[:success]
+    assert_equal "forbidden", result[:error]
+    assert_equal "Coffee", @rule.reload.name
+  end
+
   test "renaming keeps an active rule active" do
     result = @fn.call("rule_id" => @rule.id, "name" => "Morning coffee")
 

@@ -470,6 +470,12 @@ module Assistant::Function::RuleSupport
       { success: false, error: key, message: message }.merge(extra)
     end
 
+    # Rules are family configuration: guests may read them but not change
+    # them, as RulesController's require_non_guest! enforces for the pages.
+    def guest_refusal
+      error("forbidden", "Guests can view rules but not create, change or apply them. Do not retry.")
+    end
+
     # A pattern can outlive the statement timeout (Rule::SafeRegex), which
     # raises out of the rule's scope. Reported as a rule error the assistant can
     # explain; the tool wrapper would otherwise call it an unexpected failure.

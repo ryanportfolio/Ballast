@@ -11,7 +11,15 @@ To run Ballast, build the image from this repository and point the app services 
 ```bash
 git clone https://github.com/ryanportfolio/Ballast.git
 cd Ballast
-docker build -t ballast:local .
+docker build -t ballast:local -t "ballast:$(cat .sure-version)" .
+```
+
+The second tag names the image after the version in `.sure-version`. Backups record that name, and a restore runs it (see [Backups, upgrades and rollbacks](#backups-upgrades-and-rollbacks)).
+
+Add this line to your `.env`, so backups record `ballast:<version>` instead of the upstream image:
+
+```bash
+SURE_IMAGE_REPO=ballast
 ```
 
 Then, next to your `compose.yml`, create `compose.override.yml`:
@@ -24,9 +32,13 @@ services:
     image: ballast:local
   backup:
     image: ballast:local
+    environment:
+      SURE_IMAGE_REPO: ${SURE_IMAGE_REPO}
 ```
 
 `docker compose` reads `compose.override.yml` automatically when it sits next to `compose.yml`. With the AI compose file, pass both files: `docker compose -f compose.ai.yml -f compose.override.yml up -d`. With the override in place, `docker compose pull web worker` does not update the app; rebuild the image from a newer checkout instead. `SURE_IMAGE_TAG` only changes the tag of the upstream image and has no effect on `ballast:local`.
+
+Docker has no registry to pull `ballast` images from. Before you restore a backup on another machine, build the same version there from a checkout of this repository, or copy the image over: `docker save ballast:<version> | gzip > ballast-<version>.tar.gz` on the old machine, then `docker load < ballast-<version>.tar.gz` and `docker tag ballast:<version> ballast:local` on the new one. Keep the `ballast:<version>` images of versions you may roll back to; the restore runs that exact image.
 
 ## Setup Guide
 
@@ -457,7 +469,7 @@ MARKET_DATA_SYNC_TIMEZONE=UTC     # IANA name such as Europe/Berlin; unknown nam
 
 ## How to update your app
 
-If you run Ballast from an image you built (see [Which image these compose files run](#which-image-these-compose-files-run)), update by pulling the newest code into your checkout, running `docker build -t ballast:local .` again, and then `docker compose up -d`. Take a backup first (see below). The rest of this section applies to the upstream Sure image that the compose files name.
+If you run Ballast from an image you built (see [Which image these compose files run](#which-image-these-compose-files-run)), update by pulling the newest code into your checkout, running `docker build -t ballast:local -t "ballast:$(cat .sure-version)" .` again, and then `docker compose up -d`. Take a backup first (see below). The rest of this section applies to the upstream Sure image that the compose files name.
 
 The compose files pull the upstream Sure image from GHCR (GitHub Container Registry), as you see in the `compose.yml` file:
 
@@ -576,6 +588,8 @@ docker compose run --rm backup restore 0.7.4/2026-10-01_080524-manual   # or "la
 # Set SURE_IMAGE_TAG=0.7.4 in .env
 docker compose up -d
 ```
+
+With an image you built, set the `web` and `worker` image in `compose.override.yml` to `ballast:0.7.4` instead of setting `SURE_IMAGE_TAG`.
 
 `restore` replaces the database and all uploaded files. It refuses while other clients are connected to the database, and asks you to type `restore` to confirm (pass `--yes` to skip in scripts).
 

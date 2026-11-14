@@ -8,6 +8,7 @@ class Api::V1::TransactionsController < Api::V1::BaseController
   before_action :ensure_read_scope, only: [ :index, :show ]
   before_action :ensure_write_scope, only: [ :create, :update, :destroy ]
   before_action :set_transaction, only: [ :show, :update, :destroy ]
+  before_action :ensure_account_write_permission, only: [ :update, :destroy ]
 
   def index
     family = current_resource_owner.family
@@ -93,7 +94,8 @@ class Api::V1::TransactionsController < Api::V1::BaseController
       return
     end
 
-    account = family.accounts.writable_by(current_resource_owner).find(account_id_param)
+    account = family.accounts.find(account_id_param)
+    return unless require_account_write!(account)
 
     if idempotency_key_requested? && (existing_entry = existing_idempotent_entry(account))
       return render_existing_idempotent_entry(existing_entry)
@@ -209,6 +211,12 @@ class Api::V1::TransactionsController < Api::V1::BaseController
 
     def set_transaction
       load_accessible_transaction(params[:id])
+    end
+
+    def ensure_account_write_permission
+      return if performed?
+
+      require_account_write!(@entry.account)
     end
 
     def ensure_read_scope

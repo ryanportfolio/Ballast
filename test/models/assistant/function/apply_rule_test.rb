@@ -17,6 +17,14 @@ class Assistant::Function::ApplyRuleTest < ActiveSupport::TestCase
     )
   end
 
+  test "refuses guests" do
+    result = Assistant::Function::ApplyRule.new(family_guest).call("rule_id" => @rule.id, "preview_token" => preview_token)
+
+    assert_not result[:success]
+    assert_equal "forbidden", result[:error]
+    assert_not @rule.reload.active?
+  end
+
   test "activates and applies the rule with a token from its preview" do
     entry = create_transaction(name: "ZXQ Coffee Shop")
 

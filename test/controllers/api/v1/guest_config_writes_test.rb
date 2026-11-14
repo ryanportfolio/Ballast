@@ -66,6 +66,27 @@ class Api::V1::GuestConfigWritesTest < ActionDispatch::IntegrationTest
     assert_response :created
   end
 
+  test "guest api keys cannot publish an import into an existing account" do
+    account = @guest.family.accounts.first
+
+    assert_no_enqueued_jobs(only: ImportJob) do
+      post api_v1_imports_url,
+           params: {
+             raw_file_content: "date,amount,name\n2023-01-01,-10.00,Guest Transaction",
+             date_col_label: "date",
+             amount_col_label: "amount",
+             name_col_label: "name",
+             account_id: account.id,
+             date_format: "%Y-%m-%d",
+             publish: "true"
+           },
+           headers: @headers
+    end
+
+    assert_response :forbidden
+    assert_equal "forbidden", JSON.parse(response.body)["error"]
+  end
+
   private
 
     def guest_api_key
