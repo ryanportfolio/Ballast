@@ -2,24 +2,6 @@
 tr:
   settings:
     hostings:
-      alpha_vantage_settings:
-        description: Alpha Vantage'dan aldığınız API anahtarını girin. Londra Menkul
-          Kıymetler Borsası, XETRA ve diğer borsalardaki AB ETF'lerini destekler.
-        env_configured_message: ALPHA_VANTAGE_API_KEY ortam değişkeni aracılığıyla
-          başarıyla yapılandırıldı.
-        label: API Anahtarı
-        no_health_check_note: Katı hız sınırı nedeniyle bu sağlayıcı için bağlantı
-          sağlık kontrolü kullanılamıyor.
-        placeholder: Alpha Vantage API anahtarınızı buraya girin
-        rate_limit_warning: Alpha Vantage ücretsiz katmanı günde 25 API çağrısıyla
-          sınırlıdır. Diğer sağlayıcılarda bulunmayan AB ETF'leri için tamamlayıcı
-          bir sağlayıcı olarak en iyi şekilde kullanılır.
-        show_details: "(detayları göster)"
-        step_1_html: <a href="https://www.alphavantage.co/support/#api-key" target="_blank"
-          rel="noopener noreferrer" class="underline">alphavantage.co</a> adresini
-          ziyaret edin ve ücretsiz API anahtarınızı alın.
-        step_2: API anahtarını kopyalayıp aşağıya yapıştırın.
-        title: Alpha Vantage
       anthropic_settings:
         access_token_label: API Anahtarı
         access_token_placeholder: Anthropic API anahtarınızı girin
@@ -98,25 +80,6 @@ tr:
         not_authorized: Bu işlemi gerçekleştirmek için yetkiniz yok
       ensure_super_admin_for_onboarding:
         not_authorized: Bu işlemi gerçekleştirmek için yetkiniz yok
-      eodhd_settings:
-        description: EODHD tarafından sağlanan API token'ını girin. LSE, XETRA ve
-          diğer uluslararası borsalardaki AB ETF'lerini destekler.
-        env_configured_message: EODHD_API_KEY ortam değişkeni aracılığıyla başarıyla
-          yapılandırıldı.
-        label: API Token'ı
-        placeholder: EODHD API token'ınızı buraya girin
-        rate_limit_warning: EODHD ücretsiz katmanı günde 20 API çağrısıyla sınırlıdır.
-          Diğer sağlayıcılarda bulunmayan AB ETF'leri için tamamlayıcı bir sağlayıcı
-          olarak en iyi şekilde kullanılır.
-        show_details: "(detayları göster)"
-        step_1_html: <a href="https://eodhd.com/register" target="_blank" rel="noopener
-          noreferrer" class="underline">eodhd.com</a> adresini ziyaret edin ve ücretsiz
-          bir hesap oluşturun.
-        step_2_html: API token'ınızı bulmak için <a href="https://eodhd.com/cp/dashboard"
-          target="_blank" rel="noopener noreferrer" class="underline">Kontrol Paneli</a>nize
-          gidin.
-        step_3: API token'ınızı kopyalayıp aşağıya yapıştırın.
-        title: EODHD
       invite_code_settings:
         default_family_description: Yeni kullanıcıları, yalnızca bir davetleri yoksa
           bu aile/gruba yerleştirin.
@@ -195,41 +158,22 @@ tr:
         ai_response_timeout_label: Saniye Cinsinden Yanıt Zaman Aşımı (İsteğe Bağlı)
         ai_response_timeout_help: 'Varsayılan: 90. Yalnızca sohbetin tüm yanıt turunu izleyen zamanlayıcıya uygulanır; bu yüzden toplam olarak hesaplayın: (1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) × istek zaman aşımı, artı araç çalıştırma ve kuyruk süresi. AI_RESPONSE_TIMEOUT bu alanı geçersiz kılar.'
       provider_selection:
-        binance_public_hint: ücretsiz, API anahtarı gerekmez -- yalnızca kripto (BTC,
-          ETH vb.)
         env_configured_message: Ortam değişkenleri ayarlandığı için sağlayıcı seçimi
           devre dışı bırakıldı. Burada seçimi etkinleştirmek için bu ortam değişkenlerini
           yapılandırmanızdan kaldırın.
         exchange_rate_description: Döviz kurlarını almak için tek bir sağlayıcı seçin.
         exchange_rate_provider_label: Döviz Kuru Sağlayıcısı
         exchange_rate_title: Döviz Kuru Sağlayıcısı
-        mfapi_hint: ücretsiz, API anahtarı gerekmez -- yalnızca Hint yatırım fonları
-        moex_public_hint: ücretsiz, API anahtarı gerekmez -- Rus hisse senetleri,
-          fonlar ve tahviller (MOEX), RUB döviz kuru dahil
         providers:
-          alpha_vantage: Alpha Vantage
-          binance_public: Binance
-          eodhd: EODHD
           frankfurter: Frankfurter
-          mfapi: MFAPI.in
-          moex_public: MOEX
-          tiingo: Tiingo
-          tinkoff_invest: T-Invest (T-Bank)
           twelve_data: Twelve Data
           yahoo_finance: Yahoo Finance
-          mansa: Mansa
-        requires_api_key: API anahtarı gerektirir
-        requires_api_key_alpha_vantage: API anahtarı gerektirir, günlük 25 çağrı sınırı
-        requires_api_key_eodhd: API anahtarı gerektirir, günlük 20 çağrı sınırı
         securities_description: Hisse senedi, ETF ve yatırım fonu fiyatlarını almak
           için bir veya daha fazla sağlayıcıyı etkinleştirin. Arama yaptığınızda,
           etkinleştirilen tüm sağlayıcılar sorgulanır ve sonuçlar birleştirilir.
         securities_title: Menkul Kıymet Sağlayıcıları
-        tinkoff_invest_hint: salt okunur token gerektirir -- Rus hisse senedi/fon/tahvil
-          fiyatları + marka logoları
         twelve_data_hint: API anahtarı gerektirir, günlük 800 kredi
         yahoo_finance_hint: ücretsiz, API anahtarı gerekmez
-        requires_api_key_mansa: API anahtarı gerektirir, günde 100 çağrılık ücretsiz katman -- yalnızca NGX (Nijerya Borsası)
       show:
         ai_assistant: Yapay Zeka Asistanı
         clear_cache: Veri önbelleğini temizle
@@ -247,7 +191,6 @@ tr:
         invites: Davet Kodları
         sync_settings: Eşitleme Ayarları
         title: Kendi Sunucunda Barındırma
-        property_valuation_providers: Gayrimenkul Değerleme Sağlayıcıları
       sync_auto_sync_scheduler!:
         scheduler_sync_failed: Ayarlar kaydedildi, ancak eşitleme zamanlaması güncellenemedi.
           Lütfen tekrar deneyin veya sunucu günlüklerini kontrol edin.
@@ -269,37 +212,6 @@ tr:
         placeholder: API anahtarınızı buraya girin
         plan: "%{plan} planı"
         title: Synth Ayarları
-      tiingo_settings:
-        description: Tiingo tarafından sağlanan API token'ını girin. Ücretsiz katman,
-          30+ yıllık geçmiş veriyle saatte 50 benzersiz sembolü destekler.
-        env_configured_message: TIINGO_API_KEY ortam değişkeni aracılığıyla başarıyla
-          yapılandırıldı.
-        label: API Token'ı
-        placeholder: Tiingo API token'ınızı buraya girin
-        show_details: "(detayları göster)"
-        step_1_html: <a href="https://www.tiingo.com" target="_blank" rel="noopener
-          noreferrer" class="underline">tiingo.com</a> adresini ziyaret edin ve ücretsiz
-          bir hesap oluşturun.
-        step_2_html: <a href="https://www.tiingo.com/account/api/token" target="_blank"
-          rel="noopener noreferrer" class="underline">API Token</a> sayfasına gidin.
-        step_3: API token'ınızı kopyalayıp aşağıya yapıştırın.
-        title: Tiingo
-      tinkoff_invest_settings:
-        description: Salt okunur bir T-Invest API token'ı girin. Menkul kıymetler
-          için marka logolarını almak (MOEX fiyatlandırsa bile fonlar ve tahviller
-          dahil) ve yukarıda etkinleştirildiğinde Rus enstrümanları için fiyatları
-          almak amacıyla kullanılır.
-        env_configured_message: TINKOFF_INVEST_API_KEY ortam değişkeni aracılığıyla
-          başarıyla yapılandırıldı.
-        label: API Token'ı
-        placeholder: T-Invest API token'ınızı buraya girin
-        show_details: "(detayları göster)"
-        step_1: T-Bank yatırımlarını açın, ardından Ayarlar, ardından API token'ları
-          (açık bir T-Bank aracılık hesabı gerektirir).
-        step_2: Salt okunur erişimle bir token oluşturun.
-        step_3: Token'ı kopyalayıp aşağıya yapıştırın.
-        title: T-Invest (T-Bank)
-        moex_only_notice: Yukarıdaki fiyatlar için etkin değil — bir token yapılandırıldığında, yukarıdaki onay kutusundan bağımsız olarak tüm menkul kıymetlerinizin marka logolarını almak için T-Invest kullanılır.
       twelve_data_settings:
         api_calls_used: "%{used} / %{limit} günlük API çağrısı kullanıldı (%{percentage})"
         description: Twelve Data tarafından sağlanan API anahtarını girin
@@ -351,27 +263,3 @@ tr:
         unavailable_title: Yahoo Finance doğrulanamadı.
         unavailable_message: Yahoo Finance'e ulaşılamadı veya beklenmeyen bir yanıt döndü. İnternet bağlantınızı kontrol edip daha sonra tekrar deneyin.
         status_unknown: Yahoo Finance durumu kontrol ediliyor.
-      rentcast_settings:
-        title: RentCast
-        description: Mülk eklerken ABD'deki mülk ayrıntılarını ve değer tahminlerini sorgulamak için RentCast API anahtarınızı girin. Ücretsiz katman, mülk sorguları ve günlük değerleme güncellemeleri arasında paylaşılan ayda 50 API isteğiyle sınırlıdır. Ücretli bir planda bu sınırı RENTCAST_MAX_REQUESTS_PER_MONTH ortam değişkeniyle yükseltin.
-        env_configured_message: RENTCAST_API_KEY ortam değişkeni aracılığıyla başarıyla yapılandırıldı.
-        label: API Anahtarı
-        placeholder: RentCast API anahtarınızı buraya girin
-        usage: Aylık %{limit} isteğin %{used} tanesi kullanıldı
-      realie_settings:
-        title: Realie
-        description: Mülk eklerken ABD'deki mülk ayrıntılarını ve değer tahminlerini sorgulamak için Realie API anahtarınızı girin. Ücretsiz katman, mülk sorguları ve günlük değerleme güncellemeleri arasında paylaşılan ayda 25 API isteğiyle sınırlıdır. Ücretli bir planda bu sınırı REALIE_MAX_REQUESTS_PER_MONTH ortam değişkeniyle yükseltin.
-        env_configured_message: REALIE_API_KEY ortam değişkeni aracılığıyla başarıyla yapılandırıldı.
-        label: API Anahtarı
-        placeholder: Realie API anahtarınızı buraya girin
-        usage: Aylık %{limit} isteğin %{used} tanesi kullanıldı
-      mansa_settings:
-        title: Mansa
-        description: Mansa API'den aldığınız API anahtarını girin. Buradaki başka hiçbir sağlayıcının kapsamadığı NGX'i (Nijerya Borsası) destekler. Mansa diğer Afrika borsalarını da kapsar, ancak bu entegrasyonla yalnızca NGX doğrulanmıştır.
-        env_configured_message: MANSA_API_KEY ortam değişkeni aracılığıyla başarıyla yapılandırıldı.
-        label: API Anahtarı
-        placeholder: Mansa API anahtarınızı buraya girin
-        show_details: (ayrıntıları göster)
-        step_1_html: <a href="https://mansaapi.com" target="_blank" rel="noopener noreferrer" class="underline">mansaapi.com</a> adresine gidin ve ücretsiz API anahtarınızı alın -- kart gerekmez.
-        step_2: API anahtarınızı kopyalayıp aşağıya yapıştırın.
-        rate_limit_warning: Mansa'nın ücretsiz katmanı günde 100 API çağrısıyla sınırlıdır ve yalnızca güncel fiyatları sunar -- geçmiş fiyatlar ücretli plan gerektirir. Bu entegrasyonla yalnızca NGX (Nijerya Borsası) doğrulanmıştır; Mansa'nın kapsadığı diğer Afrika borsaları burada henüz desteklenmemektedir.

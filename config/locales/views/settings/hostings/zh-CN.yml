@@ -61,12 +61,6 @@ zh-CN:
         providers:
           twelve_data: Twelve Data
           yahoo_finance: Yahoo Finance
-          tiingo: Tiingo
-          eodhd: EODHD
-          alpha_vantage: Alpha Vantage
-          mfapi: MFAPI.in
-          binance_public: Binance
-          moex_public: MOEX
         securities_provider_label: 证券（股票价格）数据提供商
         title: 数据提供商选择
         exchange_rate_title: 汇率提供商
@@ -75,12 +69,6 @@ zh-CN:
         securities_description: 选择用于同步证券和投资价格的提供商。
         twelve_data_hint: Twelve Data 支持股票、ETF 和部分基金价格。
         yahoo_finance_hint: Yahoo Finance 可作为免密钥价格来源。
-        requires_api_key: 需要 API Key
-        requires_api_key_eodhd: EODHD 需要 API Token。
-        requires_api_key_alpha_vantage: Alpha Vantage 需要 API Key。
-        mfapi_hint: MFAPI.in 可用于部分印度基金数据。
-        binance_public_hint: Binance 公共接口可用于加密资产行情。
-        moex_public_hint: 免费，无需 API 密钥 -- 俄罗斯股票、基金和债券（MOEX），包括 RUB 外汇
       show:
         clear_cache: 清除数据缓存
         clear_cache_warning: 清除数据缓存将移除所有汇率、证券价格、账户余额及其他数据。这不会删除账户、交易记录、分类或其他用户自有数据。
@@ -176,38 +164,6 @@ zh-CN:
         model_label: 默认模型（可选）
         model_placeholder: claude-sonnet-4-6（默认）
         model_help: 留空时使用系统默认模型。
-      tiingo_settings:
-        title: Tiingo
-        description: 使用 Tiingo 同步证券价格。
-        env_configured_message: 已通过环境变量配置 Tiingo。
-        label: API 令牌
-        placeholder: 粘贴 Tiingo API Token
-        show_details: "（显示详情）"
-        step_1_html: 注册或登录 Tiingo。
-        step_2_html: 前往 <a href="https://www.tiingo.com/account/api/token" target="_blank" rel="noopener noreferrer" class="underline">API Token</a> 页面。
-        step_3: 复制 API Token 并粘贴到下方。
-      eodhd_settings:
-        title: EODHD
-        description: 使用 EODHD 同步证券价格。
-        env_configured_message: 已通过环境变量配置 EODHD。
-        label: API 令牌
-        placeholder: 粘贴 EODHD API Token
-        show_details: "（显示详情）"
-        step_1_html: 注册或登录 EODHD。
-        step_2_html: 打开 API Token 页面。
-        step_3: 复制 API Token 并粘贴到下方。
-        rate_limit_warning: 免费或低阶计划可能有调用频率限制。
-      alpha_vantage_settings:
-        title: Alpha Vantage
-        description: 使用 Alpha Vantage 同步证券价格。
-        env_configured_message: 已通过环境变量配置 Alpha Vantage。
-        label: API 密钥
-        placeholder: 粘贴 Alpha Vantage API Key
-        show_details: "（显示详情）"
-        step_1_html: 注册或登录 Alpha Vantage。
-        step_2: 前往 API Key 页面并复制密钥。
-        rate_limit_warning: 免费计划可能有调用频率限制。
-        no_health_check_note: 此提供商暂无健康检查。
       disconnect_external_assistant:
         external_assistant_disconnected: 外部助手已断开连接。
       ensure_admin:

@@ -1,10 +1,18 @@
 module ExchangeRate::Provided
   extend ActiveSupport::Concern
 
+  DEFAULT_EXCHANGE_RATE_PROVIDER = "twelve_data"
+
   class_methods do
+    # A choice that names no registered provider (one Ballast removed from
+    # Sure, still stored in the settings table or set in
+    # EXCHANGE_RATE_PROVIDER) falls back to the default provider instead of
+    # raising Provider::Registry::Error. Admin -> System health still reports
+    # the stored value as an invalid provider.
     def provider
-      provider = ENV["EXCHANGE_RATE_PROVIDER"].presence || Setting.exchange_rate_provider
+      provider = (ENV["EXCHANGE_RATE_PROVIDER"].presence || Setting.exchange_rate_provider).to_s
       registry = Provider::Registry.for_concept(:exchange_rates)
+      provider = DEFAULT_EXCHANGE_RATE_PROVIDER unless registry.provider_keys.map(&:to_s).include?(provider)
       registry.get_provider(provider.to_sym)
     end
 

@@ -143,8 +143,8 @@ class Security::Resolver
       filtered_candidates = provider_search_result
 
       # If a country code is specified, we MUST find a match with the same code
-      # — but nil candidate country is treated as a wildcard (e.g. crypto from
-      # Binance, which isn't tied to a jurisdiction).
+      # — but nil candidate country is treated as a wildcard (an asset that
+      # isn't tied to a jurisdiction).
       if country_code.present?
         filtered_candidates = filtered_candidates.select { |s| country_matches?(s.country_code) }
       end
@@ -226,7 +226,7 @@ class Security::Resolver
     end
 
     # Candidate country matches when it equals the resolver's country OR when
-    # the provider didn't report a country at all (e.g. crypto from Binance).
+    # the provider didn't report a country at all (e.g. crypto).
     # A nil candidate country is a legitimate "no jurisdiction" signal, not a
     # missing field, so we trust the user's provider + exchange pick.
     def country_matches?(candidate_country)

@@ -111,7 +111,7 @@ class ConfigurationHealthTest < ActiveSupport::TestCase
   end
 
   test "keyless public providers are configured without API keys" do
-    Setting.stubs(:enabled_securities_providers).returns([ "yahoo_finance", "mfapi", "binance_public", "moex_public" ])
+    Setting.stubs(:enabled_securities_providers).returns([ "yahoo_finance" ])
     Provider::YahooFinance.any_instance.expects(:health_status).never
     Provider::YahooFinance.any_instance.expects(:healthy?).never
 

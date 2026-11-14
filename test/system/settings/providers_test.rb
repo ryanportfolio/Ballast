@@ -112,7 +112,7 @@ class Settings::ProvidersTest < ApplicationSystemTestCase
 
     assert_selector "a[data-providers-filter-target='card']", text: /SimpleFIN/i
 
-    find('[data-providers-filter-target="input"]').set("RentCast")
+    find('[data-providers-filter-target="input"]').set("No such provider")
 
     assert_no_selector "a[data-providers-filter-target='card']", text: /SimpleFIN/i
   end

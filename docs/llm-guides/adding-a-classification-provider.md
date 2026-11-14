@@ -22,7 +22,7 @@ live under their own registry concept:
 
 ```ruby
 # app/models/provider/registry.rb
-CONCEPTS = %i[exchange_rates securities llm property_valuations classification]
+CONCEPTS = %i[exchange_rates securities llm classification]
 
 when :classification
   %i[jev]

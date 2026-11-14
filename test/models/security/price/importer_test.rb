@@ -109,7 +109,7 @@ class Security::Price::ImporterTest < ActiveSupport::TestCase
 
   test "writes post-listing prices when holding predates provider history" do
     # Regression: a 2018-06-15 trade for a pair the provider only has from
-    # 2020-01-03 onwards (e.g. BTCEUR on Binance) used to hit the
+    # 2020-01-03 onwards (e.g. a later listing) used to hit the
     # `return 0` bail in start_price_value and write zero rows for the
     # entire range. The fallback now advances fill_start_date to the
     # earliest provider date and writes all post-listing prices.

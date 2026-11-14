@@ -10,7 +10,7 @@ class Security < ApplicationRecord
   EXCHANGES = YAML.safe_load_file(Rails.root.join("config", "exchanges.yml")).freeze
 
   # Legacy non-ISO values previously persisted as exchange_operating_mic
-  # (e.g. raw EODHD exchange codes) mapped to their ISO MIC.
+  # (e.g. raw provider exchange codes) mapped to their ISO MIC.
   MIC_ALIASES = {
     "WAR" => "XWAR"
   }.freeze
@@ -22,23 +22,6 @@ class Security < ApplicationRecord
   # Evaluated at runtime (not boot) so runtime-enabled providers are accepted.
   def self.valid_price_providers
     Provider::Registry.for_concept(:securities).provider_keys.map(&:to_s)
-  end
-
-  # Builds the Brandfetch crypto URL for a base asset (e.g. "BTC"). Returns
-  # nil when Brandfetch isn't configured.
-  # The symbol goes into a URL path segment, and it comes from provider data —
-  # an on-chain token can be called anything its deployer chose. A slash, a
-  # question mark or a hash would not merely break the link: they would point
-  # the path elsewhere on the CDN, or push the client id into a fragment where
-  # Brandfetch never sees it. Guarded here rather than at each call site, since
-  # six of them reach this method from four different providers.
-  SAFE_CRYPTO_SYMBOL = /\A[A-Za-z0-9][A-Za-z0-9.\-]{0,31}\z/
-
-  def self.brandfetch_crypto_url(base_asset)
-    return nil if base_asset.blank?
-    return nil unless base_asset.to_s.match?(SAFE_CRYPTO_SYMBOL)
-
-    Setting.brand_fetch_icon_url(base_asset, namespace: "crypto")
   end
 
   # Classification taxonomy: the six-class / twelve-sub-class scheme other
@@ -93,7 +76,10 @@ class Security < ApplicationRecord
   validates :ticker, presence: true
   validates :ticker, uniqueness: { scope: :exchange_operating_mic, case_sensitive: false }
   validates :kind, inclusion: { in: KINDS }
-  validates :price_provider, inclusion: { in: ->(_) { Security.valid_price_providers } }, allow_nil: true
+  # Checked only when the value changes: rows that still name a provider
+  # Ballast removed keep saving (health checks, offline marking), and their
+  # provider_status reports :provider_unavailable.
+  validates :price_provider, inclusion: { in: ->(_) { Security.valid_price_providers } }, allow_nil: true, if: :price_provider_changed?
   validates :asset_class, inclusion: { in: ASSET_CLASSES }, allow_nil: true
   validates :asset_sub_class, inclusion: { in: ASSET_SUB_CLASSES }, allow_nil: true
   validates :classification_source, inclusion: { in: CLASSIFICATION_SOURCES }, allow_nil: true
@@ -126,37 +112,13 @@ class Security < ApplicationRecord
     kind == "cash"
   end
 
-  # True when this security represents a crypto asset. Today the only signal
-  # is the Binance ISO MIC — when we add a second crypto provider, extend
-  # this check rather than duplicating the test at every call site.
-  def crypto?
-    exchange_operating_mic == Provider::BinancePublic::BINANCE_MIC
-  end
-
-  # Strips the display-currency suffix from a crypto ticker (BTCUSD -> BTC,
-  # ETHEUR -> ETH). Returns nil for non-crypto securities or when the ticker
-  # doesn't end in a supported quote.
-  def crypto_base_asset
-    return nil unless crypto?
-
-    # Delegated rather than parsed here: this stripped a fiat suffix only, so it
-    # answered nil for the "CRYPTO:BTC" form the holdings processors store — the
-    # form every crypto integration writes — and those securities carried no
-    # logo at all. The provider already parses every shape it accepts.
-    Provider::BinancePublic.parse_ticker(ticker)&.dig(:base)
-  end
-
   # Single source of truth for which logo URL the UI should render.
-  # - Crypto keeps its dedicated Brandfetch-crypto shape.
   # - When a website domain is known, Brandfetch (consistent client_id + size)
   #   wins, falling back to any stored logo_url.
-  # - With no domain, a stored provider logo (e.g. T-Invest's CDN for MOEX
-  #   instruments) is authoritative and beats the ticker-only Brandfetch
-  #   lettermark placeholder.
+  # - With no domain, a stored provider logo is authoritative and beats the
+  #   ticker-only Brandfetch lettermark placeholder.
   def display_logo_url
-    if crypto?
-      self.class.brandfetch_crypto_url(crypto_base_asset).presence || logo_url.presence
-    elsif website_url.present?
+    if website_url.present?
       brandfetch_icon_url.presence || logo_url.presence
     else
       logo_url.presence || brandfetch_icon_url.presence
@@ -307,11 +269,7 @@ class Security < ApplicationRecord
     end
 
     def generate_logo_url_from_brandfetch
-      self.logo_url = if crypto?
-        self.class.brandfetch_crypto_url(crypto_base_asset)
-      else
-        brandfetch_icon_url
-      end
+      self.logo_url = brandfetch_icon_url
     end
 
     # When a user remaps a security to a different provider (via the holdings

@@ -76,36 +76,36 @@ class Security::ResolverTest < ActiveSupport::TestCase
     db_security = Security.create!(ticker: "CSPX", exchange_operating_mic: "XLON", country_code: "GB")
 
     Security.expects(:search_provider).never
-    Setting.stubs(:enabled_securities_providers).returns([ "tiingo" ])
+    Setting.stubs(:enabled_securities_providers).returns([ "yahoo_finance" ])
 
     resolved = Security::Resolver.new(
       "CSPX",
       exchange_operating_mic: "XLON",
       country_code: "GB",
-      price_provider: "tiingo"
+      price_provider: "yahoo_finance"
     ).resolve
 
     assert_equal db_security, resolved
-    assert_equal "tiingo", resolved.reload.price_provider
+    assert_equal "yahoo_finance", resolved.reload.price_provider
   end
 
   test "persists price_provider on provider match" do
-    match = Security.new(ticker: "VWCE", exchange_operating_mic: "XETR", country_code: "DE", price_provider: "eodhd")
+    match = Security.new(ticker: "VWCE", exchange_operating_mic: "XETR", country_code: "DE", price_provider: "yahoo_finance")
 
     Security.expects(:search_provider)
             .with("VWCE", exchange_operating_mic: "XETR", technical_failure: anything)
             .returns([ match ])
 
-    Setting.stubs(:enabled_securities_providers).returns([ "eodhd" ])
+    Setting.stubs(:enabled_securities_providers).returns([ "yahoo_finance" ])
 
     resolved = Security::Resolver.new(
       "VWCE",
       exchange_operating_mic: "XETR",
-      price_provider: "eodhd"
+      price_provider: "yahoo_finance"
     ).resolve
 
     assert resolved.persisted?
-    assert_equal "eodhd", resolved.price_provider
+    assert_equal "yahoo_finance", resolved.price_provider
   end
 
   test "rejects unknown price_provider" do
@@ -124,38 +124,35 @@ class Security::ResolverTest < ActiveSupport::TestCase
     assert_nil resolved.reload.price_provider, "Unknown providers should be rejected"
   end
 
-  test "resolves Binance crypto match for a non-AE family" do
-    # Regression: BinancePublic search results carry country_code="AE" (the ISO
-    # 10383 MIC country), but the transactions controller passes the family's
-    # country (e.g. "US"). The resolver used to require an exact country match
-    # for both exact and close paths, so non-AE families would fall through to
-    # offline_security for every Binance pick — the user saw their BTCUSD
-    # holding resolve to an offline security that never fetched prices.
-    binance_match = Security.new(
-      ticker: "BTCUSD",
-      exchange_operating_mic: "BNCX",
+  test "resolves a match without a country for a family with one" do
+    # The transactions controller passes the family's country (e.g. "US"). A
+    # search result with no country is not tied to a jurisdiction, so it must
+    # not fall through to offline_security.
+    countryless_match = Security.new(
+      ticker: "ACMEX",
+      exchange_operating_mic: "XNAS",
       country_code: nil,
-      price_provider: "binance_public"
+      price_provider: "yahoo_finance"
     )
 
     Security.expects(:search_provider)
-            .with("BTCUSD", exchange_operating_mic: "BNCX", country_code: "US", technical_failure: anything)
-            .returns([ binance_match ])
+            .with("ACMEX", exchange_operating_mic: "XNAS", country_code: "US", technical_failure: anything)
+            .returns([ countryless_match ])
 
-    Setting.stubs(:enabled_securities_providers).returns([ "binance_public" ])
+    Setting.stubs(:enabled_securities_providers).returns([ "yahoo_finance" ])
 
     resolved = Security::Resolver.new(
-      "BTCUSD",
-      exchange_operating_mic: "BNCX",
+      "ACMEX",
+      exchange_operating_mic: "XNAS",
       country_code: "US",
-      price_provider: "binance_public"
+      price_provider: "yahoo_finance"
     ).resolve
 
     assert resolved.persisted?
-    refute resolved.offline, "Binance security must not fall through to offline_security"
-    assert_equal "BTCUSD",         resolved.ticker
-    assert_equal "BNCX",           resolved.exchange_operating_mic
-    assert_equal "binance_public", resolved.price_provider
+    refute resolved.offline, "A countryless match must not fall through to offline_security"
+    assert_equal "ACMEX",         resolved.ticker
+    assert_equal "XNAS",          resolved.exchange_operating_mic
+    assert_equal "yahoo_finance", resolved.price_provider
   end
 
   test "resolved provider match copies name but not logo_url from the search result" do
@@ -166,28 +163,28 @@ class Security::ResolverTest < ActiveSupport::TestCase
     # fetch_security_info/Brandfetch instead, so those paths still run
     # exactly as before on first sync.
     match = Security.new(
-      ticker: "BTCUSD",
-      exchange_operating_mic: "BNCX",
+      ticker: "ACMEX",
+      exchange_operating_mic: "XNAS",
       country_code: nil,
-      name: "BTC",
-      logo_url: "https://cdn.brandfetch.io/crypto/BTC/icon/fallback/lettermark/w/120/h/120?c=test",
-      price_provider: "binance_public"
+      name: "Acme",
+      logo_url: "https://cdn.brandfetch.io/acme.com/icon/fallback/lettermark/w/120/h/120?c=test",
+      price_provider: "yahoo_finance"
     )
 
     Security.expects(:search_provider)
-            .with("BTCUSD", exchange_operating_mic: "BNCX", country_code: "US", technical_failure: anything)
+            .with("ACMEX", exchange_operating_mic: "XNAS", country_code: "US", technical_failure: anything)
             .returns([ match ])
 
-    Setting.stubs(:enabled_securities_providers).returns([ "binance_public" ])
+    Setting.stubs(:enabled_securities_providers).returns([ "yahoo_finance" ])
 
     resolved = Security::Resolver.new(
-      "BTCUSD",
-      exchange_operating_mic: "BNCX",
+      "ACMEX",
+      exchange_operating_mic: "XNAS",
       country_code: "US",
-      price_provider: "binance_public"
+      price_provider: "yahoo_finance"
     ).resolve
 
-    assert_equal "BTC", resolved.reload.name, "Resolver should copy name from the search match"
+    assert_equal "Acme", resolved.reload.name, "Resolver should copy name from the search match"
     assert_nil resolved.logo_url, "Resolver must not copy logo_url from the search match"
   end
 
@@ -198,14 +195,14 @@ class Security::ResolverTest < ActiveSupport::TestCase
     # ticker+MIC record via find_or_create_provider_match! and must not
     # clobber its existing name.
     db_security = Security.create!(ticker: "CSPX3", exchange_operating_mic: "XLON", country_code: "US", name: "Custom Name")
-    match = Security.new(ticker: "CSPX3", exchange_operating_mic: "XLON", country_code: "GB", name: "iShares Core S&P 500", price_provider: "tiingo")
+    match = Security.new(ticker: "CSPX3", exchange_operating_mic: "XLON", country_code: "GB", name: "iShares Core S&P 500", price_provider: "yahoo_finance")
 
     Security.expects(:search_provider)
             .with("CSPX3", exchange_operating_mic: "XLON", country_code: "GB", technical_failure: anything)
             .returns([ match ])
-    Setting.stubs(:enabled_securities_providers).returns([ "tiingo" ])
+    Setting.stubs(:enabled_securities_providers).returns([ "yahoo_finance" ])
 
-    resolved = Security::Resolver.new("CSPX3", exchange_operating_mic: "XLON", country_code: "GB", price_provider: "tiingo").resolve
+    resolved = Security::Resolver.new("CSPX3", exchange_operating_mic: "XLON", country_code: "GB", price_provider: "yahoo_finance").resolve
 
     assert_equal db_security, resolved
     assert_equal "Custom Name", resolved.reload.name
@@ -382,7 +379,7 @@ class Security::ResolverTest < ActiveSupport::TestCase
       "GOOG2",
       exchange_operating_mic: "XNAS",
       country_code: "US",
-      price_provider: "tiingo"
+      price_provider: "yahoo_finance"
     ).resolve
 
     assert_equal db_security, resolved
@@ -402,20 +399,20 @@ class Security::ResolverTest < ActiveSupport::TestCase
   end
 
   test "WAR and XWAR resolve to the same security without creating a duplicate" do
-    match = Security.new(ticker: "KTY", exchange_operating_mic: "XWAR", country_code: "PL", price_provider: "eodhd")
+    match = Security.new(ticker: "KTY", exchange_operating_mic: "XWAR", country_code: "PL", price_provider: "yahoo_finance")
 
     Security.expects(:search_provider)
             .with("KTY", exchange_operating_mic: "XWAR", country_code: "PL", technical_failure: anything)
             .returns([ match ])
 
-    Setting.stubs(:enabled_securities_providers).returns([ "eodhd" ])
+    Setting.stubs(:enabled_securities_providers).returns([ "yahoo_finance" ])
 
     assert_difference "Security.count", 1 do
       resolved = Security::Resolver.new(
         "KTY",
         exchange_operating_mic: "WAR",
         country_code: "PL",
-        price_provider: "eodhd"
+        price_provider: "yahoo_finance"
       ).resolve
 
       assert_equal "XWAR", resolved.exchange_operating_mic
@@ -428,7 +425,7 @@ class Security::ResolverTest < ActiveSupport::TestCase
         "KTY",
         exchange_operating_mic: "XWAR",
         country_code: "PL",
-        price_provider: "eodhd"
+        price_provider: "yahoo_finance"
       ).resolve
 
       assert_equal "XWAR", again.exchange_operating_mic

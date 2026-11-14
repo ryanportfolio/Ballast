@@ -1,6 +1,6 @@
 # Relabels mis-tagged Warsaw (XWAR / legacy WAR) security_prices from USD → PLN.
 #
-# Before Provider::Eodhd mapped Warsaw, search-cache expiry caused PLN closes to be
+# Before Warsaw securities carried the XWAR MIC, search-cache expiry caused PLN closes to be
 # persisted as USD (#3128). Numeric prices stay the same; only the currency label
 # is corrected. When a PLN row already exists for the same (security, date), the
 # USD duplicate is deleted to satisfy the unique index.

@@ -1,6 +1,6 @@
 # Adding a New Securities Price Provider
 
-This guide covers every step needed to add a new securities price provider (like Tiingo, EODHD, etc.) to the application.
+This guide covers every step needed to add a new securities price provider (like Yahoo Finance or Twelve Data) to the application.
 
 ## Architecture Overview
 
@@ -278,9 +278,9 @@ Edit `app/models/provider/registry.rb`:
 def available_providers
   case concept
   when :exchange_rates
-    %i[twelve_data yahoo_finance]
+    %i[twelve_data yahoo_finance frankfurter]
   when :securities
-    %i[twelve_data yahoo_finance tiingo eodhd alpha_vantage mfapi your_provider]
+    %i[twelve_data yahoo_finance your_provider]
   # ...
   end
 end
@@ -296,7 +296,7 @@ def your_provider
 end
 ```
 
-If your provider needs no API key (like Yahoo Finance or MFAPI):
+If your provider needs no API key (like Yahoo Finance):
 
 ```ruby
 def your_provider
@@ -319,9 +319,6 @@ field :your_provider_api_key, type: :string, default: ENV["YOUR_PROVIDER_API_KEY
 ```ruby
 ENCRYPTED_FIELDS = %i[
   twelve_data_api_key
-  tiingo_api_key
-  eodhd_api_key
-  alpha_vantage_api_key
   your_provider_api_key    # ← add here
   openai_access_token
   external_assistant_token
@@ -348,7 +345,7 @@ update_encrypted_setting(:your_provider_api_key)
 
 ### Hostings View
 
-Edit the settings view to add your provider's checkbox and API key field. Follow the existing pattern for Tiingo/EODHD (checkbox in the provider selection list, API key input shown when enabled).
+Edit the settings view to add your provider's checkbox and API key field. Follow the existing pattern for Twelve Data (checkbox in the provider selection list, API key input shown when enabled).
 
 ## Step 5: Add Translations
 
@@ -360,10 +357,6 @@ Edit `config/locales/views/settings/hostings/en.yml`:
 providers:
   twelve_data: "Twelve Data"
   yahoo_finance: "Yahoo Finance"
-  tiingo: "Tiingo"
-  eodhd: "EODHD"
-  alpha_vantage: "Alpha Vantage"
-  mfapi: "MFAPI.in"
   your_provider: "Your Provider"    # ← add here
 ```
 

@@ -1,11 +1,7 @@
 class Provider
   module Metadata
     REGISTRY = {
-      simplefin:      { region: "US",      kinds: %w[Bank Investment], maturity: :stable, logo_text: "SF", logo_color: "#2563eb", domain: "simplefin.org" },
-      # Property valuation (AVM) providers
-      rentcast:       { region: "US",      kinds: %w[Property],        maturity: :beta,   logo_text: "RC", logo_color: "#2563eb", domain: "rentcast.io", name: "RentCast" },
-      realie:         { region: "US",      kinds: %w[Property],        maturity: :beta,   logo_text: "RE", logo_color: "#0d9488", domain: "realie.ai" },
-      chimnie:        { region: "UK",      kinds: %w[Property],        maturity: :beta,   logo_text: "CH", logo_color: "#db2777", domain: "chimnie.com" }
+      simplefin:      { region: "US",      kinds: %w[Bank Investment], maturity: :stable, logo_text: "SF", logo_color: "#2563eb", domain: "simplefin.org" }
     }.freeze
 
     def self.for(provider_key)
