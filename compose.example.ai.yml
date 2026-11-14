@@ -345,7 +345,10 @@ services:
       - sure_net
 
   db:
-    image: postgres:16
+    # Keep the pgvector image: databases created by Sure's vector store (removed
+    # from Ballast) may still hold the `vector` extension and its tables, and
+    # backups and restores of those databases need the extension's library.
+    image: pgvector/pgvector:pg16-trixie
     restart: unless-stopped
     volumes:
       - postgres-data:/var/lib/postgresql/data

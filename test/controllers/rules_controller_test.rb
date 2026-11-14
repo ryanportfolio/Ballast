@@ -35,6 +35,42 @@ class RulesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "edit shows a stored unsupported action as selected, with no value input" do
+    rule = rules(:one)
+    action = rule.actions.first
+    action.update_columns(action_type: "bayes_categorize", value: "stored value")
+
+    get edit_rule_url(rule)
+    assert_response :success
+
+    assert_select "select[name*='[action_type]'] option[selected][value='bayes_categorize']", text: "Unsupported action (bayes_categorize)"
+    assert_select "select[name*='[action_type]'] option[value='set_transaction_category']"
+    # The new-action template renders its own value input under IDX_PLACEHOLDER;
+    # the stored action's row must have none.
+    assert_select "[data-rule--actions-target='actionValue'] [name^='rule[actions_attributes][0]']", 0
+  end
+
+  test "renaming a rule keeps its stored unsupported action" do
+    rule = rules(:one)
+    action = rule.actions.first
+    action.update_columns(action_type: "bayes_categorize", value: "stored value")
+
+    assert_no_difference "Rule::Action.count" do
+      patch rule_url(rule), params: {
+        rule: {
+          name: "Renamed rule",
+          actions_attributes: { "0" => { id: action.id, action_type: "bayes_categorize", _destroy: "false" } }
+        }
+      }
+    end
+
+    assert_redirected_to rules_url
+    assert_equal "Renamed rule", rule.reload.name
+    action.reload
+    assert_equal "bayes_categorize", action.action_type
+    assert_equal "stored value", action.value
+  end
+
   # "Set all transactions with a name like 'starbucks' and an amount between 20 and 40 to the 'food and drink' category"
   test "creates rule with nested conditions" do
     post rules_url, params: {

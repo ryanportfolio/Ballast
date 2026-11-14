@@ -27,8 +27,11 @@ class Rule::Action < ApplicationRecord
 
   validates :action_type, presence: true, if: -> { action_type.to_s.valid_encoding? }
   # A NUL or invalid encoding is reported by DatabaseTextValidator instead.
+  # Checked only when the type is set or changed: a stored action whose type
+  # no executor handles any more (see Rule::ActionExecutor::Unsupported) still
+  # saves unchanged when its rule is edited.
   validates :action_type, inclusion: { in: SUPPORTED_ACTION_TYPES, allow_blank: true },
-    if: -> { DatabaseTextValidator.acceptable?(action_type) }
+    if: -> { action_type_changed? && DatabaseTextValidator.acceptable?(action_type) }
   validates_with DatabaseTextValidator, attributes: %i[action_type value]
   before_validation :build_split_value, if: -> { action_type == "split_transaction" && split_rows.present? }
   validate :split_config_valid, if: -> { action_type == "split_transaction" }
@@ -122,6 +125,17 @@ class Rule::Action < ApplicationRecord
     rule.registry.get_executor!(action_type)
   rescue Rule::Registry::UnsupportedActionError
     Rule::ActionExecutor::Unsupported.new(rule, action_type)
+  end
+
+  # The executors the rule editor offers for this action: every supported one,
+  # plus the stored type when no executor handles it any more, so the form shows
+  # what is saved and posting it back unchanged keeps it.
+  def selectable_executors
+    executors = rule.action_executors
+    stored_type = action_type_in_database
+    return executors if new_record? || stored_type.blank? || executors.any? { |executor| executor.key == stored_type }
+
+    [ Rule::ActionExecutor::Unsupported.new(rule, stored_type), *executors ]
   end
 
   def email_notification?

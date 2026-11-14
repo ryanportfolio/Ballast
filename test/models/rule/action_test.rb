@@ -619,4 +619,61 @@ class Rule::ActionTest < ActiveSupport::TestCase
 
     assert action.valid?, action.errors.full_messages.to_sentence
   end
+
+  test "a stored action with an unsupported type saves unchanged with its rule" do
+    action = @transaction_rule.actions.first
+    action.update_columns(action_type: "bayes_categorize", value: "stored value")
+    rule = Rule.find(@transaction_rule.id)
+    assert rule.actions.first.valid?, rule.actions.first.errors.full_messages.to_sentence
+
+    assert rule.update(
+      name: "Renamed rule",
+      actions_attributes: [ { id: action.id, action_type: "bayes_categorize" } ]
+    ), rule.errors.full_messages.to_sentence
+
+    action.reload
+    assert_equal "Renamed rule", rule.reload.name
+    assert_equal "bayes_categorize", action.action_type
+    assert_equal "stored value", action.value
+    assert_instance_of Rule::ActionExecutor::Unsupported, action.executor
+  end
+
+  test "a stored unsupported action can be changed to a supported type" do
+    action = @transaction_rule.actions.first
+    action.update_columns(action_type: "bayes_categorize", value: nil)
+
+    assert action.update(action_type: "set_transaction_category", value: @grocery_category.id),
+      action.errors.full_messages.to_sentence
+    assert_equal "set_transaction_category", action.reload.action_type
+  end
+
+  test "rejects a new action with an unsupported type" do
+    action = Rule::Action.new(rule: @transaction_rule, action_type: "bayes_categorize")
+
+    assert_not action.valid?
+    assert action.errors.of_kind?(:action_type, :inclusion)
+  end
+
+  test "rejects changing a stored action to an unsupported type" do
+    action = @transaction_rule.actions.first
+
+    assert_not action.update(action_type: "bayes_categorize")
+    assert action.errors.of_kind?(:action_type, :inclusion)
+    assert_equal "set_transaction_category", action.reload.action_type
+  end
+
+  test "selectable executors include a stored unsupported type only" do
+    action = @transaction_rule.actions.first
+    supported_keys = @transaction_rule.action_executors.map(&:key)
+
+    assert_equal supported_keys, action.selectable_executors.map(&:key)
+    assert_equal supported_keys, Rule::Action.new(rule: @transaction_rule, action_type: "bayes_categorize").selectable_executors.map(&:key)
+
+    action.update_columns(action_type: "bayes_categorize")
+    action.reload
+    executors = action.selectable_executors
+
+    assert_equal [ "bayes_categorize", *supported_keys ], executors.map(&:key)
+    assert_equal "Unsupported action (bayes_categorize)", executors.first.label
+  end
 end
