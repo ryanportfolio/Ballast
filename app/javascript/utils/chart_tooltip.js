@@ -1,7 +1,6 @@
 // Single source of truth for the cursor-following tooltip used by the chart
-// controllers (time-series, sankey, and goal-projection once it lands from the
-// goals work). Keeping the visual contract here stops the bg / text / border /
-// privacy-sensitive classes from drifting apart across the controllers, the way
+// controllers (time-series, sankey). Keeping the visual contract here stops
+// the bg / text / border / privacy-sensitive classes from drifting apart across the controllers, the way
 // they had before (time-series was missing `text-primary` and `z-50`).
 //
 // This is the VISUAL contract only. Callers append their own behavioural

@@ -24,7 +24,5 @@ en:
       aria_label: Open account menu
       version: Version
       settings: Settings
-      changelog: Changelog
-      feedback: Feedback
       contact: Contact
       log_out: Log out

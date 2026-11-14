@@ -93,29 +93,6 @@ class PagesController < ApplicationController
     redirect_to root_path(view_params.merge(customize: true, **changed)), status: :see_other
   end
 
-  def changelog
-    @breadcrumbs = [ [ t("breadcrumbs.home"), root_path ], [ t("breadcrumbs.changelog"), nil ] ]
-    @release_notes = github_provider.fetch_latest_release_notes
-
-    # Fallback if no release notes are available
-    if @release_notes.nil?
-      @release_notes = {
-        avatar: "https://github.com/we-promise.png",
-        username: "we-promise",
-        name: t("pages.release_notes_unavailable.name"),
-        published_at: Date.current,
-        body: t("pages.release_notes_unavailable.body_html")
-      }
-    end
-
-    render layout: "settings"
-  end
-
-  def feedback
-    @breadcrumbs = [ [ t("breadcrumbs.home"), root_path ], [ t("breadcrumbs.feedback"), nil ] ]
-    render layout: "settings"
-  end
-
   def redis_configuration_error
     render layout: "blank"
   end
@@ -359,10 +336,6 @@ class PagesController < ApplicationController
       end
 
       base.merge(col_span: col_span, height_preset: preset, height_px: DASHBOARD_HEIGHT_PRESETS.fetch(preset))
-    end
-
-    def github_provider
-      Provider::Registry.get_provider(:github)
     end
 
     def build_cashflow_sankey_data(net_totals, income_totals, expense_totals, currency, invested_total: nil)

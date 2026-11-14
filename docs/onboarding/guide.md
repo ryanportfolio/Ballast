@@ -316,7 +316,6 @@ They help you quickly identify the nature of each investment transaction without
 Now that you have one account and your first transaction:
 - Explore the other account types that Sure offers, adding ones relevant to your finances.
 - **Categorize** and **Tag** transactions for better searching and reporting.
-- Experiment with **Budgets** to track your spending habits.
 - If you have many historical transactions, use **Import** (the Import button on the Transactions page, or **Settings > Imports**) to load them in.
 
 More detailed user guides for these features are coming soon™.

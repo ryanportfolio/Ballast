@@ -9,14 +9,6 @@ class Current < ActiveSupport::CurrentAttributes
   resets { @accessible_accounts = @finance_accounts = nil }
 
   def user
-    impersonated_user || session&.user
-  end
-
-  def impersonated_user
-    session&.active_impersonator_session&.impersonated
-  end
-
-  def true_user
     session&.user
   end
 

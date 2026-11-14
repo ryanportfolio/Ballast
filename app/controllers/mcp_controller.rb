@@ -154,9 +154,8 @@ class McpController < ApplicationController
 
     def setup_mcp_session(user)
       @mcp_user = user
-      # Build a fresh session to avoid inheriting impersonation state from
-      # existing sessions (Current.user resolves via active_impersonator_session
-      # first, which could leak another user's data into MCP tool calls).
+      # Build a fresh unsaved session so MCP calls never reuse an existing
+      # web session.
       Current.session = user.sessions.build(
         user_agent: request.user_agent,
         ip_address: request.ip

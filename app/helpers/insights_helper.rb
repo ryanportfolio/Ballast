@@ -5,12 +5,7 @@ module InsightsHelper
     "net_worth_milestone" => "trophy",
     "subscription_audit" => "repeat",
     "savings_rate_change" => "piggy-bank",
-    "idle_cash" => "wallet",
-    "budget_at_risk" => "alert-triangle",
-    "budget_on_track" => "circle-check",
-    # Same shield the reserve panel uses on the goal page, so the two read as
-    # the same object seen from two places.
-    "maintained_goal_depleted" => "shield-alert"
+    "idle_cash" => "wallet"
   }.freeze
 
   def insight_icon_key(insight)
@@ -72,15 +67,6 @@ module InsightsHelper
       facts["amount"] && [ facts["amount"], t("insights.figures.days_overdue", count: facts["days_overdue"].to_i) ]
     when "idle_cash"
       facts["balance"] && [ facts["balance"], t("insights.figures.idle_days", count: facts["idle_days"].to_i) ]
-    when "budget_at_risk"
-      # Not budget_spent_pct: this card's headline is "N categories need
-      # attention", and total consumption ("14% of budget") reads as reassurance
-      # next to it — a focal figure arguing against its own card. The flagged
-      # count is what the card is actually about.
-      facts["count"] && [ facts["count"].to_s, t("insights.figures.need_attention") ]
-    when "budget_on_track"
-      # Still the right figure here, where overall usage *is* the subject.
-      facts["budget_spent_pct"] && [ "#{facts["budget_spent_pct"]}%", t("insights.figures.of_budget") ]
     end
   end
 
@@ -111,12 +97,6 @@ module InsightsHelper
         href: transactions_path(q: { start_date: insight.period_start.to_s, end_date: insight.period_end.to_s }) }
     when "net_worth_milestone"
       { text: t("insights.actions.net_worth_milestone"), href: reports_path }
-    when "budget_at_risk", "budget_on_track"
-      return nil unless insight.period_start
-      { text: t("insights.actions.budget"), href: budget_path(Budget.date_to_param(insight.period_start)) }
-    when "maintained_goal_depleted"
-      goal = insight.family.goals.find_by(id: metadata["goal_id"])
-      goal && { text: t("insights.actions.maintained_goal_depleted"), href: goal_path(goal) }
     end
   end
 
@@ -173,7 +153,7 @@ module InsightsHelper
     metadata = insight.metadata || {}
 
     case insight.insight_type
-    when "net_worth_milestone", "budget_on_track"
+    when "net_worth_milestone"
       :positive
     when "savings_rate_change"
       metadata["current_rate"].to_f >= metadata["previous_rate"].to_f ? :positive : :warning
@@ -181,10 +161,6 @@ module InsightsHelper
       metadata["direction"] == "below" ? :positive : :warning
     when "cash_flow_warning"
       metadata["negative"] ? :negative : :warning
-    when "budget_at_risk", "maintained_goal_depleted"
-      # Warning, not negative: the reserve is short, not overdrawn, and red is
-      # reserved here for money actually going the wrong side of zero.
-      :warning
     else
       :neutral
     end

@@ -140,7 +140,7 @@ class BillsController < ApplicationController
   end
 
   # One bill's complete story: current state, history, what is coming, cost.
-  # It lives in the drawer, the way a transaction or a budget category does.
+  # It lives in the drawer, the way a transaction does.
   def show
     @series = Current.family.recurring_transactions
                      .accessible_by(Current.user)

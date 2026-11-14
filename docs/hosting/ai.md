@@ -53,8 +53,7 @@ AI work runs in the Sidekiq `worker`, in its own capsule ("lane"), so a slow mod
 - **Busy notice:** with one AI thread in a single worker process running the AI queues, while another AI job (a background job or another chat) is running, a chat's "Thinking" bubble says the system is busy until the chat's job starts. `AI_RESPONSE_TIMEOUT` includes that wait.
 - **Chat reservation:** with one AI thread, clicking into or typing in the chat box, and each finished reply, hold back new background AI jobs for 60 seconds, so the message runs next. This applies when a single worker process runs the AI queues; with several, a chat can run on one while another runs background jobs, so nothing is held. Back-to-back holds stop after 15 minutes and resume 60 seconds later, so background AI work gets a turn. When you click into or type in the chat box while background AI jobs wait, a bubble above it shows the countdown, or says one is still finishing. A job that is already running is not interrupted.
 - **One AI thread suits a model that serves one request at a time,** such as a local model on CPU: a chat turn's calls then run back to back, keeping the model's prompt cache warm. If your provider serves requests in parallel (hosted APIs, or a local server with several slots), raise `RAILS_AI_MAX_THREADS`, and `RAILS_MAX_THREADS` by the same amount so the default lane keeps its threads.
-- **The worker must load `config/sidekiq.yml`,** as `bundle exec sidekiq` does by default. A worker started with its own queue list (`sidekiq -q …`) doesn't get the AI lane. If no worker polls `ai_high_priority` and `ai_low_priority`, **System health** (`/admin/system_health`) and the site-wide banner report "No worker is processing the AI queues", and the chat page warns that responses may not be delivered. Keep `-C config/sidekiq.yml`; adding `-q ai_high_priority -q ai_low_priority` also works, but AI jobs then share that worker's threads, and the chat reservation doesn't hold them, since a chat can usually take another thread.
-- **System health:** AI backlog doesn't count towards "queue backed up" (a large merchant-detection run can queue for hours), but "Oldest job age" still includes it. Check the queue table or `/sidekiq` to see which queue is waiting.
+- **The worker must load `config/sidekiq.yml`,** as `bundle exec sidekiq` does by default. A worker started with its own queue list (`sidekiq -q …`) doesn't get the AI lane. If no worker polls `ai_high_priority` and `ai_low_priority`, the chat page warns that responses may not be delivered. Keep `-C config/sidekiq.yml`; adding `-q ai_high_priority -q ai_low_priority` also works, but AI jobs then share that worker's threads, and the chat reservation doesn't hold them, since a chat can usually take another thread.
 - **Upgrading:** AI jobs moved from `high_priority` (chat), `medium_priority` and `scheduled` to the AI queues. Jobs already queued under the old names still run once, in the default lane.
 - **Large batches:** Sure doesn't limit `LLM_MAX_ITEMS_PER_CALL`. OpenAI-compatible providers split a batch that doesn't fit the context window; with the native Anthropic provider, raise `ANTHROPIC_MAX_TOKENS` (default `4096`) along with it, or replies are cut off.
 
@@ -490,7 +489,7 @@ This is useful when:
 1. User sends a message in the Sure chat UI
 2. Sure sends the conversation to your agent's API endpoint (OpenAI chat completions format)
 3. Your agent processes it using whatever LLM, tools, or context it needs
-4. Your agent can call Sure's `/mcp` endpoint for financial data and actions (accounts, transactions, balance sheet, budgets, file search, account statements, goals)
+4. Your agent can call Sure's `/mcp` endpoint for financial data and actions (accounts, transactions, balance sheet, file search, account statements)
 5. Your agent streams the response back to Sure via Server-Sent Events (SSE)
 
 The agent's API must be **OpenAI chat completions compatible**: accept `POST` with a `messages` array, return SSE with `delta.content` chunks.
@@ -1133,16 +1132,8 @@ function calls, so every chat request carries a `tools` payload. A model
 without function-calling support rejects it — OpenRouter answers `404` for
 models such as `tngtech/deepseek-r1t2-chimera:free`.
 
-**Confirm it:** Open **System health → AI status**
-(`/admin/system_health?tab=ai`). **Function calling (tools)** reports *Not
-supported by the effective provider/model* when the endpoint served the plain
-chat check but rejected the same request carrying tools, and *Tools accepted,
-but the model called none* when the model answered with text instead of
-calling the tool.
-
 **Fix:** Set `OPENAI_MODEL` to a model your provider documents as supporting
-tools/function calling — see [For Chat Assistant](#for-chat-assistant) above —
-then run the checks again. Free tiers are a poor place to look: providers
+tools/function calling — see [For Chat Assistant](#for-chat-assistant) above. Free tiers are a poor place to look: providers
 commonly log their prompts and completions for training, and the assistant
 sends your accounts, transactions, and holdings in every tool call.
 
@@ -1369,12 +1360,11 @@ Read and analysis:
 - `get_holdings` - Investment holdings
 - `get_balance_sheet` - Net worth, assets and liabilities with a configurable history period and interval
 - `get_income_statement` - Income and expenses for a period, with monthly series, prior-period comparison and account filtering
-- `get_budget` - Budget summary for a month
 - `get_merchants` - Merchants with the ids update_transaction accepts and the exact names get_transactions filters on
 - `get_tags` / `get_categories` - Tag and category listings with pagination
 
 Write:
-- `update_transaction`, `update_budget`, `create_goal`
+- `update_transaction`
 - `unmatch_transfer` - Unlink a wrongly matched transfer
 - `update_transfer` - Count a transfer into an investment account as spending or as a plain transfer
 - `create_tag` / `update_tag`, `create_category` / `update_category` / `delete_category`
@@ -1382,79 +1372,6 @@ Write:
 These are defined in `app/models/assistant/function/`. Preview tools
 (Statement Vault, `get_valuations`, `get_insights`) are listed in
 [mcp.md](mcp.md#preview-tools).
-
-### AI status checks
-
-#### Verifying the Configuration
-
-Super admins can open **System health → AI status** at
-`/admin/system_health?tab=ai`. Opening that URL runs bounded, non-destructive
-live checks against the effective configuration:
-
-- OpenAI-compatible and Anthropic providers must return the configured model
-  from their models API.
-- The configured model must complete one trivial function call, sent the way
-  the assistant sends its own tools. A model that serves plain chat but rejects
-  or ignores the `tools` parameter cannot answer questions about your data.
-
-When `OPENAI_URI_BASE` points outside OpenAI's hosted API, the page labels the
-selected provider **OpenAI-compatible** and identifies a known effective
-provider from the endpoint (for example Ollama, OpenRouter, Together, Kilo, or
-Cloudflare Workers AI/AI Gateway). Unrecognized services are shown as **Custom
-endpoint**.
-
-Results are cached for 60 seconds by default. **Run checks again** bypasses the
-cache. Set `AI_HEALTH_PROBE_TIMEOUT` to change the default five-second request
-timeout and `AI_HEALTH_PROBE_CACHE_TTL` to change the cache duration. Failed
-checks are written as system-wide entries in **Settings → Debug logs** and to
-`Rails.logger`; endpoints are redacted and credentials are never included.
-
-#### Verifying Worker Configuration
-
-The checks above all run from the `web` process. Most AI work — assistant
-responses, auto-categorization, and merchant
-detection — actually executes in a Sidekiq `worker` process, which can differ
-from `web` in network access, DNS, proxy rules, or even which credentials it
-loaded, especially in Kubernetes deployments using workload-specific overrides
-or a Secret updated without a pod restart. A passing web check does not prove
-a worker can reach the same provider.
-
-Click **Verify worker configuration** on the AI status tab to queue an
-asynchronous check (`WorkerAiHealthCheckJob`). It runs the same live probes
-from inside whichever worker process dequeues it, and the tab lists the
-result: that worker's process identity, when it checked, whether its
-effective configuration matches what `web` resolved, and probe outcomes.
-
-A few things this does and doesn't prove:
-
-- **One check verifies one worker.** Sidekiq doesn't broadcast a job to every
-  process, so a passing result confirms the process named on it is healthy —
-  not your whole fleet. With multiple worker replicas, queue the check again
-  to sample another; only the 5 most recently checked-in distinct processes
-  are kept (`WorkerAiHealth::MAX_RESULTS`) — a 6th eviction can push out an
-  older entry before its own `WorkerAiHealth::RETENTION` (15 minutes) is up —
-  and a result older than `WorkerAiHealth::STALE_AFTER` displays as **Stale**
-  rather than pass/fail.
-- **Worker checks never reuse a web-cached result, or vice versa.** The web
-  page's probes are cached briefly (see above) so repeat page loads don't
-  re-hit providers; the worker job deliberately bypasses that shared cache so
-  its result always reflects a live call from its own network context, and
-  never leaves an entry a web request could read back as if it had checked
-  itself.
-- **In local development, the web and worker results won't show up together.**
-  `bin/dev` runs `web` and `worker` as separate OS processes, and
-  `config/environments/development.rb` uses a process-local `:memory_store` /
-  `:null_store` cache there (production uses a shared Redis store). A worker
-  check queued locally writes to the worker process's own in-memory cache, so
-  the web page's "Verify worker configuration" button can appear to do
-  nothing — it isn't a bug, there's just no result for it to read back.
-- **Which settings need a restart depends on how they're set.** Provider,
-  model, and API-key settings changed in **Settings → Self-Hosting** are
-  stored in the database and take effect automatically for the next request
-  or queued job on both `web` and `worker` — no restart needed. Anything only set
-  through an environment variable is fixed when each container starts; changing it requires restarting or
-  recreating **both** `web` and `worker`. The AI status tab labels this
-  distinction next to the worker results.
 
 ### Multi-Model Setup
 

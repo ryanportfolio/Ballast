@@ -1568,8 +1568,8 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
       { count: 2 }, "the row and its Next up item"
   end
 
-  # A bill opens over the list, the way a transaction or a budget category
-  # does, rather than expanding inline under its row.
+  # A bill opens over the list, the way a transaction does, rather than
+  # expanding inline under its row.
   test "a bill opens in the drawer and tells its story there" do
     bill = create_bill(name: "Rent", amount: 2150)
     occurrence = bill.recurring_occurrences.order(:due_on).first
@@ -2076,7 +2076,7 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     assert_includes history, "$78.50"
     assert_includes history, "Account 4821"
 
-    # Collapsible, like a transaction's or a budget category's drawer: the
+    # Collapsible, like a transaction's drawer: the
     # overview opens, the rest wait for a click.
     assert_select "details[open] > summary", text: I18n.t("bills.detail.overview")
     %w[upcoming history notes].each do |key|
@@ -2215,8 +2215,8 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, chevrons.map(&:to_html).uniq.size, "the folds' chevrons differ: #{chevrons.map { |svg| svg["class"] }.inspect}"
   end
 
-  # The pulse totals what is owed, so the bills come next, late ones first, the
-  # way Budgets leads its categories with Over budget. The queues waiting on a
+  # The pulse totals what is owed, so the bills come next, late ones first. The
+  # queues waiting on a
   # yes or no follow, and the notices, which only inform, close the page.
   test "the overview leads with the bills, late ones first, then the queues and the notices" do
     trial = create_bill(name: "Streamflix", amount: 20)

@@ -247,19 +247,6 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
         transactions_modified: 1,
         executed_at: Time.current
       )
-      budget_start = 10.years.from_now.to_date.beginning_of_month
-      budget = family.budgets.create!(
-        start_date: budget_start,
-        end_date: budget_start.end_of_month,
-        budgeted_spending: 100,
-        expected_income: 200,
-        currency: family.currency
-      )
-      budget_category = budget.budget_categories.create!(
-        category: category,
-        budgeted_spending: 50,
-        currency: family.currency
-      )
       import = family.imports.create!(type: "TransactionImport", status: "pending")
       import_row = import.rows.create!(
         source_row_number: 1,
@@ -313,8 +300,6 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
         rule_action: rule.actions.first,
         rule_condition: rule.conditions.first,
         rule_run: rule_run,
-        budget: budget,
-        budget_category: budget_category,
         import: import,
         import_row: import_row,
         import_mapping: import_mapping,

@@ -40,7 +40,7 @@ openssl rand -base64 32
 The `MCP_USER_EMAIL` must match an existing Sure user's email address. The AI assistant will have access to all financial data for that user's family.
 
 > [!CAUTION]
-> The AI assistant can call the MCP tools available to the specified user. This includes reading financial data and write-capable tools such as account statement uploads, goal/category/tag changes, transaction updates, and budget updates. Only set this for users you trust with your AI provider.
+> The AI assistant can call the MCP tools available to the specified user. This includes reading financial data and write-capable tools such as account statement uploads, category/tag changes, and transaction updates. Only set this for users you trust with your AI provider.
 
 ## Configuration
 
@@ -96,11 +96,9 @@ At the time of writing, `tools/list` includes:
 | `get_holdings` | Query investment holdings |
 | `get_balance_sheet` | Net worth, assets and liabilities with a configurable history period and interval |
 | `get_income_statement` | Income and expenses for a period, with optional monthly series, prior-period comparison and account filtering |
-| `get_budget` | Budget summary for a month, with optional prior months |
 | `get_merchants` | Merchants with the ids `update_transaction` accepts and the exact names `get_transactions` filters on |
 | `get_tags` | Tags with pagination |
 | `get_categories` | Categories with hierarchy and pagination |
-| `create_goal` | Create a savings goal linked to depository accounts |
 | `set_opening_balance` | Set a manual account's opening balance and the date it applies from, reporting whether the current balance changes. Supports `dry_run` |
 | `unmatch_transfer` | Unlink a confirmed or pending transfer (by either transaction's id) so a wrong match can be redone; rejects the pairing for auto-match by default. Supports `dry_run` |
 | `update_transfer` | Switch a confirmed transfer into an investment or crypto account between an investment contribution (counted as spending) and a plain transfer, e.g. when a brokerage or crypto account only converts currency. Supports `dry_run` |
@@ -110,7 +108,6 @@ At the time of writing, `tools/list` includes:
 | `get_transfer_match_candidates` | A transaction's current transfer (including a pending auto-match) or the transactions it could be matched with, as in the "Match transfer" dialog |
 | `match_transfer` | Match a transaction as a transfer with an existing counterpart, or create the counterpart in a target account (e.g. a manual loan). Supports `dry_run` |
 | `review_transfer` | Confirm or reject a pending auto-matched transfer |
-| `update_budget` | Update budget allocations for a month |
 | `get_rules` / `get_rule_options` | Transaction rules in readable form (ids resolved to names, latest run; paginated, with a text search), and the condition and action types a rule can use |
 | `preview_rule` | Match count and a sample of matching transactions for a saved rule or an unsaved definition, without changing anything |
 | `create_rule` / `update_rule` | Save a rule definition. Rules are always saved inactive, and changing an active rule's conditions or actions deactivates it. AI-backed actions are not available |
@@ -248,7 +245,7 @@ Response:
 
 ### Transient Session Isolation
 
-The MCP controller creates a **transient session** for each request. This prevents session state leaks that could expose other users' data if the Sure instance is using impersonation features.
+The MCP controller creates a **transient session** for each request, so MCP calls never reuse or change a browser session.
 
 Each MCP request:
 1. Authenticates the token

@@ -12,9 +12,6 @@ class DemoFamilyRefreshJob < ApplicationJob
 
   private
     def refresh_demo_family
-      period_end = Time.current
-      period_start = period_end - 24.hours
-
       demo_email = Rails.application.config_for(:demo).with_indifferent_access.fetch(:email)
       demo_user = User.find_by(email: demo_email)
       old_family = demo_user&.family
@@ -32,9 +29,6 @@ class DemoFamilyRefreshJob < ApplicationJob
         return Rails.logger.warn("Skipped demo family refresh: monitoring key belongs to another family") if monitoring_key && monitoring_key.user.family_id != old_family.id
       end
 
-      old_family_session_count = sessions_count_for(old_family, period_start:, period_end:)
-      newly_created_families_count = Family.where(created_at: period_start...period_end).count
-
       ActiveRecord::Base.transaction do
         if old_family
           anonymize_family_emails!(old_family)
@@ -49,14 +43,6 @@ class DemoFamilyRefreshJob < ApplicationJob
       end
 
       DestroyJob.perform_later(old_family) if old_family
-
-      notify_super_admins!(
-        old_family:,
-        old_family_session_count:,
-        newly_created_families_count:,
-        period_start:,
-        period_end:
-      )
     end
 
     # Retiring a demo family must close access before its asynchronous deletion.
@@ -70,18 +56,6 @@ class DemoFamilyRefreshJob < ApplicationJob
         user.update_columns(active: false)
       end
     end
-
-    def sessions_count_for(family, period_start:, period_end:)
-      return 0 unless family
-
-      Session
-        .joins(:user)
-        .where(users: { family_id: family.id })
-        .where(created_at: period_start...period_end)
-        .distinct
-        .count(:id)
-    end
-
 
     def anonymize_family_emails!(family)
       family.users.find_each do |user|
@@ -120,19 +94,5 @@ class DemoFamilyRefreshJob < ApplicationJob
     def deleted_email_for(user)
       local_part, domain = user.email.split("@", 2)
       "#{local_part}+deleting-#{user.id}-#{SecureRandom.hex(4)}@#{domain}"
-    end
-
-    def notify_super_admins!(old_family:, old_family_session_count:, newly_created_families_count:, period_start:, period_end:)
-      User.super_admin.find_each do |super_admin|
-        DemoFamilyRefreshMailer.with(
-          super_admin:,
-          old_family_id: old_family&.id,
-          old_family_name: old_family&.name,
-          old_family_session_count:,
-          newly_created_families_count:,
-          period_start:,
-          period_end:
-        ).completed.deliver_later
-      end
     end
 end

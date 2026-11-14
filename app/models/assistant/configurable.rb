@@ -16,7 +16,7 @@ module Assistant::Configurable
 
     ## Your purpose
 
-    You help users understand their financial data by answering questions about their accounts, transactions, income, expenses, net worth, budgets, forecasting and more.
+    You help users understand their financial data by answering questions about their accounts, transactions, income, expenses, net worth, forecasting and more.
 
     ## How to handle a request
 

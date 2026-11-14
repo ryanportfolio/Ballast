@@ -221,7 +221,7 @@ class SimplefinItem::Syncer
 
     # Collects a data quality warning if any linked accounts are investment or crypto accounts.
     # SimpleFIN cannot provide activity labels (Buy, Sell, Dividend, etc.) for investment transactions,
-    # which may affect budget accuracy.
+    # which may affect spending and income totals in reports.
     def collect_investment_data_quality_warning(sync, linked_simplefin_accounts)
       investment_accounts = linked_simplefin_accounts.select do |sfa|
         account = sfa.current_account

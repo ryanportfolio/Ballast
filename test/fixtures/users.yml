@@ -99,7 +99,7 @@ inactive_trial_user:
   show_ai_sidebar: true
   ui_layout: dashboard
 
-# Additional test users expected by PersonalBudgetTest
+# Additional test user in the empty family
 josh:
   family: empty
   first_name: Josh

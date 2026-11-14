@@ -12,7 +12,7 @@ class Demo::GeneratorTest < ActiveSupport::TestCase
       User.any_instance.stubs(:ai_available?).returns(false)
       generator = Demo::Generator.new(seed: 42)
       %i[create_realistic_categories! create_realistic_accounts! create_realistic_transactions!
-         generate_budget_auto_fill! generate_goals! create_monitoring_api_key!].each do |step|
+         create_monitoring_api_key!].each do |step|
         generator.stubs(step)
       end
 
@@ -81,22 +81,6 @@ class Demo::GeneratorTest < ActiveSupport::TestCase
 
     assert_equal existing_key, monitoring_key
     assert_equal 1, ApiKey.where(display_key: ApiKey::DEMO_MONITORING_KEY).count
-  end
-
-  # Regression for a `rake demo_data:default` crash: the goal-seeding matrix
-  # linked several active goals to the same account as a 100%-whole-account
-  # claim each, which violates GoalAccount#whole_account_link_must_be_exclusive
-  # the moment the second one tries to save.
-  test "generate_goals! seeds the full matrix without raising" do
-    @family.update!(currency: "USD")
-    @family.accounts.create!(accountable: Depository.new, name: "Primary Checking",
-                              currency: @family.currency, balance: 150_000)
-    @family.accounts.create!(accountable: Depository.new, name: "Secondary Savings",
-                              currency: @family.currency, balance: 10_000)
-
-    assert_difference "@family.goals.count", 9 do
-      Demo::Generator.new.send(:generate_goals!, @family)
-    end
   end
 
   # The demo family's loans were bare Loan.new records -- no rate, no term, and
@@ -207,7 +191,7 @@ class Demo::GeneratorTest < ActiveSupport::TestCase
          generate_personal_care_transactions! generate_investment_transactions!
          generate_transfers_and_payments! generate_regular_expenses!
          generate_legacy_transactions! generate_crypto_and_misc_assets!
-         generate_budget_auto_fill! generate_goals! sync_family_accounts!].each do |step|
+         sync_family_accounts!].each do |step|
         generator.stubs(step)
       end
     end

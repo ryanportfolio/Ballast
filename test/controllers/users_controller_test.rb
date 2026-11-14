@@ -113,7 +113,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     tag = tags(:one)
     merchant = merchants(:netflix)
     import = imports(:transaction)
-    budget = budgets(:one)
     simplefin_item = SimplefinItem.create!(family: @user.family, name: "SimpleFIN Connection", access_url: "https://example.com/access")
 
     perform_enqueued_jobs(only: FamilyResetJob) do
@@ -128,7 +127,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_not Tag.exists?(tag.id)
     assert_not Merchant.exists?(merchant.id)
     assert_not Import.exists?(import.id)
-    assert_not Budget.exists?(budget.id)
     assert_not SimplefinItem.exists?(simplefin_item.id)
   end
 
@@ -138,7 +136,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     tag = tags(:one)
     merchant = merchants(:netflix)
     import = imports(:transaction)
-    budget = budgets(:one)
     simplefin_item = SimplefinItem.create!(family: @user.family, name: "SimpleFIN Connection", access_url: "https://example.com/access")
 
     Demo::Generator.any_instance.expects(:generate_new_user_data_for!).with(@user.family, email: @user.email)
@@ -155,7 +152,6 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_not Tag.exists?(tag.id)
     assert_not Merchant.exists?(merchant.id)
     assert_not Import.exists?(import.id)
-    assert_not Budget.exists?(budget.id)
     assert_not SimplefinItem.exists?(simplefin_item.id)
   end
 

@@ -26,13 +26,9 @@ class User < ApplicationRecord
   has_many :api_keys, dependent: :destroy
   has_many :webauthn_credentials, dependent: :destroy
   has_many :invitations, foreign_key: :inviter_id, dependent: :destroy
-  has_many :impersonator_support_sessions, class_name: "ImpersonationSession", foreign_key: :impersonator_id, dependent: :destroy
-  has_many :impersonated_support_sessions, class_name: "ImpersonationSession", foreign_key: :impersonated_id, dependent: :destroy
   has_many :owned_accounts, class_name: "Account", foreign_key: :owner_id
   has_many :account_shares, dependent: :destroy
   has_many :shared_accounts, through: :account_shares, source: :account
-  has_many :budget_shares_given, class_name: "BudgetShare", foreign_key: :owner_id, inverse_of: :owner, dependent: :destroy
-  has_many :budget_shares_received, class_name: "BudgetShare", foreign_key: :viewer_id, inverse_of: :viewer, dependent: :destroy
   accepts_nested_attributes_for :family, update_only: true
 
   MFA_BACKUP_CODE_COUNT = 8
@@ -151,11 +147,6 @@ class User < ApplicationRecord
     end
   end
 
-  def request_impersonation_for(user_id)
-    impersonated = User.find(user_id)
-    impersonator_support_sessions.create!(impersonated: impersonated)
-  end
-
   def admin?
     super_admin? || role == "admin"
   end
@@ -177,12 +168,6 @@ class User < ApplicationRecord
 
   def finance_accounts
     family.accounts.included_in_finances_for(self)
-  end
-
-  # Other family members who have granted this user access to their personal
-  # budget (see BudgetShare). Used to build the budget owner switcher.
-  def budget_owners_shared_with_me
-    User.where(id: budget_shares_received.select(:owner_id))
   end
 
   def display_name
@@ -269,14 +254,14 @@ class User < ApplicationRecord
       return unless check_last_super_admin_invariant_failed?
 
       attribute = role_changed? ? :role : :base
-      errors.add(attribute, :cannot_remove_last_super_admin, message: I18n.t("admin.users.update.last_super_admin_error"))
+      errors.add(attribute, :cannot_remove_last_super_admin, message: I18n.t("activerecord.errors.models.user.last_super_admin_error"))
     end
 
     def ensure_not_last_super_admin_on_destroy
       return unless role == "super_admin" && active?
 
       if check_last_super_admin_invariant_failed?
-        errors.add(:base, :cannot_remove_last_super_admin, message: I18n.t("admin.users.update.last_super_admin_error"))
+        errors.add(:base, :cannot_remove_last_super_admin, message: I18n.t("activerecord.errors.models.user.last_super_admin_error"))
         throw(:abort)
       end
     end
@@ -604,47 +589,6 @@ class User < ApplicationRecord
     return nil unless account&.eligible_for_transaction_default? && account.family_id == family_id
 
     account
-  end
-
-  # Release highlight ("What's new" popup) tracking. Account-level so every
-  # device the user signs in from stays in sync.
-  def last_seen_release_tag
-    preferences&.[]("last_seen_release_tag")
-  end
-
-  def release_seen?(tag)
-    tag == last_seen_release_tag || Array(preferences&.[]("seen_release_tags")).include?(tag)
-  end
-
-  def mark_release_seen!(tag)
-    parsed_release_tag_version!(tag)
-
-    with_lock do
-      # Acknowledgement is about identity, not version precedence: hotfix tags
-      # sort before their base release, and users can switch release channels.
-      # Merge after reloading under the lock so stale tabs cannot lose tags.
-      seen_tags = Array(preferences&.[]("seen_release_tags"))
-      legacy_tag = last_seen_release_tag
-      seen_tags += [ legacy_tag ] if parsed_release_tag_version(legacy_tag)
-      seen_tags = (seen_tags + [ tag ]).uniq
-
-      update!(preferences: (preferences || {}).merge(
-        "seen_release_tags" => seen_tags,
-        "last_seen_release_tag" => tag
-      ))
-    end
-  end
-
-  def parsed_release_tag_version!(tag)
-    raise ArgumentError, "invalid release tag" unless tag.to_s.match?(/\Av\d+\.\d+\.\d+(?:[-+.][0-9A-Za-z.-]+)?\z/)
-
-    Semver.from_release_tag(tag).version
-  end
-
-  def parsed_release_tag_version(tag)
-    parsed_release_tag_version!(tag)
-  rescue ArgumentError
-    nil
   end
 
   # Dashboard preferences management

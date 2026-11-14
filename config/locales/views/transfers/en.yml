@@ -33,7 +33,7 @@ en:
         transactions.
       delete_title: Remove transfer?
       details: Details
-      investment_contribution_subtitle: Count this transfer as spending in budgets and
+      investment_contribution_subtitle: Count this transfer as spending in
         reports. Turn it off when the brokerage or crypto account only converts the
         money into another currency.
       investment_contribution_title: Investment contribution

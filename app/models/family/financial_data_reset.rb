@@ -25,8 +25,6 @@ class Family::FinancialDataReset
     rule_actions
     rule_conditions
     rule_runs
-    budgets
-    budget_categories
     categories
     tags
     taggings
@@ -119,7 +117,6 @@ class Family::FinancialDataReset
       scope(:rule_runs).destroy_all
       scope(:rule_actions).destroy_all
       scope(:rule_conditions).destroy_all
-      scope(:budget_categories).destroy_all
       scope(:taggings).destroy_all
       scope(:family_merchant_associations).delete_all
       scope(:account_statements).destroy_all
@@ -132,7 +129,6 @@ class Family::FinancialDataReset
       scope(:account_providers).destroy_all
       scope(:recurring_transactions).destroy_all
       scope(:rules).destroy_all
-      scope(:budgets).destroy_all
       scope(:categories).destroy_all
       scope(:tags).destroy_all
       scope(:merchants).destroy_all
@@ -229,8 +225,6 @@ class Family::FinancialDataReset
         import_ids = import_scope.select(:id)
         rule_scope = Rule.where(family_id: family.id)
         rule_ids = rule_scope.select(:id)
-        budget_scope = Budget.where(family_id: family.id)
-        budget_ids = budget_scope.select(:id)
         transaction_scope = Transaction.joins(:entry).where(entries: { account_id: account_ids })
         transaction_ids = transaction_scope.select(:id)
         tag_scope = Tag.where(family_id: family.id)
@@ -259,8 +253,6 @@ class Family::FinancialDataReset
           rule_actions: Rule::Action.where(rule_id: rule_ids),
           rule_conditions: Rule::Condition.where(rule_id: rule_ids),
           rule_runs: RuleRun.where(rule_id: rule_ids),
-          budgets: budget_scope,
-          budget_categories: BudgetCategory.where(budget_id: budget_ids),
           categories: Category.where(family_id: family.id),
           tags: tag_scope,
           taggings: Tagging.where(tag_id: tag_scope.select(:id)),

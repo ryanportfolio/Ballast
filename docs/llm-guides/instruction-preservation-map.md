@@ -31,7 +31,6 @@ instructions outside this repository are outside the consolidation.
 | `.cursor/rules/self_improve.mdc` | Retire automatic trigger | Keep guidance maintenance advice in `harness-adapters.md`; intentionally stop always-on instructions to generate new rules when patterns occur in three files. |
 | `docs/llm-guides/adding-a-securities-provider.md` | Preserve in place | Detailed repeatable provider workflow, registry, MIC/currency handling, configuration, UI/locales and verification. |
 | `docs/llm-guides/gating-a-preview-feature.md` | Preserve in place | Feature gate and rollout workflow. |
-| `docs/llm-guides/goals.md` | Preserve in place | Goals domain, reconciliation, statuses and data guidance. |
 | `docs/llm-guides/wealth-agent-harness.md` | Preserve in place | Product integration boundary, read-only tools, provenance and monthly runbook. Not repository-wide coding policy. |
 | `docs/llm-guides/wealth-blueprint.md` | Preserve in place | Reference architecture for an external wealth/tax project, including its own operating protocol. Its working-memory instructions do not redefine this repository's root files. |
 | `CONTRIBUTING.md` | Update entry links | House rules, contribution workflow and CI review gate remain; replace vendor-specific convention link. |
@@ -145,13 +144,11 @@ cherry-picked. Its [9f44bee07](https://github.com/we-promise/sure/commit/9f44bee
 | 2026-05-01 | [e250d266e](https://github.com/we-promise/sure/commit/e250d266e) | Design-token source evolves; link to current design system. |
 | 2026-05-10 | [712d6baca](https://github.com/we-promise/sure/commit/712d6baca) | AGENTS adds DS reuse and reviewer escalation policy, absent from old copies. |
 | 2026-05-18/19 | [5249842c7](https://github.com/we-promise/sure/commit/5249842c7), [e8ce28648](https://github.com/we-promise/sure/commit/e8ce28648) | Beta gating guide introduced, then deleted and replaced with the preview guide. |
-| 2026-06-02 | [3508f7058](https://github.com/we-promise/sure/commit/3508f7058) | Goals guide introduced. |
 | 2026-06-14 | [88343002d](https://github.com/we-promise/sure/commit/88343002d) | Rails 7.2 → 8.1 upgrade supersedes the old migration-version prohibition. |
 | 2026-06-15 | [08bfd4377](https://github.com/we-promise/sure/commit/08bfd4377) | Support-relevant provider diagnostics required in DebugLogEntry. |
 | 2026-06-20 | [dc2a565b6](https://github.com/we-promise/sure/commit/dc2a565b6) | Up raw logging privacy constraint added to Claude. |
 | 2026-07-26 | [375dd060d](https://github.com/we-promise/sure/commit/375dd060d) | Preview gate guide updated for insights. |
 | 2026-08-04 | [efb7cc393](https://github.com/we-promise/sure/commit/efb7cc393) | Wealth blueprint and external agent harness docs added; preserve their separate product scope. |
-| 2026-08-16 | [acf4cb201](https://github.com/we-promise/sure/commit/acf4cb201) | Goals deletion semantics updated; preserve current guide. |
 
 The only deleted instruction source in the scoped main-history window is
 `docs/llm-guides/gating-a-beta-feature.md`, replaced by the preview guide in

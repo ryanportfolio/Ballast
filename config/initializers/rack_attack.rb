@@ -28,12 +28,6 @@ class Rack::Attack
     request.ip if request.post? && request.path == "/sessions/passkey_options"
   end
 
-  # Throttle admin endpoints to prevent brute-force attacks
-  # More restrictive than general API limits since admin access is sensitive
-  throttle("admin/ip", limit: 10, period: 1.minute) do |request|
-    request.ip if request.path.start_with?("/admin/")
-  end
-
   # --- Credential-guessing surfaces (security audit #1087, finding H4) ---
   # Every endpoint in the app that checks a password, TOTP code, or backup
   # code against a stored value (enumerated by grepping for
@@ -109,8 +103,7 @@ class Rack::Attack
   # Self-service password change checks the current password
   # (password_challenge) for a signed-in user, so there's no email param. The
   # signed session cookie leads to the user whose password is being checked
-  # (the impersonated user while an impersonation is in progress, like
-  # Current.user), so neither rotating IPs nor holding several sessions buys
+  # (Current.user), so neither rotating IPs nor holding several sessions buys
   # more guesses. Only PATCH/PUT /password pays for the lookup, and it is
   # memoized on the request so both throttles share it.
   password_change_user = ->(request) do
@@ -120,11 +113,7 @@ class Rack::Attack
         # Same check as Authentication#find_session_by_cookie: a session whose
         # owner was deactivated is rejected there, so it isn't counted here.
         if session_id.present?
-          user_id, impersonation_id = Session.joins(:user).where(id: session_id, users: { active: true })
-            .pick(:user_id, :active_impersonator_session_id)
-        end
-        if impersonation_id
-          user_id = ImpersonationSession.in_progress.where(id: impersonation_id).pick(:impersonated_id) || user_id
+          user_id = Session.joins(:user).where(id: session_id, users: { active: true }).pick(:user_id)
         end
         "user:#{user_id}" if user_id
       end
@@ -145,13 +134,6 @@ class Rack::Attack
 
   throttle("password_change/user", limit: 10, period: 1.minute) do |request|
     password_change_user.call(request) if password_change_request.call(request)
-  end
-
-  # The background jobs console lives under /settings (so its polling GET
-  # isn't throttled), but its mutation is destructive and super-admin only —
-  # rate limit it independently.
-  throttle("background_jobs_console/ip", limit: 30, period: 1.minute) do |request|
-    request.ip if request.post? && request.path == "/settings/background_jobs/cancel"
   end
 
   # Determine limits based on self-hosted mode

@@ -23,10 +23,6 @@ class Session < ApplicationRecord
   SESSION_TOUCH_INTERVAL = 1.hour
 
   belongs_to :user, counter_cache: :sessions_count
-  belongs_to :active_impersonator_session,
-    -> { where(status: :in_progress) },
-    class_name: "ImpersonationSession",
-    optional: true
 
   before_create :capture_session_info
 
@@ -54,9 +50,9 @@ class Session < ApplicationRecord
     end
 
     # Shared cookie -> Session resolver used by every path that authenticates
-    # via the signed session_token cookie (Authentication concern,
-    # SuperAdminConstraint), so inactivity expiry can't be
-    # bypassed by adding a new entry point that forgets to check `expired?`.
+    # via the signed session_token cookie (Authentication concern), so
+    # inactivity expiry can't be bypassed by adding a new entry point that
+    # forgets to check `expired?`.
     #
     # Also refreshes the activity clock here (not per-caller) so any of these
     # paths keeps a session alive, not just cookie-based web requests.

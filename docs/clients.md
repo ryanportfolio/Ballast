@@ -99,7 +99,7 @@ accept browser sessions. Responses are private and not HTTP-cacheable.
 
 The Turbo dashboard fetches `/dashboard/cash_flow` through a normal web controller,
 with session authentication, onboarding checks, and the current user's preview
-gate. It honors the impersonated browser identity and finance-account scope. Both
+gate. It honors the signed-in user's finance-account scope. Both
 endpoints use `IncomeStatement::CashFlowGraph` and `IncomeStatement::Sankey`, sharing
 the graph representation and aggregation without sharing authentication paths.
 

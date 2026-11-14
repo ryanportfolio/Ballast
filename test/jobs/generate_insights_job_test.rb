@@ -150,7 +150,7 @@ class GenerateInsightsJobTest < ActiveJob::TestCase
   end
 
   # The title is built from I18n and the generator's own data, not written by
-  # the model. A goal or category renamed since the insight was stored left it
+  # the model. An account or category renamed since the insight was stored left it
   # naming something that no longer exists, for the rest of the month.
   test "a renamed subject refreshes the title without resurfacing the insight" do
     stub_generated([ generated_insight ])

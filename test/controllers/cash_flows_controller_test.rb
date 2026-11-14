@@ -93,12 +93,11 @@ class CashFlowsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "2099-01-02", response.parsed_body.dig("period", "end_date")
   end
 
-  test "uses the impersonated browser identity without adopting API credentials" do
+  test "uses the browser identity without adopting API credentials" do
     target = users(:family_member)
     target.update!(preferences: { "preview_features_enabled" => true })
     target.family.update!(currency: "JPY")
-    sign_in users(:sure_support_staff)
-    post join_impersonation_sessions_path, params: { impersonation_session_id: impersonation_sessions(:in_progress).id }
+    sign_in target
     get dashboard_cash_flow_path, params: @dates, headers: { "X-Api-Key" => "not-used-for-browser-auth" }
     assert_response :success
     assert_equal "JPY", response.parsed_body["currency"]

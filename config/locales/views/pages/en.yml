@@ -1,13 +1,6 @@
 ---
 en:
   pages:
-    feedback:
-      title: Feedback
-      heading: Leave feedback
-      description: Let us know if you have any specific feedback. Feel free to include links to videos or screenshots.
-      feature_request: Write a feature request
-      bug_report: File a bug report
-      discuss: "Discuss %{product} with others"
     intro:
       not_authorized: "Intro is only available to guest users."
       welcome: "Welcome!"
@@ -24,11 +17,6 @@ en:
       setup_guide_hint: Follow our complete Docker setup guide to configure Redis
       refresh_hint: "Once you've configured Redis, refresh this page to continue."
       refresh_page: Refresh Page
-    changelog:
-      title: What's new
-    release_notes_unavailable:
-      name: Release notes unavailable
-      body_html: "<p>Unable to fetch the latest release notes at this time. Please check back later or visit our <a href='https://github.com/we-promise/sure/releases' target='_blank' rel='noopener noreferrer'>GitHub releases page</a> directly.</p>"
     privacy:
       title: Privacy Policy
       heading: Privacy Policy

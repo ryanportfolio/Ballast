@@ -78,7 +78,7 @@ class PropertiesController < ApplicationController
         # The property setup wizard (create → balances → address) is multi-step,
         # so the original `?return_to=` only survives in the session (captured by
         # StoreLocation), not as a threaded form param. Honor it on completion so
-        # flows like the savings-goals "Add an account" CTA land back where they
+        # flows that send the user here to add an account land back where they
         # started instead of on the account page. Sanitized + consumed: the
         # turbo_stream branch below isn't covered by Rails' redirect host-guard,
         # so an unsafe value must not reach stream_redirect_to.

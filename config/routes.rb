@@ -1,6 +1,3 @@
-require "sidekiq/web"
-require "sidekiq/cron/web"
-
 Rails.application.routes.draw do
   # MFA routes
   resource :mfa, controller: "mfa", only: [ :new, :create ] do
@@ -16,19 +13,6 @@ Rails.application.routes.draw do
   if Rails.env.development?
     mount Rswag::Api::Engine => "/api-docs"
     mount Rswag::Ui::Engine => "/api-docs"
-  end
-
-  # Break-glass queue tooling. Development mounts it open for convenience;
-  # everywhere else (production, staging, test) the route only exists for a
-  # signed-in super admin — see app/constraints/super_admin_constraint.rb.
-  # An optional basic-auth second layer can be enabled via SIDEKIQ_WEB_USERNAME
-  # and SIDEKIQ_WEB_PASSWORD (config/initializers/sidekiq.rb).
-  if Rails.env.development?
-    mount Sidekiq::Web => "/sidekiq"
-  else
-    constraints SuperAdminConstraint.new do
-      mount Sidekiq::Web => "/sidekiq"
-    end
   end
 
   # AI chats
@@ -63,10 +47,6 @@ Rails.application.routes.draw do
 
   get "exports/archive/:token", to: "archived_exports#show", as: :archived_export
 
-  get "changelog", to: "pages#changelog"
-  get "release_highlight", to: "release_highlights#show"
-  patch "release_highlight/dismiss", to: "release_highlights#dismiss"
-  get "feedback", to: "pages#feedback"
   get "dashboard/cash_flow", to: "cash_flows#show", as: :dashboard_cash_flow
   patch "dashboard/preferences", to: "pages#update_preferences"
   patch "dashboard/sections/:section_key/hidden", to: "pages#update_section_hidden", as: :dashboard_section_hidden
@@ -100,12 +80,8 @@ Rails.application.routes.draw do
   namespace :settings do
     resource :profile, only: [ :show, :destroy ]
     resource :preferences, only: %i[show update]
-    resource :budget_shares, only: :update
     resource :appearance, only: %i[show update]
     resource :debug, only: :show
-    resource :background_jobs, controller: "background_jobs", only: :show do
-      post :cancel
-    end
     resource :hosting, only: %i[show update] do
       delete :clear_cache, on: :collection
       delete :disconnect_external_assistant, on: :collection
@@ -157,41 +133,6 @@ Rails.application.routes.draw do
     get :google_sheets_instructions, on: :collection
     get :print, on: :collection
     get :picker, on: :collection
-  end
-
-  # Hub page fronting budgets + goals under a single "Plan" nav entry.
-  resource :plan, only: :show
-
-  resources :budgets, only: %i[index show edit update], param: :month_year do
-    post :copy_previous, on: :member
-    get :picker, on: :collection
-
-    resources :budget_categories, only: %i[index show update] do
-      post :move, on: :collection
-    end
-  end
-
-  resources :goals do
-    member do
-      patch :pause
-      patch :resume
-      patch :complete
-      patch :archive
-      patch :unarchive
-      patch :reopen
-      # Two actions on one path rather than one action branching on the verb:
-      # HEAD routes like GET but `request.get?` is false for it, so a branch
-      # would send a HEAD request down the write path. A goal can be partly
-      # spent more than once, so the write is a POST, not a PATCH on the goal.
-      get :consume
-      post :consume, action: :record_consumption, as: nil
-    end
-
-    resources :pledges, only: %i[new create destroy], controller: "goal_pledges" do
-      member do
-        patch :renew
-      end
-    end
   end
 
   resources :family_merchants, only: %i[index new create edit update destroy] do
@@ -441,8 +382,6 @@ Rails.application.routes.draw do
       # Production API endpoints
       resources :accounts, only: [ :index, :show ]
       resources :balances, only: [ :index, :show ]
-      resources :budgets, only: [ :index, :show ]
-      resources :budget_categories, only: [ :index, :show ]
       resources :categories, only: [ :index, :show, :create ]
       resources :merchants, only: [ :index, :show, :create ]
       resources :rules, only: [ :index, :show ]
@@ -504,17 +443,6 @@ Rails.application.routes.draw do
 
   resources :currencies, only: %i[show]
 
-  resources :impersonation_sessions, only: [ :create ] do
-    post :join, on: :collection
-    delete :leave, on: :collection
-
-    member do
-      put :approve
-      put :reject
-      put :complete
-    end
-  end
-
   resources :simplefin_items, only: %i[index new create show edit update destroy] do
     collection do
       get :select_existing_account
@@ -550,28 +478,6 @@ Rails.application.routes.draw do
   get "privacy", to: privacy_url ? redirect(privacy_url) : "pages#privacy"
   get "terms", to: terms_url ? redirect(terms_url) : "pages#terms"
   get "intro", to: "pages#intro"
-
-  # Admin namespace for super admin functionality
-  namespace :admin do
-    resources :users, only: [ :index, :update, :destroy ] do
-      get :deletion, on: :member
-    end
-    resources :invitations, only: [ :destroy ]
-    resources :families, only: [ :destroy ] do
-      member do
-        delete :invitations, to: "invitations#destroy_all"
-      end
-    end
-    # Singular `resource :system_health` would otherwise route to
-    # `Admin::SystemHealthsController` (Rails pluralizes the controller
-    # name even for singular resources, unlike its plural siblings above
-    # that happen to round-trip cleanly). The controller file is singular,
-    # so name it explicitly.
-    resource :system_health, only: :show, controller: "system_health" do
-      get :ai_status
-      post :verify_worker_ai
-    end
-  end
 
   # Defines the root path route ("/")
   root "pages#dashboard"

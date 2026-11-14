@@ -147,8 +147,7 @@ class Transaction::SearchTest < ActiveSupport::TestCase
     # but the Transactions page filter used TRANSFER_KINDS and hid them, so
     # the widget's figure could not be reproduced from the list — and the
     # transactions could not be found, let alone categorized. These two kinds
-    # are budget-tracked outflows (the intentional-tracking contract also
-    # asserted by the BudgetCategoriesController drilldown tests), so they
+    # are budget-tracked outflows (the intentional-tracking contract), so they
     # stay listed.
     loan_payment = create_transaction(account: @loan_account, amount: 300, kind: "loan_payment")
     investment_contribution = create_transaction(account: @checking_account, amount: 400, kind: "investment_contribution")

@@ -106,16 +106,6 @@ class Api::V1::CashFlowsControllerTest < ActionDispatch::IntegrationTest
     assert_response :unauthorized
   end
 
-  test "API credentials keep their own identity during browser impersonation" do
-    users(:family_member).family.update!(currency: "JPY")
-    @auth.update!(user: users(:empty))
-    sign_in users(:sure_support_staff)
-    post join_impersonation_sessions_path, params: { impersonation_session_id: impersonation_sessions(:in_progress).id }
-    get "/api/v1/cash_flow", params: { view: "sankey" }, headers: api_headers(@auth)
-    assert_response :success
-    assert_equal users(:empty).family.currency, response.parsed_body["currency"]
-  end
-
   private
     def api_headers(auth)
       { "X-Api-Key" => auth.display_key }

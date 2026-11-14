@@ -146,7 +146,7 @@ class GenerateInsightsJob < ApplicationJob
           #
           # The title refreshes with them. It is built from I18n and the
           # generator's own data, not written by the model, so keeping it
-          # current costs nothing — and a title naming a goal or a category
+          # current costs nothing — and a title naming an account or a category
           # the user has since renamed is simply wrong on the page. Rename is
           # not a reason to resurface, so status and read state stay untouched.
           existing.update!(title: generated.title, facts: facts, generated_at: Time.current)

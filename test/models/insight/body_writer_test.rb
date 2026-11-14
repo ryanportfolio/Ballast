@@ -36,10 +36,7 @@ class Insight::BodyWriterTest < ActiveSupport::TestCase
       "savings_rate_change.up" => { month: "June", current_rate: 32.5, previous_rate: 20.1, change_pp: 12.4 },
       "savings_rate_change.down" => { month: "June", current_rate: "12.1", previous_rate: "45.2", change_pp: 33.1 },
       "savings_rate_change.down_negative" => { month: "June", current_rate: "−5.4", previous_rate: "45.2", change_pp: 50.6 },
-      "idle_cash" => { account: "Emergency fund", balance: "$28,400.00", idle_days: 60 },
-      "budget_at_risk.over" => { categories: "Food & Drink and Travel", count: 2, budget_spent_pct: 84 },
-      "budget_at_risk.near" => { categories: "Shopping", count: 1, budget_spent_pct: 72 },
-      "budget_on_track" => { spent: "$2,948.00", budgeted: "$5,200.00", budget_spent_pct: 57 }
+      "idle_cash" => { account: "Emergency fund", balance: "$28,400.00", idle_days: 60 }
     }.freeze
 
     def generated_insight

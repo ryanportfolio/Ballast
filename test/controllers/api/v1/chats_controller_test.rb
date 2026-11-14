@@ -145,39 +145,6 @@ class Api::V1::ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "API key authentication should not inherit web session impersonation" do
-    support_user = users(:sure_support_staff)
-    support_user.update!(ai_enabled: true)
-    support_user.api_keys.active.destroy_all
-    support_chat = support_user.chats.create!(title: "Support Chat")
-
-    token_value = ApiKey.generate_secure_key
-    credential = support_user.api_keys.build(
-      name: "Impersonation Guard Credential",
-      scopes: [ "read" ]
-    )
-    credential.key = token_value
-    credential.save!
-
-    impersonation_session = impersonation_sessions(:in_progress)
-    impersonated_chat = impersonation_session.impersonated.chats.create!(title: "Impersonated Chat")
-    support_user.sessions.destroy_all
-    support_user.sessions.create!(
-      user_agent: "Browser session",
-      ip_address: "127.0.0.1",
-      active_impersonator_session: impersonation_session
-    )
-
-    get "/api/v1/chats", headers: { "X-Api-Key" => token_value }
-
-    assert_response :success
-    response_body = JSON.parse(response.body)
-    chat_ids = response_body["chats"].pluck("id")
-
-    assert_includes chat_ids, support_chat.id
-    assert_not_includes chat_ids, impersonated_chat.id
-  end
-
   private
 
     def api_headers(api_key)

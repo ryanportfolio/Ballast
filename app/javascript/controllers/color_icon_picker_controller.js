@@ -97,10 +97,9 @@ export default class extends Controller {
 
   updateAvatarColors(color) {
     // Update the `--avatar-color` CSS variable instead of overriding
-    // `style.color` / `style.backgroundColor` directly. The `.goal-avatar`
-    // class does theme-aware `color-mix` work off the variable (light mode
-    // darkens the letter, dark mode uses the full color) — overriding the
-    // resolved values inline killed that contrast logic.
+    // `style.color` / `style.backgroundColor` directly. The avatar's inline
+    // style derives its tint and text color from the variable, so setting
+    // it keeps both in step.
     this.avatarTarget.style.setProperty("--avatar-color", color);
   }
 

@@ -25,9 +25,6 @@ class Account < ApplicationRecord
   has_many :holdings, dependent: :destroy
   has_many :balances, dependent: :destroy
   has_many :recurring_transactions, dependent: :destroy
-  has_many :goal_accounts, dependent: :destroy
-  has_many :goals, through: :goal_accounts
-  has_many :goal_pledges, dependent: :destroy
   # Inverse for recurring transfers where this account is the destination.
   # Account#recurring_transactions only matches account_id; without this
   # association, destroying the destination account would hit the FK
@@ -389,40 +386,6 @@ class Account < ApplicationRecord
   def manual?
     account_providers.none? &&
       simplefin_account_id.blank?
-  end
-
-  # Default GoalPledge kind for this account. Manual accounts get
-  # `manual_save` (resolves on the next valuation), live-synced accounts
-  # get `transfer` (resolves when the synced deposit posts). Keeps the
-  # decision in one place so the new-pledge controller / preview helper
-  # can't disagree on what they're going to save.
-  def default_pledge_kind
-    # Investment accounts never use manual_save: a positive valuation delta on a
-    # brokerage is usually a market move, not a deposit, and would false-match a
-    # pledge. They resolve on transfer (cash-inflow) entries only.
-    manual? && !investment? ? "manual_save" : "transfer"
-  end
-
-  # Total fixed earmark this account currently has reserved across every goal
-  # still holding its money (unallocated/whole-balance links reserve no fixed
-  # slice). Mirrors Budget#allocated_spending. Scoped to Goal::RELEASED_STATES
-  # so this and Goal.pooled_allocations_for never disagree — if they did,
-  # free_to_earmark would contradict the figures the goals themselves show.
-  def goal_earmarked_total
-    GoalAccount.joins(:goal)
-               .where(account_id: id)
-               .where.not(allocated_amount: nil)
-               .where.not(goals: { state: Goal::RELEASED_STATES })
-               .sum(:allocated_amount)
-               .to_d
-  end
-
-  # Headroom left to earmark toward goals before fixed allocations exceed the
-  # balance. Negative means the account is over-earmarked. Intended to back a
-  # non-blocking over-allocation warning (UI is a follow-up). Mirrors
-  # Budget#available_to_allocate.
-  def free_to_earmark
-    balance.to_d - goal_earmarked_total
   end
 
   def logo_url

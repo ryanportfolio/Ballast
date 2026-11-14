@@ -71,8 +71,6 @@ module Assistant
         Function::GetHoldings,
         Function::GetBalanceSheet,
         Function::GetIncomeStatement,
-        Function::GetBudget,
-        Function::CreateGoal,
         Function::SetOpeningBalance,
         Function::UnmatchTransfer,
         Function::UpdateTransfer,
@@ -95,8 +93,7 @@ module Assistant
         Function::DeleteTransaction,
         Function::GetTransferMatchCandidates,
         Function::MatchTransfer,
-        Function::ReviewTransfer,
-        Function::UpdateBudget
+        Function::ReviewTransfer
       ]
 
       classes += PREVIEW_FUNCTION_CLASSES if user&.preview_features_enabled?

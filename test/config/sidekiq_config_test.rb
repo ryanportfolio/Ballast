@@ -19,9 +19,9 @@ class SidekiqConfigTest < ActiveSupport::TestCase
     end
   end
 
-  test "AI jobs run on the ai capsule's queues, which SidekiqHealth knows" do
+  test "AI jobs run on the ai capsule's queues, which BackgroundJobHealth knows" do
     AI_JOBS.each { |job, queue| assert_equal queue, job.queue_name, job.name }
-    assert_equal sidekiq_config.dig(:capsules, :ai, :queues), SidekiqHealth::AI_QUEUES
+    assert_equal sidekiq_config.dig(:capsules, :ai, :queues), BackgroundJobHealth::AI_QUEUES
   end
 
   private

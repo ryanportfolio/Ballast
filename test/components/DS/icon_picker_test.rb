@@ -43,11 +43,11 @@ class DS::IconPickerTest < ViewComponent::TestCase
     assert_selector "input[name='category[lucide_icon]']", visible: :all
 
     render_inline DS::IconPicker.new(
-      form: form_builder_for(Goal.new, "goal"),
-      method: :icon,
+      form: form_builder_for(Category.new, "category"),
+      method: :color,
       icons: %w[pizza]
     )
-    assert_selector "input[name='goal[icon]']", visible: :all
+    assert_selector "input[name='category[color]']", visible: :all
   end
 
   private

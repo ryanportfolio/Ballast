@@ -1,5 +1,5 @@
-<%# Everything about one bill, in the drawer, the way a transaction or a
-    budget category opens. Opened from a row, the list stays where it was, so
+<%# Everything about one bill, in the drawer, the way a transaction
+    opens. Opened from a row, the list stays where it was, so
     closing this lands back on the same row. There is no separate bill page:
     a direct visit renders the overview with this drawer already open. %>
 <%= render DS::Dialog.new(variant: :drawer) do |dialog| %>

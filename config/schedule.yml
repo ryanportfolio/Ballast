@@ -44,7 +44,7 @@ refresh_demo_family:
   class: "DemoFamilyRefreshJob"
   active_job: true
   queue: "scheduled"
-  description: "Refreshes demo family data and emails super admins with daily usage summary"
+  description: "Refreshes demo family data"
 
 generate_recurring_occurrences:
   cron: "30 5 * * *" # daily at 5:30 AM UTC, before insights so generators see fresh occurrences
@@ -59,17 +59,3 @@ generate_insights:
   active_job: true
   queue: "scheduled"
   description: "Generates proactive financial insights for families with preview features enabled"
-
-sweep_expired_goal_pledges:
-  cron: "*/15 * * * *" # every 15 minutes
-  class: "SweepExpiredGoalPledgesJob"
-  active_job: true
-  queue: "scheduled"
-  description: "Marks goal pledges that passed their 7-day window as expired"
-
-refresh_maintained_goal_targets:
-  cron: "0 3 1 * *" # 3:00 AM on the 1st of each month
-  class: "RefreshMaintainedGoalTargetsJob"
-  active_job: true
-  queue: "scheduled"
-  description: "Recomputes the floor of reserves expressed in months of expenses"

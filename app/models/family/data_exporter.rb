@@ -509,22 +509,6 @@ class Family::DataExporter
         }.to_json
       end
 
-      # Export budgets
-      @family.budgets.find_each do |budget|
-        lines << {
-          type: "Budget",
-          data: budget.as_json
-        }.to_json
-      end
-
-      # Export budget categories
-      @family.budget_categories.includes(:budget, :category).find_each do |budget_category|
-        lines << {
-          type: "BudgetCategory",
-          data: budget_category.as_json
-        }.to_json
-      end
-
       # Export rules with versioned schema, in run order
       @family.rules.includes(conditions: :sub_conditions, actions: []).ordered.each do |rule|
         lines << {

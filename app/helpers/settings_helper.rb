@@ -21,9 +21,7 @@ module SettingsHelper
     { name: -> { t("settings.settings_nav.imports_label") }, path: :imports_path, condition: :admin_user? },
     { name: -> { t("settings.settings_nav.exports_label") }, path: :family_exports_path, condition: :admin_user? },
     # More section
-    { name: -> { t("settings.settings_nav.guides_label") }, path: :settings_guides_path },
-    { name: -> { t("settings.settings_nav.whats_new_label") }, path: :changelog_path },
-    { name: -> { t("settings.settings_nav.feedback_label") }, path: :feedback_path }
+    { name: -> { t("settings.settings_nav.guides_label") }, path: :settings_guides_path }
   ]
 
   def adjacent_setting(current_path, offset)

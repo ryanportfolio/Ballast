@@ -17,7 +17,7 @@ class Assistant::Function::GetIncomeStatement < Assistant::Function
 
         Spending trends and comparisons:
         - Month over month: pass group_by: "month" for a monthly_series
-          (calendar months, unlike get_budget which honors a custom month start)
+          (calendar months, even when the family uses a custom month start)
         - Versus the prior period: pass compare_previous_period: true
         - Per account: pass account_ids from get_accounts (totals only; the
           category breakdown is family-wide and is omitted with this filter)

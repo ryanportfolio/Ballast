@@ -4,7 +4,6 @@ module Localize
   included do
     around_action :switch_locale
     around_action :switch_timezone
-    helper_method :locale_from_param
   end
 
   private
@@ -13,15 +12,6 @@ module Localize
     # keeps a locale left on the thread by earlier work from leaking in.
     def switch_locale(&action)
       I18n.with_locale(I18n.default_locale, &action)
-    end
-
-    # Admin system health links still carry `locale` through to their lazy
-    # frames; only available locales (English) pass, anything else is dropped.
-    def locale_from_param
-      return unless params[:locale].is_a?(String) && params[:locale].present?
-
-      locale = params[:locale].to_sym
-      locale if I18n.available_locales.include?(locale)
     end
 
     def switch_timezone(&action)

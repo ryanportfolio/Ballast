@@ -15,7 +15,6 @@ being changed. These guides hold the detailed conventions and procedures.
 | Add a securities price provider | [Provider walkthrough](adding-a-securities-provider.md) |
 | Add a typed classification provider (Jev/TypeSafe) | [Classification provider walkthrough](adding-a-classification-provider.md) |
 | Gate or release a preview feature | [Preview-feature gating](gating-a-preview-feature.md) |
-| Change goals, pledges or reconciliation | [Goals](goals.md) |
 
 ## External wealth integration
 

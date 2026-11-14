@@ -230,24 +230,6 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h3", text: I18n.t("reports.empty_state.title")
   end
 
-  test "index with budget performance for current month" do
-    # Create a budget for current month
-    budget = Budget.find_or_bootstrap(@family, start_date: Date.current.beginning_of_month)
-    category = @family.categories.expenses.first
-
-    # Fail fast if test setup is incomplete
-    assert_not_nil category, "Test setup failed: no expense category found for family"
-    assert_not_nil budget, "Test setup failed: budget could not be created or found"
-
-    # Find or create budget category to avoid duplicate errors
-    budget_category = budget.budget_categories.find_or_initialize_by(category: category)
-    budget_category.budgeted_spending = Money.new(50000, @family.currency)
-    budget_category.save!
-
-    get reports_path(period_type: :monthly)
-    assert_response :ok
-  end
-
   test "index calculates summary metrics correctly" do
     get reports_path(period_type: :monthly)
     assert_response :ok
@@ -387,54 +369,6 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     assert_response :ok
     assert_equal "text/csv", @response.media_type
     assert_match /Category/, @response.body
-  end
-
-  test "export transactions with API key does not inherit web session impersonation" do
-    support_user = users(:sure_support_staff)
-    support_user.api_keys.active.destroy_all
-    token_value = ApiKey.generate_secure_key
-    export_credential = support_user.api_keys.build(
-      name: "Support Export Credential",
-      scopes: [ "read" ],
-      source: "web"
-    )
-    export_credential.key = token_value
-    export_credential.save!
-
-    impersonation_session = impersonation_sessions(:in_progress)
-    impersonated_user = impersonation_session.impersonated
-    leaked_category = impersonated_user.family.categories.create!(
-      name: "Impersonated Export Leak Probe"
-    )
-    impersonated_account = impersonated_user.finance_accounts.first
-    assert_not_nil impersonated_account, "Test setup failed: impersonated user has no finance account"
-
-    create_transaction(
-      account: impersonated_account,
-      name: "Impersonated export leak probe",
-      date: Date.current,
-      amount: 123.45,
-      category: leaked_category
-    )
-
-    support_user.sessions.destroy_all
-    support_user.sessions.create!(
-      user_agent: "Browser session",
-      ip_address: "127.0.0.1",
-      active_impersonator_session: impersonation_session
-    )
-
-    get export_transactions_reports_path(
-      format: :csv,
-      period_type: :ytd,
-      start_date: Date.current.beginning_of_year,
-      end_date: Date.current,
-      api_key: token_value
-    )
-
-    assert_response :ok
-    assert_equal "text/csv", @response.media_type
-    assert_no_match /Impersonated Export Leak Probe/, @response.body
   end
 
   test "export transactions with API key rejects deactivated user" do

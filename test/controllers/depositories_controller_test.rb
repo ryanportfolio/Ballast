@@ -56,10 +56,10 @@ class DepositoriesControllerTest < ActionDispatch::IntegrationTest
     get new_account_path(return_to: transactions_path) # session return_to
 
     post depositories_path, params: {
-      account: { name: "Form RT Checking", currency: "USD", balance: 100, accountable_type: "Depository", return_to: budgets_path }
+      account: { name: "Form RT Checking", currency: "USD", balance: 100, accountable_type: "Depository", return_to: reports_path }
     }
 
-    assert_redirected_to budgets_path
+    assert_redirected_to reports_path
   end
 
   test "create ignores an external return_to (open-redirect guard)" do

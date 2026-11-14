@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
-class Settings::DebugsController < Admin::BaseController
+class Settings::DebugsController < ApplicationController
   FILTER_ID_PARAMS = %i[family_id account_id user_id account_provider_id].freeze
+
+  layout "settings"
+
+  before_action :require_super_admin!
 
   def show
     filter_params = debug_filters_params
@@ -36,6 +40,10 @@ class Settings::DebugsController < Admin::BaseController
   end
 
   private
+    def require_super_admin!
+      redirect_to root_path, alert: t("settings.debugs.unauthorized") unless Current.user&.super_admin?
+    end
+
     def safe_parse_date(value)
       Date.iso8601(value)
     rescue ArgumentError, TypeError

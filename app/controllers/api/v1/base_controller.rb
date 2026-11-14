@@ -261,12 +261,11 @@ class Api::V1::BaseController < ApplicationController
       return unless @current_user
 
       # Build a fresh unsaved session so API requests never reuse an existing
-      # web session that may already carry impersonation state.
+      # web session.
       Current.session = @current_user.sessions.build(
         user_agent: request.user_agent,
         ip_address: request.ip
       )
-      Current.session.active_impersonator_session = nil
     end
 
     # Check if AI features are enabled for the current user

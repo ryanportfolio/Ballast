@@ -18,10 +18,8 @@ class Demo::DataCleaner
     ActiveRecord::Base.transaction do
       # Rows whose foreign key blocks the cascade below and that no
       # association removes: unlinked provider merchants (DataCleanerJob only
-      # drops them after 30 days) and the request logs of impersonation
-      # sessions.
+      # drops them after 30 days).
       FamilyMerchantAssociation.delete_all
-      ImpersonationSessionLog.delete_all
 
       disarm_destroy_guards!
 

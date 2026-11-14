@@ -122,7 +122,6 @@ On a self-hosted instance, Sure sends these emails:
 - Password reset links, when password sign-in is enabled.
 - A confirmation link when a user changes their email address, but only when **Require email confirmation** is on under Settings > Self-Hosting. When it is off, the new address is saved straight away and nothing is sent.
 - Rule notifications, from rules with a "Send email notification" action.
-- A daily summary to every super admin after the demo family is refreshed, but only when **Enable daily demo family refresh** is on under Settings > Self-Hosting and a demo family has been selected for it. It is off by default.
 
 Invitations are never emailed on a self-hosted instance, even with SMTP set up. After you add a member, copy the invitation link from Settings > Profile Info and send it to them yourself.
 
@@ -387,7 +386,7 @@ Sure runs comfortably on hosts or containers limited to 512 MB of RAM, which mak
 
 Measured on a production deploy of the official image with the tuning below:
 
-- Boot, first-run onboarding, and everyday use (dashboard, transactions, budgets, reports)
+- Boot, first-run onboarding, and everyday use (dashboard, transactions, reports)
 - Small bank syncs and CSV imports
 - Scheduled (cron) jobs such as exchange-rate refreshes
 
@@ -431,7 +430,7 @@ MARKET_DATA_SYNC_TIME=22:00       # HH:MM, 24-hour clock
 MARKET_DATA_SYNC_TIMEZONE=UTC     # IANA name such as Europe/Berlin; unknown names fall back to UTC
 ```
 
-**Upgrading from an earlier version:** the import used to be a fixed entry in `config/schedule.yml`. It is now created by the worker when it starts, from the settings above. Without any change on your side it keeps running at 22:00 UTC, Monday to Friday. If prices stop updating after an upgrade, open `/sidekiq` (see [Inspecting background jobs](#inspecting-background-jobs-sidekiq)), check that the **Cron** tab lists `import_market_data`, and look for `[MarketDataScheduler]` lines in the worker log (`docker compose logs worker`). Saving the import time once on the settings page recreates the job.
+**Upgrading from an earlier version:** the import used to be a fixed entry in `config/schedule.yml`. It is now created by the worker when it starts, from the settings above. Without any change on your side it keeps running at 22:00 UTC, Monday to Friday. If prices stop updating after an upgrade, look for `[MarketDataScheduler]` lines in the worker log (`docker compose logs worker`); they say whether the worker created the `import_market_data` job. Saving the import time once on the settings page recreates the job.
 
 ## How to update your app
 
@@ -465,7 +464,7 @@ Installs created before the first user was automatically made `super_admin` may 
 docker compose exec web bin/rails runner 'User.find_by!(email: "you@example.com").update!(role: :super_admin)'
 ```
 
-After that, you can promote other users at `/admin/users`.
+To promote another user later, run the same command with their email.
 
 ## How to change which updates your app receives
 
@@ -510,7 +509,7 @@ Each backup is a folder under `backups/<version>/<date>-<manual|scheduled>/` wit
 
 | File | Contents |
 |---|---|
-| `db.dump` | The whole database: accounts, transactions, budgets, rules, users and settings |
+| `db.dump` | The whole database: accounts, transactions, rules, users and settings |
 | `storage.tar.gz` | Uploaded files: transaction attachments, account statements and documents, imports and exports, profile pictures and account logos |
 | `config/.env`, `config/compose.yml` | Your configuration, including `SECRET_KEY_BASE` |
 | `manifest.json` | Sure version and image, database schema version, when it was taken |
@@ -632,13 +631,4 @@ docker compose exec db psql -U sure_user -d sure_development -c "SELECT 1;" # Th
 ### Slow `.csv` import (processing rows taking longer than expected)
 
 Importing comma-separated-value file(s) requires the `sure-worker` container to communicate with Redis. Check your worker logs for any unexpected errors, such as connection timeouts or Redis communication failures.
-
-### Inspecting background jobs (`/sidekiq`)
-
-Sure ships the Sidekiq Web dashboard at `/sidekiq`. The route only exists for a signed-in **super admin** — the first user created on your instance. Anyone else (including logged-out visitors) gets a 404, so there is nothing to configure to keep it safe. If you want a second layer of protection anyway, set both `SIDEKIQ_WEB_USERNAME` and `SIDEKIQ_WEB_PASSWORD` in your environment file to additionally require basic-auth credentials; there are no default credentials.
-
-For day-to-day triage of stuck syncs, imports, and exports, prefer **Settings → Background jobs** — it maps queue state onto the actual records and offers safe recovery actions. The Sidekiq dashboard is a break-glass tool; two warnings when using it directly:
-
-- Never manually retry `SimplefinConnectionUpdateJob` — it consumes a single-use setup token, and a retry permanently breaks that connection attempt.
-- Deleting or retrying jobs does **not** update the corresponding Sure record (a deleted `ImportJob` leaves its import stuck in `importing`) — use Settings → Background jobs for record-level recovery.
 

@@ -29,7 +29,6 @@ class Category::Merger
     def merge_sources!
       source_categories.each do |source|
         Transaction.reassign_category!(family.transactions.where(category_id: source.id), target_category.id)
-        merge_budget_categories(source)
         family.categories.where(parent_id: source.id).where.not(id: target_category.id).update_all(parent_id: target_category.id)
         family.categories.find(source.id).destroy!
         @merged_count += 1
@@ -68,24 +67,5 @@ class Category::Merger
       end
 
       ids
-    end
-
-    def merge_budget_categories(source)
-      family.budget_categories.where(category_id: source.id).find_each do |source_budget_category|
-        target_budget_category = family.budget_categories.find_by(
-          budget_id: source_budget_category.budget_id,
-          category_id: target_category.id
-        )
-
-        if target_budget_category
-          target_budget_category.update!(
-            budgeted_spending: (target_budget_category.budgeted_spending || 0).to_d +
-              (source_budget_category.budgeted_spending || 0).to_d
-          )
-          source_budget_category.destroy!
-        else
-          source_budget_category.update!(category_id: target_category.id)
-        end
-      end
     end
 end

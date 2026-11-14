@@ -2,8 +2,8 @@
 
 # `DS::IconPicker` is a shared, searchable lucide-icon grid.
 #
-# `method` is a parameter because the backing columns can differ:
-# for now `categories.lucide_icon` and `goals.icon`.
+# `method` is a parameter so the backing column is not fixed; today the
+# only caller is `categories.lucide_icon`.
 class DS::IconPicker < DesignSystemComponent
   attr_reader :form, :method, :icons, :placeholder
 

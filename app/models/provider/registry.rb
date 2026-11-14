@@ -44,10 +44,6 @@ class Provider::Registry
         Provider::TwelveData.new(api_key)
       end
 
-      def github
-        Provider::Github.new
-      end
-
       def openai
         access_token = ENV["OPENAI_ACCESS_TOKEN"].presence || Setting.openai_access_token
 
@@ -138,7 +134,7 @@ class Provider::Registry
         # builds them by name when benchmarking against Jev.
         %i[jev]
       else
-        %i[github openai anthropic]
+        %i[openai anthropic]
       end
     end
 end

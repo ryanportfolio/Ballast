@@ -301,16 +301,12 @@ class ReportsController < ApplicationController
       income_change = calculate_percentage_change(previous_income, current_income)
       expense_change = calculate_percentage_change(previous_expenses, current_expenses)
 
-      # Get budget performance for current period
-      budget_percent = calculate_budget_performance
-
       {
         current_income: current_income,
         income_change: income_change,
         current_expenses: current_expenses,
         expense_change: expense_change,
-        net_savings: net_savings,
-        budget_percent: budget_percent
+        net_savings: net_savings
       }
     end
 
@@ -318,18 +314,6 @@ class ReportsController < ApplicationController
       return 0 if previous_value.zero?
 
       ((current_value - previous_value) / previous_value * 100).round(1)
-    end
-
-    def calculate_budget_performance
-      # Only calculate if we're looking at current month
-      return nil unless @period_type == :monthly && @start_date.beginning_of_month.to_date == Date.current.beginning_of_month.to_date
-
-      budget = Budget.find_or_bootstrap(Current.family, start_date: @start_date.beginning_of_month.to_date, user: Current.user)
-      return 0 if budget.nil? || budget.allocated_spending.zero?
-
-      (budget.actual_spending / budget.allocated_spending * 100).round(1)
-    rescue StandardError
-      nil
     end
 
     def build_spending_comparison
@@ -1179,12 +1163,11 @@ class ReportsController < ApplicationController
       end
 
       # Build a fresh unsaved session so API key exports never reuse an existing
-      # web session that may already carry impersonation state.
+      # web session.
       Current.session = @current_user.sessions.build(
         user_agent: request.user_agent,
         ip_address: request.ip
       )
-      Current.session.active_impersonator_session = nil
 
       # Verify the delegation chain works
       unless Current.user

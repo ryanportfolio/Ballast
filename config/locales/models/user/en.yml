@@ -13,6 +13,7 @@ en:
     errors:
       models:
         user:
+          last_super_admin_error: Cannot demote the last super admin in the system.
           attributes:
             base:
               cannot_deactivate_admin_with_other_users: Admin cannot delete account
