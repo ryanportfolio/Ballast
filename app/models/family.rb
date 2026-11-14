@@ -254,7 +254,7 @@ class Family < ApplicationRecord
 
   before_validation :normalize_currency
   before_validation :normalize_enabled_currencies!
-  after_create_commit :add_classifier_rules
+  after_create_commit :add_merchant_matcher_rule!
 
   def primary_currency_code
     self.class.normalize_currency_code(currency) || "USD"
@@ -451,45 +451,12 @@ class Family < ApplicationRecord
     Merchant.where(id: (assigned_ids + recently_unlinked_ids + family_merchant_ids).uniq)
   end
 
-  def bayes_settings_object
-    Family::BayesSettings.new(bayes_settings)
-  end
-
-  # Merges changes into the stored classifier settings; a blank number goes
-  # back to its default.
-  def update_bayes_settings!(changes)
-    update!(bayes_settings: bayes_settings_object.merge(changes).to_stored)
-  end
-
   def auto_categorize_transactions_later(transactions, rule_run_id: nil)
     AutoCategorizeJob.perform_later(self, transaction_ids: transactions.pluck(:id), rule_run_id: rule_run_id)
   end
 
-  # The LLM only: Bayes is its own rule (Category classifier), so what it
-  # categorized is no longer uncategorized here.
   def auto_categorize_transactions(transaction_ids)
     AutoCategorizer.new(self, transaction_ids: transaction_ids).auto_categorize
-  end
-
-  # Runs Bayes over the uncategorized transactions in scope the user hasn't
-  # locked, transfer legs aside (they never belong in Uncategorized); those
-  # it isn't sure about are tried again with a better model next time.
-  # Returns the modified count.
-  def bayes_categorize_uncategorized(scope = categorizable_transactions)
-    scope = scope.where(category_id: nil).where.not(kind: Transaction::UNCATEGORIZED_EXCLUDED_KINDS).enrichable(:category_id)
-    requested = scope.count
-    return 0 if requested.zero?
-
-    result = Family::BayesCategorizer.new(self, settings: bayes_settings_object).classify_and_apply(scope.select(:id))
-    DebugLogEntry.capture(
-      category: "auto_categorization",
-      level: "info",
-      message: "Bayesian categorization categorized #{result.categorized_ids.size} of #{requested} transactions",
-      source: self.class.name,
-      family: self,
-      metadata: { requested_count: requested, categorized_count: result.categorized_ids.size, modified_count: result.modified_count }
-    )
-    result.modified_count
   end
 
   # Copies near-duplicates' merchant to every transaction in scope without
@@ -510,50 +477,16 @@ class Family < ApplicationRecord
     filled
   end
 
-  # The matcher and Bayes are rules (Merchant matcher, Category classifier),
-  # so they run in the family's rule order; whether one is on is whether a
-  # rule with its action is. Settings → Classifier switches them.
-  CLASSIFIER_ACTION_TYPES = %w[fill_similar_merchants bayes_categorize].freeze
-
-  def self.classifier_rule_name(action_type)
-    action_type == "bayes_categorize" ? I18n.t("rules.classifier_rules.category_classifier") : I18n.t("rules.classifier_rules.merchant_matcher")
-  end
-
-  def classifier_rules(action_type)
-    rules.where(id: Rule::Action.where(action_type: action_type).select(:rule_id))
-  end
-
-  def classifier_rule_active?(action_type)
-    classifier_rules(action_type).exists?(active: true)
-  end
-
-  def set_classifier_rule_active!(action_type, active)
-    classifier_rules(action_type).find_each { |rule| rule.update!(active: active) }
-  end
-
-  # A rule with no conditions at the top of the order, the others moving
+  # The matcher is a rule (Merchant matcher), so it runs in the family's rule
+  # order; whether it is on is whether that rule is. A new family gets it as
+  # a rule with no conditions at the top of the order, the others moving
   # down one.
-  def add_classifier_rule!(action_type, active: true)
+  def add_merchant_matcher_rule!(active: true)
     Rule.transaction do
       Rule.lock_positions!(self)
       rules.update_all("position = position + 1")
-      rules.create!(name: self.class.classifier_rule_name(action_type), resource_type: "transaction", active: active, position: 1,
-                    actions_attributes: [ { action_type: action_type } ])
-    end
-  end
-
-  # Unlocks the categories Bayes locked itself (lock_results) and the
-  # merchants the matcher did (lock_similar_merchants) that are still what
-  # they set, so rules and AI may change them again. The values stay. All or
-  # none; returns how many were unlocked.
-  def clear_bayes_locks!
-    locked_by_bayes = transactions.where("transactions.locked_attributes ? 'category_id'")
-                                  .category_from("bayes", metadata: { locked_by_bayes: true })
-    locked_by_matcher = transactions.where("transactions.locked_attributes ? 'merchant_id'")
-                                    .where(Transaction.enriched_from_sql("merchant_id", "similar", metadata: { locked_by_similar: true }))
-    Transaction.transaction do
-      unlock_own_locks(locked_by_bayes, "category_id", "bayes", "locked_by_bayes") +
-        unlock_own_locks(locked_by_matcher, "merchant_id", "similar", "locked_by_similar")
+      rules.create!(name: I18n.t("rules.classifier_rules.merchant_matcher"), resource_type: "transaction", active: active, position: 1,
+                    actions_attributes: [ { action_type: "fill_similar_merchants" } ])
     end
   end
 
@@ -832,28 +765,8 @@ class Family < ApplicationRecord
   end
 
   private
-    # Bayes first, so the matcher lands above it.
-    def add_classifier_rules
-      CLASSIFIER_ACTION_TYPES.reverse_each { |action_type| add_classifier_rule!(action_type) }
-    end
-
     def categorizable_transactions
       transactions.visible.with_entry.merge(Entry.excluding_split_parents)
-    end
-
-    # In batches, like Transaction.reassign_category!. update_all skips the
-    # touch a save carries to the entry (Family#entries_cache_version), so the
-    # entries are touched too.
-    def unlock_own_locks(scope, attribute, source, flag)
-      ids = scope.lock("FOR UPDATE OF transactions").pluck(:id)
-      ids.each_slice(Transaction::REASSIGN_TOUCH_BATCH_SIZE) do |batch|
-        Transaction.where(id: batch).update_all([ "locked_attributes = locked_attributes - ?, updated_at = ?", attribute, Time.current ])
-        # Without the flag, a lock the user sets later counts as confirming it.
-        DataEnrichment.where(enrichable_type: "Transaction", enrichable_id: batch, attribute_name: attribute, source: source)
-                      .update_all([ "metadata = metadata - ?", flag ])
-        Entry.where(entryable_type: "Transaction", entryable_id: batch).touch_all
-      end
-      ids.size
     end
 
     # Mirrors the inline `investment_ids` / `crypto_ids` SQL blocks in

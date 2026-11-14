@@ -117,16 +117,6 @@ Rails.application.routes.draw do
     resources :api_keys, only: [ :index, :show, :new, :create, :destroy ]
     resource :mcp, controller: "mcp", only: :show
     resource :ai_prompts, only: %i[show update]
-    resource :classifier, only: %i[show update] do
-      patch :rule
-      post :add_rule
-      post :run
-      post :clear_locks
-      post :evaluate
-      post :find_best
-      post :remember_weight
-      patch :apply_best
-    end
     resource :guides, only: :show
     get "bank_sync", to: redirect("/settings/providers", status: 301)
     resource :providers, only: %i[show update] do

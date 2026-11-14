@@ -120,6 +120,8 @@ class Rule::Action < ApplicationRecord
 
   def executor
     rule.registry.get_executor!(action_type)
+  rescue Rule::Registry::UnsupportedActionError
+    Rule::ActionExecutor::Unsupported.new(rule, action_type)
   end
 
   def email_notification?

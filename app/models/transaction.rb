@@ -118,7 +118,8 @@ class Transaction < ApplicationRecord
   # statement size when a merge or category destroy hits many transactions.
   REASSIGN_TOUCH_BATCH_SIZE = 5_000
 
-  # DataEnrichment sources that represent automatic category assignment
+  # DataEnrichment sources that represent automatic category assignment.
+  # "bayes" is the removed Bayes classifier's: rows it wrote stay automatic.
   AUTO_CATEGORY_SOURCES = %w[ai bayes].freeze
 
   # Stored flag values that do not mark a transaction pending: the strings
@@ -219,7 +220,7 @@ class Transaction < ApplicationRecord
   end
 
   # Transactions whose category is still the one an automatic source (e.g.
-  # "ai", "bayes") set.
+  # "ai") set.
   scope :category_from, ->(*sources, since: nil, metadata: nil) { where(category_from_sql(*sources, since:, metadata:)) }
 
   def self.category_from_sql(*sources, **options)

@@ -9,6 +9,8 @@ class Family::SimilarMatcher
   # small pool keeps a monthly bill.
   MIN_DOCUMENT_CAP = 50
   GRAM = 3
+  # Letters mixed with 2+ digits: reference codes like "2k4l19"; keeps "7eleven", "o2".
+  CODE = /\A(?=.*\p{L})(?=(?:.*\p{N}){2})/
 
   # pool: transactions with their entries loaded. common_share: a feature in
   # more than this share of the pool ("card", " pa") says nothing about which
@@ -101,7 +103,7 @@ class Family::SimilarMatcher
     # { words: { word => count }, grams: { 3-gram => count } }
     def features(text)
       words = text.to_s.downcase.scan(/[\p{L}\p{N}]+/)
-                  .select { |word| word.match?(/\p{L}/) && !word.match?(Family::BayesCategorizer::CODE) }
+                  .select { |word| word.match?(/\p{L}/) && !word.match?(CODE) }
       padded = " #{words.join(" ")} "
       grams = padded.length < GRAM ? [] : (0..padded.length - GRAM).map { |i| padded[i, GRAM] }
       { words: words.tally, grams: grams.tally }

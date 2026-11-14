@@ -1,20 +1,33 @@
 # Fills in a transaction's missing merchant from its near-duplicates
 # (Family::SimilarMatcher): when at least similar_min_neighbours of them have a
-# confirmed merchant, and all the same one. Runs before Bayes, so Bayes sees
-# the merchant. Confirmed means, optionally (Merchant matcher tuning): not its own
-# recent copy, unless the user locked it (a lock it set itself,
-# lock_similar_merchants, doesn't count), so a wrong copy isn't spread. AI
-# merchants count: the detector locks what it sets. The pool is the newest transactions
-# with a merchant, capped like Bayes' training set.
+# confirmed merchant, and all the same one. Confirmed means, by default
+# (similar_skip_self): not its own recent copy, unless the user locked it (a
+# lock it set itself, lock_similar_merchants, doesn't count), so a wrong copy
+# isn't spread. AI merchants count: the detector locks what it sets. The pool
+# is the newest transactions with a merchant, capped.
 # Transfers neither give nor get one: they have no merchant, and a
 # description typed in the banking app makes them look alike.
 class Family::SimilarMerchantFiller
-  # as_of: copy only from transactions dated on or before it (the
-  # evaluation passes the day before each month); without it, from all.
-  def initialize(family, settings: family.bayes_settings_object, as_of: nil)
+  # On one family's history a threshold of 0.8–0.95 made little difference;
+  # 2 neighbours instead of 1 halved the mistakes, most of them one shop under
+  # two merchants. The pool is held in memory, so it's capped; the newest
+  # transactions are the most representative of current spending.
+  DEFAULTS = {
+    lock_similar_merchants: false,
+    similar_threshold: 0.9,
+    similar_min_neighbours: 2,
+    similar_common_share: 0.2,
+    similar_skip_self: true,
+    similar_self_grace_days: 90,
+    max_pool_transactions: 5_000
+  }.freeze
+
+  Settings = Struct.new(*DEFAULTS.keys, keyword_init: true)
+
+  # settings: overrides of DEFAULTS; an unknown key raises.
+  def initialize(family, settings: {})
     @family = family
-    @settings = settings
-    @as_of = as_of
+    @settings = Settings.new(**DEFAULTS.merge(settings))
   end
 
   # Returns how many of transaction_ids got a merchant.
@@ -42,20 +55,16 @@ class Family::SimilarMerchantFiller
     scope
   end
 
-  # The newest of them, dated on or before as_of if given.
+  # The newest of them.
   def pool
-    @pool ||= begin
-      scope = confirmed
-      scope = scope.where(entries: { date: ..as_of }) if as_of
-      scope.preload(:entry)
-           .order("transactions.created_at DESC, transactions.id DESC")
-           .limit(settings.max_training_transactions)
-           .to_a
-    end
+    @pool ||= confirmed.preload(:entry)
+                       .order("transactions.created_at DESC, transactions.id DESC")
+                       .limit(settings.max_pool_transactions)
+                       .to_a
   end
 
   private
-    attr_reader :family, :settings, :as_of
+    attr_reader :family, :settings
 
     # The merchant is still the matcher's recent copy, unlocked or locked by
     # the matcher itself.
