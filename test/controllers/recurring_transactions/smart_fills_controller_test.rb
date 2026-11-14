@@ -100,15 +100,15 @@ class RecurringTransactions::SmartFillsControllerTest < ActionDispatch::Integrat
     assert unrelated.persisted?, "sanity check: the unrelated same-name entry exists in the DB"
   end
 
-  test "an inaccessible entry never becomes evidence" do
+  test "an entry of another family never becomes evidence" do
     stub_provider(raw(name: "Should not appear"))
-    hidden = accounts(:investment).entries.create!(
+    other_account = families(:empty).accounts.create!(
+      name: "Other Family Checking", balance: 0, currency: "USD", accountable: Depository.new
+    )
+    hidden = other_account.entries.create!(
       date: Date.current, amount: 30, currency: "USD", name: "PRIVATE FEE",
       entryable: Transaction.new
     )
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
 
     post smart_fill_recurring_transactions_url(entry_id: hidden.id),
          headers: { "Turbo-Frame" => "modal" }
