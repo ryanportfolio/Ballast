@@ -444,6 +444,30 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match "no such merchant", response.body
   end
 
+  test "a guest can view a transaction but cannot update it" do
+    sign_in family_guest
+    original_name = @entry.name
+
+    get transaction_url(@entry)
+    assert_response :success
+
+    patch transaction_url(@entry), params: { entry: { name: "Guest rename", notes: "guest notes" } }
+
+    assert_redirected_to transaction_url(@entry)
+    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
+    @entry.reload
+    assert_equal original_name, @entry.name
+    assert_not_equal "guest notes", @entry.notes
+  end
+
+  test "a member can update a transaction" do
+    sign_in users(:family_member)
+
+    patch transaction_url(@entry), params: { entry: { name: "Member rename" } }
+
+    assert_equal "Member rename", @entry.reload.name
+  end
+
   test "updates with transaction details" do
     assert_no_difference [ "Entry.count", "Transaction.count" ] do
       patch transaction_url(@entry), params: {
@@ -2007,9 +2031,12 @@ end
     assert_match I18n.t("transactions.show.category_set_on_outflow"), response.body
   end
 
+  # Guests are read-only (Ballast has no account sharing to make a guest an
+  # account's owner), so the update is refused before any rule is offered.
   test "does not offer guests to create a rule through a transaction update" do
     category = categories(:income)
     @entry.update!(name: "AMZN Mktp UK")
+    original_category_id = @entry.entryable.category_id
     rule = @entry.account.family.rules.build(name: "Amazon", resource_type: "transaction", active: true)
     rule.conditions.build(condition_type: "transaction_name", operator: "like", value: "AMAZON.CO.UK")
     rule.actions.build(action_type: "set_transaction_category", value: category.id.to_s)
@@ -2023,8 +2050,7 @@ end
       }
     }, as: :turbo_stream
 
-    assert_response :success
-    assert_equal category.id, @entry.reload.entryable.category_id
+    assert_equal original_category_id, @entry.reload.entryable.category_id
     assert_not_includes response.body, "action_type=set_transaction_category"
   end
 

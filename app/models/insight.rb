@@ -39,11 +39,14 @@ class Insight < ApplicationRecord
   # instead of ActiveRecord::RecordNotUnique; races still hit the index.
   validates :dedup_key, uniqueness: { scope: :family_id }
 
-  # Everything the user hasn't acknowledged; what the feed renders. Rows of a
-  # type no generator writes any more (Ballast removed the budget and goal
-  # insights) stay in the table but never show: nothing expires them, and
-  # their links point at removed pages.
-  scope :visible, -> { where(status: [ :active, :read ], insight_type: TYPES).about_visible_accounts }
+  # Rows of a type no generator writes any more (Ballast removed the budget and
+  # goal insights) stay in the table but never show and can't be changed:
+  # nothing expires them, their links point at removed pages, and they fail
+  # the insight_type validation on save. Every lookup goes through this.
+  scope :known_types, -> { where(insight_type: TYPES) }
+
+  # Everything the user hasn't acknowledged; what the feed renders.
+  scope :visible, -> { known_types.where(status: [ :active, :read ]).about_visible_accounts }
 
   # An insight that names an account (metadata account_id) shows only while
   # that account is visible in the family. This read-time check covers rows

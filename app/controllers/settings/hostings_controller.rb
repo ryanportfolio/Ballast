@@ -26,7 +26,7 @@ class Settings::HostingsController < ApplicationController
     ]
 
     # Determine which providers are currently selected
-    exchange_rate_provider = ENV["EXCHANGE_RATE_PROVIDER"].presence || Setting.exchange_rate_provider
+    exchange_rate_provider = ExchangeRate.provider_key
     enabled_securities = Setting.enabled_securities_providers
 
     # Show provider settings if used for FX or enabled for securities
@@ -249,8 +249,8 @@ class Settings::HostingsController < ApplicationController
       elsif raw_endpoint.blank?
         Setting.jev_endpoint = nil
       else
-        # Provider::Jev owns the rule so settings, JEV_ENDPOINT and eval-time
-        # construction cannot drift apart; the controller's job is only to turn
+        # Provider::Jev owns the rule so settings and JEV_ENDPOINT cannot drift
+        # apart; the controller's job is only to turn
         # a rejection into a message instead of a 500.
         unless Provider::Jev.endpoint_allowed?(raw_endpoint)
           raise Setting::ValidationError, t(".invalid_jev_endpoint")

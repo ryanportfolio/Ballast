@@ -183,17 +183,17 @@ class Setting < RailsSettings::Base
 
   # Onboarding and app settings
   ONBOARDING_STATES = %w[open closed].freeze
-  # Ballast removed invitations and invite codes. The old "invite_only" state
-  # kept strangers out, so it now means "closed", never "open".
-  LEGACY_CLOSED_ONBOARDING_STATE = "invite_only"
-  DEFAULT_ONBOARDING_STATE = begin
-    env_value = ENV["ONBOARDING_STATE"].to_s.presence || "open"
-    if env_value == LEGACY_CLOSED_ONBOARDING_STATE
-      "closed"
-    else
-      ONBOARDING_STATES.include?(env_value) ? env_value : "open"
-    end
+  # The default from the ONBOARDING_STATE env var. Blank means "open". Any
+  # other value that is not a current state fails closed: the removed
+  # "invite_only" (Ballast has no invitations; it kept strangers out) and
+  # typos alike.
+  def self.default_onboarding_state_from(env_value)
+    value = env_value.to_s
+    return "open" if value.blank?
+
+    ONBOARDING_STATES.include?(value) ? value : "closed"
   end
+  DEFAULT_ONBOARDING_STATE = default_onboarding_state_from(ENV["ONBOARDING_STATE"])
 
   field :onboarding_state, type: :string, default: DEFAULT_ONBOARDING_STATE
   # Legacy flag from before onboarding_state existed. No longer written; read

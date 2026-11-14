@@ -18,10 +18,9 @@ class ExchangeRatePair < ApplicationRecord
     find_by!(from_currency: from, to_currency: to)
   end
 
-  # Resolves the runtime provider name the same way as ExchangeRate::Provided.provider:
-  # ENV takes precedence over the DB Setting.
+  # The runtime provider name, resolved by ExchangeRate.provider_key.
   def self.resolve_provider_name
-    (ENV["EXCHANGE_RATE_PROVIDER"].presence || Setting.exchange_rate_provider).to_s
+    ExchangeRate.provider_key
   end
 
   def self.record_first_provider_rate_on(from:, to:, date:, provider_name: nil)

@@ -60,6 +60,7 @@ class Assistant::Function::UpdateTransaction < Assistant::Function
 
     entry = transaction.entry
     return error("split_child", "Split child transactions cannot be edited directly. Use the split editor.") if entry.split_child?
+    return error("not_authorized", "You do not have permission to update this transaction.") unless entry.account.writable_by?(user)
 
     entry_attrs = entry_attributes(params, entry)
     return entry_attrs if error_response?(entry_attrs)

@@ -5,7 +5,7 @@ class Transactions::BulkUpdatesController < ApplicationController
   def create
     # Skip split parents from bulk update - update children instead
     scoped_params = family_scoped_bulk_update_params
-    entry_ids = Current.accessible_entries
+    entry_ids = Current.annotatable_entries
                        .excluding_split_parents
                        .where(id: bulk_update_params[:entry_ids])
                        .pluck(:id)

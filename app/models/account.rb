@@ -62,12 +62,13 @@ class Account < ApplicationRecord
     manual.where.not(status: :pending_deletion)
   }
 
-  # Ballast has no account sharing: every member of a family can read, change
-  # and count every account of that family. The four scopes below are the same
-  # test; the names stay so upstream callers keep merging cleanly.
+  # Ballast has no account sharing: every user of a family can read and count
+  # every account of that family, and every user but a guest can change them.
+  # Guests are read-only, as upstream's read_only shares made them. The names
+  # stay so upstream callers keep merging cleanly.
   scope :accessible_by, ->(user) { where(family_id: user.family_id) }
-  scope :writable_by, ->(user) { accessible_by(user) }
-  scope :annotatable_by, ->(user) { accessible_by(user) }
+  scope :writable_by, ->(user) { user.guest? ? none : accessible_by(user) }
+  scope :annotatable_by, ->(user) { writable_by(user) }
   scope :included_in_finances_for, ->(user) { accessible_by(user) }
 
   has_one_attached :logo, dependent: :purge_later
@@ -500,9 +501,14 @@ class Account < ApplicationRecord
     end
   end
 
-  # Every member of the account's family has full access (no sharing).
+  # Every user of the account's family may read it (no sharing).
   def accessible_by?(user)
     user.present? && user.family_id == family_id
+  end
+
+  # The same users may change it, except guests (see writable_by).
+  def writable_by?(user)
+    accessible_by?(user) && !user.guest?
   end
 
   private

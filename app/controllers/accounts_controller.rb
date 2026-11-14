@@ -383,6 +383,7 @@ class AccountsController < ApplicationController
 
     def set_manageable_account
       @account = Current.user.accessible_accounts.find(params[:id])
+      require_account_permission!(@account)
     end
 
     # The accounts a provider card on this page may list. A card is admitted

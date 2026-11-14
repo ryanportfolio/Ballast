@@ -130,8 +130,7 @@ class Provider::Registry
       when :classification
         # Only providers implementing Provider::ClassificationConcept#decide
         # belong here. OpenAI and Anthropic can auto-categorize but cannot
-        # answer typed questions, so they stay under :llm — the eval runner
-        # builds them by name when benchmarking against Jev.
+        # answer typed questions, so they stay under :llm.
         %i[jev]
       else
         %i[openai anthropic]

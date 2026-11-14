@@ -47,9 +47,21 @@ module Assistant::Function::BillsSupport
     end
 
     # The write tools' lookup. Every bill this user can read is on an account
-    # of their family (or on none), so they may change it too.
+    # of their family (or on none). Members may change it; a guest is
+    # read-only, as RecurringTransactionsController#ensure_series_writable
+    # enforces for the pages. Accountless series carry no account gate.
     def find_writable_series(id)
-      find_series(id)
+      series, error = find_series(id)
+      return [ nil, error ] if error
+
+      if series.account_id.present? && !Account.writable_by(user).where(id: series.account_id).exists?
+        return [ nil, {
+          error: "#{series.display_name} is read-only for guests",
+          hint: "You can read this bill but not change it. Do not retry."
+        } ]
+      end
+
+      [ series, nil ]
     end
 
     def display_status(series)

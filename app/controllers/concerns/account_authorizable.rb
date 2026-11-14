@@ -7,11 +7,11 @@ module AccountAuthorizable
 
   private
 
-    # Ballast has no account sharing: every member of the account's family has
-    # full access, so the level (:write or :annotate upstream) no longer
-    # narrows anything. Accounts of another family are still refused.
+    # Ballast has no account sharing: every member of the account's family may
+    # change it and guests may not, so :write and :annotate are the same test.
+    # Accounts of another family are refused too.
     def require_account_permission!(account, _level = :write, redirect_path: nil)
-      return true if account.accessible_by?(Current.user)
+      return true if account.writable_by?(Current.user)
 
       path = redirect_path || account_path(account)
       respond_to do |format|

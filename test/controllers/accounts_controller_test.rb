@@ -683,6 +683,30 @@ class AccountsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Depository account scheduled for deletion", flash[:notice]
   end
 
+  test "a guest can view an account but cannot destroy it" do
+    sign_in family_guest
+
+    get account_url(@account)
+    assert_response :success
+
+    assert_no_enqueued_jobs only: DestroyJob do
+      delete account_url(@account)
+    end
+
+    assert_redirected_to account_path(@account)
+    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
+    assert_not @account.reload.pending_deletion?
+  end
+
+  test "a member can destroy an account" do
+    sign_in users(:family_member)
+
+    delete account_url(@account)
+
+    assert_redirected_to accounts_path
+    assert_enqueued_with job: DestroyJob
+  end
+
   test "destroy reports failure and keeps the account listed when the enqueue raises" do
     DestroyJob.queue_adapter.stubs(:enqueue).raises(RedisClient::CannotConnectError, "Connection refused")
 

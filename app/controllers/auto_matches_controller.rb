@@ -50,8 +50,8 @@ class AutoMatchesController < ApplicationController
 
     transfers = Transfer.pending
       .where(id: transfer_ids)
-      .where(inflow_transaction_id: accessible_transaction_ids)
-      .where(outflow_transaction_id: accessible_transaction_ids)
+      .where(inflow_transaction_id: writable_transaction_ids)
+      .where(outflow_transaction_id: writable_transaction_ids)
       .includes(inflow_transaction: { entry: :account }, outflow_transaction: { entry: :account })
 
     updated_count = 0
@@ -81,6 +81,15 @@ class AutoMatchesController < ApplicationController
       Current.family.transactions
         .joins(entry: :account)
         .merge(Account.accessible_by(Current.user))
+        .select(:id)
+    end
+
+    # Confirming or rejecting writes to both legs, so a guest (read-only)
+    # resolves nothing.
+    def writable_transaction_ids
+      Current.family.transactions
+        .joins(entry: :account)
+        .merge(Account.writable_by(Current.user))
         .select(:id)
     end
 

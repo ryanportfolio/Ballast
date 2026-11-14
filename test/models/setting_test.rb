@@ -229,4 +229,13 @@ class SettingTest < ActiveSupport::TestCase
     assert_raises(Setting::ValidationError) { Setting.onboarding_state = "invite_only" }
     assert_equal "open", Setting.onboarding_state
   end
+
+  test "the ONBOARDING_STATE env default is open when blank and closed when unknown" do
+    assert_equal "open", Setting.default_onboarding_state_from(nil)
+    assert_equal "open", Setting.default_onboarding_state_from("")
+    assert_equal "open", Setting.default_onboarding_state_from("open")
+    assert_equal "closed", Setting.default_onboarding_state_from("closed")
+    assert_equal "closed", Setting.default_onboarding_state_from("invite_only")
+    assert_equal "closed", Setting.default_onboarding_state_from("opne")
+  end
 end

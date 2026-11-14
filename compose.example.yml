@@ -12,6 +12,16 @@
 # POSTGRES_PASSWORD in a .env file next to it; Docker Compose refuses to start
 # without them. A public default SECRET_KEY_BASE would let anyone forge sessions.
 #
+# Image:
+# ------
+#
+# Ballast publishes no Docker image yet. The web, worker and backup services
+# below pull ghcr.io/we-promise/sure, the upstream Sure image, so this file as
+# written runs upstream Sure without Ballast's changes. To run Ballast, build
+# the image from this repository (docker build -t ballast:local .) and set it
+# for those services in a compose.override.yml; see "Which image these compose
+# files run" in the setup guide below.
+#
 # Setup:
 # ------
 #

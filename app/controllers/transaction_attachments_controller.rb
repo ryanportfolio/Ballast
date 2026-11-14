@@ -1,6 +1,7 @@
 class TransactionAttachmentsController < ApplicationController
   before_action :set_transaction
   before_action :set_attachment, only: [ :show, :destroy ]
+  before_action :require_writable_account!, only: [ :create, :destroy ]
 
   def show
     disposition = params[:disposition] == "attachment" ? "attachment" : "inline"
@@ -85,6 +86,11 @@ class TransactionAttachmentsController < ApplicationController
 
     def set_attachment
       @attachment = @transaction.attachments.find(params[:id])
+    end
+
+    # Guests may view attachments but not add or delete them.
+    def require_writable_account!
+      require_account_permission!(@transaction.entry.account, redirect_path: transaction_path(@transaction))
     end
 
     def attachment_params

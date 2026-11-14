@@ -83,8 +83,8 @@ class Provider::Jev < Provider
     @api_key = api_key # pipelock:ignore
     @endpoint = endpoint.presence || DEFAULT_ENDPOINT
 
-    # Enforced here as well as in the settings form so that JEV_ENDPOINT and
-    # eval-time construction, which never touch the form, get the same check.
+    # Enforced here as well as in the settings form so that JEV_ENDPOINT,
+    # which never touches the form, gets the same check.
     unless self.class.endpoint_allowed?(@endpoint)
       raise Error, "Jev endpoint must use https (or http on loopback): #{self.class.redacted_endpoint(@endpoint)}"
     end
@@ -150,9 +150,8 @@ class Provider::Jev < Provider
     end
   end
 
-  # Mirrors Provider::LlmConcept#auto_categorize's signature so the existing
-  # categorization eval runner and Family::AutoCategorizer consume this provider
-  # without changes. `json_mode` is accepted and ignored: Jev's output is typed
+  # Mirrors Provider::LlmConcept#auto_categorize's signature so
+  # Family::AutoCategorizer consumes this provider without changes. `json_mode` is accepted and ignored: Jev's output is typed
   # at the protocol level, so there is no JSON parsing to coerce.
   def auto_categorize(transactions: [], user_categories: [], model: "", family: nil, json_mode: nil)
     with_provider_response do

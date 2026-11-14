@@ -108,11 +108,12 @@ class Api::V1::SplitsController < Api::V1::BaseController
     end
 
     # The token scope says what the KEY may do; this says what its owner may do
-    # to this account: any account of their own family. SplitsController
-    # enforces the same thing through require_account_permission!.
+    # to this account: any account of their own family, unless they are a
+    # guest. SplitsController enforces the same thing through
+    # require_account_permission!.
     def ensure_account_write_permission
       return if performed?
-      return if @entry.account.accessible_by?(current_resource_owner)
+      return if @entry.account.writable_by?(current_resource_owner)
 
       render json: {
         error: "forbidden",

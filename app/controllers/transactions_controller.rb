@@ -185,6 +185,8 @@ class TransactionsController < ApplicationController
   end
 
   def update
+    return unless require_account_permission!(@entry.account, :annotate, redirect_path: transaction_path(@entry))
+
     if @entry.update(permitted_entry_params)
       sync_needed = @entry.saved_changes_affect_balances?
       transaction = @entry.transaction

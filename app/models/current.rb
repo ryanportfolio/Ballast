@@ -25,8 +25,8 @@ class Current < ActiveSupport::CurrentAttributes
     family.entries.joins(:account).merge(Account.accessible_by(user))
   end
 
-  # Entries the user may annotate (notes, category, merchant, tags). Same as
-  # accessible_entries: every family member has full access.
+  # Entries the user may annotate (notes, category, merchant, tags): all of
+  # accessible_entries for a member, none for a guest.
   def annotatable_entries
     return family&.entries unless user
     family.entries.joins(:account).merge(Account.annotatable_by(user))

@@ -2,6 +2,32 @@
 
 This guide will help you setup, update, and maintain your self-hosted Ballast application with Docker Compose. Docker Compose is the most popular and recommended way to self-host the Ballast app.
 
+## Which image these compose files run
+
+Ballast publishes no Docker image yet. `compose.example.yml` and `compose.example.ai.yml` pull `ghcr.io/we-promise/sure`, the upstream Sure image, so as written they run upstream Sure without Ballast's changes.
+
+To run Ballast, build the image from this repository and point the app services at it:
+
+```bash
+git clone https://github.com/ryanportfolio/Ballast.git
+cd Ballast
+docker build -t ballast:local .
+```
+
+Then, next to your `compose.yml`, create `compose.override.yml`:
+
+```yml
+services:
+  web:
+    image: ballast:local
+  worker:
+    image: ballast:local
+  backup:
+    image: ballast:local
+```
+
+`docker compose` reads `compose.override.yml` automatically when it sits next to `compose.yml`. With the AI compose file, pass both files: `docker compose -f compose.ai.yml -f compose.override.yml up -d`. With the override in place, `docker compose pull web worker` does not update the app; rebuild the image from a newer checkout instead. `SURE_IMAGE_TAG` only changes the tag of the upstream image and has no effect on `ballast:local`.
+
 ## Setup Guide
 
 Follow the guide below to get your app running.
@@ -270,11 +296,11 @@ You are now ready to run the app. Start with the following command to make sure 
 docker compose up
 ```
 
-This will pull our official Docker image and start the app. You will see logs in your terminal.
+This will pull the image named in `compose.yml` (or use the image from your `compose.override.yml`, see [Which image these compose files run](#which-image-these-compose-files-run)) and start the app. You will see logs in your terminal.
 
 Open your browser, and navigate to `http://localhost:3000`.
 
-If everything is working, you will see the Ballast login screen.
+If everything is working, you will see the login screen.
 
 ### Step 5: Create your account
 
@@ -431,7 +457,9 @@ MARKET_DATA_SYNC_TIMEZONE=UTC     # IANA name such as Europe/Berlin; unknown nam
 
 ## How to update your app
 
-The mechanism that updates your self-hosted Ballast app is the upstream Sure GHCR (Github Container Registry) Docker image that you see in the `compose.yml` file:
+If you run Ballast from an image you built (see [Which image these compose files run](#which-image-these-compose-files-run)), update by pulling the newest code into your checkout, running `docker build -t ballast:local .` again, and then `docker compose up -d`. Take a backup first (see below). The rest of this section applies to the upstream Sure image that the compose files name.
+
+The compose files pull the upstream Sure image from GHCR (GitHub Container Registry), as you see in the `compose.yml` file:
 
 ```yml
 image: ghcr.io/we-promise/sure:${SURE_IMAGE_TAG:-stable}
@@ -480,7 +508,7 @@ docker compose up -d
 
 ## Backups, upgrades and rollbacks
 
-The `backup` service in `compose.example.yml` takes full backups of your instance. It runs the same upstream Sure image as `web` and `worker`, so there is nothing to install or download. Run these commands from the directory that holds `compose.yml`.
+The `backup` service in `compose.example.yml` takes full backups of your instance. It runs the same image as `web` and `worker`, so there is nothing to install or download. Run these commands from the directory that holds `compose.yml`.
 
 **Take a backup now** (do this before every upgrade):
 

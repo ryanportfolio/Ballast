@@ -32,6 +32,16 @@
 #     - Set EXTERNAL_ASSISTANT_URL to http://openclaw:18789/v1/chat/completions
 #       for internal routing.
 #
+# Image:
+# ------
+#
+# Ballast publishes no Docker image yet. The web, worker and backup services
+# below pull ghcr.io/we-promise/sure, the upstream Sure image, so this file as
+# written runs upstream Sure without Ballast's changes. To run Ballast, build
+# the image from this repository (docker build -t ballast:local .) and set it
+# for those services in a compose.override.yml passed with a second -f; see
+# "Which image these compose files run" in the setup guide below.
+#
 # Setup:
 # ------
 #

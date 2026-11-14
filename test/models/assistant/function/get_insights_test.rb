@@ -91,4 +91,17 @@ class Assistant::Function::GetInsightsTest < ActiveSupport::TestCase
 
     assert_not_includes ids, insight.id
   end
+
+  # Ballast removed the budget and goal insights; their rows stay in the table.
+  test "include_acknowledged leaves out insights of a removed type" do
+    insight = @family.insights.new(
+      insight_type: "budget_at_risk", priority: "low", status: "dismissed", title: "Budget", body: "body",
+      metadata: {}, dedup_key: "budget_at_risk:removed", generated_at: Time.current
+    )
+    insight.save!(validate: false)
+
+    ids = @fn.call("include_acknowledged" => true)[:insights].map { |i| i[:id] }
+
+    assert_not_includes ids, insight.id
+  end
 end
