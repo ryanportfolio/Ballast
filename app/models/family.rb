@@ -29,11 +29,9 @@ class Family < ApplicationRecord
   # than a global Setting because it decides whose transaction descriptions get
   # sent to a third party — the same reason assistant_type lives here.
   CATEGORIZATION_PROVIDERS = %w[llm jev].freeze
-  SHARING_DEFAULTS = %w[shared private].freeze
 
   has_many :users, dependent: :destroy
   has_many :accounts, dependent: :destroy
-  has_many :invitations, dependent: :destroy
 
   has_many :imports, dependent: :destroy
   has_many :family_exports, dependent: :destroy
@@ -178,7 +176,6 @@ class Family < ApplicationRecord
   end
   private :configured_jev_provider
 
-  validates :default_account_sharing, inclusion: { in: SHARING_DEFAULTS }
   validates :auto_generate_transaction_names, inclusion: { in: [ true, false ] }
   validates :investment_contributions_as_spending, inclusion: { in: [ true, false ] }
   validates :categories_locked, inclusion: { in: [ true, false ] }
@@ -257,37 +254,6 @@ class Family < ApplicationRecord
     else
       "#{moniker}s"
     end
-  end
-
-  def share_all_by_default?
-    default_account_sharing == "shared"
-  end
-
-  # Shares every existing account in this family (except ones the user already
-  # owns) with the given user, honoring the family's default sharing policy and
-  # the user's role. Guests receive read_only; members/admins receive read_write.
-  #
-  # This is the single entry point for "a member just joined, give them the
-  # accounts the family shares by default." It self-guards on the sharing policy
-  # and family membership so every membership path (invitation accept,
-  # registration, admin family transfer) can call it without reintroducing
-  # the "member joined but sees nothing" bug. No-op when sharing is disabled or
-  # there is nothing to share, and idempotent on re-run.
-  def auto_share_existing_accounts_with(user)
-    return unless share_all_by_default?
-    # Load-bearing security guard: insert_all below bypasses AccountShare's
-    # user_in_same_family / cannot_share_with_owner validations, so this
-    # membership check is the ONLY thing preventing cross-family sharing.
-    # Do not drop it when refactoring.
-    return unless user&.persisted? && user.family_id == id
-
-    permission = user.guest? ? "read_only" : "read_write"
-    records = accounts.where.not(owner_id: user.id).pluck(:id).map do |account_id|
-      { account_id: account_id, user_id: user.id, permission: permission,
-        include_in_finances: true, created_at: Time.current, updated_at: Time.current }
-    end
-
-    AccountShare.insert_all(records, unique_by: %i[account_id user_id]) if records.any?
   end
 
   # The calendar date `time` falls on where the family lives. A background job
@@ -670,10 +636,9 @@ class Family < ApplicationRecord
     bills_feed_token
   end
 
-  # The URL a member subscribes to carries the MEMBER's identity, because the
-  # feed must honor per-account sharing: a member who can reach a subset of
-  # accounts must not receive the whole family's obligations. The family
-  # secret never appears in the URL; only a digest of it does, so rotating
+  # The URL a member subscribes to carries the MEMBER's identity, so the feed
+  # serves only what that member can reach in the app. The family secret
+  # never appears in the URL; only a digest of it does, so rotating
   # `bills_feed_token` still revokes every previously shared URL at once.
   def bills_feed_token_for(user)
     self.class.bills_feed_verifier.generate([ user.id, bills_feed_stamp! ])

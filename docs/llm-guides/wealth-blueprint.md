@@ -1,12 +1,12 @@
 > [!NOTE]
-> **This document specifies a system that lives outside Sure.** Sure does not
+> **This document specifies a system that lives outside Ballast.** Ballast does not
 > implement the pipeline, the numbered deltas, the tax layer or the Excel
 > generators described here, and there is no plan to. It is kept in this
 > repository because it is the spec an external agent harness implements when it
-> uses Sure as its system of record — having it in-repo means an agent with a
-> Sure checkout can read the design it is working to.
+> uses Ballast as its system of record — having it in-repo means an agent with a
+> Ballast checkout can read the design it is working to.
 >
-> For how the two halves fit together — which layer Sure owns, which MCP tools
+> For how the two halves fit together — which layer Ballast owns, which MCP tools
 > serve which section, and what the harness must own itself — read
 > [the wealth agent harness guide](wealth-agent-harness.md) first.
 >

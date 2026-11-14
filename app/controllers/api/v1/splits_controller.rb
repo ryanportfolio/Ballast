@@ -108,13 +108,11 @@ class Api::V1::SplitsController < Api::V1::BaseController
     end
 
     # The token scope says what the KEY may do; this says what its owner may do
-    # to this account. `Account.accessible_by` admits every share, read-only
-    # ones included, so without this a read-only share could rewrite someone
-    # else's transaction. SplitsController enforces the same thing through
-    # require_account_permission!.
+    # to this account: any account of their own family. SplitsController
+    # enforces the same thing through require_account_permission!.
     def ensure_account_write_permission
       return if performed?
-      return if @entry.account.permission_for(current_resource_owner).in?([ :owner, :full_control ])
+      return if @entry.account.accessible_by?(current_resource_owner)
 
       render json: {
         error: "forbidden",

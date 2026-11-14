@@ -42,7 +42,7 @@ module AccountableResource
     end || (Time.zone.today - 2.years)
     Account.transaction do
       @account = Current.family.accounts.create_and_sync(
-        account_params.except(:return_to, :opening_balance_date).merge(owner: Current.user),
+        account_params.except(:return_to, :opening_balance_date),
         opening_balance_date: opening_balance_date
       )
       @account.lock_saved_attributes!

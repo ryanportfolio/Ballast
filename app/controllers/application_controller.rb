@@ -1,5 +1,5 @@
 class ApplicationController < ActionController::Base
-  include RestoreLayoutPreferences, Onboardable, Localize, AutoSync, Authentication, Invitable,
+  include RestoreLayoutPreferences, Onboardable, Localize, AutoSync, Authentication,
           SelfHostable, StoreLocation, Breadcrumbable,
           FeatureGuardable, Notifiable, SafePagination, AccountAuthorizable,
           PreviewGateable
@@ -21,28 +21,6 @@ class ApplicationController < ActionController::Base
   helper_method :demo_config, :demo_host_match?, :show_demo_warning?
 
   private
-    def accept_pending_invitation_for(user)
-      return false if user.blank?
-
-      token = session[:pending_invitation_token]
-      return false if token.blank?
-
-      invitation = Invitation.pending.find_by(token: token.to_s)
-      return false unless invitation
-      return false unless invitation.accept_for(user)
-
-      session.delete(:pending_invitation_token)
-      true
-    end
-
-    def store_pending_invitation_if_valid
-      token = params[:invitation].to_s.presence
-      return if token.blank?
-
-      invitation = Invitation.pending.find_by(token: token)
-      session[:pending_invitation_token] = token if invitation
-    end
-
     def require_admin!
       return if Current.user&.admin?
 

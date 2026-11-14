@@ -52,10 +52,8 @@ class Assistant::Function::UpdateTransferTest < ActiveSupport::TestCase
     assert_equal "not_switchable", result[:error]
   end
 
-  test "requires write access to both accounts" do
-    accounts(:investment).account_shares.create!(user: users(:family_member), permission: "read_only")
-
-    result = Assistant::Function::UpdateTransfer.new(users(:family_member))
+  test "refuses a transfer in another family" do
+    result = Assistant::Function::UpdateTransfer.new(users(:empty))
       .call("transfer_id" => @transfer.id, "investment_contribution" => false)
 
     assert_not result[:success]

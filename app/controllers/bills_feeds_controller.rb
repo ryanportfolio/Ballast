@@ -3,11 +3,10 @@
 # competitor). Token-authenticated and sessionless, and deliberately
 # obligations only -- no balances, no accounts.
 #
-# The token is signed and names the MEMBER, not the family: sharing is per
-# account, so each member's feed carries only the bills they can reach in
-# the app. The signature binds a digest of the family's stored feed secret,
-# which is how resetting that secret still revokes every previously shared
-# URL in one stroke.
+# The token is signed and names the MEMBER, not the family, so each member's
+# feed carries only the bills they can reach in the app. The signature binds a
+# digest of the family's stored feed secret, which is how resetting that secret
+# still revokes every previously shared URL in one stroke.
 class BillsFeedsController < ApplicationController
   skip_authentication
 
@@ -62,7 +61,7 @@ class BillsFeedsController < ApplicationController
       <<~ICAL
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Sure//Bills//EN
+        PRODID:-//Ballast//Bills//EN
         X-WR-CALNAME:#{escape_ical(I18n.t("bills.feed.calendar_name"))}
         #{events.join}
         END:VCALENDAR

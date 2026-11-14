@@ -1,6 +1,6 @@
 # Categories API Documentation
 
-The Categories API allows external applications to retrieve financial categories within Sure. Categories are used to classify transactions and can be organized in a hierarchical structure with parent categories and subcategories. The OpenAPI description is generated directly from executable request specs, ensuring it always reflects the behaviour of the running Rails application.
+The Categories API allows external applications to retrieve financial categories within Ballast. Categories are used to classify transactions and can be organized in a hierarchical structure with parent categories and subcategories. The OpenAPI description is generated directly from executable request specs, ensuring it always reflects the behaviour of the running Rails application.
 
 ## Generated OpenAPI specification
 

@@ -60,28 +60,6 @@ class Assistant::Function::GetBillAuditTest < ActiveSupport::TestCase
     assert_operator candidate[:occurrence_count], :>=, 2
   end
 
-  test "undeclared candidates never include accounts the user cannot reach" do
-    # `connected` is owned by the admin and shared with nobody, which is the
-    # only property this test needs. It previously used `investment`, but the
-    # detector now skips Investment/Crypto accounts outright, which made the
-    # positive control fail for a reason unrelated to reachability.
-    3.times do |i|
-      accounts(:connected).entries.create!(
-        date: Date.current - i.months, amount: 25, currency: "USD",
-        name: "BROKERAGE FEE", entryable: Transaction.new
-      )
-    end
-
-    admin_names = call_tool[:undeclared_candidates][:items].map { |item| item[:name] }
-    assert_includes admin_names, "BROKERAGE FEE",
-      "positive control: the admin can see a pattern on an account they own"
-
-    member_result = Assistant::Function::GetBillAudit.new(users(:family_member)).call
-    member_names = member_result[:undeclared_candidates][:items].map { |item| item[:name] }
-    assert_not_includes member_names, "BROKERAGE FEE",
-      "a pattern on an account the member was never given must not leak"
-  end
-
   test "long_overdue measures in the bill's own cycles" do
     overdue_day = 45.days.ago.to_date
     series = create_series(name: "Forgotten bill", amount: 60,

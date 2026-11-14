@@ -622,35 +622,6 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     assert_empty transfer.inflow_transaction.reload.tag_ids
   end
 
-  test "update tags requires annotate permission on both transfer sides" do
-    # family_member: full_control on depository (outflow), read_only on credit_card (inflow)
-    sign_in users(:family_member)
-    transfer = transfers(:one)
-    tag = tags(:one)
-    original_outflow_tags = transfer.outflow_transaction.tag_ids
-    original_inflow_tags = transfer.inflow_transaction.tag_ids
-
-    patch tags_transfer_url(transfer), params: { tag_ids: [ tag.id ] }, as: :json
-
-    assert_response :forbidden
-    assert_equal I18n.t("accounts.not_authorized"), JSON.parse(response.body)["error"]
-    assert_equal original_outflow_tags, transfer.outflow_transaction.reload.tag_ids
-    assert_equal original_inflow_tags, transfer.inflow_transaction.reload.tag_ids
-  end
-
-  test "confirming requires write permission on both transfer sides" do
-    # family_member: full_control on depository (outflow), read_only on credit_card (inflow)
-    sign_in users(:family_member)
-    transfer = transfers(:one)
-    original_inflow_kind = transfer.inflow_transaction.kind
-
-    patch transfer_url(transfer), params: { transfer: { status: "confirmed" } }
-
-    assert_redirected_to transactions_url
-    assert transfer.reload.pending?
-    assert_equal original_inflow_kind, transfer.inflow_transaction.reload.kind
-  end
-
   test "can add notes to transfer" do
     transfer = transfers(:one)
     assert_nil transfer.notes
@@ -704,98 +675,6 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "can reject a match when only the outflow account is accessible" do
-    # Confirmed, so the legs carry transfer kinds that rejecting must reset
-    transfer = cross_owner_transfer(outflow_account: accounts(:depository), inflow_account: member_loan, status: "confirmed")
-
-    assert_difference -> { Transfer.count } => -1, -> { RejectedTransfer.count } => 1 do
-      patch transfer_url(transfer), params: { transfer: { status: "rejected" } }
-    end
-
-    assert_redirected_to transactions_url
-    assert_equal "standard", transfer.outflow_transaction.reload.kind
-    assert_equal "standard", transfer.inflow_transaction.reload.kind
-  end
-
-  test "can reject a match when only the inflow account is accessible" do
-    transfer = cross_owner_transfer(outflow_account: member_loan, inflow_account: accounts(:depository))
-
-    assert_difference -> { Transfer.count } => -1, -> { RejectedTransfer.count } => 1 do
-      patch transfer_url(transfer), params: { transfer: { status: "rejected" } }
-    end
-
-    assert_redirected_to transactions_url
-  end
-
-  test "can unlink a match when only one side is accessible" do
-    transfer = cross_owner_transfer(outflow_account: accounts(:depository), inflow_account: member_loan)
-
-    assert_difference -> { Transfer.count }, -1 do
-      delete transfer_url(transfer)
-    end
-  end
-
-  test "cannot unlink a match from one side when a fee sits in the other account" do
-    transfer = cross_owner_transfer(outflow_account: accounts(:depository), inflow_account: member_loan)
-    writable_fee = attach_fee(transfer, account: accounts(:depository))
-    unwritable_fee = attach_fee(transfer, account: member_loan)
-
-    assert_no_difference -> { Transfer.count } do
-      patch transfer_url(transfer), params: { transfer: { status: "rejected" } }
-      delete transfer_url(transfer)
-    end
-
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
-    assert Transfer.exists?(transfer.id)
-    assert Transaction.exists?(writable_fee.id)
-    assert Transaction.exists?(unwritable_fee.id)
-  end
-
-  test "can reject a match from one side when its fees sit in a writable account" do
-    transfer = cross_owner_transfer(outflow_account: accounts(:depository), inflow_account: member_loan)
-    fee = attach_fee(transfer, account: accounts(:depository))
-
-    assert_difference -> { Transfer.count } => -1, -> { RejectedTransfer.count } => 1 do
-      patch transfer_url(transfer), params: { transfer: { status: "rejected" } }
-    end
-
-    assert_not Transaction.exists?(fee.id)
-  end
-
-  test "cannot edit a match when only the inflow account is accessible" do
-    transfer = cross_owner_transfer(outflow_account: member_loan, inflow_account: accounts(:depository))
-
-    patch transfer_url(transfer), params: { transfer: { status: "confirmed", notes: "Nope" } }
-
-    assert_response :not_found
-    assert transfer.reload.pending?
-    assert_nil transfer.notes
-  end
-
-  test "cannot edit a match when only the outflow account is accessible" do
-    transfer = cross_owner_transfer(outflow_account: accounts(:depository), inflow_account: member_loan)
-    inflow_amount = transfer.inflow_transaction.entry.amount
-
-    patch transfer_url(transfer), params: { transfer: { status: "confirmed", amount: transfer.amount + 10, notes: "Nope" } }
-
-    assert_response :not_found
-    assert transfer.reload.pending?
-    assert_nil transfer.notes
-    assert_equal inflow_amount, transfer.inflow_transaction.entry.reload.amount
-  end
-
-  test "cannot reject a match when neither side is accessible" do
-    vehicle = accounts(:vehicle)
-    vehicle.update!(owner: users(:family_member))
-    transfer = cross_owner_transfer(outflow_account: vehicle, inflow_account: member_loan)
-
-    assert_no_difference -> { Transfer.count } do
-      patch transfer_url(transfer), params: { transfer: { status: "rejected" } }
-    end
-
-    assert_response :not_found
-  end
-
   test "show offers the investment contribution switch only for transfers into an investment account" do
     contribution = create_confirmed_transfer(to: accounts(:investment))
     payment = create_confirmed_transfer(to: accounts(:credit_card))
@@ -824,17 +703,6 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
     transfer.update_investment_contribution!(false)
 
     patch transfer_url(transfer), params: { transfer: { investment_contribution: "1" } }
-
-    assert_redirected_to transactions_url
-    assert_equal "investment_contribution", transfer.outflow_transaction.reload.kind
-  end
-
-  test "switching the investment contribution requires write permission on both transfer sides" do
-    sign_in users(:family_member)
-    accounts(:investment).account_shares.create!(user: users(:family_member), permission: "read_only")
-    transfer = create_confirmed_transfer(to: accounts(:investment))
-
-    patch transfer_url(transfer), params: { transfer: { investment_contribution: "0" } }
 
     assert_redirected_to transactions_url
     assert_equal "investment_contribution", transfer.outflow_transaction.reload.kind
@@ -890,23 +758,5 @@ class TransfersControllerTest < ActionDispatch::IntegrationTest
       inflow_entry = create_transaction(date: Date.current, account: to, amount: -500)
 
       Transfer.create!(inflow_transaction: inflow_entry.transaction, outflow_transaction: outflow_entry.transaction).tap(&:confirm!)
-    end
-
-    # A loan owned by family_member and not shared with family_admin
-    def member_loan
-      accounts(:loan).tap { |loan| loan.update!(owner: users(:family_member)) }
-    end
-
-    def cross_owner_transfer(outflow_account:, inflow_account:, status: "pending")
-      outflow = create_transaction(account: outflow_account, amount: 250, kind: "funds_movement")
-      inflow = create_transaction(account: inflow_account, amount: -250, kind: "funds_movement")
-
-      Transfer.create!(outflow_transaction: outflow.transaction, inflow_transaction: inflow.transaction, status: status)
-    end
-
-    def attach_fee(transfer, account:)
-      create_transaction(account: account, amount: 5, name: "Transfer fee").transaction.tap do |fee|
-        fee.update!(transfer: transfer)
-      end
     end
 end

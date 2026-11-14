@@ -4,7 +4,6 @@
   <% ActiveRecord::Associations::Preloader.new(
        records: accounts,
        associations: [
-         :account_shares,
          :accountable,
          :simplefin_account,
          { account_providers: :provider },

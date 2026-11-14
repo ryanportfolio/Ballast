@@ -13,11 +13,9 @@ class PropertiesController < ApplicationController
       property_params.merge(
         balance: 0,
         status: "draft",
-        owner: Current.user,
         currency: property_params[:currency].presence || Current.family.currency
       )
     )
-    @account.auto_share_with_family! if Current.family.share_all_by_default?
 
     redirect_to balances_property_path(@account)
   end

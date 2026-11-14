@@ -65,60 +65,6 @@
             <% end %>
           </div>
         <% end %>
-        <% if @pending_invitations.any? %>
-          <% @pending_invitations.each do |invitation| %>
-            <div class="flex gap-2 items-center justify-between bg-container p-4 shadow-border-xs rounded-lg">
-              <div class="flex gap-2 items-center">
-                <div class="w-9 h-9 shrink-0">
-                  <div class="text-inverse w-full h-full bg-surface-inset rounded-full flex items-center justify-center text-lg uppercase"><%= invitation.email[0] %></div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <p class="text-primary font-medium text-sm"><%= invitation.email %></p>
-                  <%= render DS::Pill.new(label: t(".pending"), tone: :gray, marker: false, size: :sm) %>
-                </div>
-              </div>
-              <div class="flex items-center gap-4">
-                <% if self_hosted? %>
-                  <div class="flex items-center gap-2" data-controller="clipboard">
-                    <p class="text-secondary text-sm"><%= t(".invitation_link") %></p>
-                    <span data-clipboard-target="source" class="hidden"><%= accept_invitation_url(invitation.token) %></span>
-                    <input type="text"
-                               readonly
-                               autocomplete="off"
-                               value="<%= accept_invitation_url(invitation.token) %>"
-                               class="text-sm bg-surface-inset px-2 py-1 rounded border border-secondary w-72">
-                    <button data-action="clipboard#copy" class="text-secondary hover:text-primary">
-                      <span data-clipboard-target="iconDefault">
-                        <%= icon "copy" %>
-                      </span>
-                      <span class="hidden" data-clipboard-target="iconSuccess">
-                        <%= icon "check" %>
-                      </span>
-                    </button>
-                  </div>
-                <% end %>
-
-                <% if Current.user.admin? %>
-                  <%= render DS::Button.new(
-                    variant: "icon",
-                    icon: "x",
-                    href: invitation_path(invitation),
-                    method: :delete,
-                    confirm: CustomConfirm.for_resource_deletion(invitation.email, high_severity: true)
-                  ) %>
-                <% end %>
-              </div>
-            </div>
-          <% end %>
-        <% end %>
-        <% if Current.user.admin? %>
-          <%= link_to new_invitation_path,
-                  class: "bg-container-inset flex items-center justify-center gap-2 text-secondary mt-1 hover:bg-container-inset-hover rounded-lg px-4 py-2 w-full text-center",
-                  data: { turbo_frame: :modal } do %>
-            <%= icon("plus") %>
-            <%= t(".invite_member") %>
-          <% end %>
-        <% end %>
       </div>
     </div>
   <% end %>

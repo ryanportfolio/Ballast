@@ -23,8 +23,7 @@
     </div>
 
       <%= styled_form_with model: @user do |form| %>
-      <%= form.hidden_field :redirect_to, value: @invitation ? "home" : "onboarding_preferences" %>
-      <%= form.hidden_field :onboarded_at, value: Time.current if @invitation %>
+      <%= form.hidden_field :redirect_to, value: "onboarding_preferences" %>
 
       <div class="mb-6">
         <%= render "settings/user_avatar_field", form: form, user: @user %>
@@ -35,42 +34,40 @@
         <%= form.text_field :last_name, placeholder: t(".last_name_placeholder"), label: t(".last_name"), container_class: "bg-container md:w-1/2 w-full", required: true %>
       </div>
 
-      <% unless @invitation %>
-        <div class="space-y-4 mb-4">
-          <%= form.fields_for :family do |family_form| %>
-            <div class="bg-container rounded-lg shadow-border-xs p-4">
-              <div class="space-y-2">
-                <p class="text-sm font-medium text-primary"><%= t(".moniker_prompt", product_name: product_name) %></p>
+      <div class="space-y-4 mb-4">
+        <%= form.fields_for :family do |family_form| %>
+          <div class="bg-container rounded-lg shadow-border-xs p-4">
+            <div class="space-y-2">
+              <p class="text-sm font-medium text-primary"><%= t(".moniker_prompt", product_name: product_name) %></p>
 
-                <label class="flex items-center gap-2 text-sm text-primary">
-                  <%= family_form.radio_button :moniker, "Family", required: true, data: {
-                    action: "onboarding#updateNameFieldForCurrentMoniker",
-                    onboarding_target: "monikerRadio",
-                    onboarding_moniker: "Family"
-                  } %>
-                  <span><%= t(".moniker_family") %></span>
-                </label>
+              <label class="flex items-center gap-2 text-sm text-primary">
+                <%= family_form.radio_button :moniker, "Family", required: true, data: {
+                  action: "onboarding#updateNameFieldForCurrentMoniker",
+                  onboarding_target: "monikerRadio",
+                  onboarding_moniker: "Family"
+                } %>
+                <span><%= t(".moniker_family") %></span>
+              </label>
 
-                <label class="flex items-center gap-2 text-sm text-primary">
-                  <%= family_form.radio_button :moniker, "Group", required: true, data: {
-                    action: "onboarding#updateNameFieldForCurrentMoniker",
-                    onboarding_target: "monikerRadio",
-                    onboarding_moniker: "Group"
-                  } %>
-                  <span><%= t(".moniker_group") %></span>
-                </label>
+              <label class="flex items-center gap-2 text-sm text-primary">
+                <%= family_form.radio_button :moniker, "Group", required: true, data: {
+                  action: "onboarding#updateNameFieldForCurrentMoniker",
+                  onboarding_target: "monikerRadio",
+                  onboarding_moniker: "Group"
+                } %>
+                <span><%= t(".moniker_group") %></span>
+              </label>
 
-              <%= family_form.text_field :name, placeholder: t(".household_name_placeholder"), label: t(".household_name"), data: { onboarding_target: "nameField" } %>
-              </div>
+            <%= family_form.text_field :name, placeholder: t(".household_name_placeholder"), label: t(".household_name"), data: { onboarding_target: "nameField" } %>
             </div>
+          </div>
 
-            <%= family_form.select :country,
-                                   country_options,
-                                   { label: t(".country") },
-                                   { required: true, data: { onboarding_target: "countryField" } } %>
-          <% end %>
-        </div>
-      <% end %>
+          <%= family_form.select :country,
+                                 country_options,
+                                 { label: t(".country") },
+                                 { required: true, data: { onboarding_target: "countryField" } } %>
+        <% end %>
+      </div>
 
       <%= form.submit t(".submit") %>
     <% end %>

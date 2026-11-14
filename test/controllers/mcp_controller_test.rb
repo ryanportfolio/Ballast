@@ -146,7 +146,7 @@ class McpControllerTest < ActionDispatch::IntegrationTest
       assert_equal "2.0", body["jsonrpc"]
       assert_equal 1, body["id"]
       assert_mcp_initialize_response(result)
-      assert_equal "sure", result["serverInfo"]["name"]
+      assert_equal "ballast", result["serverInfo"]["name"]
       assert result["capabilities"].key?("tools")
     end
   end

@@ -630,9 +630,8 @@ class ReportsController < ApplicationController
     # The period's disposals, as the realised-gains half of the investment
     # card lists them. The card's gate asks the same relation, so the two
     # cannot disagree about what counts as a disposal. Scoped to the accounts
-    # this user includes in their finances -- the per-user scope
-    # `investment_accounts` applies -- so another member's unshared account
-    # is neither listed nor opens the card.
+    # this user includes in their finances, the per-user scope
+    # `investment_accounts` applies.
     def period_sell_trades
       Current.family.trades
         .joins(entry: :account)

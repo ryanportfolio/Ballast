@@ -103,18 +103,6 @@ class Transactions::TagSummaryViewTest < ActionView::TestCase
     assert_includes mobile.ancestors("div").map { |node| node["class"].to_s }.join(" "), "has-[[data-tag-empty]]:hidden"
   end
 
-  test "read-only shares get a focusable summary instead of the picker" do
-    sign_in_as_family_member
-    entry = entries(:transfer_in) # credit card, shared read-only
-    entry.transaction.update!(tag_ids: [ tags(:one).id, tags(:two).id ])
-
-    html = Nokogiri::HTML.fragment(render(partial: "transactions/transaction", locals: { entry: entry.reload, balance_trend: nil, view_ctx: "global" }))
-    summary = html.at_css("##{dom_id(entry.transaction, "tag_summary_desktop")}")
-
-    assert_nil html.at_css("turbo-frame#tag_dropdown")
-    assert summary.at_css("[aria-describedby] [tabindex='0']"), "read-only trigger should be keyboard focusable"
-  end
-
   test "editable rows keep the picker and add no extra tab stop" do
     tags = create_tags(2)
     @transaction.update!(tag_ids: tags.map(&:id))
@@ -162,12 +150,6 @@ class Transactions::TagSummaryViewTest < ActionView::TestCase
   end
 
   private
-    def sign_in_as_family_member
-      @user = users(:family_member)
-      Current.session = Session.create!(user: @user)
-      @accessible_account_ids = @user.accessible_accounts.pluck(:id).to_set
-    end
-
     def render_row
       render(partial: "transactions/transaction", locals: { entry: @entry.reload, balance_trend: nil, view_ctx: "global" })
     end

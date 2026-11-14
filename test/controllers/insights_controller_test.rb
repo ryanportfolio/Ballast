@@ -259,7 +259,8 @@ class InsightsControllerTest < ActionDispatch::IntegrationTest
     assert other_insight.reload.active?
   end
 
-  test "an insight about an account not everyone can see is neither shown nor changed" do
+  test "an insight about an account that is no longer visible is neither shown nor changed" do
+    accounts(:connected).disable!
     hidden = @user.family.insights.create!(
       insight_type: "idle_cash", priority: "low", status: "active", title: "Idle cash in Private",
       body: "Body", metadata: { "account_id" => accounts(:connected).id },

@@ -13,11 +13,6 @@ class AutoMatchesController < ApplicationController
       .includes(inflow_transaction: [ { entry: :account }, :merchant ], outflow_transaction: [ { entry: :account }, :merchant ])
       .order(created_at: :desc)
     @pagy, @pending_transfers = pagy(scope, limit: safe_per_page)
-    # Confirm/reject write to both legs (TransfersController#update), so a
-    # read-only sharer -- accessible but not writable -- would see dead CTAs
-    # that just bounce with a flash. Precompute which accounts they can
-    # actually write to, mirroring TransfersController#show's writable check.
-    @writable_account_ids = Account.writable_by(Current.user).where(family: @family).ids.to_set
   end
 
   def update_settings
@@ -53,8 +48,6 @@ class AutoMatchesController < ApplicationController
       return
     end
 
-    writable_account_ids = Account.writable_by(Current.user).where(family: Current.family).ids.to_set
-
     transfers = Transfer.pending
       .where(id: transfer_ids)
       .where(inflow_transaction_id: accessible_transaction_ids)
@@ -63,9 +56,6 @@ class AutoMatchesController < ApplicationController
 
     updated_count = 0
     transfers.each do |transfer|
-      next unless writable_account_ids.include?(transfer.from_account&.id) &&
-                  writable_account_ids.include?(transfer.to_account&.id)
-
       begin
         # Reloads under a row lock, so a match a concurrent request already
         # confirmed or rejected is skipped instead of being resolved twice.

@@ -129,10 +129,8 @@ class Assistant::Function::CreateBill < Assistant::Function
       } ]
     end
 
-    # Writable, not merely visible: attaching a bill to an account changes
-    # what that account's owners see, so a read-only share is not a
-    # destination. Namesakes are refused rather than picked between: a
-    # financial write is the wrong place to guess.
+    # Namesakes are refused rather than picked between: a financial write is
+    # the wrong place to guess.
     def resolve_account(name)
       return [ nil, nil ] if name.blank?
 

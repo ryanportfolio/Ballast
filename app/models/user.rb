@@ -25,10 +25,6 @@ class User < ApplicationRecord
   has_many :chats, dependent: :destroy
   has_many :api_keys, dependent: :destroy
   has_many :webauthn_credentials, dependent: :destroy
-  has_many :invitations, foreign_key: :inviter_id, dependent: :destroy
-  has_many :owned_accounts, class_name: "Account", foreign_key: :owner_id
-  has_many :account_shares, dependent: :destroy
-  has_many :shared_accounts, through: :account_shares, source: :account
   accepts_nested_attributes_for :family, update_only: true
 
   MFA_BACKUP_CODE_COUNT = 8
@@ -276,12 +272,12 @@ class User < ApplicationRecord
 
   # Permanent removal of another user, initiated by a super admin from the
   # instance users page. Reuses the sanctioned deactivate -> UserPurgeJob path
-  # (which reassigns owned accounts, or destroys the family when this is its
-  # last member) for the heavy data cleanup, but additionally revokes every
-  # live authentication vector *synchronously* so there is no window in which
-  # the removed user can keep acting or re-authenticate before the async purge
-  # runs. Returns false (with errors populated) when the user cannot be
-  # deactivated, e.g. an admin who still has co-members in their family.
+  # (which destroys the family when this is its last member) for the heavy data
+  # cleanup, but additionally revokes every live authentication vector
+  # *synchronously* so there is no window in which the removed user can keep
+  # acting or re-authenticate before the async purge runs. Returns false (with
+  # errors populated) when the user cannot be deactivated, e.g. an admin who
+  # still has co-members in their family.
   def permanently_remove!
     was_active = active?
     removed = transaction do
@@ -344,71 +340,6 @@ class User < ApplicationRecord
     UserPurgeJob.perform_later(self)
   end
 
-  def transfer_to_family!(new_family, role: self.role)
-    transaction do
-      lock!
-
-      accounts_to_move = owned_accounts.order(:id).to_a
-      provider_items_to_move = provider_items_for_transfer(accounts_to_move)
-      moving_default_account = accounts_to_move.any? { |account| account.id == default_account_id }
-
-      provider_items_to_move.sort_by(&:id).each(&:lock!)
-      accounts_to_move.each(&:lock!)
-
-      account_shares.delete_all
-
-      update!(family: new_family, role: role, default_account: moving_default_account ? default_account : nil)
-
-      accounts_to_move.each do |account|
-        account.update!(family: new_family)
-      end
-
-      AccountStatement.where(account: accounts_to_move).update_all(family_id: new_family.id, updated_at: Time.current) if accounts_to_move.any?
-
-      provider_items_to_move.each do |provider_item|
-        attrs = { family: new_family }
-
-        # provider_items_for_transfer only returns items whose accounts all
-        # belong to this user, so the connection genuinely follows them. Its
-        # owner has to follow too: the previous owner stays behind in the old
-        # family, and ProviderItemOwnable validates that an owner and its item
-        # share a family.
-        attrs[:owner] = self if provider_item.respond_to?(:owner_id)
-
-        provider_item.update!(**attrs)
-      end
-
-      new_family.auto_share_existing_accounts_with(self)
-    end
-  end
-
-  def provider_items_for_transfer(accounts_to_move)
-    account_ids_to_move = accounts_to_move.map(&:id)
-    provider_items = accounts_to_move.flat_map do |account|
-      account.account_providers.includes(:provider).filter_map do |account_provider|
-        provider_items_for(account_provider.provider)
-      end
-    end.flatten.uniq
-
-    provider_items.each do |provider_item|
-      linked_account_ids = provider_item.accounts.map(&:id)
-      next if linked_account_ids.all? { |account_id| account_ids_to_move.include?(account_id) }
-
-      errors.add(:base, :provider_item_has_other_accounts)
-      raise ActiveRecord::RecordInvalid, self
-    end
-
-    provider_items
-  end
-
-  def provider_items_for(provider)
-    item_association = provider.class.reflect_on_all_associations(:belongs_to).find do |association|
-      association.name.to_s.end_with?("_item") && provider.respond_to?(association.name)
-    end
-
-    Array(provider.public_send(item_association.name)) if item_association
-  end
-
   # Revokes API keys alongside the web-session invalidation above. Without
   # this, a deactivated user's existing API keys stay valid on the wire —
   # currently harmless only because Api::V1::BaseController re-checks
@@ -426,7 +357,6 @@ class User < ApplicationRecord
     if last_user_in_family?
       family.destroy
     else
-      reassign_owned_accounts!
       destroy
     end
   end
@@ -782,22 +712,6 @@ class User < ApplicationRecord
       family.users.count == 1
     end
 
-    def reassign_owned_accounts!
-      account_ids = owned_accounts.pluck(:id)
-      return if account_ids.empty?
-
-      new_owner = family.users.where.not(id: id)
-                        .find_by(role: %w[admin super_admin]) ||
-                  family.users.where.not(id: id)
-                        .order(:created_at).first
-
-      return unless new_owner
-
-      Account.where(id: account_ids).update_all(owner_id: new_owner.id)
-      # Remove shares the new owner had for these accounts (they now own them)
-      AccountShare.where(account_id: account_ids, user_id: new_owner.id).delete_all
-    end
-
     def deactivated_email
       email.gsub(/@/, "-deactivated-#{SecureRandom.uuid}@")
     end
@@ -809,7 +723,7 @@ class User < ApplicationRecord
     end
 
     def totp
-      ROTP::TOTP.new(otp_secret, issuer: "Sure Finances")
+      ROTP::TOTP.new(otp_secret, issuer: Rails.configuration.x.product_name)
     end
 
     # Two requests carrying the same code can both pass verify before either

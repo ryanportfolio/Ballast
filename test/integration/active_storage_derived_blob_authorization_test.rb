@@ -1,29 +1,18 @@
 require "test_helper"
 
-# Receipts follow account sharing, and variant/preview blobs follow the blob they were made from.
+# Receipts follow the account's family, and variant/preview blobs follow the
+# blob they were made from.
 class ActiveStorageDerivedBlobAuthorizationTest < ActionDispatch::IntegrationTest
-  include EntriesTestHelper
-
   setup do
     @owner = users(:family_admin)
     @member = users(:family_member)
     @outsider = users(:empty)
 
-    @receipt_transaction = transactions(:one) # depository, shared with family_member
+    @receipt_transaction = transactions(:one) # depository, in family_member's family
     @receipt = attach_image(@receipt_transaction)
   end
 
-  test "member cannot access a receipt on an account that is not shared with them" do
-    entry = create_transaction(account: accounts(:other_asset))
-    receipt = attach_pdf(entry.transaction)
-
-    sign_in @member
-    get rails_blob_path(receipt)
-
-    assert_response :not_found
-  end
-
-  test "member can access a receipt on an account shared with them" do
+  test "member can access a receipt on a family account" do
     sign_in @member
     get rails_blob_path(@receipt)
 
@@ -59,20 +48,7 @@ class ActiveStorageDerivedBlobAuthorizationTest < ActionDispatch::IntegrationTes
     assert_response :redirect
   end
 
-  test "member cannot access previews of a receipt on an account that is not shared with them" do
-    entry = create_transaction(account: accounts(:other_asset))
-    preview = attach_preview(attach_pdf(entry.transaction).blob)
-    variant_blob = preview.variant(resize_to_limit: [ 20, 20 ]).processed.image.blob
-
-    sign_in @member
-    get rails_blob_path(preview)
-    assert_response :not_found
-
-    get rails_blob_path(variant_blob)
-    assert_response :not_found
-  end
-
-  test "member can access previews of a receipt on an account shared with them" do
+  test "member can access previews of a receipt on a family account" do
     preview = attach_preview(attach_pdf(@receipt_transaction).blob)
 
     sign_in @member

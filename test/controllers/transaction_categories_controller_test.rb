@@ -71,7 +71,6 @@ class TransactionCategoriesControllerTest < ActionDispatch::IntegrationTest
     rule.conditions.build(condition_type: "transaction_name", operator: "like", value: "AMAZON.CO.UK")
     rule.actions.build(action_type: "set_transaction_category", value: category.id.to_s)
     rule.save!
-    @entry.account.update!(owner: family_guest)
     sign_in family_guest
 
     patch transaction_category_url(@entry),

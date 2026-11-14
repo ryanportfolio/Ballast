@@ -164,7 +164,7 @@ class InsightsHelperTest < ActionView::TestCase
     prompt = insight_dig_in_prompt(insight)
 
     assert_includes prompt, "Insight: t"
-    assert_includes prompt, "What Sure found: b"
+    assert_includes prompt, "What Ballast found: b"
     assert_includes prompt, "#{l(Date.new(2026, 9, 1))} – #{l(Date.new(2026, 9, 30))}"
     assert_includes prompt, "- Current rate: 12.1"
     assert_includes prompt, "- Previous rate: 45.2"

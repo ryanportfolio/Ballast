@@ -74,8 +74,8 @@ class TransactionsController < ApplicationController
     # Preload which entries on this page are split parents (have children) to avoid N+1
     @split_parent_entry_ids = Entry.split_parent_ids_among(entry_ids)
 
-    # Counts what the categorize wizard can act on, so read-only shares don't
-    # keep the "Categorize" menu item visible.
+    # Counts what the categorize wizard can act on, which decides whether the
+    # "Categorize" menu item shows.
     @uncategorized_count = Rails.cache.fetch(uncategorized_count_cache_key) do
       Current.annotatable_entries.uncategorized_transactions.count
     end
@@ -228,13 +228,13 @@ class TransactionsController < ApplicationController
             (turbo_stream.replace(
               dom_id(@entry, :notes),
               partial: "transactions/notes",
-              locals: { entry: @entry, can_annotate: can_annotate_entry? }
+              locals: { entry: @entry }
             ) if params[:entry]&.key?(:notes) && notes_changed),
             (turbo_stream.replace(
               dom_id(@entry, :mark_recurring),
               partial: "transactions/mark_recurring",
               locals: { entry: @entry }
-            ) if can_edit_entry? && !@entry.split_child?),
+            ) unless @entry.split_child?),
             turbo_stream.replace(
               dom_id(@entry),
               partial: "entries/entry",
@@ -546,13 +546,13 @@ class TransactionsController < ApplicationController
   private
     def uncategorized_count_cache_key
       "transactions_uncategorized_count/v5/#{Current.family.id}/#{Current.user.id}/" \
-        "#{Current.family.entries_version}/#{Current.family.accounts_status_version}/#{Current.account_share_version}"
+        "#{Current.family.entries_version}/#{Current.family.accounts_status_version}"
     end
 
     def projected_recurring_cache_key
       "transactions_projected_recurring/v6/#{Current.family.id}/#{Current.user.id}/#{Date.current}/" \
         "#{Current.family.recurring_transactions_version}/#{Current.family.accounts_status_version}/" \
-        "#{Current.family.recurring_transaction_merchants_version}/#{Current.account_share_version}"
+        "#{Current.family.recurring_transaction_merchants_version}"
     end
 
     def covering_series_for(entry)
@@ -568,7 +568,7 @@ class TransactionsController < ApplicationController
     end
 
     def assign_mark_recurring_state
-      return unless can_edit_entry? && !@entry.split_child?
+      return if @entry.split_child?
 
       blocked = mark_recurring_blocked_message(@entry.transaction)
 
@@ -736,14 +736,7 @@ class TransactionsController < ApplicationController
     def recent_transaction_names
       return [] unless Current.family.auto_generate_transaction_names?
 
-      # Current.accessible_entries (not Entry.family_scope), so a non-admin
-      # family member never sees names from accounts that weren't shared
-      # with them -- family-wide settings still respect per-account sharing.
-      # Its underlying Account.accessible_by scope is itself a `.distinct`
-      # query, so ORDER BY created_at must stay in the pluck'd column list
-      # (a plain "pluck(:name)" here would hit Postgres's "SELECT DISTINCT
-      # ... ORDER BY expressions must appear in select list"); dedup by name
-      # happens in Ruby afterward instead.
+      # Newest names first; dedup by name happens in Ruby afterward.
       #
       # Checked across every supported locale (like Entry#generic_name?'s
       # unknown-name check), not just the current one -- otherwise an old
@@ -764,23 +757,8 @@ class TransactionsController < ApplicationController
         .first(20)
     end
 
-    # Filters entry_params based on the user's permission on the account.
-    # read_write users can only annotate (category, tags, notes, merchant).
-    # read_only users cannot update anything.
     def permitted_entry_params
-      permitted = case entry_permission
-      when :owner, :full_control
-        entry_params
-      when :read_write
-        # Annotate only: category, tags, merchant, notes
-        ep = entry_params.slice(*AccountShare::ANNOTATE_ENTRY_ATTRIBUTES)
-        if entry_params[:entryable_attributes].present?
-          ep[:entryable_attributes] = entry_params[:entryable_attributes].slice(:id, *AccountShare::ANNOTATE_TRANSACTION_ATTRIBUTES)
-        end
-        ep
-      else
-        {} # read_only — no edits allowed
-      end
+      permitted = entry_params
 
       # A matched transfer's category lives on its outflow leg; a category
       # sent for the inflow leg would look saved but never reach a budget.

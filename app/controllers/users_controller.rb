@@ -115,7 +115,7 @@ class UsersController < ApplicationController
       family_attrs = [ :name, :currency, :country, :date_format, :timezone, :month_start_day, :id ]
       if Current.user.admin?
         family_attrs.push(:investment_contributions_as_spending) # Needed for updating existing family
-        family_attrs.push(:moniker, :default_account_sharing)
+        family_attrs.push(:moniker)
         family_attrs << { enabled_currencies: [] }
       end
 
@@ -136,11 +136,10 @@ class UsersController < ApplicationController
       return false if family_attrs.blank?
 
       moniker_changed = family_attrs[:moniker].present? && family_attrs[:moniker] != Current.family.moniker
-      sharing_changed = family_attrs[:default_account_sharing].present? && family_attrs[:default_account_sharing] != Current.family.default_account_sharing
       enabled_currencies_changed = family_attrs.key?(:enabled_currencies)
       investment_contributions_as_spending_changed = family_attrs.key?(:investment_contributions_as_spending)
 
-      moniker_changed || sharing_changed || enabled_currencies_changed || investment_contributions_as_spending_changed
+      moniker_changed || enabled_currencies_changed || investment_contributions_as_spending_changed
     end
 
     def ensure_admin

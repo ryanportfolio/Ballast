@@ -163,9 +163,7 @@ class Assistant::Function::UpdateBill < Assistant::Function
       nil
     end
 
-    # Writable, not merely visible: attaching a series to an account changes
-    # what that account's owners see, so a read-only share is not a
-    # destination (same contract as the edit dialog's account resolution).
+    # Same contract as the edit dialog's account resolution.
     def apply_account(series, params, changed)
       return nil unless params.key?("account_name")
 

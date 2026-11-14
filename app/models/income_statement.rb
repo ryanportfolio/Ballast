@@ -7,8 +7,8 @@ class IncomeStatement
 
   attr_reader :family, :user
 
-  # `accounts:` overrides the account scope entirely (e.g. an "owned
-  # accounts only" view) instead of inferring it from
+  # `accounts:` overrides the account scope entirely (e.g. a single-account
+  # view) instead of inferring it from
   # `user.finance_accounts`. `user` is still kept for cache-key/estimate
   # purposes when both are given.
   def initialize(family, user: nil, accounts: nil)

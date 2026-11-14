@@ -43,20 +43,18 @@ class Insight < ApplicationRecord
   # type no generator writes any more (Ballast removed the budget and goal
   # insights) stay in the table but never show: nothing expires them, and
   # their links point at removed pages.
-  scope :visible, -> { where(status: [ :active, :read ], insight_type: TYPES).about_shared_accounts }
+  scope :visible, -> { where(status: [ :active, :read ], insight_type: TYPES).about_visible_accounts }
 
-  # The feed is shared by the whole family, so an insight that names an
-  # account (metadata account_id) shows only while every active member can
-  # see that account. Generators already skip other accounts; this read-time
-  # check also covers rows written before access changed (a share revoked, a
-  # member joined, the account moved, hidden or deleted), which would
+  # An insight that names an account (metadata account_id) shows only while
+  # that account is visible in the family. This read-time check covers rows
+  # written before the account moved, was hidden or deleted, which would
   # otherwise stay in the feed until the next nightly run expires them.
-  # Nothing is written, so the row reappears as it was if access is restored.
+  # Nothing is written, so the row reappears as it was if the account returns.
   #
   # The id is cast to uuid (not the column to text) so the lookup stays a
   # primary-key probe; the CASE keeps a malformed value from raising.
-  scope :about_shared_accounts, -> {
-    shared_account = Account.visible.accessible_by_all_active_members
+  scope :about_visible_accounts, -> {
+    visible_account = Account.visible
       .where("accounts.family_id = insights.family_id")
       .where(<<~SQL.squish)
         accounts.id = CASE
@@ -64,7 +62,7 @@ class Insight < ApplicationRecord
           THEN (insights.metadata->>'account_id')::uuid
         END
       SQL
-    where("NOT (insights.metadata ? 'account_id')").or(where(shared_account.arel.exists))
+    where("NOT (insights.metadata ? 'account_id')").or(where(visible_account.arel.exists))
   }
 
   scope :ordered, -> {

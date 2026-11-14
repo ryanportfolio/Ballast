@@ -69,48 +69,6 @@ class Api::V1::RecurringTransactionsControllerTest < ActionDispatch::Integration
     assert_equal @merchant.id, response_data["merchant"]["id"]
   end
 
-  test "should not mutate recurring transaction on read only shared account" do
-    member = users(:family_member)
-    member.api_keys.active.destroy_all
-    member_api_key = ApiKey.create!(
-      user: member,
-      name: "Member Read-Write Key",
-      scopes: [ "read_write" ],
-      source: "web",
-      display_key: "test_member_rw_#{SecureRandom.hex(8)}"
-    )
-    read_only_account = accounts(:credit_card)
-    recurring_transaction = @family.recurring_transactions.create!(
-      account: read_only_account,
-      name: "Read Only Shared Subscription",
-      amount: 9.99,
-      currency: "USD",
-      expected_day_of_month: 5,
-      last_occurrence_date: Date.new(2026, 4, 5),
-      next_expected_date: Date.new(2026, 5, 5),
-      status: "active",
-      occurrence_count: 2,
-      manual: true
-    )
-
-    get api_v1_recurring_transaction_url(recurring_transaction), headers: api_headers(member_api_key)
-    assert_response :success
-
-    patch api_v1_recurring_transaction_url(recurring_transaction),
-          params: { recurring_transaction: { status: "inactive" } },
-          headers: api_headers(member_api_key)
-    assert_response :not_found
-    response_data = JSON.parse(response.body)
-    assert_equal "record_not_found", response_data["error"]
-
-    assert_no_difference("@family.recurring_transactions.count") do
-      delete api_v1_recurring_transaction_url(recurring_transaction), headers: api_headers(member_api_key)
-    end
-    assert_response :not_found
-    response_data = JSON.parse(response.body)
-    assert_equal "record_not_found", response_data["error"]
-  end
-
   test "should return not found for missing recurring transaction" do
     get api_v1_recurring_transaction_url(SecureRandom.uuid), headers: api_headers(@api_key)
 

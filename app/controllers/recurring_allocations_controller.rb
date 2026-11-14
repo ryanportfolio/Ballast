@@ -65,9 +65,8 @@ class RecurringAllocationsController < ApplicationController
       Date.iso8601(raw.to_s)
     end
 
-    # Reading a shared bill is fine; changing its payment state is not. Sharing
-    # is per account, so a read-only account share must not mutate. Accountless
-    # series carry no account gate.
+    # Changing a bill's payment state needs write access to its account.
+    # Accountless series carry no account gate.
     def ensure_series_writable(occurrence)
       series = occurrence.recurring_transaction
       return if series.account_id.nil?
@@ -103,8 +102,7 @@ class RecurringAllocationsController < ApplicationController
              .find(id)
     end
 
-    # Scoped to what this user can see: sharing is per account, so a family
-    # scope alone would let a member pay with another account's transaction.
+    # Scoped to the entries this user can see.
     def find_entry(occurrence, entry_id)
       return nil if entry_id.blank?
 

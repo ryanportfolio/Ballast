@@ -261,10 +261,11 @@ class GenerateInsightsJobTest < ActiveJob::TestCase
     assert_nil insight.read_at
   end
 
-  test "expires an insight hidden because its account is no longer shared with everyone" do
+  test "expires an insight hidden because its account is no longer visible" do
+    accounts(:connected).update_column(:status, "disabled")
     insight = @family.insights.create!(
       insight_type: "idle_cash", priority: "low", status: "active", title: "Idle", body: "body",
-      metadata: { "account_id" => accounts(:connected).id }, dedup_key: "idle_cash:private",
+      metadata: { "account_id" => accounts(:connected).id }, dedup_key: "idle_cash:disabled",
       generated_at: Time.current
     )
     assert_not @family.insights.visible.exists?(id: insight.id), "precondition: the row must be hidden, not just stale"
@@ -272,7 +273,7 @@ class GenerateInsightsJobTest < ActiveJob::TestCase
 
     GenerateInsightsJob.perform_now(family_id: @family.id)
 
-    assert insight.reload.expired?, "a hidden row whose condition cleared must not come back stale once access returns"
+    assert insight.reload.expired?, "a hidden row whose condition cleared must not come back stale once the account returns"
   end
 
   private

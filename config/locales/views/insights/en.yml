@@ -22,7 +22,7 @@ en:
         Help me dig into this insight.
 
         Insight: %{title}
-        What Sure found: %{body}
+        What Ballast found: %{body}
         Period: %{period}
         Figures:
         %{facts}

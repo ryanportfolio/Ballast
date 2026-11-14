@@ -13,28 +13,6 @@ class AccountStatementsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: I18n.t("account_statements.index.title")
   end
 
-  test "statement vault only lists linked statements for accessible accounts" do
-    accessible_statement = AccountStatement.create_from_upload!(
-      family: @account.family,
-      account: @account,
-      file: uploaded_file(filename: "accessible_statement.csv", content_type: "text/csv", content: "date,amount\n2024-01-01,1\n")
-    )
-    private_account = accounts(:other_asset)
-    private_statement = AccountStatement.create_from_upload!(
-      family: private_account.family,
-      account: private_account,
-      file: uploaded_file(filename: "private_statement.csv", content_type: "text/csv", content: "date,amount\n2024-01-02,2\n")
-    )
-    sign_in users(:family_member)
-
-    get account_statements_url
-
-    assert_response :success
-    assert_includes response.body, accessible_statement.filename
-    refute_includes response.body, private_statement.filename
-    refute_includes response.body, private_account.name
-  end
-
   test "non manager cannot open statement vault" do
     sign_in family_guest
 
@@ -257,7 +235,6 @@ class AccountStatementsControllerTest < ActionDispatch::IntegrationTest
   test "rejects cross-family account id" do
     other_account = Account.create!(
       family: families(:empty),
-      owner: users(:empty),
       name: "Other family account",
       balance: 0,
       currency: "USD",
@@ -273,42 +250,6 @@ class AccountStatementsControllerTest < ActionDispatch::IntegrationTest
       }
     end
     assert_response :not_found
-  end
-
-  test "read only shared user cannot upload to account" do
-    sign_in users(:family_member)
-    account = accounts(:credit_card)
-
-    assert_no_difference "AccountStatement.count" do
-      post account_statements_url, params: {
-        account_statement: {
-          account_id: account.id,
-          files: [ uploaded_file(filename: "statement.csv", content_type: "text/csv") ]
-        }
-      }
-    end
-
-    assert_redirected_to account_url(account)
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
-  end
-
-  test "read only shared user sees statement detail without edit controls" do
-    account = accounts(:credit_card)
-    statement = AccountStatement.create_from_upload!(
-      family: @account.family,
-      account: account,
-      file: uploaded_file(filename: "readonly_statement.csv", content_type: "text/csv")
-    )
-    sign_in users(:family_member)
-
-    get account_statement_url(statement)
-
-    assert_response :success
-    assert_select "input[name='account_statement[period_start_on]']", 0
-    assert_select "select[name='account_statement[account_id]']", 0
-    assert_select "button", text: I18n.t("account_statements.show.delete"), count: 0
-    assert_select "button", text: I18n.t("account_statements.show.save"), count: 0
-    assert_select "button", text: I18n.t("account_statements.show.unlink"), count: 0
   end
 
   test "metadata form does not expose account select for managers" do
@@ -341,23 +282,6 @@ class AccountStatementsControllerTest < ActionDispatch::IntegrationTest
     statement.reload
     assert_equal @account, statement.account
     assert statement.linked?
-  end
-
-  test "read only shared user cannot relink linked statement to writable account" do
-    source_account = accounts(:credit_card)
-    target_account = accounts(:depository)
-    statement = AccountStatement.create_from_upload!(
-      family: source_account.family,
-      account: source_account,
-      file: uploaded_file(filename: "readonly_relink.csv", content_type: "text/csv", content: "date,amount\n2024-01-01,1\n")
-    )
-    sign_in users(:family_member)
-
-    patch link_account_statement_url(statement), params: { account_id: target_account.id }
-
-    assert_redirected_to account_url(source_account)
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
-    assert_equal source_account, statement.reload.account
   end
 
   test "link shows friendly error when no target account is available" do

@@ -145,37 +145,6 @@ class BalanceSheetTest < ActiveSupport::TestCase
     assert_equal before, start_value.call
   end
 
-  test "historical account scope respects shared-account finance settings" do
-    member = users(:new_email)
-    included_account = create_account(balance: 0, accountable: Depository.new)
-    excluded_account = create_account(balance: 0, accountable: Depository.new)
-
-    included_account.disable!
-    excluded_account.disable!
-    included_account.share_with!(member, include_in_finances: true)
-    excluded_account.share_with!(member, include_in_finances: false)
-
-    account_ids = BalanceSheet::HistoricalAccountScope.new(@family, user: member).account_ids
-
-    assert_includes account_ids, included_account.id
-    assert_not_includes account_ids, excluded_account.id
-  end
-
-  test "group totals skip shared accounts not included in the member's finances" do
-    member = users(:new_email)
-    included_account = create_account(balance: 1000, accountable: Depository.new)
-    excluded_account = create_account(balance: 2000, accountable: Depository.new)
-    included_account.share_with!(member, include_in_finances: true)
-    excluded_account.share_with!(member, include_in_finances: false)
-
-    assets = BalanceSheet.new(@family, user: member).assets
-    depository_group = assets.account_groups.find { |ag| ag.name == Depository.display_name }
-
-    assert_includes depository_group.accounts.map(&:id), excluded_account.id
-    assert_equal 1000, depository_group.total
-    assert_equal assets.total, assets.account_groups.sum(&:total)
-  end
-
   test "calculates asset group totals" do
     create_account(balance: 1000, accountable: Depository.new)
     create_account(balance: 2000, accountable: Depository.new)
@@ -208,11 +177,11 @@ class BalanceSheetTest < ActiveSupport::TestCase
   test "sorts accounts in the user's manual order, new accounts last alphabetically" do
     user = users(:empty)
     user.update!(default_account_order: "manual")
-    checking = create_account(name: "Checking", balance: 0, accountable: Depository.new, owner: user)
-    savings = create_account(name: "Savings", balance: 0, accountable: Depository.new, owner: user)
-    create_account(name: "Brokerage", balance: 0, accountable: Depository.new, owner: user)
-    create_account(name: "Another", balance: 0, accountable: Depository.new, owner: user)
-    card = create_account(name: "Card", balance: 0, accountable: CreditCard.new, owner: user)
+    checking = create_account(name: "Checking", balance: 0, accountable: Depository.new)
+    savings = create_account(name: "Savings", balance: 0, accountable: Depository.new)
+    create_account(name: "Brokerage", balance: 0, accountable: Depository.new)
+    create_account(name: "Another", balance: 0, accountable: Depository.new)
+    card = create_account(name: "Card", balance: 0, accountable: CreditCard.new)
 
     user.update_manual_account_order("depository", [ savings.id, checking.id ])
     user.update_manual_account_order("credit_card", [ card.id ])

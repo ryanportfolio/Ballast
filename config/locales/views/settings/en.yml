@@ -143,18 +143,12 @@ en:
           one: "%{count} selected"
           other: "%{count} selected"
         save_currencies: Save currencies
-        sharing_title: "%{moniker} Sharing"
-        sharing_subtitle: "Control how accounts are shared in your %{moniker}"
-        sharing_default_label: Default sharing for new accounts
-        sharing_shared: Share with all members
-        sharing_private: Keep private by default
         preview:
           title: Enable preview features
           description: Opt in to in-progress features tagged preview or canary.
     profiles:
       destroy:
         cannot_remove_self: You cannot remove yourself from the account.
-        member_owns_other_family_data: This member still owns accounts in another household and cannot be removed. Transfer or remove those accounts first.
         member_removal_failed: There was a problem removing the member.
         member_removed: Member was successfully removed.
         not_authorized: You are not authorized to remove members.
@@ -167,11 +161,8 @@ en:
           body: Are you sure you want to reset your account? This will delete all your accounts, categories, merchants, tags, and other data. This action cannot be undone.
           title: Reset account?
         confirm_reset_with_sample_data:
-          body: Are you sure you want to reset your account and load sample data? This will delete your existing data and replace it with demo data so you can explore Sure safely.
+          body: Are you sure you want to reset your account and load sample data? This will delete your existing data and replace it with demo data so you can explore Ballast safely.
           title: Reset account and load sample data?
-        confirm_remove_invitation:
-          body: Are you sure you want to remove the invitation for %{email}?
-          title: Remove Invitation
         confirm_remove_member:
           body: Are you sure you want to remove %{name} from your account?
           title: Remove Member
@@ -190,16 +181,12 @@ en:
         group_title: Group Members
         household_form_input_placeholder: Enter household name
         household_form_label: Household name
-        household_subtitle: Invitees can login to your %{moniker} account and access shared resources.
+        household_subtitle: Everyone in your %{moniker} can see and manage all of its accounts.
         household_title: Household
-        invitation_link: Invitation link
-        invite_member: Add member
         last_name: Last Name
         page_title: Profile Info
-        pending: Pending
         profile_subtitle: Customize how you appear on %{product_name}
         profile_title: Personal
-        remove_invitation: Remove Invitation
         remove_member: Remove Member
         resend_confirmation_link: request a new confirmation email
         save: Save
@@ -277,7 +264,7 @@ en:
       not_authorized: Not authorized
       bank_sync:
         page_title: Bank sync
-        lede: Connect external accounts so transactions, balances and holdings flow into Sure automatically.
+        lede: Connect external accounts so transactions, balances and holdings flow into Ballast automatically.
       status:
         ok: Connected
         warn: Action needed
@@ -286,8 +273,8 @@ en:
       maturity:
         beta: Beta
         alpha: Alpha
-      drawer_trust_statement: "Read-only access. Sure can never move money, and your credentials are stored encrypted."
-      drawer_trust_statement_encryption_unconfigured: "Read-only access. Sure can never move money. Configure explicit encryption keys before storing provider credentials in production."
+      drawer_trust_statement: "Read-only access. Ballast can never move money, and your credentials are stored encrypted."
+      drawer_trust_statement_encryption_unconfigured: "Read-only access. Ballast can never move money. Configure explicit encryption keys before storing provider credentials in production."
       provider_setup_encryption_warning:
         title: Encryption keys missing
         message: "This self-hosted install has not configured explicit Active Record encryption keys. Configure primary_key, deterministic_key and key_derivation_salt before saving provider credentials in production."

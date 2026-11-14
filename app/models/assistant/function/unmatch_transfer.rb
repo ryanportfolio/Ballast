@@ -32,7 +32,7 @@ class Assistant::Function::UnmatchTransfer < Assistant::Function
         marks them is_transfer), or the transfer_id. Works on confirmed and
         pending transfers. Both accounts must be writable.
 
-        By default the pairing is also recorded as rejected, so Sure's
+        By default the pairing is also recorded as rejected, so Ballast's
         auto-match won't suggest it again; pass reject: false to only unlink.
         Fee transactions attached to the transfer are deleted with it (listed
         in the result). Pass dry_run: true to see the effect first.

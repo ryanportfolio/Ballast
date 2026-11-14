@@ -2,7 +2,7 @@
 en:
   concerns:
     self_hostable:
-      redis_configured: "Redis is now configured properly! You can now setup your Sure application."
+      redis_configured: "Redis is now configured properly! You can now setup your Ballast application."
   shared:
     preview: Preview
     dot_separator: "·"

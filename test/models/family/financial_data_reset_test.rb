@@ -172,13 +172,6 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
         currency: "USD",
         accountable: Depository.new
       )
-      share_user = family.users.create!(
-        email: "#{safe_label}-#{SecureRandom.hex(4)}@example.com",
-        password: "password123",
-        password_confirmation: "password123",
-        role: :member
-      )
-      account_share = account.account_shares.create!(user: share_user)
       category = family.categories.create!(
         name: "#{label} Category",
         color: "#407706",
@@ -279,7 +272,6 @@ class Family::FinancialDataResetTest < ActiveSupport::TestCase
       {
         account: account,
         transfer_account: transfer_account,
-        account_share: account_share,
         category: category,
         tag: tag,
         merchant: merchant,

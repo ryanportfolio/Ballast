@@ -20,10 +20,10 @@ class AccountableSparklinesController < ApplicationController
     end
 
     # Same accounts the sidebar group total sums: accessible to the current
-    # user, visible, included in reports and counted in their finances (owned,
-    # or shared with include_in_finances).
+    # user, visible, included in reports and counted in their finances.
+    # An unloaded relation, so only the columns plucked below are read.
     def account_scope
-      @account_scope ||= Current.accessible_accounts
+      @account_scope ||= Current.user.accessible_accounts
         .visible
         .included_in_reports
         .included_in_finances_for(Current.user)
@@ -75,10 +75,9 @@ class AccountableSparklinesController < ApplicationController
     end
 
     # The series is built from exactly these account rows, so the key carries a
-    # digest of them. A share count/timestamp version can stay the same while
-    # the counted set changes (ownership moved by update_all, shares replaced
-    # with older timestamps, report exclusion toggled); the row digest changes
-    # whenever the set does and never repeats for a different set.
+    # digest of them. The row digest changes whenever the counted set does (an
+    # account added or removed, report exclusion toggled) and never repeats for
+    # a different set.
     def cache_key
       family.build_cache_key(
         "#{@accountable.name}_sparkline_#{Account::Chartable::SPARKLINE_CACHE_VERSION}_#{account_rows_digest}",

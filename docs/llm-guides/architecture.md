@@ -28,9 +28,9 @@ Provider availability can differ between installations.
 [Family](../../app/models/family.rb) owns financial accounts, users, subscriptions
 and many preferences. [User](../../app/models/user.rb) belongs to a family;
 [Session](../../app/models/session.rb) belongs to a user. Roles include guest,
-member, admin and super admin. Accounts also have an optional user owner and
-sharing rules, so family membership alone does not describe every user's access.
-Use [Current.user and Current.family](../../app/models/current.rb), and the existing
+member, admin and super admin. Every member of a family can see and change every
+account of that family; Ballast has no per-account sharing. Use
+[Current.user and Current.family](../../app/models/current.rb), and the existing
 account-access scopes for the surface being changed.
 
 An [Account](../../app/models/account.rb) has its own balance and currency.

@@ -6,7 +6,7 @@
 # Purpose:
 # --------
 #
-# This file extends the standard Sure setup with optional AI capabilities:
+# This file extends the standard Ballast setup with optional AI capabilities:
 #
 #   Pipelock — agent security proxy
 #   (always runs)
@@ -18,7 +18,7 @@
 #     - MCP reverse proxy (port 8889): scans inbound AI traffic (DLP,
 #       prompt injection, tool poisoning, tool call policy). External AI
 #       clients should connect to Pipelock on port 8889 rather than
-#       directly to Sure's /mcp endpoint. Note: /mcp is still reachable
+#       directly to Ballast's /mcp endpoint. Note: /mcp is still reachable
 #       on web port 3000 (auth token required); Pipelock adds scanning
 #       but Docker Compose cannot enforce network-level routing.
 #
@@ -28,7 +28,7 @@
 #
 #   OpenClaw — external AI assistant
 #   (optional, --profile external-assistant)
-#     - Starts an OpenClaw locally for Sure's external assistant mode.
+#     - Starts an OpenClaw locally for Ballast's external assistant mode.
 #     - Set EXTERNAL_ASSISTANT_URL to http://openclaw:18789/v1/chat/completions
 #       for internal routing.
 #
@@ -38,14 +38,14 @@
 # 1. Copy pipelock.example.yaml alongside this file (or customize it).
 # 2. Read the full setup guide:
 #
-# https://github.com/we-promise/sure/blob/main/docs/hosting/docker.md
+# https://github.com/ryanportfolio/Ballast/blob/main/docs/hosting/docker.md
 #
 # Troubleshooting:
 # ----------------
 #
-# Problems? Swing by our Discord or open a Discussion here:
+# Problems? Open an issue here:
 #
-# https://github.com/we-promise/sure/discussions/categories/general
+# https://github.com/ryanportfolio/Ballast/issues
 #
 # IPv6 Note (Yahoo Finance Sync, others?):
 # ----------------------------------------
@@ -115,7 +115,7 @@ x-rails-env: &rails_env
   # NOTE: enabling OpenAI will incur costs when you use AI-related features in the app (chat, rules).  Make sure you have set appropriate spend limits on your account before adding this.
   #  OPENAI_ACCESS_TOKEN: ${OPENAI_ACCESS_TOKEN}
   # External AI Assistant — delegates chat to a remote AI agent (e.g., OpenClaw).
-  # The agent calls back to Sure's /mcp endpoint for financial data.
+  # The agent calls back to Ballast's /mcp endpoint for financial data.
   # Set EXTERNAL_ASSISTANT_URL + TOKEN to activate, then either set ASSISTANT_TYPE=external
   # here (forces all families) or choose "External" in Settings > Self-Hosting > AI Assistant.
   ASSISTANT_TYPE: ${ASSISTANT_TYPE:-}
@@ -240,7 +240,7 @@ services:
     networks:
       - sure_net
 
-  # OpenClaw gateway for Sure's "external assistant" mode.
+  # OpenClaw gateway for Ballast's "external assistant" mode.
   # Based on OpenClaw Docker install docs:
   # https://docs.openclaw.ai/install/docker
   openclaw:
@@ -283,7 +283,7 @@ services:
       retries: 5
       start_period: 20s
     ports:
-      # Expose for local onboarding/debugging. Sure uses the internal service name.
+      # Expose for local onboarding/debugging. Ballast uses the internal service name.
       - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
     volumes:
       - openclaw-config:/home/node/.openclaw

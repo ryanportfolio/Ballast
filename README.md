@@ -25,7 +25,7 @@ Sure is kept as the `upstream` git remote and its releases are merged in regular
 
 ## Running it
 
-Setup commands are in [`.claude/reference/commands.md`](.claude/reference/commands.md). Sure's own hosting notes are in [`docs/hosting/`](docs/hosting/).
+Setup commands are in [`.claude/reference/commands.md`](.claude/reference/commands.md). Hosting notes are in [`docs/hosting/`](docs/hosting/).
 
 ## Keeping secrets out of this repo
 

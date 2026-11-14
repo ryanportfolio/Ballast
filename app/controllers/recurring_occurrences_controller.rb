@@ -59,9 +59,8 @@ class RecurringOccurrencesController < ApplicationController
                            .find(params[:id])
     end
 
-    # Reading a shared bill is fine; changing its payment state is not. Sharing
-    # is per account, so a read-only account share must not mutate. Accountless
-    # series carry no account gate.
+    # Changing a bill's payment state needs write access to its account.
+    # Accountless series carry no account gate.
     def ensure_series_writable
       series = @occurrence.recurring_transaction
       return if series.account_id.nil?
@@ -98,9 +97,7 @@ class RecurringOccurrencesController < ApplicationController
     # only legal because it puts that table in the query.
     def candidate_scope
       series = @occurrence.recurring_transaction
-      # Accountless bills fall back to the accounts this user can see, never
-      # the whole family: sharing is per account, and the drawer would
-      # otherwise print entries from accounts that were never shared.
+      # Accountless bills fall back to the accounts this user can see.
       base = if series.account.present?
         series.account.entries
       else

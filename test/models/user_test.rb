@@ -207,7 +207,7 @@ class UserTest < ActiveSupport::TestCase
     user = users(:family_member)
     user.setup_mfa!
 
-    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances")
+    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast")
     valid_code = totp.now
 
     assert user.verify_otp?(valid_code)
@@ -220,7 +220,7 @@ class UserTest < ActiveSupport::TestCase
   test "verify_otp? accepts a TOTP code only once" do
     user = users(:family_member)
     user.setup_mfa!
-    code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+    code = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast").now
 
     assert user.verify_otp?(code)
     assert_not user.verify_otp?(code)
@@ -233,7 +233,7 @@ class UserTest < ActiveSupport::TestCase
     backup_code = user.enable_mfa!.first
 
     travel_to Time.zone.parse("2026-10-07 12:00:10") do
-      code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+      code = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast").now
 
       assert_equal :accepted, user.otp_code_status(code)
       assert_equal :accepted, user.otp_code_status(code), "checking must not claim the time step"
@@ -252,7 +252,7 @@ class UserTest < ActiveSupport::TestCase
   test "verify_otp? accepts the next time step's code after one was used" do
     user = users(:family_member)
     user.setup_mfa!
-    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances")
+    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast")
 
     travel_to Time.zone.at(1_800_000_000) do
       assert user.verify_otp?(totp.now)
@@ -268,7 +268,7 @@ class UserTest < ActiveSupport::TestCase
   test "verify_otp? lets only one of two concurrent uses of a code through" do
     user = users(:family_member)
     user.setup_mfa!
-    code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+    code = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast").now
     first = User.find(user.id)
     second = User.find(user.id)
 
@@ -286,7 +286,7 @@ class UserTest < ActiveSupport::TestCase
   test "verify_otp? claim_otp_time_step! lets only one of two racing connections claim a step" do
     user = users(:family_member)
     user.setup_mfa!
-    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances")
+    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast")
     now = Time.current
     time_step = totp.verify(totp.at(now), at: now)
 
@@ -311,7 +311,7 @@ class UserTest < ActiveSupport::TestCase
   test "verify_otp tells a replayed code apart from an invalid one" do
     user = users(:family_member)
     user.setup_mfa!
-    code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+    code = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast").now
 
     assert_equal :accepted, user.verify_otp(code)
     assert_equal :replayed, user.verify_otp(code)
@@ -325,7 +325,7 @@ class UserTest < ActiveSupport::TestCase
   test "verify_otp? claim_otp_time_step! does not claim across a replaced secret" do
     user = users(:family_member)
     user.setup_mfa!
-    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances")
+    totp = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast")
     now = Time.current
     time_step = totp.verify(totp.at(now), at: now)
     stale = User.find(user.id)
@@ -340,13 +340,13 @@ class UserTest < ActiveSupport::TestCase
   test "setting up or disabling MFA forgets the last used time step" do
     user = users(:family_member)
     user.setup_mfa!
-    assert user.verify_otp?(ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now)
+    assert user.verify_otp?(ROTP::TOTP.new(user.otp_secret, issuer: "Ballast").now)
     assert_not_nil user.reload.otp_last_used_at
 
     user.setup_mfa!
     assert_nil user.reload.otp_last_used_at
 
-    assert user.verify_otp?(ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now)
+    assert user.verify_otp?(ROTP::TOTP.new(user.otp_secret, issuer: "Ballast").now)
     user.disable_mfa!
     assert_nil user.reload.otp_last_used_at
   end
@@ -355,7 +355,7 @@ class UserTest < ActiveSupport::TestCase
     user = users(:family_member)
     user.setup_mfa!
     user.enable_mfa!
-    valid_code = ROTP::TOTP.new(user.otp_secret, issuer: "Sure Finances").now
+    valid_code = ROTP::TOTP.new(user.otp_secret, issuer: "Ballast").now
 
     BCrypt::Password.expects(:new).never
 
@@ -442,7 +442,7 @@ class UserTest < ActiveSupport::TestCase
 
     assert_match %r{otpauth://totp/}, user.provisioning_uri
     assert_match %r{secret=#{user.otp_secret}}, user.provisioning_uri
-    assert_match %r{issuer=Sure}, user.provisioning_uri
+    assert_match %r{issuer=Ballast}, user.provisioning_uri
   end
 
   test "ai_available? returns true when openai access token set in settings" do
@@ -859,61 +859,6 @@ class UserTest < ActiveSupport::TestCase
     assert_nil @user.default_account_for_transactions
   end
 
-  test "transfer_to_family! clears a shared default account" do
-    user = users(:family_member)
-    user.update!(role: "admin", default_account: accounts(:depository))
-
-    new_family = Family.create!(name: "Transferred Family")
-
-    user.transfer_to_family!(new_family, role: "admin")
-
-    user.reload
-
-    assert_equal new_family, user.family
-    assert_nil user.default_account_id
-    assert_nil user.default_account_for_transactions
-  end
-
-  test "transfer_to_family! moves owned account provider items and statements" do
-    user = users(:family_member)
-    source_family = user.family
-    new_family = Family.create!(name: "Transferred Provider Family")
-    account = Account.create!(family: source_family, owner: user, name: "Synced Checking", balance: 100, currency: "USD", accountable: Depository.new)
-    simplefin_item = link_account_to_simplefin!(account).simplefin_item
-    statement = AccountStatement.create_from_upload!(
-      family: source_family,
-      account: account,
-      file: uploaded_file(filename: "transfer-statement.csv", content_type: "text/csv", content: "date,amount\n2026-01-01,10\n")
-    )
-
-    user.transfer_to_family!(new_family, role: "admin")
-
-    assert_equal new_family, user.reload.family
-    assert_equal new_family, account.reload.family
-    assert_equal new_family, simplefin_item.reload.family
-    assert_equal new_family, statement.reload.family
-  end
-
-  test "transfer_to_family! rejects provider items linked to accounts outside the transfer" do
-    user = users(:family_member)
-    other_user = users(:family_admin)
-    source_family = user.family
-    new_family = Family.create!(name: "Rejected Provider Family")
-    moved_account = Account.create!(family: source_family, owner: user, name: "Moved Synced", balance: 100, currency: "USD", accountable: Depository.new)
-    remaining_account = Account.create!(family: source_family, owner: other_user, name: "Remaining Synced", balance: 200, currency: "USD", accountable: Depository.new)
-    simplefin_item = link_account_to_simplefin!(moved_account).simplefin_item
-    link_account_to_simplefin!(remaining_account, simplefin_item: simplefin_item)
-
-    error = assert_raises(ActiveRecord::RecordInvalid) do
-      user.transfer_to_family!(new_family, role: "admin")
-    end
-
-    assert_includes error.record.errors[:base], I18n.t("activerecord.errors.models.user.attributes.base.provider_item_has_other_accounts")
-    assert_equal source_family, user.reload.family
-    assert_equal source_family, moved_account.reload.family
-    assert_equal source_family, simplefin_item.reload.family
-  end
-
   test "has_local_password? returns true when password_digest is present" do
     assert @user.has_local_password?
   end
@@ -1214,21 +1159,13 @@ class UserTest < ActiveSupport::TestCase
 
   test "update_manual_account_order keeps other groups and only accessible accounts" do
     @user.update_manual_account_order("credit_card", [ accounts(:credit_card).id ])
-    foreign = families(:empty).accounts.create!(name: "Foreign", currency: "USD", balance: 0, accountable: Depository.new, owner: users(:empty))
+    foreign = families(:empty).accounts.create!(name: "Foreign", currency: "USD", balance: 0, accountable: Depository.new)
 
     assert @user.update_manual_account_order("depository", [ accounts(:connected).id, foreign.id, accounts(:depository).id, "not-a-uuid" ])
 
     order = @user.reload.manual_account_order
     assert_equal [ accounts(:connected).id, accounts(:depository).id ], order["depository"]
     assert_equal [ accounts(:credit_card).id ], order["credit_card"]
-  end
-
-  test "update_manual_account_order drops family accounts not shared with the user" do
-    unshared = families(:dylan_family).accounts.create!(name: "Unshared", currency: "USD", balance: 0, accountable: Depository.new, owner: users(:family_member))
-
-    assert @user.update_manual_account_order("depository", [ unshared.id, accounts(:depository).id ])
-
-    assert_equal [ accounts(:depository).id ], @user.reload.manual_account_order["depository"]
   end
 
   test "update_manual_account_order drops accounts from another group" do

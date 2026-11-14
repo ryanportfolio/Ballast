@@ -140,17 +140,6 @@ class Assistant::Function::PreviewRuleTest < ActiveSupport::TestCase
     assert_equal "invalid_arguments", @fn.call(definition.merge("rule_id" => rule.id))[:error]
   end
 
-  test "counts the whole family but samples only accounts the user can see" do
-    create_transaction(name: "ZXQ Coffee Shop", account: accounts(:other_asset))
-    visible = create_transaction(name: "ZXQ Coffee Bar", account: accounts(:depository))
-
-    result = Assistant::Function::PreviewRule.new(users(:family_member)).call(definition)
-
-    assert_equal 2, result[:preview][:match_count]
-    assert_equal 1, result[:preview][:visible_match_count]
-    assert_equal [ visible.entryable.id ], result[:preview][:sample].map { |t| t[:id] }
-  end
-
   # A pattern that outlives the statement timeout raises out of the rule's
   # scope. The assistant gets a rule error it can explain, not "failed
   # unexpectedly" from the tool wrapper.

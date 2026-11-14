@@ -81,7 +81,7 @@ class GenerateInsightsJob < ApplicationJob
     # its dedup_key has had its condition clear — hide it. Types whose
     # generator crashed are left untouched so a transient failure can't wipe
     # out healthy insights. By status rather than `visible`, so a row hidden
-    # because its account is no longer shared with everyone expires too.
+    # because its account is no longer visible expires too.
     def expire_stale_insights(family, result)
       family.insights
         .where(status: %w[active read])

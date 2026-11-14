@@ -332,8 +332,6 @@ Rails.application.routes.draw do
       post :sync_all
       patch :reorder
     end
-
-    resource :sharing, only: [ :show, :update ], controller: "account_sharings"
   end
 
   resources :account_statements, only: %i[index show create update destroy] do
@@ -369,12 +367,6 @@ Rails.application.routes.draw do
   resources :other_liabilities, only: %i[new create edit update]
 
   resources :securities, only: :index
-
-  resources :invite_codes, only: %i[index create destroy]
-
-  resources :invitations, only: [ :new, :create, :destroy ] do
-    get :accept, on: :member
-  end
 
   # API routes
   namespace :api do

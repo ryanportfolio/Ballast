@@ -72,7 +72,7 @@ class McpController < ApplicationController
       {
         protocolVersion: @mcp_protocol_version,
         capabilities: { tools: {} },
-        serverInfo: { name: "sure", version: "1.0" },
+        serverInfo: { name: "ballast", version: "1.0" },
         sessionId: @mcp_session_id
       }
     end

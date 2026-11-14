@@ -56,7 +56,7 @@ class InsightsController < ApplicationController
     def set_insight
       # Not `visible`: unacknowledge targets acknowledged rows. The account
       # check still applies, so a hidden row can't be changed by id.
-      @insight = Current.family.insights.about_shared_accounts.find(params[:id])
+      @insight = Current.family.insights.about_visible_accounts.find(params[:id])
     end
 
     def load_feed

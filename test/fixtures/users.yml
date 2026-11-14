@@ -11,8 +11,8 @@ empty:
   onboarded_at: <%= 3.days.ago %>
   # Explicit created_at so this admin sorts before the other admin fixture
   # (sure_support_staff) in family "empty" — without it, both rows get the same
-  # fixture-load timestamp and Account#assign_default_owner's
-  # order(:created_at).first becomes non-deterministic (test/models/account_test.rb).
+  # fixture-load timestamp and order(:created_at).first becomes
+  # non-deterministic.
   created_at: <%= 4.days.ago %>
   role: admin
   ai_enabled: true

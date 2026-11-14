@@ -1,11 +1,11 @@
 ---
 openapi: 3.0.3
 info:
-  title: Sure API
+  title: Ballast API
   version: v1
   description: OpenAPI documentation generated from executable request specs.
 servers:
-- url: https://app.sure.am
+- url: https://ballast.example.com
   description: Production
 - url: http://localhost:3000
   description: Local development
@@ -527,7 +527,6 @@ components:
       - date_format
       - month_start_day
       - moniker
-      - default_account_sharing
       - custom_enabled_currencies
       - enabled_currencies
       - created_at
@@ -560,11 +559,6 @@ components:
           enum:
           - Family
           - Group
-        default_account_sharing:
-          type: string
-          enum:
-          - shared
-          - private
         custom_enabled_currencies:
           type: boolean
         enabled_currencies:
@@ -3185,7 +3179,6 @@ components:
           - import_rows
           - import_mappings
           - accounts
-          - account_shares
           - account_providers
           - entries
           - transactions
@@ -3227,9 +3220,6 @@ components:
               type: integer
               minimum: 0
             accounts:
-              type: integer
-              minimum: 0
-            account_shares:
               type: integer
               minimum: 0
             account_providers:
@@ -3517,7 +3507,7 @@ paths:
       - Cash Flow
       description: Server-calculated income, spending, savings, and daily cumulative
         comparison in family currency. Uses the authenticated user’s finance accounts
-        and Sure reporting rules. Browser sessions do not authenticate this public
+        and Ballast reporting rules. Browser sessions do not authenticate this public
         API.
       parameters:
       - name: month
@@ -5882,7 +5872,7 @@ paths:
         is cut to today and compared with the average of the same number of days from
         each of up to 12 earlier month starts, counting only windows that end before
         the period. The data behind the Reports section "Spending vs normal". Uses
-        the authenticated user''s finance accounts and Sure reporting rules. Experimental:
+        the authenticated user''s finance accounts and Ballast reporting rules. Experimental:
         the section is a preview feature, and how normal is defined may still change.'
       parameters:
       - name: start_date

@@ -182,16 +182,24 @@ class Setting < RailsSettings::Base
   # This prevents race conditions and ensures each field is independently managed
 
   # Onboarding and app settings
-  ONBOARDING_STATES = %w[open closed invite_only].freeze
+  ONBOARDING_STATES = %w[open closed].freeze
+  # Ballast removed invitations and invite codes. The old "invite_only" state
+  # kept strangers out, so it now means "closed", never "open".
+  LEGACY_CLOSED_ONBOARDING_STATE = "invite_only"
   DEFAULT_ONBOARDING_STATE = begin
     env_value = ENV["ONBOARDING_STATE"].to_s.presence || "open"
-    ONBOARDING_STATES.include?(env_value) ? env_value : "open"
+    if env_value == LEGACY_CLOSED_ONBOARDING_STATE
+      "closed"
+    else
+      ONBOARDING_STATES.include?(env_value) ? env_value : "open"
+    end
   end
 
   field :onboarding_state, type: :string, default: DEFAULT_ONBOARDING_STATE
+  # Legacy flag from before onboarding_state existed. No longer written; read
+  # only so an instance that required invites keeps sign-up closed.
   field :require_invite_for_signup, type: :boolean, default: false
   field :require_email_confirmation, type: :boolean, default: ENV.fetch("REQUIRE_EMAIL_CONFIRMATION", "true") == "true"
-  field :invite_only_default_family_id, type: :string, default: nil
   # Opt-in for self-hosted demo refresh. Managed hosting retains its scheduled behavior.
   field :demo_family_refresh_enabled, type: :boolean, default: false
   field :demo_family_refresh_family_id, type: :string, default: nil
@@ -214,16 +222,23 @@ class Setting < RailsSettings::Base
       ENV["LLM_PROVIDER"].presence || raw_llm_provider
     end
 
+    # Fails closed: a stored value that is not a current state (such as the
+    # removed "invite_only") reads as "closed", and so does no stored state on
+    # an instance that still carries the legacy require_invite_for_signup flag
+    # (the field default would otherwise answer for the missing row).
     def onboarding_state
-      value = raw_onboarding_state
-      return "invite_only" if value.blank? && require_invite_for_signup
+      if require_invite_for_signup && find_by(var: "onboarding_state")&.value.blank?
+        return "closed"
+      end
 
-      value.presence || DEFAULT_ONBOARDING_STATE
+      value = raw_onboarding_state
+      return DEFAULT_ONBOARDING_STATE if value.blank?
+
+      ONBOARDING_STATES.include?(value) ? value : "closed"
     end
 
     def onboarding_state=(state)
       validate_onboarding_state!(state)
-      self.require_invite_for_signup = state == "invite_only"
       self.raw_onboarding_state = state
     end
 

@@ -2,15 +2,10 @@
 
 ## Supported Versions
 
-We maintain `vX.Y.Z-release-branch` [active areas](https://github.com/we-promise/sure/branches/all?query=release-branch&lastTab=overview) for high impact fixes that need to go out as "hotfix" releases ASAP.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.7.1   | :white_check_mark: |
-| 0.7.0   | :white_check_mark: |
-| 0.6.x   | :x:                |
+Ballast is a self-hosted fork of [Sure](https://github.com/we-promise/sure) for one household. Only the latest `main` branch is supported; there are no release branches or hotfix releases.
 
 ## Reporting a Vulnerability
 
-Join our Discord and DM @Juanjo there so he can address the vulnerability before
-disclosing it.
+Report a vulnerability privately through [GitHub security advisories](https://github.com/ryanportfolio/Ballast/security/advisories/new) so it can be fixed before it is disclosed. Please do not open a public issue for it.
+
+If the vulnerability is in code Ballast shares with Sure, it likely affects Sure too; report it to the [Sure project](https://github.com/we-promise/sure/security) as well.

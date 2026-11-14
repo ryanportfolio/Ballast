@@ -1,6 +1,6 @@
 # Merchants API
 
-The Merchants API allows external applications to retrieve and bulk-import merchants within Sure. Merchants represent payees or vendors associated with transactions.
+The Merchants API allows external applications to retrieve and bulk-import merchants within Ballast. Merchants represent payees or vendors associated with transactions.
 
 ## Generated OpenAPI specification
 
@@ -38,7 +38,7 @@ Refer to the generated [`openapi.yaml`](openapi.yaml) for request/response schem
 
 ## Merchant types
 
-Sure supports two types of merchants:
+Ballast supports two types of merchants:
 
 | Type | Description |
 | --- | --- |

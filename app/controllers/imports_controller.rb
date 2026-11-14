@@ -4,7 +4,6 @@ class ImportsController < ApplicationController
   before_action :set_import, only: %i[show publish destroy revert apply_template cancel]
   before_action :require_writable_import_accounts!, only: %i[publish revert destroy]
   before_action :reject_guest_family_config_import!, except: %i[index new show]
-  before_action :require_guest_writable_created_accounts!, only: %i[revert destroy]
   before_action :reject_guest_new_categories_or_tags!, only: :publish
 
   def publish
@@ -119,19 +118,6 @@ class ImportsController < ApplicationController
       require_non_guest! if Import::FAMILY_CONFIG_TYPES.include?(type)
     end
 
-    # Reverting or deleting an import also destroys the accounts it created,
-    # which require_writable_import_accounts! leaves out. Guests are read-only
-    # by design, so they may only do that to accounts they can write.
-    def require_guest_writable_created_accounts!
-      return unless Current.user.guest?
-
-      created_ids = @import.accounts.pluck(:id)
-      writable_ids = Current.family.accounts.writable_by(Current.user).where(id: created_ids).pluck(:id)
-      return if (created_ids - writable_ids).empty?
-
-      deny_import_change(t("accounts.not_authorized"), fallback: imports_path)
-    end
-
     # Categories and tags are family-wide configuration, so a guest's import
     # must map every category and tag to an existing one (or leave it empty).
     def reject_guest_new_categories_or_tags!
@@ -150,9 +136,8 @@ class ImportsController < ApplicationController
     end
 
     # Imports are family-scoped, so a member can reach an import configured by
-    # someone else, or one whose target account was unshared since. Publishing,
-    # reverting or deleting writes into its accounts, so require write access
-    # to all.
+    # someone else. Publishing, reverting or deleting writes into its accounts,
+    # so require write access to all.
     def require_writable_import_accounts!
       return if @import.accounts_writable_by?(Current.user)
 

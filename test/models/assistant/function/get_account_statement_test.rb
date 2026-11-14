@@ -83,7 +83,7 @@ class Assistant::Function::GetAccountStatementTest < ActiveSupport::TestCase
   test "returns not_found for a statement the user cannot view" do
     statement = create_statement(account: accounts(:other_asset))
 
-    result = Assistant::Function::GetAccountStatement.new(users(:family_member)).call("statement_id" => statement.id)
+    result = Assistant::Function::GetAccountStatement.new(users(:empty)).call("statement_id" => statement.id)
 
     assert_not result[:success]
     assert_equal "not_found", result[:error]

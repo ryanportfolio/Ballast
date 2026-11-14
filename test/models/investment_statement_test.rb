@@ -466,17 +466,14 @@ class InvestmentStatementTest < ActiveSupport::TestCase
     # Use the full current month: a month-to-date period collapses to a single
     # day on the 1st, which would drop the start_date + 1.day trade below.
     period = Period.custom(start_date: Date.current.beginning_of_month, end_date: Date.current.end_of_month)
-    shared_user = users(:new_email)
+    user = users(:new_email)
     investment_account = create_investment_account(balance: 500)
-    hidden_account = create_investment_account(balance: 500)
-    investment_account.share_with!(shared_user, permission: "read_only", include_in_finances: true)
 
     create_trade(account: investment_account, qty: 2, amount: 120, date: period.start_date)
     create_trade(account: investment_account, qty: -1, amount: -40, date: period.start_date + 1.day)
     create_trade(account: investment_account, qty: 1, amount: 999, date: period.start_date - 1.day)
-    create_trade(account: hidden_account, qty: 1, amount: 9999, date: period.start_date)
 
-    statement = InvestmentStatement.new(@family, user: shared_user)
+    statement = InvestmentStatement.new(@family, user: user)
     totals = nil
     queries = capture_sql_queries { totals = statement.totals(period: period) }
 

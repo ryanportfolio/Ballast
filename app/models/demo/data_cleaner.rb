@@ -9,8 +9,8 @@ class Demo::DataCleaner
   # Main entry point for destroying all demo data.
   #
   # All or nothing. Family.destroy_all used to skip any family whose
-  # before_destroy aborted without saying so, and the settings, invite codes
-  # and exchange rates after it were wiped regardless. The half-cleared
+  # before_destroy aborted without saying so, and the settings and exchange
+  # rates after it were wiped regardless. The half-cleared
   # database then crashed on Security.destroy_all (trades still pointing at
   # securities), and the generator could not recreate the demo users because
   # their emails were still taken.
@@ -33,7 +33,6 @@ class Demo::DataCleaner
       end
 
       Setting.destroy_all
-      InviteCode.destroy_all
       ExchangeRate.destroy_all
       Security.destroy_all
       Security::Price.destroy_all

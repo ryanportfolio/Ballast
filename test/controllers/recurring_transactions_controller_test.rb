@@ -258,24 +258,6 @@ class RecurringTransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_match "City Water", response.body
   end
 
-  test "the candidate strip never offers a pattern on an account the member cannot reach" do
-    3.times do |i|
-      accounts(:investment).entries.create!(
-        date: Date.current - ((i + 1) * 30).days,
-        amount: 45.00, currency: "USD", name: "PRIVATE BROKERAGE SUB",
-        entryable: Transaction.new
-      )
-    end
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    get new_recurring_transaction_url, headers: { "Turbo-Frame" => "modal" }
-
-    assert_response :success
-    assert_no_match "PRIVATE BROKERAGE SUB", response.body
-  end
-
   test "income dialog offers only detected deposits" do
     account = accounts(:depository)
     2.times do |i|
@@ -371,24 +353,6 @@ class RecurringTransactionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "[name=?]", "recurring_transaction[category_id]", count: 0
-  end
-
-  # Sharing is per account, so a family scope is not an access check. Prefilling
-  # reads the entry's name, amount and account straight back into the form.
-  test "new ignores a transaction from an account the user was never given" do
-    hidden = accounts(:investment).entries.create!(
-      date: Date.current - 3, amount: 622.41, currency: "USD", name: "PRIVATE BROKERAGE FEE",
-      entryable: Transaction.new
-    )
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    get new_recurring_transaction_url(entry_id: hidden.id), headers: { "Turbo-Frame" => "modal" }
-
-    assert_response :success
-    assert_no_match "PRIVATE BROKERAGE FEE", response.body
-    assert_no_match "622.41", response.body
   end
 
   test "prefilling from an inflow pre-selects income" do
@@ -1365,21 +1329,6 @@ class RecurringTransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match "HIDDEN CHARGE", response.body
   end
 
-  test "picker never shows an account the member was not given, even on exact match" do
-    hidden = picker_entry(name: "PRIVATE BROKERAGE FEE", amount: 30, account: accounts(:investment))
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    get new_recurring_transaction_url(picker: 1, q: "PRIVATE BROKERAGE FEE"),
-        headers: { "Turbo-Frame" => "modal" }
-
-    assert_response :success
-    # The no-results copy echoes the query, so assert on the row link itself.
-    assert_select "a[href=?]", new_recurring_transaction_path(entry_id: hidden.id), count: 0
-    assert_match I18n.t("recurring_transactions.pick_entry.back"), response.body
-  end
-
   test "an entry already backing a bill carries a chip instead of being hidden" do
     claimed = picker_entry(name: "NETFLIX.COM", amount: 15.99)
     series = @family.recurring_transactions.create!(
@@ -1475,44 +1424,6 @@ class RecurringTransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to recurring_transactions_url
   end
 
-  # Sharing is per account: a read-only share may SEE the series everywhere the
-  # app lists it, and must not be able to change or remove it. Mirrors
-  # RecurringOccurrencesController#ensure_series_writable.
-  test "a read-only account share can see but not mutate a series" do
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    # The credit card fixture is shared with the member read_only.
-    series = create_series(name: "Shared Read Only", account: accounts(:credit_card))
-    suggestion = create_series(name: "Shared Suggestion", account: accounts(:credit_card), status: "suggested")
-
-    sign_in member
-
-    # Visible: the read dialog opens. The write guard bites only on mutation.
-    get edit_recurring_transaction_url(series), headers: { "Turbo-Frame" => "modal" }
-    assert_response :success
-    assert_match "Shared Read Only", response.body
-
-    patch recurring_transaction_url(series), params: { recurring_transaction: { name: "Hijacked" } }
-    assert_response :not_found
-    assert_equal "Shared Read Only", series.reload.name
-
-    post toggle_status_recurring_transaction_url(series)
-    assert_response :not_found
-    assert series.reload.active?
-
-    post confirm_recurring_transaction_url(suggestion)
-    assert_response :not_found
-    assert suggestion.reload.suggested?
-
-    post dismiss_recurring_transaction_url(suggestion)
-    assert_response :not_found
-    assert suggestion.reload.suggested?
-
-    delete recurring_transaction_url(series)
-    assert_response :not_found
-    assert series.reload.persisted?
-  end
-
   test "an accountless series carries no account write gate" do
     series = create_series(name: "No Account", account: nil)
 
@@ -1520,30 +1431,6 @@ class RecurringTransactionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :redirect
     assert_equal "Renamed Fine", series.reload.name
-  end
-
-  # The destination is a write too: attaching a series to an account changes
-  # what that account's owners see, so a read-only share cannot receive one,
-  # whether by edit or at declaration.
-  test "a read-only account cannot become a series' destination" do
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    series = create_series(name: "Wandering Bill", account: nil)
-
-    sign_in member
-
-    patch recurring_transaction_url(series), params: { recurring_transaction: { account_id: accounts(:credit_card).id } }
-    assert_response :unprocessable_entity
-    assert_nil series.reload.account_id
-
-    assert_no_difference "RecurringTransaction.count" do
-      post recurring_transactions_url, params: { recurring_transaction: {
-        name: "Declared On Read Only", amount: 12, first_due_on: Date.current.iso8601,
-        frequency_preset: "monthly", account_id: accounts(:credit_card).id
-      } }
-    end
-    assert_response :unprocessable_entity
-    assert_match I18n.t("recurring_transactions.create.account_invalid"), response.body
   end
 
   # Clearing a payment link is a statement about one bill; the opt-in copy
@@ -1560,27 +1447,6 @@ class RecurringTransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :redirect
     assert_nil source.reload.payment_url.presence
     assert_equal "https://pay.example/keep", sibling.reload.payment_url
-  end
-
-  test "the sibling copy skips series on accounts the user cannot write" do
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-
-    source = create_series(name: "Portal Bill", account: nil, merchant: merchants(:netflix))
-    # The credit card fixture is shared with the member read_only: visible,
-    # therefore inside accessible_by, and exactly what the copy must skip.
-    read_only_sibling = create_series(name: "Portal Bill RO", account: accounts(:credit_card),
-                                      merchant: merchants(:netflix), payment_url: "https://pay.example/theirs")
-
-    sign_in member
-    patch recurring_transaction_url(source), params: {
-      apply_to_siblings: "1",
-      recurring_transaction: { payment_url: "https://pay.example/mine" }
-    }
-
-    assert_response :redirect
-    assert_equal "https://pay.example/mine", source.reload.payment_url
-    assert_equal "https://pay.example/theirs", read_only_sibling.reload.payment_url
   end
 
   # "Create bill" from a transaction used to save a second bill for a payment
@@ -1647,23 +1513,6 @@ class RecurringTransactionsControllerTest < ActionDispatch::IntegrationTest
                   text: I18n.t("recurring_transactions.new.covered_confirm")
     assert_select "a[href=?]", bill_path(suggested), text: I18n.t("recurring_transactions.new.covered_open")
     assert_select "input[type=hidden][name=allow_duplicate][value=1]"
-  end
-
-  # The confirm action 404s for a read-only share, so the dialog must not
-  # offer a button that can only fail.
-  test "a read-only share is told about the suggestion but not offered the confirm" do
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    # The credit card fixture is shared with the member read_only.
-    entry, suggested = covered_entry_and_detected_bill(status: "suggested", account: accounts(:credit_card))
-
-    sign_in member
-    get new_recurring_transaction_url(entry_id: entry.id), headers: { "Turbo-Frame" => "modal" }
-
-    assert_response :success
-    assert_match I18n.t("recurring_transactions.new.covered_suggested_title"), response.body
-    assert_select "a[href=?]", confirm_recurring_transaction_path(suggested), count: 0
-    assert_select "a[href=?]", bill_path(suggested)
   end
 
   test "new from a transaction no bill covers shows no warning" do

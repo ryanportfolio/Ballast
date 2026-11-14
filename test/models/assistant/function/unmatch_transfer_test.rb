@@ -116,17 +116,16 @@ class Assistant::Function::UnmatchTransferTest < ActiveSupport::TestCase
     assert_equal "not_found", result[:error]
   end
 
-  test "returns not_found unless both accounts are writable" do
-    # family_member has a read-only share of the credit card
-    result = Assistant::Function::UnmatchTransfer.new(users(:family_member)).call("transfer_id" => @transfer.id)
+  test "returns not_found for another family's transfer" do
+    result = Assistant::Function::UnmatchTransfer.new(users(:empty)).call("transfer_id" => @transfer.id)
 
     assert_equal "not_found", result[:error]
     assert Transfer.exists?(@transfer.id)
   end
 
   test "rechecks write access under the lock" do
-    # As if the lookup had passed before the read-only share took effect.
-    function = Assistant::Function::UnmatchTransfer.new(users(:family_member))
+    # As if the lookup had passed for a user who cannot write to the accounts.
+    function = Assistant::Function::UnmatchTransfer.new(users(:empty))
     function.stubs(:find_transfer).returns(@transfer)
 
     result = function.call("transfer_id" => @transfer.id)

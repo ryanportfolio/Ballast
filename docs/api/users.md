@@ -1,6 +1,6 @@
 # Users API Documentation
 
-The Users API allows external applications to manage user account data within Sure. The OpenAPI description is generated directly from executable request specs, ensuring it always reflects the behaviour of the running Rails application.
+The Users API allows external applications to manage user account data within Ballast. The OpenAPI description is generated directly from executable request specs, ensuring it always reflects the behaviour of the running Rails application.
 
 ## Generated OpenAPI specification
 
@@ -93,7 +93,7 @@ This occurs when the user cannot be deactivated (for example, an admin user with
 
 - Both endpoints require the `read_write` scope. Read-only API keys cannot access these endpoints.
 - Deactivated users cannot access these endpoints.
-- The reset operation preserves the user account, allowing you to continue using Sure with a clean slate.
+- The reset operation preserves the user account, allowing you to continue using Ballast with a clean slate.
 - The delete operation is permanent and removes the user account entirely.
 
 ## Error responses

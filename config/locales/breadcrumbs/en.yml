@@ -1,7 +1,6 @@
 ---
 en:
   breadcrumbs:
-    account_sharings: Account sharing
     account_statements: Statement vault
     accounts: Accounts
     ai_prompts: AI Prompts
@@ -29,8 +28,6 @@ en:
     imports: Imports
     intro: Intro
     investments: Investments
-    invitations: Invitations
-    invite_codes: Invite codes
     loans: Loans
     mcp: MCP Server
     merchants: Merchants

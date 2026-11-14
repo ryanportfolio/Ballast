@@ -10,9 +10,9 @@ Rails.application.config.filter_parameters += [
   /\Apin\z/i,
   # One-time codes that act as credentials: MFA TOTP/backup codes, OAuth and
   # bank authorization codes all arrive as "code". Anchored so currency_code,
-  # country_code and postal_code stay readable. invite_code opens
-  # registration, and access_url is SimpleFIN's credential.
-  /\Acode\z/i, :invite_code, :access_url,
+  # country_code and postal_code stay readable. access_url is SimpleFIN's
+  # credential.
+  /\Acode\z/i, :access_url,
   # A device code redeems into tokens on its own, so it is a bearer credential in
   # transit; verification_uri_complete embeds the user code, hence all three.
   :device_code, :user_code, :verification_uri_complete,

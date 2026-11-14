@@ -181,53 +181,12 @@ class Transactions::BulkUpdatesControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ tags(:one).id ], transaction_entry.reload.transaction.tag_ids
   end
 
-  test "bulk update lets a read_write share annotate but not change date or name" do
-    account = accounts(:credit_card)
-    account.account_shares.find_by!(user: users(:family_member)).update!(permission: "read_write")
-    entry = create_transaction(account: account, name: "Original name", date: Date.new(2026, 1, 5))
-
-    sign_in users(:family_member)
-    post transactions_bulk_update_url, params: {
-      bulk_update: {
-        entry_ids: [ entry.id ],
-        name: "Renamed", date: "2026-02-10", notes: "annotated", category_id: categories(:food_and_drink).id
-      }
-    }
-
-    entry.reload
-    assert_equal "Original name", entry.name
-    assert_equal Date.new(2026, 1, 5), entry.date
-    assert_equal "annotated", entry.notes
-    assert_equal categories(:food_and_drink), entry.transaction.category
-  end
-
-  test "bulk update skips entries from accounts the user can only read" do
-    read_only_account = accounts(:credit_card) # shared read_only with family_member
-    entry = create_transaction(account: read_only_account, name: "Starbucks")
-    original_category = entry.transaction.category
-
-    sign_in users(:family_member)
+  test "bulk update skips entries from another family's accounts" do
+    foreign_account = families(:empty).accounts.create!(name: "Foreign", currency: "USD", balance: 0, accountable: Depository.new)
+    entry = create_transaction(account: foreign_account, name: "Private entry")
 
     post transactions_bulk_update_url, params: {
-      bulk_update: {
-        entry_ids: [ entry.id ],
-        category_id: categories(:food_and_drink).id,
-        notes: "Changed by a read-only member"
-      }
-    }
-
-    assert_redirected_to transactions_url
-    assert_equal "0 transactions updated", flash[:notice]
-    assert_equal original_category, entry.reload.transaction.category
-    assert_nil entry.notes
-  end
-
-  test "bulk update skips entries from accounts not shared with the user" do
-    entry = create_transaction(account: accounts(:other_asset), name: "Private entry")
-
-    sign_in users(:family_member)
-    post transactions_bulk_update_url, params: {
-      bulk_update: { entry_ids: [ entry.id ], name: "Renamed", notes: "Changed by another member" }
+      bulk_update: { entry_ids: [ entry.id ], name: "Renamed", notes: "Changed by another family" }
     }
 
     assert_equal "0 transactions updated", flash[:notice]
@@ -236,37 +195,18 @@ class Transactions::BulkUpdatesControllerTest < ActionDispatch::IntegrationTest
     assert_nil entry.notes
   end
 
-  test "bulk update lets a full_control share change date and name" do
-    entry = create_transaction(account: accounts(:depository), name: "Original name", date: Date.new(2026, 1, 5))
+  test "bulk update lets a member change date and name on any family account" do
+    entry = create_transaction(account: accounts(:other_asset), name: "Original name", date: Date.new(2026, 1, 5))
 
     sign_in users(:family_member)
     post transactions_bulk_update_url, params: {
-      bulk_update: { entry_ids: [ entry.id ], name: "Renamed", date: "2026-02-10" }
+      bulk_update: { entry_ids: [ entry.id ], name: "Renamed", date: "2026-02-10", notes: "bulk note" }
     }
 
     assert_equal "1 transactions updated", flash[:notice]
     entry.reload
     assert_equal "Renamed", entry.name
     assert_equal Date.new(2026, 2, 10), entry.date
-  end
-
-  test "bulk update applies each share's rights within one mixed selection" do
-    accounts(:credit_card).account_shares.find_by!(user: users(:family_member)).update!(permission: "read_write")
-    full_entry = create_transaction(account: accounts(:depository), name: "Full", date: Date.new(2026, 1, 5))
-    annotate_entry = create_transaction(account: accounts(:credit_card), name: "Annotate", date: Date.new(2026, 1, 5))
-    private_entry = create_transaction(account: accounts(:other_asset), name: "Private", date: Date.new(2026, 1, 5))
-
-    sign_in users(:family_member)
-    post transactions_bulk_update_url, params: {
-      bulk_update: {
-        entry_ids: [ full_entry.id, annotate_entry.id, private_entry.id ],
-        name: "Renamed", notes: "bulk note"
-      }
-    }
-
-    assert_equal "2 transactions updated", flash[:notice]
-    assert_equal [ "Renamed", "bulk note" ], [ full_entry.reload.name, full_entry.notes ]
-    assert_equal [ "Annotate", "bulk note" ], [ annotate_entry.reload.name, annotate_entry.notes ]
-    assert_equal [ "Private", nil ], [ private_entry.reload.name, private_entry.notes ]
+    assert_equal "bulk note", entry.notes
   end
 end

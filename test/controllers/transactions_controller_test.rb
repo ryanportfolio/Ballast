@@ -362,13 +362,12 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='entry[name]'][value='Explicit name']"
   end
 
-  test "recent name suggestions never include entries from accounts inaccessible to the current user" do
+  test "recent name suggestions never include entries from another family's accounts" do
     @entry.account.family.update!(auto_generate_transaction_names: true)
 
     private_account = Account.create!(
-      family: @entry.account.family,
-      owner: users(:family_member),
-      name: "Family Member Private Account",
+      family: families(:empty),
+      name: "Other Family Private Account",
       balance: 100,
       currency: "USD",
       accountable: Depository.new,
@@ -443,22 +442,6 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_no_match "no such merchant", response.body
-  end
-
-  test "name_suggestions only considers transactions from accounts accessible to the current user" do
-    # accounts(:investment) is owned by family_admin and not shared with family_member
-    create_transaction(account: accounts(:investment), name: "Private Yacht Purchase", category: categories(:income))
-
-    sign_in users(:family_member)
-
-    get name_suggestions_transactions_url(q: "Private Yacht"), as: :turbo_stream
-    assert_response :success
-    assert_no_match "Private Yacht", response.body
-
-    # depository is shared with family_member, so its transactions remain suggestible
-    get name_suggestions_transactions_url(q: "Starbucks"), as: :turbo_stream
-    assert_response :success
-    assert_match "Starbucks", response.body
   end
 
   test "updates with transaction details" do
@@ -654,23 +637,6 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert @entry.entryable.locked?(:tag_ids)
   end
 
-  test "tag-only endpoint returns forbidden json for read-only users" do
-    sign_in users(:family_member)
-    read_only_entry = entries(:transfer_in)
-    original_tag_ids = read_only_entry.entryable.tag_ids
-
-    patch tags_transaction_url(read_only_entry), params: {
-      tag_ids: [ tags(:one).id ]
-    }, headers: {
-      "Accept" => "application/json"
-    }
-
-    assert_response :forbidden
-    assert_equal "application/json", response.media_type
-    assert_equal I18n.t("accounts.not_authorized"), JSON.parse(response.body)["error"]
-    assert_equal original_tag_ids, read_only_entry.reload.entryable.tag_ids
-  end
-
   test "tag-only endpoint toggles a single tag and streams the row's tag UI" do
     @entry.entryable.update!(tag_ids: [ tags(:one).id ], locked_attributes: {})
 
@@ -706,16 +672,6 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
     assert_equal original_tag_ids, @entry.reload.entryable.tag_ids
-  end
-
-  test "tag-only endpoint does not toggle tags for read-only users" do
-    sign_in users(:family_member)
-    read_only_entry = entries(:transfer_in)
-    original_tag_ids = read_only_entry.entryable.tag_ids
-
-    patch tags_transaction_url(read_only_entry), params: { toggle_tag_id: tags(:one).id }, as: :turbo_stream
-
-    assert_equal original_tag_ids, read_only_entry.reload.entryable.tag_ids
   end
 
   test "transaction rows show tags" do
@@ -1185,32 +1141,6 @@ end
       post mark_as_recurring_transaction_path(entry.entryable)
     end
     assert_equal I18n.t("recurring_transactions.already_exists"), flash[:alert]
-  end
-
-  # Sharing is per account. A bill on an account this member was never given
-  # is not theirs to learn about, as in the add-bill dialog's own check, so
-  # it neither disables the button nor refuses the request.
-  test "mark_as_recurring ignores a covering bill on an account the user cannot see" do
-    member = users(:family_member)
-    entry = create_transaction(account: accounts(:depository), amount: 100, name: "PRIVATE PLAN")
-    hidden = families(:dylan_family).recurring_transactions.create!(
-      account: accounts(:investment), name: "Private Plan", amount: 100, currency: "USD",
-      expected_day_of_month: Date.current.day, last_occurrence_date: 1.month.ago.to_date,
-      next_expected_date: Date.current, status: "active", manual: true, occurrence_count: 1
-    )
-    hidden.recurring_occurrences.order(:due_on).first.allocations.create!(
-      entry: entry, allocated_amount: 100, currency: "USD", source: "user_created"
-    )
-    assert_equal hidden, families(:dylan_family).recurring_transactions.covering(entry), "precondition: the hidden bill covers the entry"
-
-    sign_in member
-    get transaction_url(entry)
-    assert_select "button[disabled]", text: /Mark as Recurring/, count: 0
-
-    assert_difference "RecurringTransaction.count", 1 do
-      post mark_as_recurring_transaction_path(entry.entryable)
-    end
-    assert_equal I18n.t("recurring_transactions.marked_as_recurring"), flash[:notice]
   end
 
   # The add-bill form checks and saves under the entry lock the Allocator
@@ -1785,88 +1715,6 @@ end
     Rails.cache = original_cache
   end
 
-  test "index uncategorized_count cache is invalidated when account-share access is revoked" do
-    original_cache = Rails.cache
-    Rails.cache = ActiveSupport::Cache::MemoryStore.new
-
-    member = users(:family_member)
-    share = account_shares(:depository_shared_with_member)
-    share.account.entries.create!(
-      name: "Uncategorized on shared account",
-      amount: 42,
-      currency: "USD",
-      date: Date.current,
-      entryable: Transaction.new
-    )
-
-    sign_in member
-    get transactions_url
-    count_with_access = rendered_uncategorized_count
-    assert_operator count_with_access, :>, 0,
-      "the member should see the shared account's uncategorized transaction before revocation"
-
-    share.destroy!
-
-    get transactions_url
-    count_after_revocation = rendered_uncategorized_count
-
-    assert_operator count_after_revocation, :<, count_with_access,
-      "revoking account-share access must not leave a stale cached count that still includes the now-inaccessible account"
-  ensure
-    Rails.cache = original_cache
-  end
-
-  test "index uncategorized_count leaves out read-only shared accounts" do
-    sign_in users(:family_member)
-    get transactions_url
-    count_before = rendered_uncategorized_count
-
-    accounts(:credit_card).entries.create!( # shared read_only with family_member
-      name: "Uncategorized on read-only share",
-      amount: 42,
-      currency: "USD",
-      date: Date.current,
-      entryable: Transaction.new
-    )
-    accounts(:depository).entries.create!( # shared full_control with family_member
-      name: "Uncategorized on full-control share",
-      amount: 42,
-      currency: "USD",
-      date: Date.current,
-      entryable: Transaction.new
-    )
-
-    get transactions_url
-    assert_equal count_before + 1, rendered_uncategorized_count,
-      "the categorize count should only include entries the member can categorize"
-  end
-
-  test "index projected_recurring cache is invalidated when account-share access is revoked" do
-    original_cache = Rails.cache
-    Rails.cache = ActiveSupport::Cache::MemoryStore.new
-
-    member = users(:family_member)
-    share = account_shares(:depository_shared_with_member)
-    recurring = recurring_transactions(:netflix_subscription)
-    assert_equal share.account_id, recurring.account_id,
-      "fixture assumption: the shared depository account has the netflix recurring charge"
-
-    merchant_name_pattern = /#{Regexp.escape(recurring.merchant.name)}/
-
-    sign_in member
-    get transactions_url
-    assert_match merchant_name_pattern, response.body,
-      "the member should see the shared account's recurring transaction before revocation"
-
-    share.destroy!
-
-    get transactions_url
-    assert_no_match merchant_name_pattern, response.body,
-      "revoking account-share access must not leave a stale cached projected-recurring list"
-  ensure
-    Rails.cache = original_cache
-  end
-
   test "index projected_recurring cache reflects a merchant rename immediately" do
     original_cache = Rails.cache
     Rails.cache = ActiveSupport::Cache::MemoryStore.new
@@ -1961,34 +1809,6 @@ end
 
     assert_operator updated_count, :<, initial_count,
       "disabling an account must not leave a stale cached count that still includes its transactions"
-  ensure
-    Rails.cache = original_cache
-  end
-
-  test "index uncategorized_count cache is scoped per user, not just per family" do
-    original_cache = Rails.cache
-    Rails.cache = ActiveSupport::Cache::MemoryStore.new
-
-    # family_member has no share on this account (see test/fixtures/account_shares.yml),
-    # so only the admin can see its uncategorized transaction.
-    accounts(:other_asset).entries.create!(
-      name: "Admin-only uncategorized transaction",
-      amount: 42,
-      currency: "USD",
-      date: Date.current,
-      entryable: Transaction.new
-    )
-
-    get transactions_url
-    admin_count = rendered_uncategorized_count
-    assert_operator admin_count, :>, 0
-
-    sign_in users(:family_member)
-    get transactions_url
-    member_count = rendered_uncategorized_count
-
-    assert_not_equal admin_count, member_count,
-      "a member without access to the admin-only account must not reuse the admin's cached uncategorized count"
   ensure
     Rails.cache = original_cache
   end
@@ -2194,7 +2014,6 @@ end
     rule.conditions.build(condition_type: "transaction_name", operator: "like", value: "AMAZON.CO.UK")
     rule.actions.build(action_type: "set_transaction_category", value: category.id.to_s)
     rule.save!
-    @entry.account.update!(owner: family_guest)
     sign_in family_guest
 
     patch transaction_url(@entry), params: {

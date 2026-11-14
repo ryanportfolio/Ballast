@@ -27,8 +27,8 @@ export default class extends Controller {
   }
 
   showSuccess(button) {
-    // Markup that ships explicit default/success icons (invite codes, MFA,
-    // profiles) toggles between them.
+    // Markup that ships explicit default/success icons (MFA) toggles between
+    // them.
     if (this.hasIconDefaultTarget && this.hasIconSuccessTarget) {
       this.iconDefaultTarget.classList.add("hidden");
       this.iconSuccessTarget.classList.remove("hidden");

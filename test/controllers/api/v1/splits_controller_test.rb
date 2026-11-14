@@ -184,21 +184,6 @@ class Api::V1::SplitsControllerTest < ActionDispatch::IntegrationTest
 
   # Review findings from PR #4117
 
-  test "a read-only share cannot split, even with a read_write key" do
-    other = User.create!(family: @family, email: "viewer-#{SecureRandom.hex(4)}@example.com",
-                         password: "password123", password_confirmation: "password123", role: "member")
-    @account.update!(owner: @user)
-    AccountShare.create!(account: @account, user: other, permission: "read_only")
-    other.api_keys.active.destroy_all
-    key = ApiKey.create!(user: other, name: "Viewer RW", scopes: [ "read_write" ],
-                         display_key: "test_v_#{SecureRandom.hex(8)}")
-    Redis.new.del("api_rate_limit:#{key.id}")
-
-    post api_v1_transaction_split_url(@transaction), params: halves, headers: api_headers(key), as: :json
-    assert_response :forbidden
-    assert_not @entry.reload.split_parent?
-  end
-
   test "rejects a category belonging to another family" do
     other_family = Family.create!(name: "Other", currency: "USD", locale: "en", date_format: "%m-%d-%Y")
     foreign = other_family.categories.create!(name: "Foreign", color: "#000000", lucide_icon: "circle")

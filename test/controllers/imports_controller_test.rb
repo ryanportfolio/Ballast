@@ -133,31 +133,7 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to import_path(import)
   end
 
-  test "member cannot publish import targeting a read only shared account" do
-    import = imports(:transaction)
-    import.update!(account: accounts(:credit_card))
-    TransactionImport.any_instance.expects(:publish_later).never
-
-    sign_in users(:family_member)
-    post publish_import_url(import)
-
-    assert_redirected_to import_path(import)
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
-  end
-
-  test "member cannot publish import with account mapping to an unshared account" do
-    import = imports(:transaction)
-    import.mappings.create!(type: "Import::AccountMapping", key: "Brokerage", mappable: accounts(:investment))
-    TransactionImport.any_instance.expects(:publish_later).never
-
-    sign_in users(:family_member)
-    post publish_import_url(import)
-
-    assert_redirected_to import_path(import)
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
-  end
-
-  test "member can publish import targeting a full control shared account" do
+  test "member can publish import targeting a family account" do
     import = imports(:transaction)
     import.update!(account: accounts(:depository))
     import.mappings.create!(type: "Import::AccountMapping", key: "Checking", mappable: accounts(:depository))
@@ -168,33 +144,6 @@ class ImportsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to import_path(import)
     assert_equal I18n.t("imports.publish.started"), flash[:notice]
-  end
-
-  test "member cannot revert import whose entries are in a read only shared account" do
-    import = imports(:transaction)
-    import.update!(status: :complete)
-    entries(:transaction).update!(import: import, account: accounts(:credit_card))
-    TransactionImport.any_instance.expects(:revert_later).never
-
-    sign_in users(:family_member)
-    put revert_import_url(import)
-
-    assert_redirected_to import_path(import)
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
-  end
-
-  test "member cannot delete import whose entries are in a read only shared account" do
-    import = imports(:transaction)
-    import.update!(status: :failed)
-    entries(:transaction).update!(import: import, account: accounts(:credit_card))
-
-    sign_in users(:family_member)
-    assert_no_difference([ "Import.count", "Entry.count" ]) do
-      delete import_url(import)
-    end
-
-    assert_redirected_to import_path(import)
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
   end
 
   test "destroys import" do

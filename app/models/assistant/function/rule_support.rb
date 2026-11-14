@@ -347,7 +347,7 @@ module Assistant::Function::RuleSupport
       names = name_lookup(key)
       return nil unless names
 
-      names.fetch(value.to_s) { key.in?(ACCOUNT_KEYS) ? "(account not shared with you)" : "(deleted)" }
+      names.fetch(value.to_s) { key.in?(ACCOUNT_KEYS) ? "(account not accessible)" : "(deleted)" }
     end
 
     def name_lookup(key)

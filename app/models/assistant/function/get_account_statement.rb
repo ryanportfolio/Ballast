@@ -35,7 +35,7 @@ class Assistant::Function::GetAccountStatement < Assistant::Function
         here verifies that the document's own line items sum to its printed total.
         That parse-integrity check belongs to whatever extracted the figures.
 
-        This returns no bytes and no link, and there is no way around it: Sure
+        This returns no bytes and no link, and there is no way around it: Ballast
         serves stored files only to a signed-in browser session, which you do not
         have, and no other tool reads a statement's contents.
 

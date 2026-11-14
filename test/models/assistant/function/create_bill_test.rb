@@ -150,18 +150,6 @@ class Assistant::Function::CreateBillTest < ActiveSupport::TestCase
     assert_nil @family.recurring_transactions.find_by(name: "Maybe")
   end
 
-  test "a read-only shared account is not a creation destination" do
-    member = users(:family_member)
-
-    result = Assistant::Function::CreateBill.new(member).call(
-      "name" => "Sneaky", "amount" => 10, "first_due_on" => (Date.current + 3).iso8601,
-      "account_name" => accounts(:credit_card).name
-    )
-
-    assert_match(/add bills to/, result[:error])
-    assert_nil @family.recurring_transactions.find_by(name: "Sneaky")
-  end
-
   private
 
     def call_tool(params)

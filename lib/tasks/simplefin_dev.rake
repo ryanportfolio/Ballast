@@ -82,7 +82,7 @@ namespace :simplefin do
     puts "  SimplefinItem:      #{item.id}"
     puts "  Dormant sfa (OLD):  #{old_sfa.id}"
     puts "  Active sfa (NEW):   #{new_sfa.id}"
-    puts "  Sure account:       #{sure_account.id}"
+    puts "  Ballast account:    #{sure_account.id}"
     puts "  Suggestions:        #{suggestions.size}"
     puts
     puts "Next: load the accounts page in the dev server. You should see a"

@@ -5,8 +5,6 @@ module EntryableResource
     include StreamExtensions, ActionView::RecordIdentifier
 
     before_action :set_entry, only: %i[show update destroy]
-
-    helper_method :can_edit_entry?, :can_annotate_entry?
   end
 
   def show
@@ -49,17 +47,5 @@ module EntryableResource
                  .joins(:account)
                  .merge(Account.accessible_by(Current.user))
                  .find(params[:id])
-    end
-
-    def entry_permission
-      @entry_permission ||= @entry&.account&.permission_for(Current.user)
-    end
-
-    def can_edit_entry?
-      entry_permission.in?([ :owner, :full_control ])
-    end
-
-    def can_annotate_entry?
-      entry_permission.in?([ :owner, :full_control, :read_write ])
     end
 end

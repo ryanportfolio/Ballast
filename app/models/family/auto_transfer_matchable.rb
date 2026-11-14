@@ -44,8 +44,7 @@ module Family::AutoTransferMatchable
     account_id: nil,
     transaction_ids: nil,
     include_rejected: true,
-    restrict_cross_currency_to_linked_accounts: false,
-    require_common_writer: false
+    restrict_cross_currency_to_linked_accounts: false
   )
     date_window = coerce_transfer_match_date_window!(date_window)
     exchange_rate_tolerance = coerce_transfer_match_exchange_rate_tolerance!(exchange_rate_tolerance)
@@ -64,7 +63,6 @@ module Family::AutoTransferMatchable
         transaction_ids: transaction_ids.presence || [ nil ],
         include_rejected:,
         restrict_cross_currency_to_linked_accounts:,
-        require_common_writer:,
         lower_exchange_rate_bound: 1 - exchange_rate_tolerance,
         upper_exchange_rate_bound: 1 + exchange_rate_tolerance
       }
@@ -112,10 +110,7 @@ module Family::AutoTransferMatchable
       account_id: account&.id,
       include_rejected: false,
       exchange_rate_tolerance:,
-      restrict_cross_currency_to_linked_accounts: true,
-      # Only pair accounts that at least one member can write to on both sides, so
-      # someone can always confirm or reject the match.
-      require_common_writer: true
+      restrict_cross_currency_to_linked_accounts: true
     )
 
     # Track which transactions we've already matched to avoid duplicates
@@ -229,38 +224,6 @@ module Family::AutoTransferMatchable
       tolerance
     end
 
-    # A family member who can write to (Account.writable_by) at least one side
-    # and to every side that has an owner, so someone can always unlink the
-    # match. An owner-less account (owner_id is nullified when its owner is
-    # removed from the family) does not block pairing: nobody can write to it,
-    # but the member on the other side can still reject the match. When the
-    # owner-less side is the outflow, the match can be rejected but not
-    # confirmed or edited, as before this condition existed.
-    def common_writer_condition_sql
-      <<~SQL.squish
-        (:require_common_writer = FALSE OR EXISTS (
-          SELECT 1 FROM users writers
-          WHERE
-            writers.family_id = :family_id AND
-            (inflow_accounts.owner_id IS NULL OR #{writer_can_write_sql("inflow_accounts")}) AND
-            (outflow_accounts.owner_id IS NULL OR #{writer_can_write_sql("outflow_accounts")}) AND
-            (#{writer_can_write_sql("inflow_accounts")} OR #{writer_can_write_sql("outflow_accounts")})
-        ))
-      SQL
-    end
-
-    # Mirrors Account.writable_by for the `writers` row: owner or full_control share.
-    def writer_can_write_sql(accounts_alias)
-      <<~SQL.squish
-        (writers.id = #{accounts_alias}.owner_id OR EXISTS (
-          SELECT 1 FROM account_shares writer_shares
-          WHERE writer_shares.account_id = #{accounts_alias}.id AND
-            writer_shares.user_id = writers.id AND
-            writer_shares.permission = 'full_control'
-        ))
-      SQL
-    end
-
     # The second UNION branch below (cross-currency, FX-rate-tolerance matching) is a
     # coincidence guess -- amount x FX-rate within a tolerance band, not an exact amount
     # match -- and a manual account has no institution behind it confirming money actually
@@ -343,8 +306,7 @@ module Family::AutoTransferMatchable
             (:inflow_transaction_id IS NULL OR inflow_candidates.entryable_id = :inflow_transaction_id) AND
             (:outflow_transaction_id IS NULL OR outflow_candidates.entryable_id = :outflow_transaction_id) AND
             (:filter_transaction_ids = FALSE OR inflow_candidates.entryable_id IN (:transaction_ids) OR outflow_candidates.entryable_id IN (:transaction_ids)) AND
-            (:include_rejected = TRUE OR rejected_transfers.id IS NULL) AND
-            #{common_writer_condition_sql}
+            (:include_rejected = TRUE OR rejected_transfers.id IS NULL)
           UNION ALL
           SELECT
             inflow_candidates.entryable_id AS inflow_transaction_id,
@@ -432,8 +394,7 @@ module Family::AutoTransferMatchable
               :restrict_cross_currency_to_linked_accounts = FALSE OR
               (#{linked_account_sql("inflow_accounts")} AND #{linked_account_sql("outflow_accounts")}) OR
               confirmed_routes.outflow_account_id IS NOT NULL
-            ) AND
-            #{common_writer_condition_sql}
+            )
         ) transfer_match_candidates
         ORDER BY transfer_match_candidates.match_rank ASC, transfer_match_candidates.date_diff ASC
       SQL

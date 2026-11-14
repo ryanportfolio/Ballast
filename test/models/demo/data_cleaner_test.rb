@@ -35,7 +35,7 @@ class Demo::DataCleanerTest < ActiveSupport::TestCase
   end
 
   # Family.destroy_all skipped a family whose destroy aborted without a word,
-  # then wiped the settings, invite codes and exchange rates anyway.
+  # then wiped the settings and exchange rates anyway.
   test "a family that cannot be destroyed stops the reset before anything else goes" do
     Setting.exchange_rate_provider = "yahoo_finance"
     families = Family.count

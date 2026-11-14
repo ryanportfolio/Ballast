@@ -10,10 +10,10 @@
 # child via `delegated_type :entryable, dependent: :destroy`.
 #
 # Authorization: the *** endpoint applies no per-tool scope, so this tool
-# enforces the *write* gate itself by resolving only through accounts the user can write to (owner or full_control share),
-# consistent with CreateTransaction. A read-only shared account, a cross-family
-# id, or an unknown id all resolve to a safe `not_found` without leaking
-# whether the record exists.
+# enforces the *write* gate itself by resolving only through accounts the user
+# can write to (every account of their family), consistent with
+# CreateTransaction. A cross-family id or an unknown id resolves to a safe
+# `not_found` without leaking whether the record exists.
 
 class Assistant::Function::DeleteTransaction < Assistant::Function
   class << self
@@ -117,12 +117,10 @@ class Assistant::Function::DeleteTransaction < Assistant::Function
 
   private
     # Resolve a Transaction by id, scoped to accounts the user can WRITE to
-    # (owner or full_control share) — the same write gate CreateTransaction
-    # uses. `merge(Account.writable_by(user))` is the native set_transaction
-    # pattern (which uses accessible_by) tightened to the write set, so a
-    # read-only shared account simply yields nil -> not_found. An optional
-    # account_id narrows the query so a mismatched id cannot delete the wrong
-    # record. Returns nil if the id is not a valid UUID or is not found.
+    # — the same write gate CreateTransaction uses
+    # (`merge(Account.writable_by(user))`). An optional account_id narrows the
+    # query so a mismatched id cannot delete the wrong record. Returns nil if
+    # the id is not a valid UUID or is not found.
     def find_transaction(id, account_id)
       return nil unless valid_uuid?(id)
 

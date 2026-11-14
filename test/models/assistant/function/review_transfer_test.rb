@@ -59,9 +59,8 @@ class Assistant::Function::ReviewTransferTest < ActiveSupport::TestCase
     assert_equal "invalid_arguments", result[:error]
   end
 
-  test "requires write access to both accounts" do
-    # family_member has full control of the checking account but no share of other_asset
-    result = Assistant::Function::ReviewTransfer.new(users(:family_member)).call("transfer_id" => @transfer.id, "action" => "confirm")
+  test "refuses a transfer in another family" do
+    result = Assistant::Function::ReviewTransfer.new(users(:empty)).call("transfer_id" => @transfer.id, "action" => "confirm")
 
     assert_equal "not_found", result[:error]
     assert @transfer.reload.pending?

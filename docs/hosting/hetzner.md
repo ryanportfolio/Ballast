@@ -1,6 +1,6 @@
-# Deploying Sure on Hetzner Cloud
+# Deploying Ballast on Hetzner Cloud
 
-This guide will help you deploy Sure on a Hetzner Cloud server with Docker Compose, including SSL certificates, security hardening, and automated backups.
+This guide will help you deploy Ballast on a Hetzner Cloud server with Docker Compose, including SSL certificates, security hardening, and automated backups.
 
 ## Prerequisites
 
@@ -58,7 +58,7 @@ mkdir -p /opt/sure
 cd /opt/sure
 
 # Download the Docker Compose configuration
-curl -o compose.yml https://raw.githubusercontent.com/we-promise/sure/main/compose.example.yml
+curl -o compose.yml https://raw.githubusercontent.com/ryanportfolio/Ballast/main/compose.example.yml
 ```
 
 ## Step 3: Configure Environment Variables
@@ -139,7 +139,7 @@ certbot --nginx -d yourdomain.com -d www.yourdomain.com
 
 ## Step 5: Deploy the Application
 
-Now let's deploy the Sure application:
+Now let's deploy the Ballast application:
 
 ```bash
 # Navigate to the application directory
@@ -178,13 +178,12 @@ Now you can:
 
 ### Optional: Disable self-service registration
 
-Once your initial admin account is ready, open **Settings > Self-Hosting > Onboarding** to choose how signups should work:
+Once your initial admin account is ready, open **Settings > Self-Hosting > Sign-up** to choose how signups should work:
 
 - **Open**: Anyone can register.
-- **Invite-only**: New signups require a valid invite code unless you configure a default family for invite-only onboarding.
 - **Closed**: New signups from the registration page are blocked.
 
-For single-admin or tightly controlled deployments, set the onboarding mode to **Closed** after the initial setup.
+For single-admin or tightly controlled deployments, set the sign-up mode to **Closed** after the initial setup.
 
 ## Step 7: Set Up Automated Backups
 
@@ -419,7 +418,7 @@ If you encounter issues:
 1. Check the [troubleshooting section](#troubleshooting) above
 2. Review the application logs: `docker compose logs -f`
 3. Check system resources: `htop` and `df -h`
-4. Open a discussion in our [GitHub repository](https://github.com/we-promise/sure/discussions)
+4. Open an issue in our [GitHub repository](https://github.com/ryanportfolio/Ballast/issues)
 
 ## Security Reminders
 

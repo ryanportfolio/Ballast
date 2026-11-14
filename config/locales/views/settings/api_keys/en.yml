@@ -52,7 +52,7 @@ en:
       new:
         title: "Create API Key"
         create_new_api_key: "Create New API Key"
-        subtitle: "Generate a new API key to access your Sure data programmatically."
+        subtitle: "Generate a new API key to access your Ballast data programmatically."
         description: "Configure your new API key with a descriptive name and appropriate permissions."
         name_label: "API Key Name"
         name_placeholder: "e.g., My Budget App, Portfolio Tracker"

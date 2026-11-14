@@ -107,26 +107,7 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_url
   end
 
-  test "user cannot access linked statement blob for an inaccessible account" do
-    private_account = accounts(:other_asset)
-    statement = AccountStatement.create_from_upload!(
-      family: @user_a.family,
-      account: private_account,
-      file: uploaded_file(
-        filename: "private_statement.pdf",
-        content_type: "application/pdf",
-        content: "%PDF-1.4 Private Family Statement"
-      )
-    )
-
-    sign_in users(:family_member)
-
-    get rails_blob_path(statement.original_file)
-
-    assert_response :not_found
-  end
-
-  test "user can access linked statement blob for a shared account" do
+  test "member can access linked statement blob for a family account" do
     statement = AccountStatement.create_from_upload!(
       family: @user_a.family,
       account: accounts(:credit_card),

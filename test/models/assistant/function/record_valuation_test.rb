@@ -109,7 +109,7 @@ class Assistant::Function::RecordValuationTest < ActiveSupport::TestCase
   end
 
   test "rejects an account the user cannot write to" do
-    result = Assistant::Function::RecordValuation.new(users(:family_member)).call(params)
+    result = Assistant::Function::RecordValuation.new(users(:empty)).call(params)
 
     assert_not result[:success]
     assert_equal "account_not_found", result[:error]

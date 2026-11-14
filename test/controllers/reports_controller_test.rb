@@ -123,11 +123,9 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "the spending baseline starts at the first transaction in the user's own finances" do
+  test "the spending baseline starts at the family's first transaction" do
     @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => true))
     @family.entries.where(entryable_type: "Transaction").destroy_all
-    hidden = Account.create!(family: @family, owner: users(:family_member), name: "Not shared", currency: @family.currency, balance: 0, accountable: Depository.new)
-    create_transaction(account: hidden, date: 200.days.ago.to_date, amount: 10)
     own_first = 100.days.ago.to_date
     create_transaction(account: accounts(:depository), date: own_first, amount: 10)
 
@@ -428,14 +426,12 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     taxable_category = @family.categories.create!(name: "Export Taxable Income", color: "#111111")
     retirement_category = @family.categories.create!(name: "Export Retirement Income", color: "#222222")
     taxable_account = @family.accounts.create!(
-      owner: @user,
       name: "Export Taxable Brokerage",
       balance: 0,
       currency: "USD",
       accountable: Investment.new(subtype: "brokerage")
     )
     retirement_account = @family.accounts.create!(
-      owner: @user,
       name: "Export 401k",
       balance: 0,
       currency: "USD",
@@ -553,14 +549,12 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     taxable_category = @family.categories.create!(name: "Reports Taxable Income", color: "#111111")
     retirement_category = @family.categories.create!(name: "Reports Retirement Income", color: "#222222")
     taxable_account = @family.accounts.create!(
-      owner: @user,
       name: "Reports Taxable Brokerage",
       balance: 0,
       currency: "USD",
       accountable: Investment.new(subtype: "brokerage")
     )
     retirement_account = @family.accounts.create!(
-      owner: @user,
       name: "Reports 401k",
       balance: 0,
       currency: "USD",
@@ -786,68 +780,6 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-section-key='investment_performance']", count: 0
   end
 
-  # Another member's closed account that this user does not include in their
-  # finances is not the user's to see; it must not open the card for them.
-  test "another member's closed account with a disposal does not show the investment card" do
-    exclude_fixture_investment_accounts
-    closed_account_with_disposal(date: Date.current.beginning_of_month, owner: users(:family_member))
-
-    get reports_path
-    assert_response :ok
-
-    assert_select "[data-section-key='investment_performance']", count: 0
-  end
-
-  # The card lists only what this user counts in their finances. When the
-  # user's own closed account opens the card, another member's account that
-  # is not shared with them must not be listed beside it.
-  test "the investment card does not list another member's unshared disposal" do
-    exclude_fixture_investment_accounts
-    date = Date.current.beginning_of_month
-    _, own = closed_account_with_disposal(date: date)
-    _, theirs = closed_account_with_disposal(date: date, owner: users(:family_member))
-
-    get reports_path
-    assert_response :ok
-
-    lines = css_select("[data-testid='realized-gain-line']").map(&:text)
-    assert lines.any? { |text| text.include?(own.ticker) }, "the user's own disposal must be listed"
-    assert lines.none? { |text| text.include?(theirs.ticker) },
-           "another member's unshared disposal must not be listed"
-  end
-
-  # The same holds when an open investment account of the user's is what
-  # shows the card, and when the other member's account is open too.
-  test "the investment card does not list another member's unshared disposal beside an open account" do
-    exclude_fixture_investment_accounts
-    date = Date.current.beginning_of_month
-    _, own = closed_account_with_disposal(date: date, close: false)
-    _, theirs = closed_account_with_disposal(date: date, owner: users(:family_member), close: false)
-
-    get reports_path
-    assert_response :ok
-
-    lines = css_select("[data-testid='realized-gain-line']").map(&:text)
-    assert lines.any? { |text| text.include?(own.ticker) }, "the user's own disposal must be listed"
-    assert lines.none? { |text| text.include?(theirs.ticker) },
-           "another member's unshared disposal must not be listed"
-  end
-
-  # A member's account shared with the user and included in their finances
-  # is the user's to see, so its disposal is listed and opens the card.
-  test "the investment card lists a disposal from a member's account shared into the user's finances" do
-    exclude_fixture_investment_accounts
-    account, theirs = closed_account_with_disposal(date: Date.current.beginning_of_month, owner: users(:family_member))
-    account.account_shares.create!(user: @user, permission: "read_only", include_in_finances: true)
-
-    get reports_path
-    assert_response :ok
-
-    lines = css_select("[data-testid='realized-gain-line']").map(&:text)
-    assert lines.any? { |text| text.include?(theirs.ticker) },
-           "a disposal from an account shared into the user's finances must be listed"
-  end
-
   # An excluded trade is left out of reports, as investment totals leave it
   # out; it is not a disposal for the card's gate or its list.
   test "an excluded disposal from a closed account does not show the investment card" do
@@ -894,9 +826,9 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     # An investment account holding 5 shares at a basis of 100, with 2 sold at
     # 150 on +date+ (a gain of $100.00), then closed.
     # +close: false+ leaves it open; +excluded: true+ marks the sale excluded.
-    def closed_account_with_disposal(date:, label: "Sell", owner: @user, close: true, excluded: false)
+    def closed_account_with_disposal(date:, label: "Sell", close: true, excluded: false)
       account = @family.accounts.create!(name: "Closed brokerage", balance: 0, currency: "USD",
-                                         accountable: Investment.new, owner: owner)
+                                         accountable: Investment.new)
       security = Security.create!(ticker: "CLS#{SecureRandom.hex(3)}", name: "Closed Position")
       account.holdings.create!(security: security, date: date, qty: 5, price: 150,
                                amount: BigDecimal(750), currency: "USD", cost_basis: 100)

@@ -5,8 +5,6 @@ class RecurringAllocationsControllerTest < ActionDispatch::IntegrationTest
     sign_in @user = users(:family_admin)
     @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => true))
     @family = @user.family
-    # credit_card is shared read-only with family_member in the fixtures, so
-    # this series is visible to them but must never be mutable by them.
     @series = @family.recurring_transactions.create!(
       name: "Card Annual Fee", account: accounts(:credit_card), amount: 95,
       currency: "USD", expected_day_of_month: Date.current.day,
@@ -25,44 +23,7 @@ class RecurringAllocationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 0, @occurrence.reload.allocations.count
   end
 
-  test "a read-only account share cannot record a payment" do
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    post recurring_occurrence_allocations_url(@occurrence), params: { amount: "5.00" }
-
-    assert_response :not_found
-    assert_equal 0, @occurrence.reload.allocations.count
-  end
-
-  test "a read-only account share cannot unlink, confirm or reject an allocation" do
-    entry = accounts(:credit_card).entries.create!(
-      date: Date.current, amount: 95, currency: "USD", name: "ANNUAL FEE",
-      entryable: Transaction.new
-    )
-    suggestion = RecurringTransaction::Allocator.new(@occurrence).allocate_matched!(
-      entry: entry, state: "suggested", confidence: 0.7, signals: { name: 0.35 }
-    )
-
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    post confirm_recurring_allocation_url(suggestion)
-    assert_response :not_found
-    assert suggestion.reload.allocation_suggested?
-
-    post reject_recurring_allocation_url(suggestion)
-    assert_response :not_found
-    assert RecurringAllocation.exists?(suggestion.id)
-
-    delete recurring_allocation_url(suggestion)
-    assert_response :not_found
-    assert RecurringAllocation.exists?(suggestion.id)
-  end
-
-  test "the account owner records the same payment" do
+  test "records a payment" do
     post recurring_occurrence_allocations_url(@occurrence), params: { amount: "5.00" }
 
     assert_redirected_to bills_url

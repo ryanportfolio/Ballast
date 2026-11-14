@@ -15,7 +15,7 @@ class Assistant::Function::ReviewTransfer < Assistant::Function
 
     def description
       <<~INSTRUCTIONS
-        Confirms or rejects a transfer that Sure auto-matched and the user has
+        Confirms or rejects a transfer that Ballast auto-matched and the user has
         not reviewed yet (status "pending" in get_transfer_match_candidates).
 
         confirm keeps the match. reject unlinks the two transactions and stops

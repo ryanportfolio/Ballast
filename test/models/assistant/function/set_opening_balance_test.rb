@@ -7,7 +7,7 @@ class Assistant::Function::SetOpeningBalanceTest < ActiveSupport::TestCase
     @user = users(:family_admin)
     @function = Assistant::Function::SetOpeningBalance.new(@user)
     @account = families(:dylan_family).accounts.create!(
-      name: "Manual savings", balance: 0, currency: "USD", accountable: Depository.new, owner: @user
+      name: "Manual savings", balance: 0, currency: "USD", accountable: Depository.new
     )
     @account.set_opening_anchor_balance(balance: 500, date: 30.days.ago.to_date)
     create_transaction(account: @account, amount: -10_000, date: 20.days.ago.to_date)
@@ -61,7 +61,7 @@ class Assistant::Function::SetOpeningBalanceTest < ActiveSupport::TestCase
 
   test "creates an opening balance when the account has none" do
     account = families(:dylan_family).accounts.create!(
-      name: "No anchor", balance: 0, currency: "USD", accountable: Depository.new, owner: @user
+      name: "No anchor", balance: 0, currency: "USD", accountable: Depository.new
     )
 
     result = @function.call("account_id" => account.id, "balance" => 0, "date" => 10.days.ago.to_date.iso8601)
@@ -100,11 +100,7 @@ class Assistant::Function::SetOpeningBalanceTest < ActiveSupport::TestCase
     assert_equal "linked_account", result[:error]
   end
 
-  test "refuses accounts the user can only read, and other families' accounts" do
-    # family_member has a read-only share of the credit card
-    result = Assistant::Function::SetOpeningBalance.new(users(:family_member)).call("account_id" => accounts(:credit_card).id, "balance" => 0)
-    assert_equal "not_found", result[:error]
-
+  test "refuses other families' accounts" do
     result = Assistant::Function::SetOpeningBalance.new(users(:josh)).call("account_id" => @account.id, "balance" => 0)
     assert_equal "not_found", result[:error]
   end

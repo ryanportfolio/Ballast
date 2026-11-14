@@ -1,26 +1,26 @@
 # MCP Server for External AI Assistants
 
-Sure includes a Model Context Protocol (MCP) server endpoint that allows external AI assistants like Claude Desktop, GPT agents, or custom AI clients to query and act on your financial data.
+Ballast includes a Model Context Protocol (MCP) server endpoint that allows external AI assistants like Claude Desktop, GPT agents, or custom AI clients to query and act on your financial data.
 
 ## What is MCP?
 
-[Model Context Protocol](https://modelcontextprotocol.io/) is a JSON-RPC 2.0 protocol that enables AI assistants to access structured data and tools from external applications. Instead of copying and pasting financial data into a chat window, your AI assistant can directly query Sure's data through a secure API.
+[Model Context Protocol](https://modelcontextprotocol.io/) is a JSON-RPC 2.0 protocol that enables AI assistants to access structured data and tools from external applications. Instead of copying and pasting financial data into a chat window, your AI assistant can directly query Ballast's data through a secure API.
 
 This is useful when:
-- You want to use an external AI assistant (Claude, GPT, custom agents) to analyze your Sure financial data
-- You prefer to keep your LLM provider separate from Sure
+- You want to use an external AI assistant (Claude, GPT, custom agents) to analyze your Ballast financial data
+- You prefer to keep your LLM provider separate from Ballast
 - You're building custom AI agents that need access to financial tools
 
 ## Authentication
 
-MCP clients authenticate with one static bearer token, which pins the MCP server to a specific Sure user. Ballast has no OAuth sign-in or dynamic client registration for MCP clients.
+MCP clients authenticate with one static bearer token, which pins the MCP server to a specific Ballast user. Ballast has no OAuth sign-in or dynamic client registration for MCP clients.
 
 Set these environment variables:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `MCP_API_TOKEN` | Bearer token for authentication | `your-secret-token-here` |
-| `MCP_USER_EMAIL` | Email of the Sure user whose data the assistant can access | `user@example.com` |
+| `MCP_USER_EMAIL` | Email of the Ballast user whose data the assistant can access | `user@example.com` |
 
 Both variables are required; without them `/mcp` rejects every request.
 
@@ -37,7 +37,7 @@ openssl rand -base64 32
 
 ### Choosing the user
 
-The `MCP_USER_EMAIL` must match an existing Sure user's email address. The AI assistant will have access to all financial data for that user's family.
+The `MCP_USER_EMAIL` must match an existing Ballast user's email address. The AI assistant will have access to all financial data for that user's family.
 
 > [!CAUTION]
 > The AI assistant can call the MCP tools available to the specified user. This includes reading financial data and write-capable tools such as account statement uploads, category/tag changes, and transaction updates. Only set this for users you trust with your AI provider.
@@ -74,7 +74,7 @@ Authorization: Bearer <token>
 
 ### Supported Methods
 
-Sure implements the following JSON-RPC 2.0 methods:
+Ballast implements the following JSON-RPC 2.0 methods:
 
 | Method | Description |
 |--------|-------------|
@@ -84,7 +84,7 @@ Sure implements the following JSON-RPC 2.0 methods:
 
 ### Available Tools
 
-The MCP endpoint exposes the same tool registry used by Sure's built-in assistant. Clients should treat `tools/list` as the source of truth.
+The MCP endpoint exposes the same tool registry used by Ballast's built-in assistant. Clients should treat `tools/list` as the source of truth.
 
 At the time of writing, `tools/list` includes:
 
@@ -178,7 +178,7 @@ Response:
       "tools": {}
     },
     "serverInfo": {
-      "name": "sure",
+      "name": "ballast",
       "version": "1.0"
     }
   }
@@ -249,7 +249,7 @@ The MCP controller creates a **transient session** for each request, so MCP call
 
 Each MCP request:
 1. Authenticates the token
-2. Loads the authorized Sure user
+2. Loads the authorized Ballast user
 3. Creates a temporary session scoped to that user
 4. Executes the tool call
 5. Discards the session
@@ -289,8 +289,8 @@ For a production-ready setup with security scanning:
 1. **Download the example configuration:**
 
    ```bash
-   curl -o compose.ai.yml https://raw.githubusercontent.com/we-promise/sure/main/compose.example.ai.yml
-   curl -o pipelock.example.yaml https://raw.githubusercontent.com/we-promise/sure/main/pipelock.example.yaml
+   curl -o compose.ai.yml https://raw.githubusercontent.com/ryanportfolio/Ballast/main/compose.example.ai.yml
+   curl -o pipelock.example.yaml https://raw.githubusercontent.com/ryanportfolio/Ballast/main/pipelock.example.yaml
    ```
 
 2. **Set your MCP credentials in `.env`:**
@@ -312,7 +312,7 @@ For a production-ready setup with security scanning:
    http://your-server:8889
    ```
 
-The Pipelock proxy (port 8889) scans all MCP traffic before forwarding to Sure's `/mcp` endpoint.
+The Pipelock proxy (port 8889) scans all MCP traffic before forwarding to Ballast's `/mcp` endpoint.
 
 ## Connecting AI Assistants
 
@@ -345,7 +345,7 @@ MCP does not depend on the in-app assistant. To use only your own agent, set the
 **Fix:** Verify both are true:
 
 - The bearer token matches `MCP_API_TOKEN`
-- `MCP_USER_EMAIL` matches an existing Sure user
+- `MCP_USER_EMAIL` matches an existing Ballast user
 
 ### Static token works, but the user still gets rejected
 
@@ -367,6 +367,6 @@ MCP does not depend on the in-app assistant. To use only your own agent, set the
 
 ## See Also
 
-- [External AI Assistant Configuration](ai.md#external-ai-assistant) - Configure Sure's chat to use an external agent
+- [External AI Assistant Configuration](ai.md#external-ai-assistant) - Configure Ballast's chat to use an external agent
 - [Pipelock Security Proxy](pipelock.md) - Set up security scanning for MCP traffic
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/) - Official MCP documentation

@@ -315,7 +315,7 @@ class Settings::WebauthnCredentialsControllerTest < ActionDispatch::IntegrationT
     end
 
     def totp_code
-      ROTP::TOTP.new(@user.reload.otp_secret, issuer: "Sure Finances").now
+      ROTP::TOTP.new(@user.reload.otp_secret, issuer: "Ballast").now
     end
 
     def register(credential, code:)

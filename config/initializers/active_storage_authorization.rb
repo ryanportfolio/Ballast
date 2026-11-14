@@ -46,13 +46,14 @@ Rails.application.config.to_prepare do
         end
       end
 
-      # Mirrors TransactionAttachmentsController#set_transaction: the account must be shared with the user.
+      # Mirrors TransactionAttachmentsController#set_transaction: the account
+      # must belong to the user's family.
       def transaction_attachment_authorized?(attachment)
         transaction = attachment.record
         return false if transaction.nil?
 
         account = transaction.entry.account
-        account.family_id == Current.family&.id && account.shared_with?(Current.user)
+        account.family_id == Current.family&.id && account.accessible_by?(Current.user)
       rescue ActiveRecord::RecordNotFound, NoMethodError
         false
       end

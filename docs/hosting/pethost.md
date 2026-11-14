@@ -1,11 +1,11 @@
-# Deploying Sure on Pethost
+# Deploying Ballast on Pethost
 
 [Pethost](https://pethost.dev) is a hosting platform that runs Docker Compose projects
 with automatic HTTPS, persistent volumes, and nightly backups.
 
 ## One-click template
 
-Sure is available as a one-click template. It starts the Rails web server, the Sidekiq
+Upstream Sure is available as a one-click template. It starts the Rails web server, the Sidekiq
 worker, PostgreSQL, and Redis, and generates `SECRET_KEY_BASE` and the database password.
 
 1. Open the [Sure template](https://pethost.dev/templates/sure/) and click **Deploy on Pethost**.
@@ -16,7 +16,7 @@ worker, PostgreSQL, and Redis, and generates `SECRET_KEY_BASE` and the database 
 
 ## With the CLI
 
-To deploy Sure's own `compose.example.yml` from a terminal instead:
+To deploy Ballast's own `compose.example.yml` from a terminal instead:
 
 1. Install the [`pethost` CLI](https://pethost.dev/docs/cli/).
 
@@ -25,7 +25,7 @@ To deploy Sure's own `compose.example.yml` from a terminal instead:
 
    ```bash
    mkdir sure && cd sure
-   curl --fail --location --silent --show-error --output compose.yml https://raw.githubusercontent.com/we-promise/sure/main/compose.example.yml
+   curl --fail --location --silent --show-error --output compose.yml https://raw.githubusercontent.com/ryanportfolio/Ballast/main/compose.example.yml
    ```
 
 3. Create a `.env` file beside it with your own secrets (`openssl rand -hex 64` generates

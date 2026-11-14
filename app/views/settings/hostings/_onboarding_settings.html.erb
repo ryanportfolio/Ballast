@@ -1,0 +1,40 @@
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <div class="space-y-1">
+      <p class="text-sm"><%= t(".title") %></p>
+      <p class="text-secondary text-sm"><%= t(".description", product: product_name) %></p>
+    </div>
+
+    <%= styled_form_with model: Setting.new,
+                         url: settings_hosting_path,
+                         method: :patch,
+                         data: { controller: "auto-submit-form", auto_submit_form_trigger_event_value: "change" } do |form| %>
+      <div class="form-field w-fit">
+        <%= form.select :onboarding_state,
+                        options_for_select(
+                          [
+                            [ t(".states.open"), "open" ],
+                            [ t(".states.closed"), "closed" ]
+                          ],
+                          Setting.onboarding_state
+                        ),
+                        { label: false },
+                        { data: { auto_submit_form_target: "auto" } } %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <div class="space-y-1">
+      <p class="text-sm"><%= t(".email_confirmation_title") %></p>
+      <p class="text-secondary text-sm"><%= t(".email_confirmation_description") %></p>
+    </div>
+
+    <%= styled_form_with model: Setting.new,
+                         url: settings_hosting_path,
+                         method: :patch,
+                         data: { controller: "auto-submit-form", auto_submit_form_trigger_event_value: "change" } do |form| %>
+      <%= form.toggle :require_email_confirmation, { data: { auto_submit_form_target: "auto" } } %>
+    <% end %>
+  </div>
+</div>

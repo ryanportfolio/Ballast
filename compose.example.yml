@@ -6,7 +6,7 @@
 # --------
 #
 # This file is an example Docker Compose configuration for self hosting
-# Sure on your local machine or on a cloud VPS.
+# Ballast on your local machine or on a cloud VPS.
 #
 # The configuration below is a "standard" setup. It needs SECRET_KEY_BASE and
 # POSTGRES_PASSWORD in a .env file next to it; Docker Compose refuses to start
@@ -17,14 +17,14 @@
 #
 # To run this, you should read the setup guide:
 #
-# https://github.com/we-promise/sure/blob/main/docs/hosting/docker.md
+# https://github.com/ryanportfolio/Ballast/blob/main/docs/hosting/docker.md
 #
 # Troubleshooting:
 # ----------------
 #
-# Problems? Swing by our Discord or open a Discussion here:
+# Problems? Open an issue here:
 #
-# https://github.com/we-promise/sure/discussions/categories/general
+# https://github.com/ryanportfolio/Ballast/issues
 #
 # IPv6 Note (Yahoo Finance Sync, others?):
 # ----------------------------------------

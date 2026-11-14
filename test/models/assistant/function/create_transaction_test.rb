@@ -154,29 +154,10 @@ class Assistant::Function::CreateTransactionTest < ActiveSupport::TestCase
     assert_equal first[:transaction][:id], second[:transaction][:id]
   end
 
-  test "rejects an account the user cannot write to" do
-    other_account = accounts(:other_asset)
-    # other_asset is owned by family_admin too, so use a different approach:
-    # create a read-only share for family_member on depository
-    @account.account_shares.find_by!(user: users(:family_member)).update!(permission: "read_only")
-    function = Assistant::Function::CreateTransaction.new(users(:family_member))
-
-    result = function.call(
-      "account_id" => @account.id,
-      "date" => "2026-09-11",
-      "amount" => 10.00,
-      "type" => "expense",
-      "name" => "Should Fail"
-    )
-
-    assert_equal false, result[:success]
-    assert_equal "account_not_found", result[:error]
-  end
-
   test "does not let a user from a different family create in an account" do
     # josh belongs to the `empty` family; the account belongs to `dylan_family`.
     # Cross-family account ids are structurally unresolvable and must not leak
-    # existence — the same write-gate scoping as the read-only-share case.
+    # existence.
     function = Assistant::Function::CreateTransaction.new(users(:josh))
 
     result = function.call(

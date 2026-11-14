@@ -1,6 +1,6 @@
 # Transactions API Documentation
 
-The Transactions API allows external applications to manage financial transactions within Sure. The OpenAPI description is generated directly from executable request specs, ensuring it always reflects the behaviour of the running Rails application.
+The Transactions API allows external applications to manage financial transactions within Ballast. The OpenAPI description is generated directly from executable request specs, ensuring it always reflects the behaviour of the running Rails application.
 
 ## Generated OpenAPI specification
 

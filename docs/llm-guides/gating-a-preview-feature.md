@@ -1,6 +1,6 @@
 # Gating a preview feature
 
-Sure ships preview features behind a single per-user toggle. Users opt in via Settings → Preferences. Opted-in users see your feature; everyone else doesn't. This guide is for hooking a new feature into the gate.
+Ballast ships preview features behind a single per-user toggle. Users opt in via Settings → Preferences. Opted-in users see your feature; everyone else doesn't. This guide is for hooking a new feature into the gate.
 
 The intent is to ship in-progress work without blocking smaller PRs on a "feels finished" bar. You gate the entry points (routes, nav, anything that links into your feature) and iterate behind them. Once stable, you remove the gate in a small follow-up PR.
 

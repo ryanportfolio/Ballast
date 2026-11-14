@@ -367,24 +367,6 @@ class RecurringOccurrencesControllerTest < ActionDispatch::IntegrationTest
     assert_equal I18n.t("recurring_allocations.already_allocated"), flash[:alert]
   end
 
-  # Sharing is per account. A member with no share on the brokerage must not be
-  # able to settle a bill with a transaction from it, which would both spend an
-  # obligation against money they cannot see and echo the charge back to them.
-  test "a member cannot pay a bill with a transaction from an account they were never given" do
-    hidden = accounts(:investment).entries.create!(
-      date: Date.current, amount: 15.99, currency: "USD", name: "PRIVATE BROKERAGE FEE",
-      entryable: Transaction.new
-    )
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    post recurring_occurrence_allocations_url(@occurrence, entry_id: hidden.id), params: { amount: "15.99" }
-
-    assert_response :not_found
-    assert_equal 0, @occurrence.reload.allocations.count
-  end
-
   test "confirming and rejecting suggestions from the queue" do
     entry = accounts(:depository).entries.create!(
       date: Date.current, amount: 15.99, currency: "USD", name: "Netflix charge",
@@ -430,64 +412,7 @@ class RecurringOccurrencesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
-  # Sharing is per account. An accountless bill is visible family-wide, but
-  # its candidate list must still show only entries from accounts the viewer
-  # can reach, or the drawer leaks names and amounts from unshared accounts.
-  test "an accountless bill's candidates exclude entries from unshared accounts" do
-    accountless = @family.recurring_transactions.create!(
-      name: "Water Utility", amount: 60, currency: "USD",
-      expected_day_of_month: Date.current.day, anchor_date: Date.current,
-      last_occurrence_date: Date.current, next_expected_date: Date.current,
-      status: "active", manual: true
-    )
-    occurrence = accountless.recurring_occurrences.order(:due_on).first
-
-    hidden = accounts(:investment).entries.create!(
-      date: occurrence.due_on, amount: 60, currency: "USD",
-      name: "Broker service fee", entryable: Transaction.new
-    )
-    visible = accounts(:depository).entries.create!(
-      date: occurrence.due_on, amount: 60, currency: "USD",
-      name: "Shared checking charge", entryable: Transaction.new
-    )
-
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-    get recurring_occurrence_url(occurrence), headers: { "Turbo-Frame" => "drawer" }
-
-    assert_response :success
-    assert_no_match hidden.name, response.body,
-      "an entry on an account never shared with the viewer must not render"
-    assert_match visible.name, response.body,
-      "positive control: the same-shaped entry on a shared account must render"
-  end
-
-  # credit_card is shared read-only with family_member in the fixtures; a
-  # read-only share can look at the bill but never move its payment state.
-  test "a read-only account share cannot mutate an occurrence" do
-    occurrence = credit_card_occurrence
-
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    post mark_paid_recurring_occurrence_url(occurrence)
-    assert_response :not_found
-    assert occurrence.reload.scheduled?, "a read-only share must not settle the bill"
-
-    post skip_recurring_occurrence_url(occurrence)
-    assert_response :not_found
-
-    patch override_amount_recurring_occurrence_url(occurrence, amount: "1")
-    assert_response :not_found
-    assert_nil occurrence.reload.expected_amount
-
-    get recurring_occurrence_url(occurrence), headers: { "Turbo-Frame" => "drawer" }
-    assert_response :success, "reading the shared bill stays allowed"
-  end
-
-  test "the account owner still settles the same occurrence" do
+  test "a card occurrence can be settled" do
     occurrence = credit_card_occurrence
 
     post mark_paid_recurring_occurrence_url(occurrence)

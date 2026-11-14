@@ -173,55 +173,6 @@ class AccountTest < ActiveSupport::TestCase
     assert_nil @account.reload.disabled_at
   end
 
-  test "default owner prefers a family admin before a super admin" do
-    family = families(:empty)
-    admin = users(:empty)
-    super_admin = users(:sure_support_staff)
-
-    # Fixtures stamp every row with one `created_at`, and this family holds a
-    # second admin (`sure_support_staff`), so "the earliest admin" is only meaningful
-    # once the timestamps differ. Without this the assertion below rides on
-    # whichever admin the query plan happens to return first.
-    family.users.update_all(created_at: 1.hour.ago)
-    admin.update!(created_at: 2.hours.ago)
-
-    Current.reset
-
-    account = family.accounts.create!(
-      name: "Unowned test account",
-      balance: 0,
-      currency: "USD",
-      accountable: Depository.new
-    )
-
-    assert_equal admin, account.owner
-    assert_not_equal super_admin, account.owner
-  end
-
-  test "default owner is stable when two admins share a created_at" do
-    family = families(:empty)
-    family.users.where(role: "admin").update_all(created_at: 1.hour.ago)
-
-    Current.reset
-
-    owners = 2.times.map do |i|
-      family.accounts.create!(
-        name: "Unowned tie-break account #{i}",
-        balance: 0,
-        currency: "USD",
-        accountable: Depository.new
-      ).owner
-    end
-
-    # `id` breaks the tie, so the winner is the tied admin with the lowest id.
-    # Asserting only that the two calls agree would pass without the
-    # tie-breaker whenever the database returned the same tied row twice.
-    expected_owner = family.users.where(role: "admin").order(:id).first
-
-    assert_equal expected_owner, owners.first
-    assert_equal expected_owner, owners.last
-  end
-
   test "set_current_balance schedules an account sync by default" do
     @account.expects(:sync_later).once
 
@@ -240,7 +191,6 @@ class AccountTest < ActiveSupport::TestCase
 
     account = Account.create_and_sync({
       family: @family,
-      owner: @admin,
       name: "Test Account",
       balance: 100,
       currency: "USD",
@@ -259,7 +209,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Linked Account",
         balance: 500,
         currency: "EUR",
@@ -280,7 +229,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Test Account",
         balance: 1000,
         currency: "GBP",
@@ -302,7 +250,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Student Loan",
         balance: 8_000,
         currency: "USD",
@@ -326,7 +273,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Student Loan",
         balance: 8_000,
         currency: "USD",
@@ -351,7 +297,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Student Loan",
         balance: 8_000,
         currency: "USD",
@@ -371,7 +316,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Student Loan",
         balance: 8_000,
         currency: "USD",
@@ -393,7 +337,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Mortgage",
         balance: 399_600,
         currency: "USD",
@@ -443,7 +386,6 @@ class AccountTest < ActiveSupport::TestCase
         Account.create_and_sync(
           {
             family: @family,
-            owner: @admin,
             name: "Mortgage",
             balance: 399_600,
             currency: "USD",
@@ -465,7 +407,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Checking",
         balance: 1_000,
         currency: "USD",
@@ -500,7 +441,6 @@ class AccountTest < ActiveSupport::TestCase
     account = Account.create_and_sync(
       {
         family: @family,
-        owner: @admin,
         name: "Test Account",
         balance: 1000,
         currency: "USD",
@@ -523,7 +463,6 @@ class AccountTest < ActiveSupport::TestCase
     # accountable does not exist yet, so the delegating writer must build it.
     account = Account.create_and_sync({
       family: @family,
-      owner: @admin,
       name: "Savings Account",
       balance: 100,
       currency: "USD",
@@ -566,7 +505,6 @@ class AccountTest < ActiveSupport::TestCase
     # that previously dropped the subtype on create.
     account = Account.create_and_sync({
       family: @family,
-      owner: @admin,
       name: "Savings Account",
       balance: 100,
       subtype: "savings",
@@ -589,7 +527,6 @@ class AccountTest < ActiveSupport::TestCase
   test "gets short/long subtype label" do
     investment = Investment.new(subtype: "hsa")
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Test Investment",
       balance: 1000,
       currency: "USD",
@@ -610,7 +547,6 @@ class AccountTest < ActiveSupport::TestCase
   test "tax_treatment delegates to accountable for Investment" do
     investment = Investment.new(subtype: "401k")
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Test 401k",
       balance: 1000,
       currency: "USD",
@@ -624,7 +560,6 @@ class AccountTest < ActiveSupport::TestCase
   test "tax_treatment delegates to accountable for Crypto" do
     crypto = Crypto.new(tax_treatment: :taxable)
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Test Crypto",
       balance: 500,
       currency: "USD",
@@ -652,7 +587,6 @@ class AccountTest < ActiveSupport::TestCase
     # implement `tax_treatment`, so the `TaxTreatable#respond_to?` short-
     # circuit still returns nil for them.
     credit_card_account = @family.accounts.create!(
-      owner: @admin,
       name: "Test Credit Card",
       balance: 100,
       currency: "USD",
@@ -666,7 +600,6 @@ class AccountTest < ActiveSupport::TestCase
   test "tax_advantaged? returns true for tax-advantaged accounts" do
     investment = Investment.new(subtype: "401k")
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Test 401k",
       balance: 1000,
       currency: "USD",
@@ -679,7 +612,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "tax_advantaged? returns true for HSA depository accounts" do
     hsa_depository = @family.accounts.create!(
-      owner: @admin,
       name: "Fidelity HSA Cash",
       balance: 3_000,
       currency: "USD",
@@ -694,7 +626,6 @@ class AccountTest < ActiveSupport::TestCase
   test "tax_advantaged? returns false for taxable accounts" do
     investment = Investment.new(subtype: "brokerage")
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Test Brokerage",
       balance: 1000,
       currency: "USD",
@@ -765,65 +696,17 @@ class AccountTest < ActiveSupport::TestCase
     assert_equal 0.8.to_d, statement.match_confidence
   end
 
-  # Account sharing tests
+  test "every member of a family reaches every account of that family and none of another" do
+    outsider = users(:empty)
+    family_ids = @family.accounts.pluck(:id).sort
 
-  test "owned_by? returns true for account owner" do
-    assert @account.owned_by?(@admin)
-    assert_not @account.owned_by?(@member)
-  end
+    assert_equal family_ids, Account.accessible_by(@member).pluck(:id).sort
+    assert_equal family_ids, Account.writable_by(@member).pluck(:id).sort
+    assert_not_includes Account.accessible_by(outsider).pluck(:id), @account.id
+    assert_not_includes Account.writable_by(outsider).pluck(:id), @account.id
 
-  test "shared_with? returns true for owner and shared users" do
-    assert @account.shared_with?(@admin) # owner
-    # depository already shared with member via fixture
-    assert @account.shared_with?(@member)
-  end
-
-  test "shared? returns true when account has shares" do
-    account = accounts(:investment)
-    account.account_shares.destroy_all
-    assert_not account.shared?
-
-    account.share_with!(@member, permission: "read_only")
-    assert account.shared?
-  end
-
-  test "permission_for returns correct permission level" do
-    assert_equal :owner, @account.permission_for(@admin)
-
-    # depository already shared with member via fixture
-    share = @account.account_shares.find_by(user: @member)
-    share.update!(permission: "read_write")
-    assert_equal :read_write, @account.permission_for(@member)
-  end
-
-  test "accessible_by scope returns owned and shared accounts" do
-    # Clear existing shares for clean test
-    AccountShare.delete_all
-
-    admin_accessible = @family.accounts.accessible_by(@admin)
-    member_accessible = @family.accounts.accessible_by(@member)
-
-    # Admin owns all fixture accounts
-    assert_equal @family.accounts.count, admin_accessible.count
-    # Member has no access (no shares, no owned accounts)
-    assert_equal 0, member_accessible.count
-
-    # Share one account
-    @account.share_with!(@member, permission: "read_only")
-    member_accessible = @family.accounts.accessible_by(@member)
-    assert_equal 1, member_accessible.count
-    assert_includes member_accessible, @account
-  end
-
-  test "included_in_finances_for scope respects include_in_finances flag" do
-    AccountShare.delete_all
-
-    @account.share_with!(@member, permission: "read_only", include_in_finances: true)
-    assert_includes @family.accounts.included_in_finances_for(@member), @account
-
-    share = @account.account_shares.find_by(user: @member)
-    share.update!(include_in_finances: false)
-    assert_not_includes @family.accounts.included_in_finances_for(@member), @account
+    assert @account.accessible_by?(@member)
+    assert_not @account.accessible_by?(outsider)
   end
 
   test "included_in_reports scope excludes accounts marked as exclude_from_reports" do
@@ -835,53 +718,8 @@ class AccountTest < ActiveSupport::TestCase
     assert_not_includes results, excluded
   end
 
-  test "auto_share_with_family creates shares for all non-owner members" do
-    @family.update!(default_account_sharing: "private")
-
-    account = Account.create_and_sync({
-      family: @family,
-      owner: @admin,
-      name: "New Shared Account",
-      balance: 100,
-      currency: "USD",
-      accountable_type: "Depository",
-      accountable_attributes: {}
-    })
-
-    assert_difference -> { AccountShare.count }, @family.users.where.not(id: @admin.id).count do
-      account.auto_share_with_family!
-    end
-
-    share = account.account_shares.find_by(user: @member)
-    assert_not_nil share
-    assert_equal "read_write", share.permission
-    assert share.include_in_finances?
-  end
-
-  test "auto_share_with_family grants guests read_only and other members read_write" do
-    @family.update!(default_account_sharing: "private")
-    guest = users(:empty)
-    guest.update_columns(family_id: @family.id, role: "guest")
-
-    account = Account.create_and_sync({
-      family: @family,
-      owner: @admin,
-      name: "Guest Permission Account",
-      balance: 100,
-      currency: "USD",
-      accountable_type: "Depository",
-      accountable_attributes: {}
-    })
-
-    account.auto_share_with_family!
-
-    assert_equal "read_only", account.account_shares.find_by(user: guest).permission
-    assert_equal "read_write", account.account_shares.find_by(user: @member).permission
-  end
-
   test "current_holdings prefers latest provider snapshot holdings across currencies" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Linked Brokerage",
       balance: 1000,
       currency: "USD",
@@ -932,7 +770,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "on account destroyed cascade transfer destroyed" do
     outflow_account = @family.accounts.create!({
-      owner: @admin,
       name: "test_account_outflow",
       balance: 100,
       currency: "USD",
@@ -940,7 +777,6 @@ class AccountTest < ActiveSupport::TestCase
       accountable_attributes: {}
     })
     inflow_account = @family.accounts.create!({
-      owner: @admin,
       name: "test_account_inflow",
       balance: 100,
       currency: "USD",
@@ -969,7 +805,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "cleanup transfers preloads transaction associations" do
     counterparty = @family.accounts.create!(
-      owner: @admin,
       name: "Transfer counterparty",
       balance: 100,
       currency: "USD",
@@ -991,7 +826,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date resolves to the earliest of opening anchor, entries, and balances" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "History Test Account",
       balance: 0,
       currency: "USD",
@@ -1019,7 +853,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date returns nil when account has no opening anchor, entries, or balances" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Empty History Account",
       balance: 0,
       currency: "USD",
@@ -1033,7 +866,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date resolves to transaction date when there is no opening valuation" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Transaction Only Account",
       balance: 0,
       currency: "USD",
@@ -1056,7 +888,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date resolves to balance date when there are no entries or opening valuation" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Balance Only Account",
       balance: 0,
       currency: "USD",
@@ -1077,7 +908,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date prefers earlier transaction when valuation is added much later" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Late Valuation Account",
       balance: 0,
       currency: "USD",
@@ -1103,7 +933,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date handles transaction from 10 years ago" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Decade Old Account",
       balance: 0,
       currency: "USD",
@@ -1126,7 +955,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date ignores pending transactions" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Pending Account",
       balance: 0,
       currency: "USD",
@@ -1157,7 +985,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date on linked investment account resolves to provider activity ignoring default anchor" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Linked Investment Account",
       balance: 0,
       currency: "USD",
@@ -1184,7 +1011,6 @@ class AccountTest < ActiveSupport::TestCase
 
   test "history_start_date on linked investment account returns nil when no provider activity exists" do
     account = @family.accounts.create!(
-      owner: @admin,
       name: "Fresh Linked Investment",
       balance: 0,
       currency: "USD",
@@ -1199,23 +1025,11 @@ class AccountTest < ActiveSupport::TestCase
     assert_nil account.history_start_date
   end
 
-  test "annotatable_by includes owned and annotate-tier shares but not read-only ones" do
-    member = users(:family_member)
-    ids = Account.annotatable_by(member).pluck(:id)
-
-    assert_includes ids, accounts(:depository).id, "full_control share"
-    assert_not_includes ids, accounts(:credit_card).id, "read_only share"
-
-    accounts(:credit_card).account_shares.find_by!(user: member).update!(permission: "read_write")
-    assert_includes Account.annotatable_by(member).pluck(:id), accounts(:credit_card).id, "read_write share"
-  end
-
   private
     def create_loan_with_start_date(start_date, opening_balance_date)
       Account.create_and_sync(
         {
           family: @family,
-          owner: @admin,
           name: "Mortgage",
           balance: 399_600,
           currency: "USD",

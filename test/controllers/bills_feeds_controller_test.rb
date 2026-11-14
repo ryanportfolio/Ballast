@@ -43,27 +43,6 @@ class BillsFeedsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  # Sharing is per account, so the feed has to honor it: a member who cannot
-  # reach an account in the app must not receive its bills by calendar.
-  test "a member's feed carries only the bills that member can reach" do
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    # The investment account is the admin's and was never shared.
-    create_bill(name: "Private Brokerage Fee", amount: 95, account: accounts(:investment))
-    create_bill(name: "Gym", amount: 30, account: nil)
-
-    get bills_feed_url(token: @family.bills_feed_token_for(member))
-
-    assert_response :success
-    assert_match "Gym", response.body
-    assert_no_match(/Private Brokerage Fee/, response.body)
-
-    get bills_feed_url(token: @family.bills_feed_token_for(@user))
-
-    assert_match "Gym", response.body
-    assert_match "Private Brokerage Fee", response.body
-  end
-
   test "resetting the token revokes every member URL and freshly minted ones work" do
     old_token = @family.bills_feed_token_for(@user)
     @family.reset_bills_feed_token!

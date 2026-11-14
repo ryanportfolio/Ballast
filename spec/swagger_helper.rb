@@ -10,13 +10,13 @@ RSpec.configure do |config|
     'openapi.yaml' => {
       openapi: '3.0.3',
       info: {
-        title: 'Sure API',
+        title: 'Ballast API',
         version: 'v1',
         description: 'OpenAPI documentation generated from executable request specs.'
       },
       servers: [
         {
-          url: 'https://app.sure.am',
+          url: 'https://ballast.example.com',
           description: 'Production'
         },
         {
@@ -343,7 +343,7 @@ RSpec.configure do |config|
           },
           FamilySettings: {
             type: :object,
-            required: %w[id currency locale date_format month_start_day moniker default_account_sharing custom_enabled_currencies enabled_currencies created_at updated_at],
+            required: %w[id currency locale date_format month_start_day moniker custom_enabled_currencies enabled_currencies created_at updated_at],
             properties: {
               id: { type: :string, format: :uuid },
               name: { type: :string, nullable: true },
@@ -354,7 +354,6 @@ RSpec.configure do |config|
               timezone: { type: :string, nullable: true },
               month_start_day: { type: :integer, minimum: 1, maximum: 28 },
               moniker: { type: :string, enum: Family::MONIKERS },
-              default_account_sharing: { type: :string, enum: %w[shared private] },
               custom_enabled_currencies: { type: :boolean },
               enabled_currencies: {
                 type: :array,

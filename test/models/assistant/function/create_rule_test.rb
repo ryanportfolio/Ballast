@@ -99,7 +99,7 @@ class Assistant::Function::CreateRuleTest < ActiveSupport::TestCase
   end
 
   test "only accepts accounts the user can see" do
-    member_fn = Assistant::Function::CreateRule.new(users(:family_member))
+    member_fn = Assistant::Function::CreateRule.new(users(:empty))
     params = {
       "conditions" => [ { "condition_type" => "transaction_account", "operator" => "=", "value" => accounts(:other_asset).id } ],
       "actions" => [ { "action_type" => "exclude_transaction" } ]

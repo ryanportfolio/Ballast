@@ -79,10 +79,11 @@ class Assistant::Function::GetInsightsTest < ActiveSupport::TestCase
     assert_empty result[:insights]
   end
 
-  test "include_acknowledged still hides insights about accounts not everyone can see" do
+  test "include_acknowledged still hides insights about another family's account" do
+    other_account = families(:empty).accounts.create!(name: "Other Family Account", accountable: Depository.new, currency: "USD", balance: 0)
     insight = @family.insights.create!(
       insight_type: "idle_cash", priority: "low", status: "dismissed", title: "Idle", body: "body",
-      metadata: { "account_id" => accounts(:connected).id }, dedup_key: "idle_cash:private",
+      metadata: { "account_id" => other_account.id }, dedup_key: "idle_cash:other_family",
       generated_at: Time.current
     )
 

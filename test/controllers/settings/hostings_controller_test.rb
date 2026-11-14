@@ -42,7 +42,7 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     get settings_hosting_url
     assert_response :forbidden
 
-    patch settings_hosting_url, params: { setting: { onboarding_state: "invite_only" } }
+    patch settings_hosting_url, params: { setting: { onboarding_state: "closed" } }
     assert_response :forbidden
   end
 
@@ -301,15 +301,17 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     sign_in users(:sure_support_staff)
 
     with_self_hosting do
-      patch settings_hosting_url, params: { setting: { onboarding_state: "invite_only" } }
-
-      assert_equal "invite_only", Setting.onboarding_state
-      assert Setting.require_invite_for_signup
-
       patch settings_hosting_url, params: { setting: { onboarding_state: "closed" } }
 
       assert_equal "closed", Setting.onboarding_state
-      refute Setting.require_invite_for_signup
+
+      patch settings_hosting_url, params: { setting: { onboarding_state: "open" } }
+
+      assert_equal "open", Setting.onboarding_state
+
+      patch settings_hosting_url, params: { setting: { onboarding_state: "invite_only" } }
+
+      assert_equal "open", Setting.onboarding_state
     end
   end
 

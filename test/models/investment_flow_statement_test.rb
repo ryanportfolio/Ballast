@@ -5,7 +5,6 @@ class InvestmentFlowStatementTest < ActiveSupport::TestCase
     @family = families(:empty)
     @user = users(:empty)
     @account = @family.accounts.create!(
-      owner: @user,
       name: "Investment Cash",
       balance: 0,
       currency: "USD",
@@ -15,9 +14,6 @@ class InvestmentFlowStatementTest < ActiveSupport::TestCase
 
   test "period totals aggregate contributions and withdrawals in one query" do
     period = Period.custom(start_date: Date.current.beginning_of_month, end_date: Date.current.end_of_month)
-
-    @account.share_with!(users(:new_email), permission: "read_only", include_in_finances: true)
-    @account.share_with!(users(:intro_user), permission: "read_only", include_in_finances: true)
 
     create_flow(label: "Contribution", amount: -125, date: period.start_date)
     create_flow(label: "Contribution", amount: 25, date: period.start_date + 1.day)
@@ -38,7 +34,7 @@ class InvestmentFlowStatementTest < ActiveSupport::TestCase
     assert_equal 1, aggregate_queries.size
     assert_includes aggregate_queries.first, "transactions.investment_activity_label = 'Withdrawal'"
     assert_empty queries.grep(/"transactions"\."investment_activity_label" = \$\d/)
-    assert_includes aggregate_queries.first, '"entries"."account_id" IN (SELECT DISTINCT "accounts"."id"'
+    assert_includes aggregate_queries.first, '"entries"."account_id" IN (SELECT "accounts"."id"'
   end
 
   test "a matched provider contribution still counts once after resync" do
@@ -108,18 +104,6 @@ class InvestmentFlowStatementTest < ActiveSupport::TestCase
 
     totals = InvestmentFlowStatement.new(family).period_totals(period: period)
     assert_equal Money.new(0, "USD"), totals.contributions
-  end
-
-  test "a matched contribution respects the viewer's account visibility" do
-    family = families(:dylan_family)
-    period = Period.custom(start_date: Date.current, end_date: Date.current)
-    create_matched_contribution(family, from: accounts(:depository), to: accounts(:investment))
-
-    member = users(:family_member)
-    assert_not family.accounts.included_in_finances_for(member).include?(accounts(:investment))
-
-    assert_equal Money.new(250, "USD"), InvestmentFlowStatement.new(family).period_totals(period: period).contributions
-    assert_equal Money.new(0, "USD"), InvestmentFlowStatement.new(family, user: member).period_totals(period: period).contributions
   end
 
   private

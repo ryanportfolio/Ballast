@@ -33,7 +33,7 @@ class Assistant::Function::GetTransactionsTest < ActiveSupport::TestCase
     )
     hidden_entry.update!(notes: "Private note")
 
-    result = Assistant::Function::GetTransactions.new(users(:family_member)).call(
+    result = Assistant::Function::GetTransactions.new(users(:empty)).call(
       "page" => 1,
       "order" => "asc",
       "search" => hidden_entry.name
@@ -128,7 +128,7 @@ class Assistant::Function::GetTransactionsTest < ActiveSupport::TestCase
     assert result[:transactions].any?
     assert result[:transactions].all? { |t| t[:account] == accessible_account.name }
 
-    member_result = Assistant::Function::GetTransactions.new(users(:family_member)).call(
+    member_result = Assistant::Function::GetTransactions.new(users(:empty)).call(
       "account_ids" => [ accounts(:investment).id ]
     )
 

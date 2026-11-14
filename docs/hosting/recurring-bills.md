@@ -1,11 +1,11 @@
 # Bills and Recurring Transactions
 
-This document explains how Sure detects recurring bills, when the detection
+This document explains how Ballast detects recurring bills, when the detection
 pipeline runs, and the maintenance tasks available to self-hosters.
 
 ## How detection works
 
-Sure clusters your transaction history into recurring patterns (same
+Ballast clusters your transaction history into recurring patterns (same
 merchant or name, consistent amount within tolerance, consistent day). A
 pattern needs at least three consistent occurrences to become a series.
 New detections land with status `suggested` and wait in a review strip on

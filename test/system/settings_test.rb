@@ -57,16 +57,13 @@ class SettingsTest < ApplicationSystemTestCase
     click_link "Self-Hosting", match: :first
     assert_current_path settings_hosting_path
     assert_selector "h1", text: "Self-Hosting"
-    find("select#setting_onboarding_state").select("Invite-only")
     within("select#setting_onboarding_state") do
-      assert_selector "option[selected]", text: "Invite-only"
+      assert_no_selector "option", text: "Invite-only"
     end
-    click_button "Generate new code"
-    assert_selector 'span[data-clipboard-target="source"]', visible: true, count: 1 # invite code copy widget
-    copy_button = find('button[data-action="clipboard#copy"]', match: :first) # Find the first copy button (adjust if needed)
-    page.execute_script("Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.resolve() }, writable: true, configurable: true })") # Mock clipboard API due to browser security restrictions in tests
-    copy_button.click
-    assert_selector 'span[data-clipboard-target="iconSuccess"]', visible: true, count: 1 # text copied and icon changed to checkmark
+    find("select#setting_onboarding_state").select("Closed")
+    within("select#setting_onboarding_state") do
+      assert_selector "option[selected]", text: "Closed"
+    end
   end
 
   # Escape is also the settings nav's hotkey back to the page before settings.

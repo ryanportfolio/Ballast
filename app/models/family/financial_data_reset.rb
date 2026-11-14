@@ -10,7 +10,6 @@ class Family::FinancialDataReset
     import_rows
     import_mappings
     accounts
-    account_shares
     account_providers
     entries
     transactions
@@ -125,7 +124,6 @@ class Family::FinancialDataReset
       scope(:entries).destroy_all
       scope(:holdings).destroy_all
       scope(:balances).destroy_all
-      scope(:account_shares).destroy_all
       scope(:account_providers).destroy_all
       scope(:recurring_transactions).destroy_all
       scope(:rules).destroy_all
@@ -236,7 +234,6 @@ class Family::FinancialDataReset
           import_rows: Import::Row.where(import_id: import_ids),
           import_mappings: Import::Mapping.where(import_id: import_ids),
           accounts: account_scope,
-          account_shares: AccountShare.where(account_id: account_ids),
           account_providers: AccountProvider.where(account_id: account_ids),
           entries: Entry.where(account_id: account_ids),
           transactions: transaction_scope,
