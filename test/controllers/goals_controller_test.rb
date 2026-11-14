@@ -844,7 +844,7 @@ class GoalsControllerTest < ActionDispatch::IntegrationTest
     get goal_url(goal)
 
     assert_response :success
-    assert_no_match(/already used|déjà utilisés/, response.body)
+    assert_no_match(/already used/, response.body)
   end
 
 
@@ -872,7 +872,7 @@ class GoalsControllerTest < ActionDispatch::IntegrationTest
     get goal_url(goal)
 
     label = css_select("[role=progressbar]").first["aria-label"]
-    assert_no_match(/already used|déjà utilisés/, label)
+    assert_no_match(/already used/, label)
   end
 
 
@@ -920,10 +920,8 @@ class GoalsControllerTest < ActionDispatch::IntegrationTest
   # One vocabulary, not three. "level" and "floor" said the same thing as
   # "target balance" in different words, on the same page.
   test "the goals copy settles on one word for a reserve's balance" do
-    %i[en fr].each do |locale|
-      copy = YAML.load_file(Rails.root.join("config/locales/views/goals/#{locale}.yml")).to_s
-      assert_no_match(/\bfloor\b|\bniveau\b/i, copy, "#{locale} still mixes vocabularies")
-    end
+    copy = YAML.load_file(Rails.root.join("config/locales/views/goals/en.yml")).to_s
+    assert_no_match(/\bfloor\b/i, copy, "en still mixes vocabularies")
   end
 
   # The gap this closes: at the moment the user has reached the target and

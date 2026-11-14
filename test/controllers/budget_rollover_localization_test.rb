@@ -11,32 +11,7 @@ class BudgetRolloverLocalizationTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "German rollover translations exist without fallback and preserve the amount" do
-    I18n.with_locale(:de) do
-      {
-        "budget_category.rolled_over" => "+25,00 € übertragen",
-        "budget_category_form.rollover_label" => "Übertrag",
-        "budget_category_form.rollover_title" => "Nicht ausgegebenes Geld dieser Kategorie in den nächsten Monat übertragen",
-        "show.rolled_over" => "Übertragen"
-      }.each do |key, expected|
-        full_key = "budget_categories.#{key}"
-        assert I18n.exists?(full_key, :de, fallback: false)
-        assert_equal expected, I18n.t(full_key, amount: "25,00 €")
-      end
-    end
-  end
-
-  test "German category form renders the rollover label and tooltip" do
-    @user.update!(locale: "de")
-    get budget_budget_categories_path(@budget)
-
-    assert_response :success
-    assert_select "label", text: "Übertrag"
-    assert_select "div[title=?]", "Nicht ausgegebenes Geld dieser Kategorie in den nächsten Monat übertragen"
-  end
-
-  test "German category detail renders the carried amount label" do
-    @user.update!(locale: "de")
+  test "category detail renders the carried amount label" do
     previous = @budget.family.budgets.create!(
       start_date: 1.month.ago.beginning_of_month.to_date,
       end_date: 1.month.ago.end_of_month.to_date,
@@ -48,16 +23,15 @@ class BudgetRolloverLocalizationTest < ActionDispatch::IntegrationTest
     get budget_budget_category_path(@budget, @budget_category)
 
     assert_response :success
-    assert_select "dt", text: "Übertragen"
+    assert_select "dt", text: "Rolled over"
 
     get budget_url(Budget.date_to_param(Date.current))
 
     assert_response :success
-    assert_select "a[href=?]", budget_budget_category_path(@budget, @budget_category), text: /\+.*25.*übertragen/
+    assert_select "a[href=?]", budget_budget_category_path(@budget, @budget_category), text: /\+.*25.*rolled over/
   end
 
-  test "English category form preserves rollover copy" do
-    @user.update!(locale: "en")
+  test "category form renders rollover copy" do
     get budget_budget_categories_path(@budget)
 
     assert_response :success

@@ -25,27 +25,22 @@ class SidekiqHealthBannerTest < ApplicationSystemTestCase
       "expected the stale-data warning to finish above the dashboard heading"
   end
 
-  test "German super admin sees localized warning and each failure reason" do
-    users(:sure_support_staff).update!(locale: "de")
+  test "super admin sees the warning and each failure reason" do
     sign_in users(:sure_support_staff)
 
     SidekiqHealth::REASONS.each do |reason|
       @health.stubs(:reason).returns(reason)
       visit root_path
       within "[data-testid='sidekiq-health-banner']" do
-        assert_text "Einige Daten sind möglicherweise nicht aktuell"
-        assert_text "Hintergrundaufgaben werden nicht verarbeitet."
-        assert_text I18n.t("shared.sidekiq_health_banner.reasons.#{reason}", locale: :de, fallback: false, raise: true)
-        assert_link "Systemstatus anzeigen", href: admin_system_health_path
+        assert_text I18n.t("shared.sidekiq_health_banner.title", raise: true)
+        assert_text I18n.t("shared.sidekiq_health_banner.body", raise: true)
+        assert_text I18n.t("shared.sidekiq_health_banner.reasons.#{reason}", raise: true)
+        assert_link I18n.t("shared.sidekiq_health_banner.cta", raise: true), href: admin_system_health_path
       end
-    end
-    %w[title body cta].each do |key|
-      assert_kind_of String, I18n.t("shared.sidekiq_health_banner.#{key}", locale: :de, fallback: false, raise: true)
     end
   end
 
-  test "German family admin does not see the operator warning" do
-    users(:family_admin).update!(locale: "de")
+  test "family admin does not see the operator warning" do
     sign_in users(:family_admin)
     visit root_path
 

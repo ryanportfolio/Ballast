@@ -14,20 +14,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "gets new chat with a localized German default title" do
-    @user.update!(locale: "de")
-
-    travel_to Time.zone.local(2026, 8, 29, 12, 34) do
-      get new_chat_url
-
-      assert_response :success
-      assert_select "turbo-frame#title_chat h3", text: "Neuer Chat 2026-08-29 12:34"
-    end
-  end
-
-  test "gets new chat with the existing English default title" do
-    @user.update!(locale: "en")
-
+  test "gets new chat with the default title" do
     travel_to Time.zone.local(2026, 8, 29, 12, 34) do
       get new_chat_url
 

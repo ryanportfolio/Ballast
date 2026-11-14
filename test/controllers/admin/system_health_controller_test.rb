@@ -6,8 +6,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     OPENAI_SUPPORTS_PDF_PROCESSING OPENAI_SUPPORTS_RESPONSES_ENDPOINT
     ANTHROPIC_ACCESS_TOKEN ANTHROPIC_API_KEY
     ANTHROPIC_BASE_URL ANTHROPIC_MODEL ANTHROPIC_REQUEST_TIMEOUT
-    VECTOR_STORE_PROVIDER EMBEDDING_URI_BASE EMBEDDING_MODEL
-    EMBEDDING_DIMENSIONS EMBEDDING_ACCESS_TOKEN QDRANT_URL QDRANT_API_KEY
     AI_HEALTH_PROBE_TIMEOUT AI_HEALTH_PROBE_CACHE_TTL
   ].index_with(nil).freeze
 
@@ -23,9 +21,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     AiHealth::Probe.any_instance.stubs(:function_calling).returns(probe_result(:passing))
     AiHealth::Probe.any_instance.stubs(:pdf_text_extraction).returns(probe_result(:passing))
     AiHealth::Probe.any_instance.stubs(:pdf_vision_processing).returns(probe_result(:passing))
-    AiHealth::Probe.any_instance.stubs(:openai_vector_store).returns(probe_result(:passing))
-    AiHealth::Probe.any_instance.stubs(:pgvector).returns(probe_result(:passing))
-    AiHealth::Probe.any_instance.stubs(:embedding).returns(probe_result(:passing))
   end
 
   test "super admin can view the system health page" do
@@ -71,27 +66,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_match(/No Sidekiq worker process is connected/, response.body)
   end
 
-  test "German background job translations are present without fallback" do
-    keys = %w[
-      title tabs.background_jobs tabs.ai tabs.configuration alert.title
-      status_section_title status_section_description counters_section_title
-      counters_section_description queues_section_title queues_section_description
-      labels.status labels.processes labels.last_heartbeat labels.max_queue_latency
-      labels.enqueued labels.retries labels.failed labels.processed_total
-      labels.queue labels.size labels.latency values.healthy values.unhealthy
-      values.never values.no_queues
-    ]
-    keys.each do |key|
-      assert_kind_of String, I18n.t("admin.system_health.show.#{key}", locale: :de, fallback: false, raise: true)
-    end
-    assert_equal "vor 2 Minuten", I18n.t("admin.system_health.show.values.time_ago", locale: :de,
-      fallback: false, raise: true, time_ago: "2 Minuten")
-    assert_equal "1,5 s", I18n.t("admin.system_health.show.values.seconds", locale: :de,
-      fallback: false, raise: true, seconds: "1,5")
-  end
-
-  test "German super admin sees localized background job statistics" do
-    users(:sure_support_staff).update!(locale: "de")
+  test "super admin sees background job statistics" do
     sign_in users(:sure_support_staff)
     stub_healthy_sidekiq
 
@@ -102,19 +77,19 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :success
-    assert_select "h1", text: "Systemstatus"
+    assert_select "h1", text: "System health"
     assert_select "button[role='tab'][aria-selected='true']", text: "Jobs"
-    assert_select "button[role='tab']", text: "KI"
-    assert_select "h2", text: "Sidekiq-Status"
-    assert_select "h2", text: "Aufgabenstatistik"
-    assert_select "h2", text: "Warteschlangen"
-    assert_select "dd", text: "Funktionsfähig"
-    assert_select "dd", text: "vor 2 Minuten"
+    assert_select "button[role='tab']", text: "AI"
+    assert_select "h2", text: "Sidekiq status"
+    assert_select "h2", text: "Job counters"
+    assert_select "h2", text: "Queues"
+    assert_select "dd", text: "Healthy"
+    assert_select "dd", text: "2 minutes ago"
     {
-      "Status" => "Funktionsfähig", "Worker-Prozesse" => "1",
-      "Letztes Lebenszeichen" => "vor 2 Minuten", "Längste Wartezeit" => "0,0 s",
-      "In der Warteschlange" => "0", "Zur Wiederholung vorgemerkt" => "0",
-      "Fehlgeschlagen" => "0", "Insgesamt verarbeitet" => "42"
+      "Status" => "Healthy", "Worker processes" => "1",
+      "Last heartbeat" => "2 minutes ago", "Oldest job age" => "0.0s",
+      "Enqueued" => "0", "Retries" => "0",
+      "Failed" => "0", "Processed total" => "42"
     }.each do |label, value|
       assert_select "dl > div" do |items|
         item = items.find { |element| element.at_css("dt")&.text == label }
@@ -122,15 +97,14 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
         assert_equal value, item.at_css("dd").text.strip
       end
     end
-    assert_select "th", text: "Anzahl der Aufgaben"
-    assert_select "th", text: "Wartezeit"
+    assert_select "th", text: "Size"
+    assert_select "th", text: "Latency"
     assert_select "td", text: "default"
-    assert_select "td", text: "1.234"
-    assert_select "td", text: "1,5 s"
+    assert_select "td", text: "1,234"
+    assert_select "td", text: "1.5s"
   end
 
-  test "German background job statistics show degraded and empty states" do
-    users(:sure_support_staff).update!(locale: "de")
+  test "background job statistics show degraded and empty states" do
     sign_in users(:sure_support_staff)
     stub_healthy_sidekiq
     SidekiqHealth.any_instance.stubs(:healthy?).returns(false)
@@ -141,14 +115,13 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     get admin_system_health_url
 
     assert_response :success
-    assert_select "dd", text: "Beeinträchtigt"
-    assert_select "dd", text: "Nie"
-    assert_match "Hintergrundaufgaben werden nicht ausgeführt", response.body
-    assert_select "p", text: "Es sind keine Warteschlangen registriert. Möglicherweise läuft der Worker nicht."
+    assert_select "dd", text: "Degraded"
+    assert_select "dd", text: "Never"
+    assert_match(/Background jobs aren(&#39;|')t running/, response.body)
+    assert_select "p", text: "No queues are registered. The worker may not be running."
   end
 
   test "non super admin is redirected away" do
-    users(:family_admin).update!(locale: "de")
     sign_in users(:family_admin)
 
     get admin_system_health_url
@@ -175,7 +148,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "AI status reports the default OpenAI LLM and hosted vector store" do
+  test "AI status reports the default OpenAI LLM" do
     sign_in users(:sure_support_staff)
 
     with_ai_environment("OPENAI_ACCESS_TOKEN" => "sk-secret-openai") do
@@ -189,9 +162,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='effective-llm-provider']", text: "OpenAI"
     assert_match(/gpt-4\.1/, response.body)
     assert_match(%r{https://api\.openai\.com/v1}, response.body)
-    assert_match(/OpenAI hosted vector store/, response.body)
     assert_match(/Live check passed/, response.body)
-    assert_match(/Live checks passed/, response.body)
     assert_match(/PDF text-extraction path/, response.body)
     assert_match(/PDF vision\/native path/, response.body)
     assert_equal 2, response.body.scan(/Synthetic PDF check passed/).size
@@ -205,7 +176,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     AiHealth::Probe.any_instance.expects(:function_calling).never
     AiHealth::Probe.any_instance.expects(:pdf_text_extraction).never
     AiHealth::Probe.any_instance.expects(:pdf_vision_processing).never
-    AiHealth::Probe.any_instance.expects(:openai_vector_store).never
 
     with_ai_environment("OPENAI_ACCESS_TOKEN" => "sk-secret-openai") do
       { "background_jobs" => "Jobs", "ai" => "AI", "configuration" => "Config" }.each do |tab, label|
@@ -219,18 +189,22 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "the lazy frame keeps the page's refresh and locale override" do
+  test "the lazy frame keeps the page's refresh and English locale override" do
     sign_in users(:sure_support_staff)
 
-    get admin_system_health_url(tab: "ai", refresh_ai_health: "1", locale: "de")
+    get admin_system_health_url(tab: "ai", refresh_ai_health: "1", locale: "en")
 
-    assert_select "turbo-frame#ai_status[src='#{ai_status_admin_system_health_path(refresh_ai_health: "1", locale: "de")}']"
+    assert_select "turbo-frame#ai_status[src='#{ai_status_admin_system_health_path(refresh_ai_health: "1", locale: "en")}']"
   end
 
   test "the lazy frame drops a refresh or locale it can't use" do
     sign_in users(:sure_support_staff)
 
-    [ { refresh_ai_health: "0", locale: "xx" }, { refresh_ai_health: { "x" => "1" }, locale: { "x" => "de" } } ].each do |query|
+    [
+      { refresh_ai_health: "0", locale: "xx" },
+      { refresh_ai_health: "0", locale: "de" },
+      { refresh_ai_health: { "x" => "1" }, locale: { "x" => "de" } }
+    ].each do |query|
       get admin_system_health_url(tab: "ai", **query)
 
       assert_response :success
@@ -239,20 +213,20 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
   end
 
   # The redirect's morph reloads the frame from its old src, so an override
-  # dropped on the way would leave the page and the frame in two languages.
+  # dropped on the way would leave the page and the frame out of step.
   test "a locale override survives the worker check round trip" do
     sign_in users(:sure_support_staff)
 
     with_ai_environment do
-      get ai_status_admin_system_health_url(locale: "de")
+      get ai_status_admin_system_health_url(locale: "en")
     end
-    assert_select "form[action=?]", verify_worker_ai_admin_system_health_path(locale: "de")
+    assert_select "form[action=?]", verify_worker_ai_admin_system_health_path(locale: "en")
 
-    post verify_worker_ai_admin_system_health_url(locale: "de")
-    assert_redirected_to admin_system_health_path(tab: "ai", locale: "de")
+    post verify_worker_ai_admin_system_health_url(locale: "en")
+    assert_redirected_to admin_system_health_path(tab: "ai", locale: "en")
   end
 
-  test "AI status warns when a custom OpenAI endpoint is paired with the hosted vector store" do
+  test "AI status names a custom OpenAI-compatible endpoint and redacts its credentials" do
     sign_in users(:sure_support_staff)
 
     with_ai_environment(
@@ -268,9 +242,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
       ),
       "OPENAI_MODEL" => "qwen3:8b"
     ) do
-      AiHealth::Probe.any_instance.stubs(:openai_vector_store).returns(
-        probe_result(:failing, failure_code: :request_failed, http_status: 404)
-      )
       get ai_status_admin_system_health_url
     end
 
@@ -279,9 +250,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='effective-llm-provider']", text: "Ollama"
     assert_match(/OpenAI-compatible API credentials/, response.body)
     assert_match(%r{http://ollama:11434/v1}, response.body)
-    assert_match(%r{did not pass the /v1/vector_stores liveness check}, response.body)
-    assert_match(/use pgvector with a separate embeddings endpoint/, response.body)
-    assert_match(/Live check failed/, response.body)
     assert_no_match(/local-token|uri-secret|query-secret/, response.body)
   end
 
@@ -404,168 +372,20 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/The synthetic PDF .* check failed/, response.body)
   end
 
-  test "AI status reports Anthropic with an available pgvector store" do
+  test "AI status reports Anthropic without exposing its credentials" do
     sign_in users(:sure_support_staff)
     Setting.stubs(:llm_provider).returns("anthropic")
 
-    connection = stub("connection")
-    connection.stubs(:table_exists?).with(VectorStore::Pgvector::TABLE_NAME).returns(true)
-    connection.stubs(:extension_enabled?).with("vector").returns(true)
-    ActiveRecord::Base.stubs(:connection).returns(connection)
-    VectorStore.expects(:embedding_access_token).returns("runtime-embedding-token")
-    AiHealth::Probe.any_instance.expects(:embedding).with(
-      endpoint: "http://ollama:11434/v1",
-      access_token: "runtime-embedding-token",
-      model: "mxbai-embed-large",
-      dimensions: 1024
-    ).returns(probe_result(:passing))
-
     with_ai_environment(
       "ANTHROPIC_ACCESS_TOKEN" => "anthropic-secret",
-      "ANTHROPIC_MODEL" => "claude-sonnet-4-6",
-      "EMBEDDING_URI_BASE" => "http://ollama:11434/v1",
-      "EMBEDDING_MODEL" => "mxbai-embed-large",
-      "EMBEDDING_DIMENSIONS" => "1024"
+      "ANTHROPIC_MODEL" => "claude-sonnet-4-6"
     ) do
       get ai_status_admin_system_health_url
     end
 
     assert_response :success
     assert_match(/Anthropic/, response.body)
-    assert_match(/pgvector/, response.body)
-    assert_match(/PostgreSQL vector extension/, response.body)
-    assert_match(/mxbai-embed-large/, response.body)
-    assert_match(%r{http://ollama:11434/v1}, response.body)
-    assert_match(/Live checks passed/, response.body)
     assert_no_match(/anthropic-secret/, response.body)
-  end
-
-  test "AI status explains a missing pgvector table" do
-    sign_in users(:sure_support_staff)
-    Setting.stubs(:llm_provider).returns("anthropic")
-    VectorStore::Pgvector.stubs(:available?).returns(true)
-    AiHealth::Probe.any_instance.stubs(:pgvector).returns(
-      probe_result(:failing, failure_code: :table_not_found)
-    )
-
-    connection = stub("connection")
-    connection.stubs(:table_exists?).with(VectorStore::Pgvector::TABLE_NAME).returns(false)
-    connection.stubs(:extension_enabled?).with("vector").returns(true)
-    ActiveRecord::Base.stubs(:connection).returns(connection)
-
-    with_ai_environment(
-      "ANTHROPIC_ACCESS_TOKEN" => "anthropic-secret",
-      "ANTHROPIC_MODEL" => "claude-sonnet-4-6",
-      "EMBEDDING_URI_BASE" => "http://ollama:11434/v1",
-      "EMBEDDING_MODEL" => "mxbai-embed-large",
-      "EMBEDDING_DIMENSIONS" => "1024"
-    ) do
-      get ai_status_admin_system_health_url
-    end
-
-    assert_response :success
-    assert_match(/The vector_store_chunks table is missing/, response.body)
-    assert_match(/VECTOR_STORE_PROVIDER=pgvector/, response.body)
-    assert_match(/table was not found/, response.body)
-    assert_no_match(/anthropic-secret/, response.body)
-  end
-
-  test "AI status explains an embedding dimensions mismatch" do
-    sign_in users(:sure_support_staff)
-    Setting.stubs(:llm_provider).returns("anthropic")
-    VectorStore::Pgvector.stubs(:available?).returns(true)
-    AiHealth::Probe.any_instance.stubs(:embedding).returns(
-      probe_result(:failing, failure_code: :dimensions_mismatch)
-    )
-
-    connection = stub("connection")
-    connection.stubs(:table_exists?).with(VectorStore::Pgvector::TABLE_NAME).returns(true)
-    connection.stubs(:extension_enabled?).with("vector").returns(true)
-    ActiveRecord::Base.stubs(:connection).returns(connection)
-
-    with_ai_environment(
-      "ANTHROPIC_ACCESS_TOKEN" => "anthropic-secret",
-      "ANTHROPIC_MODEL" => "claude-sonnet-4-6",
-      "EMBEDDING_URI_BASE" => "https://generativelanguage.googleapis.com/v1beta/openai",
-      "EMBEDDING_MODEL" => "gemini-embedding-2-preview",
-      "EMBEDDING_DIMENSIONS" => "1024"
-    ) do
-      get ai_status_admin_system_health_url
-    end
-
-    assert_response :success
-    assert_match(/The embedding dimensions do not match/, response.body)
-    assert_match(/EMBEDDING_MODEL and EMBEDDING_DIMENSIONS/, response.body)
-    assert_match(/alter or recreate the pgvector embedding column\/table/, response.body)
-    assert_match(/gemini-embedding-2-preview/, response.body)
-    assert_no_match(/anthropic-secret/, response.body)
-  end
-
-  test "AI status explains embedding probe timeouts" do
-    sign_in users(:sure_support_staff)
-    Setting.stubs(:llm_provider).returns("anthropic")
-    VectorStore::Pgvector.stubs(:available?).returns(true)
-    AiHealth::Probe.any_instance.stubs(:embedding).returns(
-      probe_result(:failing, failure_code: :timeout)
-    )
-
-    connection = stub("connection")
-    connection.stubs(:table_exists?).with(VectorStore::Pgvector::TABLE_NAME).returns(true)
-    connection.stubs(:extension_enabled?).with("vector").returns(true)
-    ActiveRecord::Base.stubs(:connection).returns(connection)
-
-    with_ai_environment(
-      "ANTHROPIC_ACCESS_TOKEN" => "anthropic-secret",
-      "ANTHROPIC_MODEL" => "claude-sonnet-4-6",
-      "EMBEDDING_URI_BASE" => "https://generativelanguage.googleapis.com/v1beta/openai",
-      "EMBEDDING_MODEL" => "gemini-embedding-2-preview",
-      "EMBEDDING_DIMENSIONS" => "3072"
-    ) do
-      get ai_status_admin_system_health_url
-    end
-
-    assert_response :success
-    assert_match(/The embedding live check timed out/, response.body)
-    assert_match(/AI_HEALTH_PROBE_TIMEOUT/, response.body)
-    assert_match(/OPENAI_REQUEST_TIMEOUT/, response.body)
-    assert_no_match(/anthropic-secret/, response.body)
-  end
-
-  test "AI status explains when no vector store is configured" do
-    sign_in users(:sure_support_staff)
-
-    with_ai_environment do
-      get ai_status_admin_system_health_url
-    end
-
-    assert_response :success
-    assert_match(/No vector store is configured/, response.body)
-    assert_match(/Uploaded documents cannot be indexed or searched/, response.body)
-  end
-
-  test "AI status marks Qdrant as scaffolded and redacts its URL" do
-    sign_in users(:sure_support_staff)
-
-    with_ai_environment(
-      "VECTOR_STORE_PROVIDER" => "qdrant",
-      "QDRANT_URL" => credentialed_url(
-        scheme: "https",
-        host: "qdrant.example.test",
-        port: 6333,
-        user: "admin",
-        password: "qdrant-secret",
-        query: "api_key=query-secret"
-      ),
-      "QDRANT_API_KEY" => "header-secret"
-    ) do
-      get ai_status_admin_system_health_url
-    end
-
-    assert_response :success
-    assert_match(/Qdrant support is not implemented yet/, response.body)
-    assert_match(/Scaffolded/, response.body)
-    assert_match(%r{https://qdrant\.example\.test:6333}, response.body)
-    assert_no_match(/qdrant-secret|query-secret|header-secret/, response.body)
   end
 
   test "AI status keeps its standing guidance collapsed" do
@@ -577,7 +397,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "details:not([open]) summary", text: "Which settings need a restart?"
-    assert_select "details:not([open]) summary", text: "Recommended local setup"
   end
 
   test "AI status explains when no worker has checked in yet" do
@@ -601,8 +420,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
           process_identity: "worker-1:123",
           effective_provider: :openai,
           llm_model: "gpt-4.1",
-          llm_endpoint: "https://api.openai.com/v1",
-          vector_store_adapter: :openai
+          llm_endpoint: "https://api.openai.com/v1"
         ))
 
         get ai_status_admin_system_health_url
@@ -654,43 +472,26 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_match(/The configured model was not returned by the provider/, response.body)
   end
 
-  test "German AI failure reasons are present without fallback and render in worker results" do
-    reasons = {
-      model_not_available: "Das konfigurierte Modell wurde vom Anbieter nicht zurückgegeben",
-      no_tool_call: "Das Modell hat geantwortet, ohne das Prüfwerkzeug aufzurufen",
-      tools_refused: "Der Dienst hat dieselbe Anfrage ohne Werkzeuge beantwortet, sie mit Werkzeugen jedoch abgelehnt",
-      invalid_response: "Der Dienst hat eine unerwartete Antwort zurückgegeben",
-      dimensions_mismatch: "Die Dimensionen des Embedding-Vektors stimmen nicht mit den konfigurierten Dimensionen überein",
-      extension_not_enabled: "Die PostgreSQL-Erweiterung vector ist nicht aktiviert",
-      table_not_found: "Die Tabelle vector_store_chunks wurde nicht gefunden",
-      render_missing_binary: "Der Renderer pdftoppm (poppler-utils) ist in diesem Container nicht verfügbar",
-      timeout: "Der Dienst hat nicht innerhalb des Zeitlimits für die Prüfung geantwortet",
-      request_failed: "Die Anfrage an den Dienst ist fehlgeschlagen",
-      unsupported_provider: "Der Anbieter unterstützt diese Prüfung nicht"
-    }
-    reasons.each do |code, text|
-      assert_equal text, I18n.t("admin.system_health.show.ai.failure_codes.#{code}", locale: :de, fallback: false, raise: true)
-    end
-    {
-      failure_reason: "Fehlerursache",
-      function_calling_failure_reason: "Fehlerursache beim Funktionsaufruf",
-      pdf_text_extraction_failure_reason: "Fehlerursache bei der Textextraktion",
-      pdf_vision_processing_failure_reason: "Fehlerursache bei der Bildverarbeitung oder nativen Dokumentverarbeitung"
-    }.each do |key, text|
-      assert_equal text, I18n.t("admin.system_health.show.ai.labels.#{key}", locale: :de, fallback: false, raise: true)
-    end
+  test "every AI failure reason renders in worker results" do
+    codes = %i[
+      model_not_available no_tool_call tools_refused invalid_response
+      render_missing_binary timeout request_failed unsupported_provider
+    ]
 
     sign_in users(:sure_support_staff)
     with_memory_cache do
       with_ai_environment do
-        WorkerAiHealth.record!(worker_snapshot(llm_status: :failing, failure_codes: reasons.keys))
-        get ai_status_admin_system_health_url(locale: :de)
+        WorkerAiHealth.record!(worker_snapshot(llm_status: :failing, failure_codes: codes))
+        get ai_status_admin_system_health_url
       end
     end
 
     assert_response :success
-    assert_select "dt", text: "Fehlerursache"
-    reasons.each_value { |text| assert_select "dd", text: /#{Regexp.escape(text)}/ }
+    assert_select "dt", text: "Failure reason"
+    codes.each do |code|
+      text = I18n.t("admin.system_health.show.ai.failure_codes.#{code}", raise: true)
+      assert_select "dd", text: /#{Regexp.escape(text)}/
+    end
   end
 
   test "AI status shows a stale worker result as stale rather than passing" do
@@ -741,22 +542,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test "German worker verification copy is present without fallback" do
-    keys = %w[
-      title description verify_button coverage_notice empty.title empty.description
-      labels.process labels.checked_at labels.configuration
-      configuration_statuses.match configuration_statuses.mismatch
-      statuses.passing statuses.failing statuses.stale
-      settings_origin.title settings_origin.database_backed settings_origin.env_backed
-    ]
-    keys.each do |key|
-      assert_kind_of String, I18n.t("admin.system_health.show.ai.worker.#{key}", locale: :de, fallback: false, raise: true)
-    end
-    assert_kind_of String, I18n.t("admin.system_health.verify_worker_ai.queued", locale: :de, fallback: false, raise: true)
-  end
-
-  test "German super admin sees worker verification guidance and queued notice" do
-    users(:sure_support_staff).update!(locale: "de")
+  test "super admin sees worker verification guidance and queued notice" do
     sign_in users(:sure_support_staff)
     stub_healthy_sidekiq
 
@@ -764,41 +550,40 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
       with_ai_environment do
         get ai_status_admin_system_health_url
         assert_response :success
-        assert_select "h2", text: "Worker-Verifikation"
-        assert_select "button", text: "Worker-Konfiguration prüfen"
-        assert_match(/Bisher hat kein Worker ein Prüfergebnis gemeldet/, response.body)
-        assert_match(/Jede Prüfung erfasst genau einen Worker-Prozess/, response.body)
-        assert_match(/Welche Einstellungen erfordern einen Neustart\?/, response.body)
-        assert_match(/kein Neustart erforderlich/, response.body)
-        assert_match(/sowohl der Web- als auch der Worker-Dienst/, response.body)
+        assert_select "h2", text: "Worker verification"
+        assert_select "button", text: "Verify worker configuration"
+        assert_match(/No worker has checked in yet/, response.body)
+        assert_match(/Each check verifies exactly one worker process/, response.body)
+        assert_match(/Which settings need a restart\?/, response.body)
+        assert_match(/no restart needed/, response.body)
+        assert_match(/both the web and worker services/, response.body)
 
         assert_enqueued_with(job: WorkerAiHealthCheckJob) do
           post verify_worker_ai_admin_system_health_url
         end
         assert_redirected_to admin_system_health_path(tab: "ai")
         follow_redirect!
-        assert_match(/Die Worker-Prüfung wurde in die Warteschlange gestellt/, response.body)
+        assert_match(/Worker check queued/, response.body)
       end
     end
   end
 
-  test "German worker results distinguish passing failing stale and differing configurations" do
-    users(:sure_support_staff).update!(locale: "de")
+  test "worker results distinguish passing failing stale and differing configurations" do
     sign_in users(:sure_support_staff)
 
     with_memory_cache do
       with_ai_environment("OPENAI_ACCESS_TOKEN" => "synthetic-token") do
         [
-          [ {}, "Erfolgreich", "Entspricht dem Web-Prozess" ],
-          [ { llm_status: :failing, llm_model: "different-model" }, "Fehlgeschlagen", "Weicht vom Web-Prozess ab" ],
-          [ { checked_at: (WorkerAiHealth::STALE_AFTER + 1.minute).ago }, "Veraltet", "Entspricht dem Web-Prozess" ]
+          [ {}, "Passing", "Matches web" ],
+          [ { llm_status: :failing, llm_model: "different-model" }, "Failing", "Differs from web" ],
+          [ { checked_at: (WorkerAiHealth::STALE_AFTER + 1.minute).ago }, "Stale", "Matches web" ]
         ].each do |overrides, status, configuration|
-          WorkerAiHealth.record!(worker_snapshot(**{ vector_store_adapter: :openai, vector_store_status: :passing }.merge(overrides)))
+          WorkerAiHealth.record!(worker_snapshot(**overrides))
           get ai_status_admin_system_health_url
           assert_response :success
           assert_select "[data-testid='worker-ai-health-result']" do
             assert_select "[data-testid='worker-process-identity']", text: "worker:1"
-            assert_select "p", text: /Geprüft vor/
+            assert_select "p", text: /Checked\b.*\bago/m
             assert_select "span", text: status
             assert_select "span", text: configuration
           end
@@ -806,15 +591,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
         end
       end
     end
-  end
-
-  test "German family admin cannot queue worker verification" do
-    users(:family_admin).update!(locale: "de")
-    sign_in users(:family_admin)
-    assert_no_enqueued_jobs only: WorkerAiHealthCheckJob do
-      post verify_worker_ai_admin_system_health_url
-    end
-    assert_redirected_to root_path
   end
 
   test "configuration tab reports missing email and provider configuration without secrets or probes" do
@@ -880,17 +656,17 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/private-|smtp.private.test/, response.body)
   end
 
-  test "German configuration tab has localized copy without fallback" do
+  test "configuration tab names each section" do
     sign_in users(:sure_support_staff)
     stub_healthy_sidekiq
-    get admin_system_health_url(tab: "configuration", locale: :de)
+    get admin_system_health_url(tab: "configuration")
 
     assert_response :success
-    assert_select "button[role='tab'][aria-selected='true']", text: "Konfig."
-    assert_select "[data-testid='configuration-smtp'] h2", text: "E-Mail (SMTP)"
-    assert_select "[data-testid='configuration-securities'] h2", text: "Marktpreise"
-    assert_select "[data-testid='configuration-exchange_rates'] h2", text: "Wechselkurse"
-    assert_select "[data-testid='configuration-storage'] h2", text: "Datei-Uploads und Speicher"
+    assert_select "button[role='tab'][aria-selected='true']", text: "Config"
+    assert_select "[data-testid='configuration-smtp'] h2", text: "Email (SMTP)"
+    assert_select "[data-testid='configuration-securities'] h2", text: "Market prices"
+    assert_select "[data-testid='configuration-exchange_rates'] h2", text: "Foreign exchange rates"
+    assert_select "[data-testid='configuration-storage'] h2", text: "File uploads and storage"
   end
 
   test "optional services are at the bottom with neutral absent statuses and collapsed guidance" do
@@ -901,8 +677,8 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "[data-testid='configuration-health'] > :last-child[data-testid='optional-services']" do
       assert_select "h2", text: "Optional services"
-      assert_select "details:not([open])", count: 5
-      %w[Langfuse Sentry Skylight PostHog Logtail].each do |name|
+      assert_select "details:not([open])", count: 4
+      %w[Sentry Skylight PostHog Logtail].each do |name|
         assert_select "summary span", text: name
       end
       assert_select "input, form, button", count: 0
@@ -913,7 +689,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     sign_in users(:sure_support_staff)
     stub_healthy_sidekiq
     Sentry.stubs(:configuration).returns(OpenStruct.new(dsn: "optional-sentry-secret", enabled_in_current_env?: true))
-    LangfuseTracing.expects(:new).never
     PostHog::Client.expects(:new).never
     Sentry.expects(:capture_exception).never
     Logtail::Logger.expects(:create_default_logger).never
@@ -923,7 +698,6 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     Rails.configuration.x.stubs(:posthog).returns(posthog)
 
     ClimateControl.modify(
-      "LANGFUSE_PUBLIC_KEY" => "optional-public-secret", "LANGFUSE_SECRET_KEY" => "optional-langfuse-secret",
       "SKYLIGHT_AUTHENTICATION" => "optional-skylight-secret", "LOGTAIL_API_KEY" => "optional-logtail-secret",
       "LOGTAIL_INGESTING_HOST" => "optional-logtail-host"
     ) do
@@ -933,34 +707,18 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "[data-testid='optional-services']" do |section|
       assert_no_match(/optional-.*?(secret|host)/, section.first.to_html)
-      assert_select "[data-testid='optional-service-langfuse'] summary", text: /Configured/
       assert_select "[data-testid='optional-service-skylight'] summary", text: /Configured/
     end
   end
 
-  test "German optional service copy renders with setup guidance" do
+  test "optional service copy renders with setup guidance" do
     sign_in users(:sure_support_staff)
     stub_healthy_sidekiq
-    get admin_system_health_url(tab: "configuration", locale: :de)
+    get admin_system_health_url(tab: "configuration")
 
     assert_response :success
-    assert_select "[data-testid='optional-services'] h2", text: "Optionale Dienste"
-    assert_select "[data-testid='optional-service-langfuse'] p", text: /LANGFUSE_SECRET_KEY/
-  end
-
-  test "configuration translations exist in German without English fallback" do
-    paths = lambda do |tree, prefix|
-      tree.flat_map do |key, value|
-        path = "#{prefix}.#{key}"
-        value.is_a?(Hash) ? paths.call(value, path) : [ path ]
-      end
-    end
-    %w[configuration optional_services].each do |section|
-      prefix = "admin.system_health.#{section}"
-      paths.call(I18n.t(prefix, locale: :en), prefix).each do |key|
-        assert_kind_of String, I18n.t(key, locale: :de, fallback: false, default: nil), key
-      end
-    end
+    assert_select "[data-testid='optional-services'] h2", text: "Optional services"
+    assert_select "[data-testid='optional-service-logtail'] p", text: /LOGTAIL_INGESTING_HOST/
   end
 
   test "provider settings links belong only to the two provider cards in self hosted mode" do
@@ -1019,12 +777,7 @@ class Admin::SystemHealthControllerTest < ActionDispatch::IntegrationTest
           llm_endpoint: "https://api.openai.com/v1",
           llm_request_timeout: 60,
           function_calling_status: :supported,
-          vector_store_adapter: nil,
-          embedding_model: nil,
-          embedding_endpoint: nil,
-          embedding_dimensions: nil,
           llm_status: :passing,
-          vector_store_status: :not_configured,
           failure_codes: []
         }.merge(overrides)
       )

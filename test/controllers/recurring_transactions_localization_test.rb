@@ -8,14 +8,13 @@ class RecurringTransactionsLocalizationTest < ActionDispatch::IntegrationTest
     ensure_tailwind_build
   end
 
-  test "German edit form renders localized recurrence rule errors" do
-    patch recurring_transaction_url(@recurring_transaction, locale: :de),
+  test "edit form renders recurrence rule errors with readable attribute names" do
+    patch recurring_transaction_url(@recurring_transaction),
           params: { recurring_transaction: { frequency_preset: "weekly" } },
           headers: { "Turbo-Frame" => "modal" }
 
     assert_response :unprocessable_entity
-    assert_includes response.body, "Wochentag muss für eine wöchentliche Regel angegeben werden"
+    assert_includes response.body, "Weekday is required for a weekly rule"
     assert_no_match(/Recurrence rules/, response.body)
-    assert_no_match(/Weekday is required for a weekly rule/, response.body)
   end
 end

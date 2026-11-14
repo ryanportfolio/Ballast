@@ -82,11 +82,6 @@
       <div class="space-y-4 mb-4">
         <%= form.fields_for :family do |family_form| %>
 
-          <%= family_form.select :locale,
-                                 language_options,
-                                 { label: t(".locale"), required: true, selected: params[:locale] || @user.locale || I18n.locale },
-                                 { data: { action: "onboarding#setLocale" } } %>
-
           <%= family_form.select :currency,
                                  Money::Currency.as_options.map { |currency| [ "#{currency.name} (#{currency.iso_code})", currency.iso_code ] },
                                  { label: t(".currency"), required: true, selected: selected_currency },

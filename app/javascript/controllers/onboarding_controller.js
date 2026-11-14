@@ -18,10 +18,6 @@ export default class extends Controller {
     this.applyBrowserLocaleDefaults();
   }
 
-  setLocale(event) {
-    this.refreshWithParam("locale", event.target.value);
-  }
-
   setDateFormat(event) {
     this.refreshWithParam("date_format", event.target.value);
   }

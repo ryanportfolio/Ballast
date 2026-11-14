@@ -23,39 +23,19 @@ class TradesControllerTest < ActionDispatch::IntegrationTest
     assert_select "span.text-secondary.text-sm", text: I18n.t("trades.header.buy"), count: 0
   end
 
-  test "the German header localizes supported provider activity labels" do
-    @user.update!(locale: "de")
-
-    translations = {
-      "Buy" => "Kaufen",
-      "Contribution" => "Einlage",
-      "Dividend" => "Dividende",
-      "Exchange" => "Umtausch",
-      "Fee" => "Gebühr",
-      "Interest" => "Zinsen",
-      "Other" => "Sonstige",
-      "Reinvestment" => "Reinvestition",
-      "Sell" => "Verkaufen",
-      "Sweep In" => "Sweep In",
-      "Sweep Out" => "Sweep Out",
-      "Transfer" => "Überweisung",
-      "Withdrawal" => "Entnahme"
-    }
-
-    assert_equal Trade::ACTIVITY_LABELS.sort, translations.keys.sort
-
-    translations.each do |activity_label, translation|
+  test "the header has wording for every supported provider activity label" do
+    Trade::ACTIVITY_LABELS.each do |activity_label|
       key = activity_label.parameterize(separator: "_")
+      label = I18n.t("trades.header.#{key}", default: nil)
 
-      assert_equal translation,
-                   I18n.t("trades.header.#{key}", locale: :de, fallback: false, default: nil)
+      assert label.present?, "trades.header.#{key} is missing"
 
       @entry.trade.update!(investment_activity_label: activity_label)
 
       get trade_url(@entry)
 
       assert_response :success
-      assert_select "span.text-secondary.text-sm", text: translation
+      assert_select "span.text-secondary.text-sm", text: label
     end
   end
 

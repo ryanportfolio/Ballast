@@ -1,16 +1,12 @@
 class Provider::Openai::BillSetupSuggester
-  include Provider::Openai::Concerns::UsageRecorder
+  attr_reader :client, :model, :charges, :categories, :current_config
 
-  attr_reader :client, :model, :charges, :categories, :current_config, :langfuse_trace, :family
-
-  def initialize(client, model: "", charges: [], categories: [], current_config: nil, langfuse_trace: nil, family: nil)
+  def initialize(client, model: "", charges: [], categories: [], current_config: nil)
     @client = client
     @model = model
     @charges = charges
     @categories = categories
     @current_config = current_config
-    @langfuse_trace = langfuse_trace
-    @family = family
   end
 
   # One chat-completions call with a json_object response format, falling back
@@ -27,12 +23,6 @@ class Provider::Openai::BillSetupSuggester
     Suggestion = Provider::LlmConcept::BillSetupSuggestion
 
     def suggest_with_format(response_format)
-      span = langfuse_trace&.generation(name: "suggest_bill_setup_api_call", model: model, input: {
-        model: model,
-        charges: charges,
-        configure_mode: current_config.present?
-      })
-
       params = {
         model: model,
         messages: [
@@ -44,18 +34,7 @@ class Provider::Openai::BillSetupSuggester
 
       response = client.chat(parameters: params)
 
-      result = build_suggestion(parse_json_flexibly(response.dig("choices", 0, "message", "content")))
-
-      record_usage(model, response.dig("usage"), operation: "suggest_bill_setup", metadata: {
-        charge_count: charges.size,
-        configure_mode: current_config.present?
-      })
-
-      span&.end(output: result.to_h, usage: response.dig("usage"))
-      result
-    rescue => e
-      span&.end(output: { error: e.message }, level: "ERROR")
-      raise
+      build_suggestion(parse_json_flexibly(response.dig("choices", 0, "message", "content")))
     end
 
     def instructions

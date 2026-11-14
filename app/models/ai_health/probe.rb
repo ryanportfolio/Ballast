@@ -12,7 +12,6 @@ class AiHealth
     CACHE_NAMESPACE = "ai_health/probes/v1"
     DEFAULT_CACHE_TTL = 60.seconds
     DEFAULT_TIMEOUT = 5
-    EMBEDDING_TEST_INPUT = "Sure AI health check"
     CHAT_TEST_INPUT = "Reply with OK."
     FUNCTION_CALL_TEST_INPUT = "Call the sure_health_check tool with status set to ok."
     FUNCTION_CALL_TEST_TOOL = {
@@ -177,47 +176,6 @@ class AiHealth
       )
     end
 
-    def openai_vector_store(endpoint:, access_token:)
-      run(
-        component: "vector_store",
-        provider_key: :openai,
-        endpoint: endpoint,
-        credential: access_token
-      ) do
-        response = openai_client(access_token:, endpoint:).vector_stores.list(parameters: { limit: 1 })
-        raise Failure, :invalid_response unless response.is_a?(Hash) && response["data"].is_a?(Array)
-      end
-    end
-
-    def pgvector(connection: ActiveRecord::Base.connection)
-      run(component: "vector_store", provider_key: :pgvector) do
-        raise Failure, :extension_not_enabled unless connection.extension_enabled?("vector")
-        raise Failure, :table_not_found unless connection.table_exists?(VectorStore::Pgvector::TABLE_NAME)
-
-        table = connection.quote_table_name(VectorStore::Pgvector::TABLE_NAME)
-        connection.select_value("SELECT 1 FROM #{table} LIMIT 1")
-      end
-    end
-
-    def embedding(endpoint:, access_token:, model:, dimensions:)
-      run(
-        component: "embedding",
-        provider_key: :openai_compatible,
-        endpoint: endpoint,
-        model: model,
-        credential: access_token,
-        dimensions: dimensions
-      ) do
-        response = embedding_client(endpoint:, access_token:).post("embeddings") do |request|
-          request.body = { model: model, input: EMBEDDING_TEST_INPUT }
-        end
-
-        vector = response.body.dig("data", 0, "embedding") if response.body.is_a?(Hash)
-        raise Failure, :invalid_response unless vector.is_a?(Array)
-        raise Failure, :dimensions_mismatch unless vector.length == dimensions
-      end
-    end
-
     private
       attr_reader :cache, :force
 
@@ -259,8 +217,8 @@ class AiHealth
         end
       end
 
-      def run(component:, provider_key:, endpoint: nil, model: nil, credential: nil, dimensions: nil, verification: nil)
-        key = cache_key(component:, provider_key:, endpoint:, model:, credential:, dimensions:, verification:)
+      def run(component:, provider_key:, endpoint: nil, model: nil, credential: nil, verification: nil)
+        key = cache_key(component:, provider_key:, endpoint:, model:, credential:, verification:)
         cache.delete(key) if force
 
         result = nil
@@ -296,17 +254,6 @@ class AiHealth
         options = { api_key: access_token, max_retries: 0, timeout: timeout }
         options[:base_url] = endpoint if endpoint.present?
         ::Anthropic::Client.new(**options)
-      end
-
-      def embedding_client(endpoint:, access_token:)
-        Faraday.new(url: endpoint) do |faraday|
-          faraday.request :json
-          faraday.response :json
-          faraday.response :raise_error
-          faraday.headers["Authorization"] = "Bearer #{access_token}" if access_token.present?
-          faraday.options.timeout = timeout
-          faraday.options.open_timeout = [ timeout, 3 ].min
-        end
       end
 
       def openai_model_ids(response)
@@ -469,9 +416,9 @@ class AiHealth
         @synthetic_pdf = pdf.freeze
       end
 
-      def cache_key(component:, provider_key:, endpoint:, model:, credential:, dimensions:, verification:)
+      def cache_key(component:, provider_key:, endpoint:, model:, credential:, verification:)
         fingerprint = Digest::SHA256.hexdigest(
-          [ component, provider_key, endpoint, model, credential, dimensions, verification ].join("\0")
+          [ component, provider_key, endpoint, model, credential, verification ].join("\0")
         )
         "#{CACHE_NAMESPACE}/#{fingerprint}"
       end

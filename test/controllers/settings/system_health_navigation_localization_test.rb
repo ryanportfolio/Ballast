@@ -5,28 +5,17 @@ class Settings::SystemHealthNavigationLocalizationTest < ActionDispatch::Integra
     ensure_tailwind_build
   end
 
-  test "German system health navigation has a translation without fallback" do
-    assert_equal "Systemstatus", I18n.t("settings.settings_nav.system_health_label", locale: :de, fallback: false, raise: true)
+  test "super admins see system health links in both navigation layouts" do
+    sign_in users(:sure_support_staff)
+    get settings_preferences_url
+
+    assert_response :success
+    assert_select "nav a[href='#{admin_system_health_path}']", text: "System health", count: 2
   end
 
-  test "super admins see localized system health links in both navigation layouts" do
-    user = users(:sure_support_staff)
-    sign_in user
-
-    { "de" => "Systemstatus", "en" => "System health" }.each do |locale, label|
-      user.update!(locale: locale)
-      get settings_preferences_url
-
-      assert_response :success
-      assert_select "nav a[href='#{admin_system_health_path}']", text: label, count: 2
-    end
-  end
-
-  test "German system health navigation remains hidden from other roles" do
+  test "system health navigation remains hidden from other roles" do
     %i[family_admin family_member].each do |fixture|
-      user = users(fixture)
-      user.update!(locale: "de")
-      sign_in user
+      sign_in users(fixture)
       get settings_preferences_url
 
       assert_response :success

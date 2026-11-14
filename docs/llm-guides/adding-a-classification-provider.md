@@ -30,7 +30,7 @@ when :classification
 
 OpenAI and Anthropic stay under `:llm`. They can categorize, but they cannot
 answer typed questions, so they do not belong to a concept whose contract is
-`#decide`. The eval runner builds them by name when benchmarking.
+`#decide`.
 
 ## The contract: one `#decide`, many questions
 
@@ -111,7 +111,7 @@ for rows something else has already established are recurring.
 
 `CategoryDecision` responds to `#transaction_id` and `#category_name`, exactly
 like `Provider::LlmConcept::AutoCategorization`. That is deliberate:
-`Family::AutoCategorizer` and the eval runners consume either shape unchanged
+`Family::AutoCategorizer` consumes either shape unchanged
 and ignore the extra `confidence` / `probabilities` / `usage` fields.
 
 Keep that property when adding types. A caller should not need to know which
@@ -184,8 +184,8 @@ flag plays no part here — it gates whether the *selector* is offered (see
 family that opted into preview and then chose the AI provider gets the AI
 provider.
 
-Anything that needs to name the provider — the rule confirmation screen's cost
-estimate, for instance — must call this same method rather than resolving
+Anything that needs to name the provider (the rule confirmation screen, for
+instance) must call this same method rather than resolving
 separately, or the screen will quote a provider that will not run.
 
 ## Endpoints, gateways and disclosure
@@ -229,23 +229,6 @@ excludes POST, and `retry_statuses` is never consulted because `raise_error`
 converts the status to an exception first. Both have to be overridden or the
 backoff silently never runs.
 
-## Evals
-
-`Eval::ProviderFactory` builds the provider for a run, taking per-run overrides
-the registry deliberately does not accept. Add a branch there — both
-`Eval::Runners::Base` and `Eval::Langfuse::ExperimentRunner` go through it.
-
-A classification provider spending one request per sample can attribute cost per
-sample, which is what makes `cost_per_sample` meaningful. Carry `usage` on the
-returned struct so the runner can record it.
-
-```bash
-JEV_API_KEY=... PROVIDER=jev bin/rails "evals:run[categorization_golden_v2,jev-latest]"
-```
-
-Check `error_rate` before believing an accuracy figure — a stale model slug
-records every sample as incorrect and otherwise reads as a credible 0%.
-
 ## Checklist
 
 - [ ] `include ClassificationConcept`, implement `#decide`
@@ -255,6 +238,4 @@ records every sample as incorrect and otherwise reads as a credible 0%.
 - [ ] Provider resolution rescues construction failures and falls back, never raises
 - [ ] Every Choice question has an opt-out sentinel, translated to `nil`
 - [ ] Return types structurally compatible with the `LlmConcept` equivalents
-- [ ] Per-request `usage` carried through for eval cost attribution
-- [ ] Branch added to `Eval::ProviderFactory`
 - [ ] Tests stub HTTP with WebMock — the suite blocks real connections

@@ -1,5 +1,4 @@
 class Provider::Openai::AutoCategorizer
-  include Provider::Openai::Concerns::UsageRecorder
   include Provider::Openai::Concerns::JsonMode
 
   # Threshold for auto mode: if more than this percentage returns null, retry with none mode
@@ -10,15 +9,14 @@ class Provider::Openai::AutoCategorizer
   TRANSACTION_ID_KEYS = %w[transaction_id id txn_id].freeze
   CATEGORY_NAME_KEYS = %w[category_name category name].freeze
 
-  attr_reader :client, :model, :transactions, :user_categories, :custom_provider, :langfuse_trace, :family, :json_mode
+  attr_reader :client, :model, :transactions, :user_categories, :custom_provider, :family, :json_mode
 
-  def initialize(client, model: "", transactions: [], user_categories: [], custom_provider: false, langfuse_trace: nil, family: nil, json_mode: nil)
+  def initialize(client, model: "", transactions: [], user_categories: [], custom_provider: false, family: nil, json_mode: nil)
     @client = client
     @model = model
     @transactions = transactions
     @user_categories = user_categories
     @custom_provider = custom_provider
-    @langfuse_trace = langfuse_trace
     @family = family
     @json_mode = json_mode || default_json_mode
   end
@@ -89,12 +87,6 @@ class Provider::Openai::AutoCategorizer
   private
 
     def auto_categorize_openai_native
-      span = langfuse_trace&.generation(name: "auto_categorize_api_call", model: model.presence || Provider::Openai::DEFAULT_MODEL, input: {
-        model: model.presence || Provider::Openai::DEFAULT_MODEL,
-        transactions: transactions,
-        user_categories: user_categories
-      })
-
       response = client.responses.create(parameters: {
         model: model.presence || Provider::Openai::DEFAULT_MODEL,
         input: [ { role: "developer", content: developer_message } ],
@@ -111,23 +103,7 @@ class Provider::Openai::AutoCategorizer
       Rails.logger.info("Tokens used to auto-categorize transactions: #{response.dig("usage", "total_tokens")}")
 
       categorizations = extract_categorizations_native(response)
-      result = build_response(categorizations)
-
-      record_usage(
-        model.presence || Provider::Openai::DEFAULT_MODEL,
-        response.dig("usage"),
-        operation: "auto_categorize",
-        metadata: {
-          transaction_count: transactions.size,
-          category_count: user_categories.size
-        }
-      )
-
-      span&.end(output: result.map(&:to_h), usage: response.dig("usage"))
-      result
-    rescue => e
-      span&.end(output: { error: e.message }, level: "ERROR")
-      raise
+      build_response(categorizations)
     end
 
     def auto_categorize_openai_generic
@@ -186,13 +162,6 @@ class Provider::Openai::AutoCategorizer
     end
 
     def auto_categorize_with_mode(mode)
-      span = langfuse_trace&.generation(name: "auto_categorize_api_call", model: model.presence || Provider::Openai::DEFAULT_MODEL, input: {
-        model: model.presence || Provider::Openai::DEFAULT_MODEL,
-        transactions: transactions,
-        user_categories: user_categories,
-        json_mode: mode
-      })
-
       # Build parameters with configurable JSON response format
       params = {
         model: model.presence || Provider::Openai::DEFAULT_MODEL,
@@ -214,24 +183,7 @@ class Provider::Openai::AutoCategorizer
       Rails.logger.info("Tokens used to auto-categorize transactions: #{response.dig("usage", "total_tokens")} (json_mode: #{mode})")
 
       categorizations = extract_categorizations_generic(response)
-      result = build_response(categorizations)
-
-      record_usage(
-        model.presence || Provider::Openai::DEFAULT_MODEL,
-        response.dig("usage"),
-        operation: "auto_categorize",
-        metadata: {
-          transaction_count: transactions.size,
-          category_count: user_categories.size,
-          json_mode: mode
-        }
-      )
-
-      span&.end(output: result.map(&:to_h), usage: response.dig("usage"))
-      result
-    rescue => e
-      span&.end(output: { error: e.message }, level: "ERROR")
-      raise
+      build_response(categorizations)
     end
 
     AutoCategorization = Provider::LlmConcept::AutoCategorization

@@ -190,17 +190,6 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "blob authorization checks protected attachments even when blob is also attached elsewhere" do
-    document = FamilyDocument.create!(family: @user_a.family, filename: "shared.pdf", status: "ready")
-    document.file.attach(@statement_a.original_file.blob)
-
-    sign_in @user_b
-
-    get rails_blob_path(document.file)
-
-    assert_response :not_found
-  end
-
   test "blob authorization denies when any protected attachment is unauthorized" do
     statement_b = AccountStatement.new(
       family: @user_b.family,
@@ -336,30 +325,6 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     sign_in @user_a
 
     get rails_blob_path(blob)
-
-    assert_response :not_found
-  end
-
-  test "user can access family document within their own family" do
-    document = family_documents(:tax_return)
-    document.file.attach(io: StringIO.new("Family A Tax Return"), filename: "tax.pdf", content_type: "application/pdf")
-
-    sign_in @user_a
-
-    get rails_blob_path(document.file)
-
-    assert_response :redirect
-    follow_redirect!
-    assert_response :success
-  end
-
-  test "user cannot access family document from a different family" do
-    document = family_documents(:tax_return)
-    document.file.attach(io: StringIO.new("Family A Tax Return"), filename: "tax.pdf", content_type: "application/pdf")
-
-    sign_in @user_b
-
-    get rails_blob_path(document.file)
 
     assert_response :not_found
   end

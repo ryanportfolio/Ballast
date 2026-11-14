@@ -1,6 +1,5 @@
 class Provider::Openai < Provider
   include LlmConcept
-  include LangfuseTraceable
 
   # Subclass so errors caught in this provider are raised as Provider::Openai::Error
   Error = Class.new(Provider::Error)
@@ -199,32 +198,19 @@ class Provider::Openai < Provider
 
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "openai.auto_categorize",
-        input: { transactions: transactions, user_categories: user_categories }
-      )
-
       batches = slice_for_context(transactions, fixed: user_categories)
 
-      result = batches.flat_map do |batch|
+      batches.flat_map do |batch|
         AutoCategorizer.new(
           client,
           model: effective_model,
           transactions: batch,
           user_categories: user_categories,
           custom_provider: custom_provider?,
-          langfuse_trace: trace,
           family: family,
           json_mode: json_mode
         ).auto_categorize
       end
-
-      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -232,27 +218,13 @@ class Provider::Openai < Provider
     with_provider_response do
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "openai.suggest_bill_setup",
-        input: { charges: charges, configure_mode: current_config.present? }
-      )
-
-      result = BillSetupSuggester.new(
+      BillSetupSuggester.new(
         client,
         model: effective_model,
         charges: charges,
         categories: categories,
-        current_config: current_config,
-        langfuse_trace: trace,
-        family: family
+        current_config: current_config
       ).suggest
-
-      finish_langfuse_trace(trace: trace, output: result.to_h)
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -260,32 +232,19 @@ class Provider::Openai < Provider
     with_provider_response do
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "openai.auto_detect_merchants",
-        input: { transactions: transactions, user_merchants: user_merchants }
-      )
-
       batches = slice_for_context(transactions, fixed: user_merchants)
 
-      result = batches.flat_map do |batch|
+      batches.flat_map do |batch|
         AutoMerchantDetector.new(
           client,
           model: effective_model,
           transactions: batch,
           user_merchants: user_merchants,
           custom_provider: custom_provider?,
-          langfuse_trace: trace,
           family: family,
           json_mode: json_mode
         ).auto_detect_merchants
       end
-
-      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -293,31 +252,17 @@ class Provider::Openai < Provider
     with_provider_response do
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "openai.enhance_provider_merchants",
-        input: { merchants: merchants }
-      )
-
       batches = slice_for_context(merchants)
 
-      result = batches.flat_map do |batch|
+      batches.flat_map do |batch|
         ProviderMerchantEnhancer.new(
           client,
           model: effective_model,
           merchants: batch,
           custom_provider: custom_provider?,
-          langfuse_trace: trace,
-          family: family,
           json_mode: json_mode
         ).enhance_merchants
       end
-
-      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -333,20 +278,15 @@ class Provider::Openai < Provider
     VISION_CAPABLE_MODEL_PREFIXES.any? { |prefix| model.start_with?(prefix) }
   end
 
-  # Analyze PDF bytes with the selected model and attribute usage to the family.
+  # Analyze PDF bytes with the selected model.
   # @param pdf_content [String] PDF bytes
   # @param model [String] optional override of the configured model
-  # @param family [Family, nil] usage attribution
+  # @param family [Family, nil] unused; part of the Provider::LlmConcept interface
   # @return [Provider::Response] structured result or provider failure
   def process_pdf(pdf_content:, model: "", family: nil, json_mode: nil)
     with_provider_response do
       effective_model = model.presence || @default_model
       raise Error, "Model does not support PDF/vision processing: #{effective_model}" unless supports_pdf_processing?(model: effective_model)
-
-      trace = create_langfuse_trace(
-        name: "openai.process_pdf",
-        input: { pdf_size: pdf_content&.bytesize }
-      )
 
       # Reasoning-model completion limits include reasoning; the fallback is a budget reserve.
       response_limit =
@@ -356,23 +296,14 @@ class Provider::Openai < Provider
           max_response_tokens
         end
 
-      result = PdfProcessor.new(
+      PdfProcessor.new(
         client,
         model: effective_model,
         pdf_content: pdf_content,
         custom_provider: custom_provider?,
-        langfuse_trace: trace,
-        family: family,
         max_response_tokens: response_limit,
         json_mode: json_mode
       ).process
-
-      finish_langfuse_trace(trace: trace, output: result.to_h)
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -380,24 +311,12 @@ class Provider::Openai < Provider
     with_provider_response do
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "openai.extract_bank_statement",
-        input: { pdf_size: pdf_content&.bytesize }
-      )
-
-      result = BankStatementExtractor.new(
+      BankStatementExtractor.new(
         client: client,
         pdf_content: pdf_content,
         model: effective_model,
         json_mode: json_mode
       ).extract
-
-      finish_langfuse_trace(trace: trace, output: { transaction_count: result[:transactions].size })
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -429,9 +348,7 @@ class Provider::Openai < Provider
         tool_choice: tool_choice,
         streamer: streamer,
         previous_response_id: previous_response_id,
-        session_id: session_id,
-        user_identifier: user_identifier,
-        family: family
+        session_id: session_id
       )
     else
       generic_chat_response(
@@ -443,9 +360,7 @@ class Provider::Openai < Provider
         tool_choice: tool_choice,
         messages: messages,
         streamer: streamer,
-        session_id: session_id,
-        user_identifier: user_identifier,
-        family: family
+        session_id: session_id
       )
     end
   end
@@ -504,9 +419,7 @@ class Provider::Openai < Provider
       tool_choice: nil,
       streamer: nil,
       previous_response_id: nil,
-      session_id: nil,
-      user_identifier: nil,
-      family: nil
+      session_id: nil
     )
       with_provider_response do
         session_client = with_session_headers(session_id: session_id)
@@ -534,78 +447,35 @@ class Provider::Openai < Provider
 
         input_payload = chat_config.build_input(prompt: prompt)
 
-        start_time = Time.current
+        request_params = {
+          model: model,
+          input: input_payload,
+          instructions: instructions,
+          tools: chat_config.tools,
+          previous_response_id: previous_response_id,
+          stream: stream_proxy
+        }
+        request_params[:tool_choice] = "none" if tool_choice == :none && chat_config.tools.present?
+        request_params[:max_output_tokens] = explicit_max_response_tokens if explicit_max_response_tokens
 
-        begin
-          request_params = {
-            model: model,
-            input: input_payload,
-            instructions: instructions,
-            tools: chat_config.tools,
-            previous_response_id: previous_response_id,
-            stream: stream_proxy
-          }
-          request_params[:tool_choice] = "none" if tool_choice == :none && chat_config.tools.present?
-          request_params[:max_output_tokens] = explicit_max_response_tokens if explicit_max_response_tokens
+        raw_response = session_client.responses.create(parameters: request_params)
 
-          raw_response = session_client.responses.create(parameters: request_params)
+        # If streaming, Ruby OpenAI does not return anything, so to normalize this method's API, we search
+        # for the "response chunk" in the stream and return it (it is already parsed)
+        if stream_proxy.present?
+          error_chunk = collected_chunks.find { |chunk| chunk.type == "error" }
+          response_chunk = collected_chunks.find { |chunk| chunk.type == "response" }
 
-          # If streaming, Ruby OpenAI does not return anything, so to normalize this method's API, we search
-          # for the "response chunk" in the stream and return it (it is already parsed)
-          if stream_proxy.present?
-            error_chunk = collected_chunks.find { |chunk| chunk.type == "error" }
-            response_chunk = collected_chunks.find { |chunk| chunk.type == "response" }
-
-            if response_chunk.nil?
-              raise Error.new(
-                build_stream_error_message(error_chunk),
-                details: error_chunk&.data&.details
-              )
-            end
-
-            response = response_chunk.data
-            usage = response_chunk.usage
-            Rails.logger.debug("Stream response usage: #{usage.inspect}")
-            log_langfuse_generation(
-              name: "chat_response",
-              model: model,
-              input: input_payload,
-              output: response.messages.map(&:output_text).join("\n"),
-              usage: usage,
-              session_id: session_id,
-              user_identifier: user_identifier,
-              start_time: start_time
+          if response_chunk.nil?
+            raise Error.new(
+              build_stream_error_message(error_chunk),
+              details: error_chunk&.data&.details
             )
-            record_llm_usage(family: family, model: model, operation: "chat", usage: usage)
-            response
-          else
-            parsed = ChatParser.new(raw_response).parsed
-            Rails.logger.debug("Non-stream raw_response['usage']: #{raw_response['usage'].inspect}")
-            log_langfuse_generation(
-              name: "chat_response",
-              model: model,
-              input: input_payload,
-              output: parsed.messages.map(&:output_text).join("\n"),
-              usage: raw_response["usage"],
-              session_id: session_id,
-              user_identifier: user_identifier,
-              start_time: start_time
-            )
-            record_llm_usage(family: family, model: model, operation: "chat", usage: raw_response["usage"])
-            parsed
           end
-        rescue => e
-          log_langfuse_generation(
-            name: "chat_response",
-            model: model,
-            input: input_payload,
-            error: e,
-            session_id: session_id,
-            user_identifier: user_identifier,
-            start_time: start_time
-          )
-          record_llm_usage(family: family, model: model, operation: "chat", error: e)
-          raise
+
+          response_chunk.data
+        else
+          ChatParser.new(raw_response).parsed
         end
       end
     end
@@ -619,9 +489,7 @@ class Provider::Openai < Provider
       tool_choice: nil,
       messages: nil,
       streamer: nil,
-      session_id: nil,
-      user_identifier: nil,
-      family: nil
+      session_id: nil
     )
       with_provider_response do
         session_client = with_session_headers(session_id: session_id)
@@ -644,54 +512,25 @@ class Provider::Openai < Provider
         params[:tool_choice] = "none" if tool_choice == :none && tools.present?
         params[:max_tokens] = explicit_max_response_tokens if explicit_max_response_tokens
 
-        start_time = Time.current
+        raw_response = session_client.chat(parameters: params)
 
-        begin
-          raw_response = session_client.chat(parameters: params)
+        parsed = GenericChatParser.new(raw_response).parsed
 
-          parsed = GenericChatParser.new(raw_response).parsed
-
-          log_langfuse_generation(
-            name: "chat_response",
-            model: model,
-            input: messages,
-            output: parsed.messages.map(&:output_text).join("\n"),
-            usage: raw_response["usage"],
-            session_id: session_id,
-            user_identifier: user_identifier,
-            start_time: start_time
-          )
-
-          record_llm_usage(family: family, model: model, operation: "chat", usage: raw_response["usage"])
-
-          # If a streamer was provided, manually call it with the parsed response
-          # to maintain the same contract as the streaming version
-          if streamer.present?
-            # Emit output_text chunks for each message
-            parsed.messages.each do |message|
-              if message.output_text.present?
-                streamer.call(Provider::LlmConcept::ChatStreamChunk.new(type: "output_text", data: message.output_text, usage: nil))
-              end
+        # If a streamer was provided, manually call it with the parsed response
+        # to maintain the same contract as the streaming version
+        if streamer.present?
+          # Emit output_text chunks for each message
+          parsed.messages.each do |message|
+            if message.output_text.present?
+              streamer.call(Provider::LlmConcept::ChatStreamChunk.new(type: "output_text", data: message.output_text, usage: nil))
             end
-
-            # Emit response chunk
-            streamer.call(Provider::LlmConcept::ChatStreamChunk.new(type: "response", data: parsed, usage: raw_response["usage"]))
           end
 
-          parsed
-        rescue => e
-          log_langfuse_generation(
-            name: "chat_response",
-            model: model,
-            input: messages,
-            error: e,
-            session_id: session_id,
-            user_identifier: user_identifier,
-            start_time: start_time
-          )
-          record_llm_usage(family: family, model: model, operation: "chat", error: e)
-          raise
+          # Emit response chunk
+          streamer.call(Provider::LlmConcept::ChatStreamChunk.new(type: "response", data: parsed, usage: raw_response["usage"]))
         end
+
+        parsed
       end
     end
 
@@ -781,137 +620,6 @@ class Provider::Openai < Provider
           }
         }
       end
-    end
-
-    def log_langfuse_generation(name:, model:, input:, output: nil, usage: nil, error: nil, session_id: nil, user_identifier: nil, start_time: nil)
-      return unless langfuse_client
-
-      trace = create_langfuse_trace(
-        name: "openai.#{name}",
-        input: input,
-        session_id: session_id,
-        user_identifier: user_identifier,
-        start_time: start_time
-      )
-
-      generation = trace&.generation(
-        name: name,
-        model: model,
-        input: input,
-        start_time: start_time
-      )
-
-      if error
-        generation&.end(
-          output: { error: error.message, details: error.respond_to?(:details) ? error.details : nil },
-          level: "ERROR"
-        )
-        finish_langfuse_trace(
-          trace: trace,
-          output: { error: error.message },
-          level: "ERROR"
-        )
-      else
-        generation&.end(output: output, usage: usage)
-        finish_langfuse_trace(trace: trace, output: output)
-      end
-    rescue => e
-      Rails.logger.warn("Langfuse logging failed: #{e.message}\n#{e.full_message}")
-    end
-
-    def record_llm_usage(family:, model:, operation:, usage: nil, error: nil)
-      return unless family
-
-      # For error cases, record with zero tokens
-      if error.present?
-        Rails.logger.info("Recording failed LLM usage - Error: #{safe_error_message(error)}")
-
-        # Extract HTTP status code if available from the error
-        http_status_code = extract_http_status_code(error)
-
-        inferred_provider = LlmUsage.infer_provider(model)
-        family.llm_usages.create!(
-          provider: inferred_provider,
-          model: model,
-          operation: operation,
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-          estimated_cost: nil,
-          metadata: {
-            error: safe_error_message(error),
-            http_status_code: http_status_code
-          }
-        )
-
-        Rails.logger.info("Failed LLM usage recorded successfully - Status: #{http_status_code}")
-        return
-      end
-
-      return unless usage
-
-      Rails.logger.info("Recording LLM usage - Raw usage data: #{usage.inspect}")
-
-      # Handle both old and new OpenAI API response formats
-      # Old format: prompt_tokens, completion_tokens, total_tokens
-      # New format: input_tokens, output_tokens, total_tokens
-      prompt_tokens = usage["prompt_tokens"] || usage["input_tokens"] || 0
-      completion_tokens = usage["completion_tokens"] || usage["output_tokens"] || 0
-      total_tokens = usage["total_tokens"] || 0
-
-      Rails.logger.info("Extracted tokens - prompt: #{prompt_tokens}, completion: #{completion_tokens}, total: #{total_tokens}")
-
-      estimated_cost = LlmUsage.calculate_cost(
-        model: model,
-        prompt_tokens: prompt_tokens,
-        completion_tokens: completion_tokens
-      )
-
-      # Log when we can't estimate the cost (e.g., custom/self-hosted models)
-      if estimated_cost.nil?
-        Rails.logger.info("Recording LLM usage without cost estimate for unknown model: #{model} (custom provider: #{custom_provider?})")
-      end
-
-      inferred_provider = LlmUsage.infer_provider(model)
-      family.llm_usages.create!(
-        provider: inferred_provider,
-        model: model,
-        operation: operation,
-        prompt_tokens: prompt_tokens,
-        completion_tokens: completion_tokens,
-        total_tokens: total_tokens,
-        estimated_cost: estimated_cost,
-        metadata: {}
-      )
-
-      Rails.logger.info("LLM usage recorded successfully - Cost: #{estimated_cost.inspect}")
-    rescue => e
-      Rails.logger.error("Failed to record LLM usage: #{e.message}")
-    end
-
-    def extract_http_status_code(error)
-      # Try to extract HTTP status code from various error types
-      # OpenAI gem errors may have status codes in different formats
-      if error.respond_to?(:code)
-        error.code
-      elsif error.respond_to?(:http_status)
-        error.http_status
-      elsif error.respond_to?(:status_code)
-        error.status_code
-      elsif error.respond_to?(:response) && error.response.respond_to?(:code)
-        error.response.code.to_i
-      elsif safe_error_message(error) =~ /(\d{3})/
-        # Extract 3-digit HTTP status code from error message
-        $1.to_i
-      else
-        nil
-      end
-    end
-
-    def safe_error_message(error)
-      error&.message
-    rescue => e
-      "(message unavailable: #{e.class})"
     end
 
     # Builds a useful error message when the OpenAI Responses stream ended

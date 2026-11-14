@@ -262,7 +262,7 @@ module Security::Provided
       )
 
       if response.success?
-        # Only overwrite fields the provider actually returned, so providers that
+        # Only overwrite fields the provider actually returned, so providers
         # that don't support metadata won't blank existing values.
         attrs = {}
         attrs[:name]        = response.data.name    if response.data.name.present?

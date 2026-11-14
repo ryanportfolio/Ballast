@@ -26,8 +26,8 @@ class Provider::Anthropic::StructuredOutputRetryTest < ActiveSupport::TestCase
     },
     "report_enhancements" => {
       input: { "merchants" => [ { "merchant_id" => "m1", "business_url" => "walmart.com" } ] },
-      build: ->(client, family) {
-        Provider::Anthropic::ProviderMerchantEnhancer.new(client, model: AUTO_MODEL, family: family,
+      build: ->(client, _family) {
+        Provider::Anthropic::ProviderMerchantEnhancer.new(client, model: AUTO_MODEL,
           merchants: [ { id: "m1", name: "Walmart" } ]).enhance_merchants
       },
       check: ->(test, result) { test.assert_equal "walmart.com", result.first.business_url }
@@ -35,23 +35,23 @@ class Provider::Anthropic::StructuredOutputRetryTest < ActiveSupport::TestCase
     "report_bill_setup" => {
       input: { "name" => "Netflix", "amount" => 15.49, "frequency" => "monthly", "day_of_month" => 3,
                "category_name" => "Subscriptions", "bill_type" => "subscription", "confidence" => 0.9 },
-      build: ->(client, family) {
-        Provider::Anthropic::BillSetupSuggester.new(client, model: AUTO_MODEL, family: family,
+      build: ->(client, _family) {
+        Provider::Anthropic::BillSetupSuggester.new(client, model: AUTO_MODEL,
           charges: [ { date: "2026-08-03", amount: 15.49, name: "NETFLIX.COM" } ], categories: [ "Subscriptions" ]).suggest
       },
       check: ->(test, result) { test.assert_equal "Netflix", result.name }
     },
     "report_document_analysis" => {
       input: { "document_type" => "bank_statement", "summary" => "Statement" },
-      build: ->(client, family) {
-        Provider::Anthropic::PdfProcessor.new(client, model: AUTO_MODEL, family: family, pdf_content: PDF).process
+      build: ->(client, _family) {
+        Provider::Anthropic::PdfProcessor.new(client, model: AUTO_MODEL, pdf_content: PDF).process
       },
       check: ->(test, result) { test.assert_equal "Statement", result.summary }
     },
     "report_bank_statement" => {
       input: { "bank_name" => "Bank of Example", "transactions" => [ { "date" => "2026-03-05", "description" => "Coffee", "amount" => -4.5 } ] },
-      build: ->(client, family) {
-        Provider::Anthropic::BankStatementExtractor.new(client: client, model: AUTO_MODEL, family: family, pdf_content: PDF).extract
+      build: ->(client, _family) {
+        Provider::Anthropic::BankStatementExtractor.new(client: client, model: AUTO_MODEL, pdf_content: PDF).extract
       },
       check: ->(test, result) { test.assert_equal 1, result[:transactions].size }
     }
@@ -62,14 +62,11 @@ class Provider::Anthropic::StructuredOutputRetryTest < ActiveSupport::TestCase
   end
 
   HELPERS.each do |tool_name, helper|
-    test "#{tool_name}: retries once after a text-only end_turn and records usage for both calls" do
+    test "#{tool_name}: retries once after a text-only end_turn" do
       requests = []
       client = stub_client(requests, [ text_response("Looks like groceries."), tool_response(tool_name, helper[:input]) ])
 
-      result = nil
-      assert_difference -> { @family.llm_usages.count }, 2 do
-        result = helper[:build].call(client, @family)
-      end
+      result = helper[:build].call(client, @family)
 
       helper[:check].call(self, result)
       assert_equal 2, requests.size
@@ -81,15 +78,11 @@ class Provider::Anthropic::StructuredOutputRetryTest < ActiveSupport::TestCase
       assert_includes retry_messages.last[:content], tool_name
     end
 
-    test "#{tool_name}: raises after a second missing tool call and records both billed attempts" do
+    test "#{tool_name}: raises after a second missing tool call" do
       requests = []
       client = stub_client(requests, [ text_response("No."), text_response("Still no.") ])
 
-      err = nil
-      # two billed calls plus the zero-token error row the helpers always write
-      assert_difference -> { @family.llm_usages.count }, 3 do
-        err = assert_raises(Provider::Anthropic::Error) { helper[:build].call(client, @family) }
-      end
+      err = assert_raises(Provider::Anthropic::Error) { helper[:build].call(client, @family) }
 
       assert_match(/did not invoke #{tool_name} \(stop_reason: end_turn\)/, err.message)
       assert_equal 2, requests.size
@@ -99,9 +92,7 @@ class Provider::Anthropic::StructuredOutputRetryTest < ActiveSupport::TestCase
       requests = []
       client = stub_client(requests, [ tool_response(tool_name, helper[:input]) ])
 
-      assert_difference -> { @family.llm_usages.count }, 1 do
-        helper[:build].call(client, @family)
-      end
+      helper[:build].call(client, @family)
 
       assert_equal 1, requests.size
     end

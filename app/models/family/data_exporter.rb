@@ -187,7 +187,7 @@ class Family::DataExporter
     end
 
     def attachment_manifest_items
-      (transaction_attachment_manifest_items + family_document_attachment_manifest_items)
+      transaction_attachment_manifest_items
         .sort_by { |item| [ item[:record_type], item[:record_id].to_s, item[:filename].to_s, item[:id].to_s ] }
     end
 
@@ -208,21 +208,6 @@ class Family::DataExporter
             )
           end
         end
-    end
-
-    def family_document_attachment_manifest_items
-      @family.family_documents.with_attached_file.filter_map do |document|
-        next unless document.file.attached?
-
-        attachment_manifest_item(
-          document.file.attachment,
-          record_type: "FamilyDocument",
-          record_id: document.id,
-          extra: {
-            status: document.status
-          }
-        )
-      end
     end
 
     def attachment_manifest_item(attachment, record_type:, record_id:, extra: {})

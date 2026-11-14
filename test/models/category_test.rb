@@ -117,28 +117,13 @@ class CategoryTest < ActiveSupport::TestCase
     assert_equal "Validation failed: Parent can't have more than 2 levels of subcategories", error.message
   end
 
-  test "all_investment_contributions_names returns all locale variants" do
-    names = Category.all_investment_contributions_names
-
-    assert_includes names, "Investment Contributions"  # English
-    assert_includes names, "Contributions aux investissements"  # French
-    assert_includes names, "Investeringsbijdragen"  # Dutch
-    assert names.all? { |name| name.is_a?(String) }
-    assert_equal names, names.uniq  # No duplicates
-  end
-
-  test "display_name localizes default category names" do
-    I18n.with_locale(:"zh-CN") do
-      assert_equal "餐饮", categories(:food_and_drink).display_name
-      assert_equal "未分类", Category.uncategorized.display_name
-    end
+  test "all_investment_contributions_names returns the English name" do
+    assert_equal [ "Investment Contributions" ], Category.all_investment_contributions_names
   end
 
   test "display_name returns default category names in english" do
-    I18n.with_locale(:en) do
-      assert_equal "Food & Drink", categories(:food_and_drink).display_name
-      assert_equal "Uncategorized", Category.uncategorized.display_name
-    end
+    assert_equal "Food & Drink", categories(:food_and_drink).display_name
+    assert_equal "Uncategorized", Category.uncategorized.display_name
   end
 
   test "rejects the reserved Uncategorized filter sentinel as a name" do
@@ -153,27 +138,13 @@ class CategoryTest < ActiveSupport::TestCase
     assert_equal categories(:food_and_drink).name, categories(:food_and_drink).filter_value
   end
 
-  test "filter_value stays the sentinel even when read under a different locale than it was built in" do
-    # Regression test: filter_value must not rely on a locale-sensitive name
-    # comparison (uncategorized? checks name against I18n.t in the *current*
-    # locale), or a synthetic instance built under one locale and read under
-    # another would silently stop matching.
-    synthetic = I18n.with_locale(:"zh-CN") { Category.uncategorized }
-
-    I18n.with_locale(:en) do
-      assert_equal Category::UNCATEGORIZED_FILTER_VALUE, synthetic.filter_value
-    end
-  end
-
   test "display_name preserves custom category names" do
     category = Category.new(name: "School Supplies", color: "#123456", lucide_icon: "book", family: @family)
 
-    I18n.with_locale(:"zh-CN") do
-      assert_equal "School Supplies", category.display_name
-    end
+    assert_equal "School Supplies", category.display_name
   end
 
-  test "display_name_with_parent localizes default parent and child names" do
+  test "display_name_with_parent shows default parent and child names" do
     category = Category.new(
       name: "Groceries",
       color: "#123456",
@@ -182,9 +153,7 @@ class CategoryTest < ActiveSupport::TestCase
       parent: categories(:food_and_drink)
     )
 
-    I18n.with_locale(:"zh-CN") do
-      assert_equal "餐饮 > 杂货", category.display_name_with_parent
-    end
+    assert_equal "Food & Drink > Groceries", category.display_name_with_parent
   end
 
   test "display_name_with_parent preserves custom child names" do
@@ -196,9 +165,7 @@ class CategoryTest < ActiveSupport::TestCase
       parent: categories(:food_and_drink)
     )
 
-    I18n.with_locale(:"zh-CN") do
-      assert_equal "餐饮 > Coffee Beans", category.display_name_with_parent
-    end
+    assert_equal "Food & Drink > Coffee Beans", category.display_name_with_parent
   end
 
   test "should accept valid 6-digit hex colors" do

@@ -128,67 +128,6 @@ class LoanPayoffChartTest < ApplicationSystemTestCase
     end
   end
 
-  # The tooltip formats its date and its money in the request's locale, which
-  # the payload carries because the layout hard-codes `lang="en"`. Asserted
-  # against what the browser's own Intl produces for German, so the expected
-  # strings are not guessed; and against the English forms, so a formatter
-  # that ignored the locale would fail here.
-  test "the tooltip is formatted in the user's locale" do
-    @user.update!(locale: "de")
-
-    travel_to TODAY do
-      account = on_contract_loan_account
-
-      visit account_path(account, period: "all_time")
-      svg = find("[data-controller='loan-payoff-chart'] svg")
-      svg.send_keys(:arrow_right)
-      tooltip = find("[data-controller='loan-payoff-chart'] div[aria-live='polite']", visible: :all)
-      # The tooltip is one div per line; Capybara joins them without separators.
-      text = tooltip.text(:all)
-
-      german_date = page.evaluate_script("new Intl.DateTimeFormat('de', { month: 'short', year: 'numeric' }).format(new Date(2026, 0, 1))")
-      german_money = page.evaluate_script("new Intl.NumberFormat('de', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(500000)")
-      assert text.start_with?(german_date), "expected the tooltip to open with #{german_date.inspect}, got #{text.inspect}"
-      assert_not text.start_with?("Jan 2026"), "d3's English month name must not leak through"
-      # Intl separates the number and the symbol with a no-break space that
-      # Capybara's text normalises to a plain one; compare on plain spaces.
-      assert_includes text.gsub(/[[:space:]]/, " "), german_money.gsub(/[[:space:]]/, " ")
-      assert_not_includes text, "$500,000", "the English money format must not leak through"
-    end
-  end
-
-  # Codex on we-promise/sure#3474: d3's default time ticks print English month
-  # names, so a German page showed a German tooltip over an English axis. A
-  # one-year window ticks by month; each month tick must read as the browser's
-  # own German short month, and never as d3's English month name.
-  test "the axis labels its month ticks in the user's locale" do
-    @user.update!(locale: "de")
-
-    travel_to TODAY do
-      account = on_contract_loan_account
-
-      visit account_path(account, period: "last_365_days")
-      find("[data-controller='loan-payoff-chart'] svg path[data-series='scheduled']")
-      ticks = page.evaluate_script(<<~JS)
-        Array.from(document.querySelectorAll("[data-controller='loan-payoff-chart'] svg g[transform^='translate(0,'] g.tick"))
-          .map((tick) => tick.__data__)
-          .filter((date) => date.getDate() === 1 && date.getMonth() !== 0)
-          .map((date) => ({
-            label: Array.from(document.querySelectorAll("[data-controller='loan-payoff-chart'] svg g[transform^='translate(0,'] g.tick"))
-              .find((tick) => tick.__data__.getTime() === date.getTime()).textContent,
-            german: new Intl.DateTimeFormat("de", { month: "short" }).format(date),
-            english: new Intl.DateTimeFormat("en", { month: "long" }).format(date),
-          }))
-      JS
-
-      assert ticks.any?, "a one-year window must have month ticks, or this asserts nothing"
-      ticks.each do |tick|
-        assert_equal tick["german"], tick["label"], "a month tick must be labelled in German"
-        assert_not_equal tick["english"], tick["label"], "d3's English month name must not leak through"
-      end
-    end
-  end
-
   # Codex on we-promise/sure#3474: the heading showed the cursor's own month
   # while every row showed the nearest point's balance, so a cursor just before
   # a payment date named one month over the next payment's figures. The pointer

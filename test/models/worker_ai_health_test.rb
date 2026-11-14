@@ -88,12 +88,6 @@ class WorkerAiHealthTest < ActiveSupport::TestCase
     assert_equal :failing, snapshot.status
   end
 
-  test "a failing vector_store_status marks the snapshot failing" do
-    snapshot = passing_snapshot(vector_store_status: :failing)
-
-    assert_equal :failing, snapshot.status
-  end
-
   test "unsupported or failing function calling marks the snapshot failing" do
     assert_equal :failing, passing_snapshot(function_calling_status: :unsupported).status
     assert_equal :failing, passing_snapshot(function_calling_status: :failing).status
@@ -105,22 +99,14 @@ class WorkerAiHealthTest < ActiveSupport::TestCase
     matching = passing_snapshot(
       effective_provider: :openai,
       llm_model: "gpt-4.1",
-      llm_endpoint: "https://api.openai.com/v1",
-      vector_store_adapter: :pgvector,
-      embedding_model: "mxbai-embed-large",
-      embedding_endpoint: "http://ollama:11434/v1",
-      embedding_dimensions: 1024
+      llm_endpoint: "https://api.openai.com/v1"
     )
     assert matching.matches_web?(ai_health)
 
     mismatched = passing_snapshot(
       effective_provider: :openai,
       llm_model: "a-different-model",
-      llm_endpoint: "https://api.openai.com/v1",
-      vector_store_adapter: :pgvector,
-      embedding_model: "mxbai-embed-large",
-      embedding_endpoint: "http://ollama:11434/v1",
-      embedding_dimensions: 1024
+      llm_endpoint: "https://api.openai.com/v1"
     )
     assert_not mismatched.matches_web?(ai_health)
   end
@@ -168,12 +154,7 @@ class WorkerAiHealthTest < ActiveSupport::TestCase
           llm_endpoint: "https://api.openai.com/v1",
           llm_request_timeout: 30,
           function_calling_status: :supported,
-          vector_store_adapter: :pgvector,
-          embedding_model: "mxbai-embed-large",
-          embedding_endpoint: "http://ollama:11434/v1",
-          embedding_dimensions: 1024,
           llm_status: :passing,
-          vector_store_status: :passing,
           failure_codes: []
         }.merge(overrides)
       )
@@ -184,11 +165,7 @@ class WorkerAiHealthTest < ActiveSupport::TestCase
         effective_llm_provider: :openai,
         llm_model: "gpt-4.1",
         llm_endpoint: "https://api.openai.com/v1",
-        llm_request_timeout: 30,
-        vector_store_adapter: :pgvector,
-        embedding_model: "mxbai-embed-large",
-        embedding_endpoint: "http://ollama:11434/v1",
-        embedding_dimensions: 1024
+        llm_request_timeout: 30
       )
     end
 end

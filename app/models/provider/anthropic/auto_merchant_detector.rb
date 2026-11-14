@@ -1,30 +1,21 @@
 class Provider::Anthropic::AutoMerchantDetector
-  include Provider::Anthropic::Concerns::UsageRecorder
   include Provider::Anthropic::Concerns::StructuredOutput
 
   TOOL_NAME = "report_merchants".freeze
 
-  attr_reader :client, :model, :transactions, :user_merchants, :langfuse_trace, :family
+  attr_reader :client, :model, :transactions, :user_merchants, :family
 
-  def initialize(client, model:, transactions: [], user_merchants: [], langfuse_trace: nil, family: nil)
+  def initialize(client, model:, transactions: [], user_merchants: [], family: nil)
     @client = client
     @model = model
     @transactions = transactions
     @user_merchants = user_merchants
-    @langfuse_trace = langfuse_trace
     @family = family
   end
 
   def auto_detect_merchants
-    span = langfuse_trace&.generation(name: "auto_detect_merchants_api_call", model: model, input: {
-      model: model,
-      transactions: transactions,
-      user_merchants: user_merchants
-    })
-
     response = create_structured_message(
       tool_name: TOOL_NAME,
-      operation: "auto_detect_merchants",
       model: model,
       max_tokens: max_tokens,
       system_: Provider::Anthropic.structured_output_system(instructions, model, TOOL_NAME),
@@ -34,22 +25,7 @@ class Provider::Anthropic::AutoMerchantDetector
     )
 
     merchants_data = extract_merchants(response)
-    result = build_response(merchants_data)
-
-    record_usage(model, response.usage, operation: "auto_detect_merchants", metadata: {
-      transaction_count: transactions.size,
-      merchant_count: user_merchants.size
-    })
-
-    span&.end(output: result.map(&:to_h), usage: usage_hash(response.usage))
-    result
-  rescue => e
-    span&.end(output: { error: e.message }, level: "ERROR")
-    record_usage_error(model, operation: "auto_detect_merchants", error: e, metadata: {
-      transaction_count: transactions.size,
-      merchant_count: user_merchants.size
-    })
-    raise
+    build_response(merchants_data)
   end
 
   # Public so /settings/ai_prompts can render the built-in text by constructing

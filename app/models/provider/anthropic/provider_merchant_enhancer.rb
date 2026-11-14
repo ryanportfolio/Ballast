@@ -1,28 +1,19 @@
 class Provider::Anthropic::ProviderMerchantEnhancer
-  include Provider::Anthropic::Concerns::UsageRecorder
   include Provider::Anthropic::Concerns::StructuredOutput
 
   TOOL_NAME = "report_enhancements".freeze
 
-  attr_reader :client, :model, :merchants, :langfuse_trace, :family
+  attr_reader :client, :model, :merchants
 
-  def initialize(client, model:, merchants: [], langfuse_trace: nil, family: nil)
+  def initialize(client, model:, merchants: [])
     @client = client
     @model = model
     @merchants = merchants
-    @langfuse_trace = langfuse_trace
-    @family = family
   end
 
   def enhance_merchants
-    span = langfuse_trace&.generation(name: "enhance_provider_merchants_api_call", model: model, input: {
-      model: model,
-      merchants: merchants
-    })
-
     response = create_structured_message(
       tool_name: TOOL_NAME,
-      operation: "enhance_provider_merchants",
       model: model,
       max_tokens: max_tokens,
       system_: Provider::Anthropic.structured_output_system(instructions, model, TOOL_NAME),
@@ -32,16 +23,7 @@ class Provider::Anthropic::ProviderMerchantEnhancer
     )
 
     enhanced = extract_enhancements(response)
-    result = build_response(enhanced)
-
-    record_usage(model, response.usage, operation: "enhance_provider_merchants", metadata: { merchant_count: merchants.size })
-
-    span&.end(output: result.map(&:to_h), usage: usage_hash(response.usage))
-    result
-  rescue => e
-    span&.end(output: { error: e.message }, level: "ERROR")
-    record_usage_error(model, operation: "enhance_provider_merchants", error: e, metadata: { merchant_count: merchants.size })
-    raise
+    build_response(enhanced)
   end
 
   private

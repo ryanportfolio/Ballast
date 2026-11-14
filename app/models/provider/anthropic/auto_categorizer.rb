@@ -1,30 +1,21 @@
 class Provider::Anthropic::AutoCategorizer
-  include Provider::Anthropic::Concerns::UsageRecorder
   include Provider::Anthropic::Concerns::StructuredOutput
 
   TOOL_NAME = "report_categorizations".freeze
 
-  attr_reader :client, :model, :transactions, :user_categories, :langfuse_trace, :family
+  attr_reader :client, :model, :transactions, :user_categories, :family
 
-  def initialize(client, model:, transactions: [], user_categories: [], langfuse_trace: nil, family: nil)
+  def initialize(client, model:, transactions: [], user_categories: [], family: nil)
     @client = client
     @model = model
     @transactions = transactions
     @user_categories = user_categories
-    @langfuse_trace = langfuse_trace
     @family = family
   end
 
   def auto_categorize
-    span = langfuse_trace&.generation(name: "auto_categorize_api_call", model: model, input: {
-      model: model,
-      transactions: transactions,
-      user_categories: user_categories
-    })
-
     response = create_structured_message(
       tool_name: TOOL_NAME,
-      operation: "auto_categorize",
       model: model,
       max_tokens: max_tokens,
       system_: Provider::Anthropic.structured_output_system(instructions, model, TOOL_NAME),
@@ -34,22 +25,7 @@ class Provider::Anthropic::AutoCategorizer
     )
 
     categorizations = extract_categorizations(response)
-    result = build_response(categorizations)
-
-    record_usage(model, response.usage, operation: "auto_categorize", metadata: {
-      transaction_count: transactions.size,
-      category_count: user_categories.size
-    })
-
-    span&.end(output: result.map(&:to_h), usage: usage_hash(response.usage))
-    result
-  rescue => e
-    span&.end(output: { error: e.message }, level: "ERROR")
-    record_usage_error(model, operation: "auto_categorize", error: e, metadata: {
-      transaction_count: transactions.size,
-      category_count: user_categories.size
-    })
-    raise
+    build_response(categorizations)
   end
 
   # Public so /settings/ai_prompts can render the built-in text by constructing

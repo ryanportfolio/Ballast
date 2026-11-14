@@ -225,15 +225,11 @@ class MoneyTest < ActiveSupport::TestCase
     assert_equal "1 000,12 €", Money.new(1000.12, :eur).format(locale: :hu)
   end
 
-  test "all supported locales can format money without errors" do
-    # Ensure all supported locales from LanguagesHelper::SUPPORTED_LOCALES work
-    supported_locales = LanguagesHelper::SUPPORTED_LOCALES
-
-    supported_locales.each do |locale|
-      locale_sym = locale.to_sym
+  test "all available locales can format money without errors" do
+    I18n.available_locales.each do |locale|
       # Format with USD and EUR to ensure locale handling works for different currencies
-      result_usd = Money.new(1000.12, :usd).format(locale: locale_sym)
-      result_eur = Money.new(1000.12, :eur).format(locale: locale_sym)
+      result_usd = Money.new(1000.12, :usd).format(locale: locale)
+      result_eur = Money.new(1000.12, :eur).format(locale: locale)
 
       assert result_usd.present?, "Locale #{locale} should format USD without errors"
       assert result_eur.present?, "Locale #{locale} should format EUR without errors"

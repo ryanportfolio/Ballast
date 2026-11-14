@@ -127,37 +127,21 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "renders OpenAI model and timeout guidance in German" do
+  test "renders OpenAI model and timeout guidance" do
     sign_in users(:sure_support_staff)
 
     with_self_hosting do
-      get settings_hosting_url(locale: :de)
+      get settings_hosting_url
 
       assert_response :success
-      assert_includes response.body, "Konfiguriertes Modell prüfen"
-      assert_includes response.body, "Tools beziehungsweise Function Calling unterstützt"
-      assert_includes response.body, "Zeitlimits"
-      assert_includes response.body, "Anfragezeitlimit in Sekunden (optional)"
+      assert_includes response.body, "Check the configured model"
+      assert_includes response.body, "tools/function calling"
+      assert_includes response.body, "Timeouts"
+      assert_includes response.body, "Request Timeout in Seconds (Optional)"
       assert_includes response.body, "OPENAI_REQUEST_TIMEOUT"
-      assert_includes response.body, "Antwortzeitlimit in Sekunden (optional)"
-      assert_includes response.body, "(1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) × Anfragezeitlimit"
+      assert_includes response.body, "Response Timeout in Seconds (Optional)"
+      assert_includes response.body, "(1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) × request timeout"
       assert_includes response.body, "AI_RESPONSE_TIMEOUT"
-      refute_includes response.body, "Request Timeout in Seconds"
-    end
-
-    %w[
-      model_function_calling_help
-      model_function_calling_link
-      timeout_heading
-      timeout_description
-      openai_request_timeout_label
-      openai_request_timeout_help
-      ai_response_timeout_label
-      ai_response_timeout_help
-      ai_health_probe_timeout_label
-      ai_health_probe_timeout_help
-    ].each do |key|
-      assert I18n.exists?("settings.hostings.openai_settings.#{key}", :de, fallback: false)
     end
   end
 
@@ -273,36 +257,14 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "renders Spanish Yahoo Finance health guidance" do
-    @provider.stubs(:health_status).returns(:rate_limited, :unavailable, :unknown)
-
-    with_env_overrides("EXCHANGE_RATE_PROVIDER" => "yahoo_finance") do
-      with_self_hosting do
-        get settings_hosting_url(locale: :es)
-        assert_includes response.body, "Yahoo Finance está limitando temporalmente las solicitudes."
-        assert_includes response.body, "No es necesario realizar ninguna acción."
-
-        get settings_hosting_url(locale: :es)
-        assert_includes response.body, "Yahoo Finance no está disponible en este momento."
-        assert_includes response.body, "Comprueba tu conexión a internet"
-
-        get settings_hosting_url(locale: :es)
-        assert_includes response.body, "Se está comprobando el estado de Yahoo Finance."
-      end
-    end
-  end
-
-  # Italian translates part of yahoo_finance_settings but not the rate-limited
-  # strings this path renders (status_rate_limited, rate_limited_title,
-  # rate_limited_message), which is what makes it exercise the fallback. Move to
-  # another such locale if it gains them, rather than dropping the coverage.
-  test "falls back to English for untranslated Yahoo Finance health guidance" do
+  test "ignores a non-English locale param for Yahoo Finance health guidance" do
     @provider.stubs(:health_status).returns(:rate_limited)
 
     with_env_overrides("EXCHANGE_RATE_PROVIDER" => "yahoo_finance") do
       with_self_hosting do
         get settings_hosting_url(locale: :it)
 
+        assert_response :success
         assert_includes response.body, "Yahoo Finance is temporarily rate limiting requests."
         assert_not_includes response.body, "translation missing"
       end

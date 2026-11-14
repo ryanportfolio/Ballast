@@ -3,7 +3,7 @@
 require "uri"
 
 # Snapshot of AI configuration and bounded, non-destructive liveness checks for
-# operators diagnosing chat, PDF import, and document-search failures.
+# operators diagnosing chat and PDF import failures.
 class AiHealth
   OPENAI_DEFAULT_ENDPOINT = "https://api.openai.com/v1".freeze
   ANTHROPIC_DEFAULT_ENDPOINT = "https://api.anthropic.com".freeze
@@ -15,12 +15,9 @@ class AiHealth
   }.freeze
 
   attr_reader :selected_llm_provider, :effective_llm_provider, :llm_model,
-              :llm_endpoint, :llm_request_timeout, :probe_request_timeout, :openai_endpoint, :vector_store_adapter,
-              :embedding_endpoint, :embedding_model, :embedding_dimensions,
-              :pgvector_extension_available, :pgvector_extension_enabled,
-              :pgvector_table_available, :qdrant_endpoint, :llm_probe,
+              :llm_endpoint, :llm_request_timeout, :probe_request_timeout, :llm_probe,
               :function_calling_probe, :pdf_text_extraction_probe,
-              :pdf_vision_processing_probe, :vector_store_probe, :embedding_probe
+              :pdf_vision_processing_probe
 
   # probe_cache lets a caller isolate where probe results are cached. The web
   # admin page shares the default `Rails.cache`-backed probe cache so repeat
@@ -32,7 +29,6 @@ class AiHealth
     @force_probes = force_probes
     @probe_cache = probe_cache
     load_llm_status
-    load_vector_store_status
     load_probes
   end
 
@@ -92,44 +88,8 @@ class AiHealth
     pdf_probe_status(pdf_vision_processing_probe, capable: @pdf_vision_processing_capable)
   end
 
-  def vector_store_configured?
-    @vector_store_configured
-  end
-
-  def vector_store_status
-    return :missing if vector_store_adapter.nil?
-    return :scaffolded if vector_store_adapter == :qdrant
-    return :not_checked unless run_probes?
-    return :failing if vector_store_probe.failing?
-    return :not_configured unless vector_store_configured?
-    return :failing unless vector_store_probe.passing?
-    return :failing if vector_store_adapter == :pgvector && !embedding_probe.passing?
-
-    :passing
-  end
-
-  def vector_store_failure_kind
-    return unless vector_store_adapter == :pgvector
-    return unless vector_store_status == :failing
-
-    failure_codes = [ vector_store_probe.failure_code, embedding_probe.failure_code ].compact
-    return :pgvector_extension_not_enabled if failure_codes.include?(:extension_not_enabled)
-    return :pgvector_table_not_found if failure_codes.include?(:table_not_found)
-    return :embedding_dimensions_mismatch if failure_codes.include?(:dimensions_mismatch)
-    return :pgvector_probe_failed if vector_store_probe.failing?
-    return :embedding_probe_timeout if failure_codes.include?(:timeout) && embedding_probe.failing?
-    return :embedding_probe_failed if embedding_probe.failing?
-
-    :vector_probe_failed
-  end
-
-  def openai_vector_store_uses_custom_endpoint?
-    vector_store_adapter == :openai && @openai_custom_endpoint
-  end
-
   def last_checked_at
-    [ llm_probe, function_calling_probe, pdf_text_extraction_probe, pdf_vision_processing_probe, vector_store_probe,
-      embedding_probe ]
+    [ llm_probe, function_calling_probe, pdf_text_extraction_probe, pdf_vision_processing_probe ]
       .filter_map(&:checked_at)
       .max
   end
@@ -174,26 +134,8 @@ class AiHealth
       @pdf_text_extraction_capable = @pdf_processing_capable && @effective_llm_protocol == :openai
       @pdf_vision_processing_capable = @pdf_processing_capable
 
-      @openai_endpoint = redact_endpoint(openai_uri_base.presence || OPENAI_DEFAULT_ENDPOINT)
       @llm_access_token = access_token(@effective_llm_protocol)
       @llm_raw_endpoint = raw_endpoint(@effective_llm_protocol).presence || default_endpoint(@effective_llm_protocol)
-    end
-
-    def load_vector_store_status
-      @vector_store_adapter = safely(nil) { VectorStore::Registry.adapter_name }
-      @vector_store_configured = safely(false) { VectorStore.configured? }
-
-      case vector_store_adapter
-      when :pgvector
-        load_pgvector_status
-        @embedding_model = VectorStore.embedding_model
-        @embedding_dimensions = VectorStore.embedding_dimensions
-        @embedding_raw_endpoint = VectorStore.embedding_uri_base
-        @embedding_endpoint = redact_endpoint(@embedding_raw_endpoint)
-        @embedding_access_token = VectorStore.embedding_access_token
-      when :qdrant
-        @qdrant_endpoint = redact_endpoint(ENV.fetch("QDRANT_URL", "http://localhost:6333"))
-      end
     end
 
     def load_probes
@@ -201,8 +143,6 @@ class AiHealth
       @function_calling_probe = llm_configured? ? Probe.not_checked : Probe.not_configured
       @pdf_text_extraction_probe = llm_configured? && @pdf_text_extraction_capable ? Probe.not_checked : Probe.not_configured
       @pdf_vision_processing_probe = llm_configured? && @pdf_vision_processing_capable ? Probe.not_checked : Probe.not_configured
-      @vector_store_probe = vector_store_adapter.present? ? Probe.not_checked : Probe.not_configured
-      @embedding_probe = vector_store_adapter == :pgvector ? Probe.not_checked : Probe.not_configured
       return unless run_probes?
 
       probe = Probe.new(force: @force_probes, cache: @probe_cache)
@@ -240,24 +180,6 @@ class AiHealth
           )
         end
       end
-
-      case vector_store_adapter
-      when :openai
-        if vector_store_configured?
-          @vector_store_probe = probe.openai_vector_store(
-            endpoint: openai_uri_base.presence || OPENAI_DEFAULT_ENDPOINT,
-            access_token: openai_access_token
-          )
-        end
-      when :pgvector
-        @vector_store_probe = probe.pgvector
-        @embedding_probe = probe.embedding(
-          endpoint: @embedding_raw_endpoint,
-          access_token: @embedding_access_token,
-          model: embedding_model,
-          dimensions: embedding_dimensions
-        )
-      end
     end
 
     def run_probes?
@@ -270,19 +192,6 @@ class AiHealth
       return :not_checked unless run_probes?
 
       probe.passing? ? :supported : :failing
-    end
-
-    def load_pgvector_status
-      connection = ActiveRecord::Base.connection
-      @pgvector_table_available = connection.table_exists?(VectorStore::Pgvector::TABLE_NAME)
-      @pgvector_extension_enabled = connection.extension_enabled?("vector")
-      @pgvector_extension_available = @pgvector_extension_enabled || connection.select_value(
-        "SELECT 1 FROM pg_available_extensions WHERE name = 'vector' LIMIT 1"
-      ).present?
-    rescue StandardError
-      @pgvector_table_available = false
-      @pgvector_extension_enabled = false
-      @pgvector_extension_available = false
     end
 
     def normalized_llm_provider(value)

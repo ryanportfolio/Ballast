@@ -47,7 +47,9 @@ class User < ApplicationRecord
   validates :password, length: { minimum: 8 }, allow_nil: true
   normalizes :email, with: ->(email) { email.strip.downcase }
   normalizes :unconfirmed_email, with: ->(email) { email&.strip&.downcase }
-  normalizes :locale, with: ->(locale) { locale.presence }
+  # Ballast is English only: a locale outside I18n.available_locales is
+  # dropped on write (see #locale for values stored before that).
+  normalizes :locale, with: ->(locale) { locale.to_s.presence_in(I18n.available_locales.map(&:to_s)) }
 
   normalizes :first_name, :last_name, with: ->(value) { value.strip.presence }
 
@@ -113,6 +115,12 @@ class User < ApplicationRecord
 
   generates_token_for :email_confirmation, expires_in: 1.day do
     unconfirmed_email
+  end
+
+  # A locale stored before Ballast went English only (e.g. "de") reads as nil,
+  # so validation and later saves never trip on it.
+  def locale
+    super.presence_in(I18n.available_locales.map(&:to_s))
   end
 
   def pending_email_change?

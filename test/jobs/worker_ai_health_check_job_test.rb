@@ -3,7 +3,7 @@ require "test_helper"
 class WorkerAiHealthCheckJobTest < ActiveSupport::TestCase
   AI_ENVIRONMENT = %w[
     OPENAI_ACCESS_TOKEN OPENAI_URI_BASE OPENAI_MODEL
-    ANTHROPIC_ACCESS_TOKEN ANTHROPIC_API_KEY VECTOR_STORE_PROVIDER
+    ANTHROPIC_ACCESS_TOKEN ANTHROPIC_API_KEY
   ].index_with(nil).freeze
 
   setup do
@@ -98,9 +98,6 @@ class WorkerAiHealthCheckJobTest < ActiveSupport::TestCase
       AiHealth::Probe.any_instance.stubs(:function_calling).returns(passing)
       AiHealth::Probe.any_instance.stubs(:pdf_text_extraction).returns(passing)
       AiHealth::Probe.any_instance.stubs(:pdf_vision_processing).returns(passing)
-      AiHealth::Probe.any_instance.stubs(:openai_vector_store).returns(passing)
-      AiHealth::Probe.any_instance.stubs(:pgvector).returns(passing)
-      AiHealth::Probe.any_instance.stubs(:embedding).returns(passing)
     end
 
     # A minimal stand-in for AiHealth exposing only what the job reads,
@@ -115,18 +112,11 @@ class WorkerAiHealthCheckJobTest < ActiveSupport::TestCase
         llm_model: "gpt-4.1",
         llm_endpoint: "https://api.openai.com/v1",
         function_calling_status: :supported,
-        vector_store_adapter: nil,
-        embedding_model: nil,
-        embedding_endpoint: nil,
-        embedding_dimensions: nil,
         llm_status: status,
-        vector_store_status: :missing,
         llm_probe: probe_result,
         function_calling_probe: probe_result,
         pdf_text_extraction_probe: not_configured,
-        pdf_vision_processing_probe: not_configured,
-        vector_store_probe: not_configured,
-        embedding_probe: not_configured
+        pdf_vision_processing_probe: not_configured
       )
     end
 

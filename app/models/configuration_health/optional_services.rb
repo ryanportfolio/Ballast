@@ -9,16 +9,11 @@ class ConfigurationHealth::OptionalServices
     end
   end
 
-  LANGFUSE_KEYS = %w[LANGFUSE_PUBLIC_KEY LANGFUSE_SECRET_KEY].freeze
   LOGTAIL_KEYS = %w[LOGTAIL_API_KEY LOGTAIL_INGESTING_HOST].freeze
 
   # Returns only static identifiers and status metadata, never setting values.
   def checks
-    [ langfuse, sentry, skylight, posthog, logtail ]
-  end
-
-  def langfuse
-    environment_service(:langfuse, LANGFUSE_KEYS)
+    [ sentry, skylight, posthog, logtail ]
   end
 
   def sentry

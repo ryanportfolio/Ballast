@@ -37,9 +37,7 @@ class Assistant::Function::GetAccountStatement < Assistant::Function
 
         This returns no bytes and no link, and there is no way around it: Sure
         serves stored files only to a signed-in browser session, which you do not
-        have. `search_family_files` is not a fallback either — statements
-        archived through `upload_account_statement` never enter the document
-        search index, so it cannot see them.
+        have, and no other tool reads a statement's contents.
 
         A statement here is metadata to you: identity, period, account, and
         reconciliation. If you need to read one, keep your own copy of the file

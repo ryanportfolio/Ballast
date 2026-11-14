@@ -18,16 +18,16 @@ class Insight::Generators::MaintainedGoalDepletedGeneratorTest < ActiveSupport::
     assert_equal 2_000, insight.metadata[:missing]
   end
 
-  test "writes the maintained reserve insight in German" do
+  test "writes the maintained reserve insight" do
     @family.users.update_all(ai_enabled: false)
-    reserve(name: "Notgroschen", balance: 4_000, target: 6_000)
+    reserve(name: "Rainy day", balance: 4_000, target: 6_000)
 
-    generated = I18n.with_locale(:de) { generate.first }
-    body = I18n.with_locale(:de) { Insight::BodyWriter.new.write(generated) }
+    generated = generate.first
+    body = Insight::BodyWriter.new.write(generated)
 
-    assert_equal "Notgroschen liegt unter dem Zielstand", generated.title
-    assert_equal "Für Notgroschen sind #{generated.facts[:saved]} von #{generated.facts[:target]} zurückgelegt. " \
-                 "Bis zum Zielstand fehlen #{generated.facts[:missing]}.", body
+    assert_equal "Rainy day has dropped below its level", generated.title
+    assert_equal "Rainy day holds #{generated.facts[:saved]} of the #{generated.facts[:target]} it is meant to keep. " \
+                 "It is #{generated.facts[:missing]} short.", body
   end
 
   test "says nothing about a reserve sitting at its level" do

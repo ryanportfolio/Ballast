@@ -6,24 +6,6 @@ class Provider::Anthropic::PdfProcessorTest < ActiveSupport::TestCase
     @pdf_content = "%PDF-1.4 fake bytes".b
   end
 
-  [ {}, { cache_creation_input_tokens: 30, cache_read_input_tokens: 50 } ].each do |cache_usage|
-    test "exports token usage with #{cache_usage.empty? ? 'missing' : 'populated'} cache fields" do
-      response = build_response(content: [ tool_use_block(id: "toolu_1", name: "report_document_analysis",
-        input: { "summary" => "Statement", "document_type" => "bank_statement" }) ],
-        usage: { input_tokens: 10, output_tokens: 20 }.merge(cache_usage))
-      span = mock
-      span.expects(:end).with do |args|
-        args[:usage] == { "input_tokens" => 10, "output_tokens" => 20, "total_tokens" => 30,
-          "cache_creation_input_tokens" => cache_usage.fetch(:cache_creation_input_tokens, 0),
-          "cache_read_input_tokens" => cache_usage.fetch(:cache_read_input_tokens, 0) }
-      end
-      result = Provider::Anthropic::PdfProcessor.new(stub_client(response), model: "claude-sonnet-4-6",
-        pdf_content: @pdf_content, langfuse_trace: stub(generation: span)).process
-
-      assert_equal "Statement", result.summary
-    end
-  end
-
   test "sends PDF as native document content block and parses tool response" do
     fake_response = build_response(content: [
       tool_use_block(
@@ -117,73 +99,6 @@ class Provider::Anthropic::PdfProcessorTest < ActiveSupport::TestCase
     assert_match(/32 MB request limit/i, err.message)
   end
 
-  test "extracts only allowlisted error fields into span output when the API call fails" do
-    error = StandardError.new("boom")
-    def error.body
-      {
-        "type" => "error",
-        "error" => { "type" => "invalid_request_error", "message" => "invalid request" },
-        "request" => { "document" => "base64-pdf-contents-that-should-never-leak" }
-      }
-    end
-
-    client = stub_failing_client(error)
-    captured_output = nil
-    trace = stub_trace { |output| captured_output = output }
-
-    assert_raises(StandardError) do
-      Provider::Anthropic::PdfProcessor.new(
-        client,
-        model: "claude-sonnet-4-6",
-        pdf_content: @pdf_content,
-        langfuse_trace: trace
-      ).process
-    end
-
-    assert_equal({ type: "invalid_request_error", message: "invalid request" }, captured_output[:error_detail])
-  end
-
-  test "error_detail is nil in span output when the error exposes no body" do
-    error = StandardError.new("boom")
-
-    client = stub_failing_client(error)
-    captured_output = nil
-    trace = stub_trace { |output| captured_output = output }
-
-    assert_raises(StandardError) do
-      Provider::Anthropic::PdfProcessor.new(
-        client,
-        model: "claude-sonnet-4-6",
-        pdf_content: @pdf_content,
-        langfuse_trace: trace
-      ).process
-    end
-
-    assert_nil captured_output[:error_detail]
-  end
-
-  test "error_detail falls back to a placeholder when reading the body itself raises" do
-    error = StandardError.new("boom")
-    def error.body
-      raise "body accessor exploded"
-    end
-
-    client = stub_failing_client(error)
-    captured_output = nil
-    trace = stub_trace { |output| captured_output = output }
-
-    assert_raises(StandardError) do
-      Provider::Anthropic::PdfProcessor.new(
-        client,
-        model: "claude-sonnet-4-6",
-        pdf_content: @pdf_content,
-        langfuse_trace: trace
-      ).process
-    end
-
-    assert_match(/detail unavailable/i, captured_output[:error_detail])
-  end
-
   test "sends tool_choice auto to a model that rejects a forced tool" do
     fake_response = build_response(content: [
       tool_use_block(
@@ -207,22 +122,6 @@ class Provider::Anthropic::PdfProcessorTest < ActiveSupport::TestCase
   end
 
   private
-    def stub_failing_client(error)
-      messages = mock
-      messages.expects(:create).raises(error)
-      client = mock
-      client.stubs(:messages).returns(messages)
-      client
-    end
-
-    def stub_trace
-      span = mock
-      span.expects(:end).with { |args| yield(args[:output]); true }
-      trace = mock
-      trace.stubs(:generation).returns(span)
-      trace
-    end
-
     def stub_client(response)
       messages = mock
       messages.expects(:create).with do |params|

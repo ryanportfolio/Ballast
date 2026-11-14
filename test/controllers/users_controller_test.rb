@@ -10,7 +10,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_url
   end
 
-  test "can update user profile" do
+  test "can update user profile and ignores a submitted locale" do
     patch user_url(@user), params: {
       user: {
         first_name: "John",
@@ -29,7 +29,7 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to settings_profile_url
     assert_equal "Your profile has been updated.", flash[:notice]
-    assert_equal "es", @user.reload.locale
+    assert_nil @user.reload.locale
   end
 
   test "admin can update enabled family currencies" do

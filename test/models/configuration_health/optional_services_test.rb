@@ -2,7 +2,7 @@ require "test_helper"
 
 class ConfigurationHealth::OptionalServicesTest < ActiveSupport::TestCase
   ENVIRONMENT = %w[
-    LANGFUSE_PUBLIC_KEY LANGFUSE_SECRET_KEY LANGFUSE_HOST SENTRY_DSN
+    SENTRY_DSN
     SKYLIGHT_AUTHENTICATION SKYLIGHT_ENABLED POSTHOG_KEY POSTHOG_HOST
     POSTHOG_FEEDBACK_ENABLED POSTHOG_DEVELOPMENT_ENABLED LOGTAIL_API_KEY LOGTAIL_INGESTING_HOST
   ].index_with(nil).freeze
@@ -21,7 +21,6 @@ class ConfigurationHealth::OptionalServicesTest < ActiveSupport::TestCase
   end
 
   test "absent optional services are informational and initialize no clients" do
-    LangfuseTracing.expects(:new).never
     Sentry.expects(:init).never
     Sentry.expects(:capture_exception).never
     Sentry.expects(:capture_message).never
@@ -30,33 +29,10 @@ class ConfigurationHealth::OptionalServicesTest < ActiveSupport::TestCase
 
     with_environment do
       checks = @health.checks
-      assert_equal %i[langfuse sentry skylight posthog logtail], checks.map(&:key)
+      assert_equal %i[sentry skylight posthog logtail], checks.map(&:key)
       assert checks.all? { |check| check.status == :not_configured }
       assert checks.all? { |check| check.tone == :neutral }
       assert checks.all? { |check| check.settings.empty? }
-    end
-  end
-
-  test "Langfuse host alone is optional and either single key is incomplete" do
-    with_environment("LANGFUSE_HOST" => "https://private-host.test") do
-      assert_equal :not_configured, @health.langfuse.status
-    end
-    %w[LANGFUSE_PUBLIC_KEY LANGFUSE_SECRET_KEY].each do |key|
-      with_environment(key => "private-value") do
-        check = @health.langfuse
-        assert_equal :incomplete, check.status
-        assert_equal [ (%w[LANGFUSE_PUBLIC_KEY LANGFUSE_SECRET_KEY] - [ key ]).first ], check.settings
-        assert_equal :warning, check.tone
-        assert_no_match(/private-value/, check.inspect)
-      end
-    end
-  end
-
-  test "Langfuse reports both environment keys without initializing a client" do
-    LangfuseTracing.expects(:new).never
-    with_environment("LANGFUSE_PUBLIC_KEY" => "private-public", "LANGFUSE_SECRET_KEY" => "private-secret") do
-      assert_equal :configured, @health.langfuse.status
-      assert_no_match(/private-/, @health.langfuse.inspect)
     end
   end
 

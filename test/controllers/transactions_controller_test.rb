@@ -12,8 +12,7 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
   # Bills has always linked out to transactions. Until now nothing linked back,
   # so a transaction that settled a bill was a dead end. The link-back is part
   # of the preview-gated bills surface, so the viewer needs the flag.
-  test "a German transaction shows the bill it paid with localized copy" do
-    @user.update!(locale: "de")
+  test "a transaction shows the bill it paid" do
     @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => true))
     series = @user.family.recurring_transactions.create!(
       account: accounts(:depository), name: "Watson Property", amount: 2000,
@@ -35,19 +34,9 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Watson Property", response.body
     assert_match bill_path(series), response.body, "the bill must be reachable from the transaction"
 
-    translations = {
-      "transactions.show.create_bill" => "Rechnung hinzufügen",
-      "transactions.show.applied_to_title" => "Damit bezahlte Rechnungen",
-      "transactions.show.applied_to_detail" => "%{amount} für die am %{date} fällige Rechnung",
-      "transactions.show.applied_to_unreviewed" => "Prüfung erforderlich"
-    }
-    translations.each do |key, text|
-      assert_equal text, I18n.t(key, locale: :de, fallback: false)
-    end
-
-    assert_match translations.fetch("transactions.show.create_bill"), response.body
-    assert_match translations.fetch("transactions.show.applied_to_title"), response.body
-    assert_match(/für die am .* fällige Rechnung/, response.body)
+    assert_match "Create a bill", response.body
+    assert_match "Bills this paid", response.body
+    assert_match(/toward the bill due/, response.body)
   end
 
   # The dialog route is GET only. Rendered as a button_to, "Create a bill"
@@ -104,22 +93,6 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     end
     assert_select "a[href='#{new_transaction_transfer_match_path(lone)}']", count: 0
     assert_select "##{dom_id(outflow.transaction, :transfer_hint)} form[action='#{transaction_transfer_match_path(outflow)}'] input[name=_method][value=delete]"
-  end
-
-  test "the investment activity badge shows translated labels" do
-    @user.update!(locale: "ru")
-    accounts(:investment).entries.create!(
-      name: "Broker cash move", date: Date.current, amount: 100, currency: "USD",
-      entryable: Transaction.new(investment_activity_label: "Transfer")
-    )
-
-    get transactions_url
-
-    assert_response :success
-    assert_select "[data-activity-label-quick-edit-target=badge]", text: /Перевод/
-    assert_select "[data-activity-label-quick-edit-target=badge]", text: /Transfer/, count: 0
-    # The picker shows translated names but still submits the stored label.
-    assert_select "button[data-label='Sweep In']", text: "Автоперевод (зачисление)"
   end
 
   test "index groups subcategories immediately after their parent in the category filter" do
@@ -409,16 +382,15 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match "Private Merchant XYZ", response.body
   end
 
-  test "recent name suggestions exclude the unknown-name fallback in every supported locale, not just the current one" do
+  test "recent name suggestions exclude the unknown-name fallback" do
     @entry.account.family.update!(auto_generate_transaction_names: true)
 
-    create_transaction(account: @entry.account, name: I18n.t("transactions.unknown_name", locale: :en))
-    create_transaction(account: @entry.account, name: I18n.t("transactions.unknown_name", locale: :de))
+    create_transaction(account: @entry.account, name: I18n.t("transactions.unknown_name"))
 
     get name_suggestions_transactions_url, as: :turbo_stream
 
     assert_response :success
-    assert_no_match I18n.t("transactions.unknown_name", locale: :de), response.body
+    assert_no_match I18n.t("transactions.unknown_name"), response.body
   end
 
   # Regression: the sync window must start at the old date, or the incremental
@@ -1355,24 +1327,6 @@ end
     assert_empty entry.locked_attributes, "Entry locked_attributes should be cleared"
     assert_empty entry.entryable.locked_attributes, "Transaction locked_attributes should be cleared"
     assert_not entry.protected_from_sync?
-  end
-
-  test "new renders category and merchant selectors in German" do
-    get new_transaction_url(locale: "de")
-
-    assert_response :success
-
-    assert_select "[data-controller='category-select']" do
-      assert_select "input[type='search'][placeholder=?]", "Kategorien suchen"
-      assert_select "[data-category-select-create-label-value=?]", "„__CATEGORY_NAME__“ erstellen"
-      assert_select "[data-category-select-create-error-message-value=?]", "Kategorie konnte nicht erstellt werden"
-    end
-
-    assert_select "[data-controller='merchant-select']" do
-      assert_select "input[type='search'][placeholder=?]", "Händler suchen oder erstellen"
-      assert_select "[data-merchant-select-error-message-value=?]", "Händler konnte nicht erstellt werden"
-      assert_select "[data-merchant-select-target='createForm']", text: /Erstellen/
-    end
   end
 
   test "new groups subcategories immediately after their parent in the category select" do

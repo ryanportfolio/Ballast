@@ -1,16 +1,13 @@
 class Provider::Openai::ProviderMerchantEnhancer
-  include Provider::Openai::Concerns::UsageRecorder
   include Provider::Openai::Concerns::JsonMode
 
-  attr_reader :client, :model, :merchants, :custom_provider, :langfuse_trace, :family, :json_mode
+  attr_reader :client, :model, :merchants, :custom_provider, :json_mode
 
-  def initialize(client, model: "", merchants:, custom_provider: false, langfuse_trace: nil, family: nil, json_mode: nil)
+  def initialize(client, model: "", merchants:, custom_provider: false, json_mode: nil)
     @client = client
     @model = model
     @merchants = merchants
     @custom_provider = custom_provider
-    @langfuse_trace = langfuse_trace
-    @family = family
     @json_mode = json_mode || default_json_mode
   end
 
@@ -87,11 +84,6 @@ class Provider::Openai::ProviderMerchantEnhancer
   private
 
     def enhance_merchants_native
-      span = langfuse_trace&.generation(name: "enhance_provider_merchants_api_call", model: model.presence || Provider::Openai::DEFAULT_MODEL, input: {
-        model: model.presence || Provider::Openai::DEFAULT_MODEL,
-        merchants: merchants
-      })
-
       response = client.responses.create(parameters: {
         model: model.presence || Provider::Openai::DEFAULT_MODEL,
         input: [ { role: "developer", content: developer_message } ],
@@ -108,20 +100,7 @@ class Provider::Openai::ProviderMerchantEnhancer
 
       Rails.logger.info("Tokens used to enhance provider merchants: #{response.dig("usage", "total_tokens")}")
 
-      result = extract_and_build_response_native(response)
-
-      record_usage(
-        model.presence || Provider::Openai::DEFAULT_MODEL,
-        response.dig("usage"),
-        operation: "enhance_provider_merchants",
-        metadata: { merchant_count: merchants.size }
-      )
-
-      span&.end(output: result.map(&:to_h), usage: response.dig("usage"))
-      result
-    rescue => e
-      span&.end(output: { error: e.message }, level: "ERROR")
-      raise
+      extract_and_build_response_native(response)
     end
 
     def enhance_merchants_generic
@@ -156,12 +135,6 @@ class Provider::Openai::ProviderMerchantEnhancer
     end
 
     def enhance_merchants_with_mode(mode)
-      span = langfuse_trace&.generation(name: "enhance_provider_merchants_api_call", model: model.presence || Provider::Openai::DEFAULT_MODEL, input: {
-        model: model.presence || Provider::Openai::DEFAULT_MODEL,
-        merchants: merchants,
-        json_mode: mode
-      })
-
       params = {
         model: model.presence || Provider::Openai::DEFAULT_MODEL,
         messages: [
@@ -180,20 +153,7 @@ class Provider::Openai::ProviderMerchantEnhancer
 
       Rails.logger.info("Tokens used to enhance provider merchants: #{response.dig("usage", "total_tokens")} (json_mode: #{mode})")
 
-      result = extract_and_build_response_generic(response)
-
-      record_usage(
-        model.presence || Provider::Openai::DEFAULT_MODEL,
-        response.dig("usage"),
-        operation: "enhance_provider_merchants",
-        metadata: { merchant_count: merchants.size, json_mode: mode }
-      )
-
-      span&.end(output: result.map(&:to_h), usage: response.dig("usage"))
-      result
-    rescue => e
-      span&.end(output: { error: e.message }, level: "ERROR")
-      raise
+      extract_and_build_response_generic(response)
     end
 
     EnhancedMerchant = Provider::LlmConcept::EnhancedMerchant

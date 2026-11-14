@@ -1,7 +1,0 @@
----
-zh-TW:
-  activerecord:
-    errors:
-      models:
-        recurring_transaction:
-          merchant_or_name_required: 商家與名稱至少須提供一項

@@ -33,7 +33,6 @@ en:
       theme_system: System
       theme_light: Light
       theme_dark: Dark
-      locale: Language
       currency: Currency
       date_format: Date format
       submit: Complete

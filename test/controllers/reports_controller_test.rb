@@ -598,20 +598,19 @@ class ReportsControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr[data-category='category-#{expense_category.id}'] td:nth-child(3) a[href=?]", expense_href
   end
 
-  test "index uncategorized category link stays on the stable filter value while the displayed text is localized" do
+  test "index uncategorized category link stays on the stable filter value while showing the display name" do
     start_date = Date.current.beginning_of_month
     end_date = Date.current.end_of_month
     account = @family.accounts.first
     create_transaction(account: account, name: "Uncategorized cash", amount: 25, date: Date.current)
 
-    @user.update!(locale: "zh-CN")
-    localized_name = I18n.with_locale(:"zh-CN") { Category.uncategorized.name }
+    display_name = Category.uncategorized.name
 
     get reports_path(period_type: :monthly, start_date: start_date, end_date: end_date)
     assert_response :ok
 
     href = transactions_path(q: { categories: [ Category::UNCATEGORIZED_FILTER_VALUE ], start_date: start_date, end_date: end_date })
-    assert_select "tr[data-category='category-uncategorized'] a[href=?]", href, text: /#{Regexp.escape(localized_name)}/
+    assert_select "tr[data-category='category-uncategorized'] a[href=?]", href, text: /#{Regexp.escape(display_name)}/
   end
 
   test "index excludes tax-advantaged account transactions from activity breakdown" do

@@ -34,12 +34,7 @@ class WorkerAiHealthCheckJob < ApplicationJob
       llm_endpoint: ai_health.llm_endpoint,
       llm_request_timeout: ai_health.llm_request_timeout,
       function_calling_status: ai_health.function_calling_status,
-      vector_store_adapter: ai_health.vector_store_adapter,
-      embedding_model: ai_health.embedding_model,
-      embedding_endpoint: ai_health.embedding_endpoint,
-      embedding_dimensions: ai_health.embedding_dimensions,
       llm_status: ai_health.llm_status,
-      vector_store_status: ai_health.vector_store_status,
       failure_codes: failure_codes(ai_health)
     )
 
@@ -54,9 +49,7 @@ class WorkerAiHealthCheckJob < ApplicationJob
         ai_health.llm_probe.failure_code,
         ai_health.function_calling_probe.failure_code,
         ai_health.pdf_text_extraction_probe.failure_code,
-        ai_health.pdf_vision_processing_probe.failure_code,
-        ai_health.vector_store_probe.failure_code,
-        ai_health.embedding_probe.failure_code
+        ai_health.pdf_vision_processing_probe.failure_code
       ].compact.uniq
     end
 
@@ -71,7 +64,6 @@ class WorkerAiHealthCheckJob < ApplicationJob
         hostname: snapshot.hostname,
         pid: snapshot.pid,
         llm_status: snapshot.llm_status,
-        vector_store_status: snapshot.vector_store_status,
         function_calling_status: snapshot.function_calling_status,
         failure_codes: snapshot.failure_codes
       }

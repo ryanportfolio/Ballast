@@ -1,5 +1,5 @@
 class Family < ApplicationRecord
-  include Syncable, AutoTransferMatchable, Subscribeable, VectorSearchable
+  include Syncable, AutoTransferMatchable, Subscribeable
   include SimplefinConnectable
   include AiPromptable
 
@@ -115,7 +115,6 @@ class Family < ApplicationRecord
 
   public
 
-  has_many :llm_usages, dependent: :destroy
   has_many :recurring_transactions, dependent: :destroy
   has_many :recurring_occurrences, dependent: :destroy
   has_many :insights, dependent: :destroy
@@ -142,6 +141,16 @@ class Family < ApplicationRecord
   end
 
   validates :locale, inclusion: { in: I18n.available_locales.map(&:to_s) }
+  # Ballast is English only. A locale outside I18n.available_locales becomes
+  # the default on write, and one stored before that (e.g. "de") reads as the
+  # default, so saves, I18n.with_locale(locale) and formatting never see it.
+  normalizes :locale, with: ->(locale) { locale.to_s.presence_in(I18n.available_locales.map(&:to_s)) || I18n.default_locale.to_s }
+
+  def locale
+    stored = super
+    stored.presence_in(I18n.available_locales.map(&:to_s)) || I18n.default_locale.to_s
+  end
+
   validates :date_format, inclusion: { in: DATE_FORMATS.map(&:last) }
   validates :month_start_day, inclusion: { in: 1..28 }
   validates :moniker, inclusion: { in: MONIKERS }

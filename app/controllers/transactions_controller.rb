@@ -531,7 +531,7 @@ class TransactionsController < ApplicationController
   end
 
   def name_suggestions
-    unknown_names = LanguagesHelper::SUPPORTED_LOCALES.map { |locale| I18n.t("transactions.unknown_name", locale: locale) }
+    unknown_names = I18n.available_locales.map { |locale| I18n.t("transactions.unknown_name", locale: locale) }
     transactions = Current.family.transactions.merge(Account.accessible_by(Current.user)).where.not(entries: { name: unknown_names })
     query = params[:q].to_s.strip
 
@@ -751,7 +751,7 @@ class TransactionsController < ApplicationController
       # Transaktion") would still surface as a "recent name" suggestion. A
       # full generic_name? reuse isn't practical here since it also needs a
       # loaded entryable.category, which isn't available cheaply from a pluck.
-      unknown_names = LanguagesHelper::SUPPORTED_LOCALES.map { |locale| I18n.t("transactions.unknown_name", locale: locale) }
+      unknown_names = I18n.available_locales.map { |locale| I18n.t("transactions.unknown_name", locale: locale) }
 
       Current.accessible_entries
         .where(entryable_type: "Transaction")

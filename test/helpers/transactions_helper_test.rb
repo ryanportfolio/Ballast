@@ -124,10 +124,7 @@ class TransactionsHelperTest < ActionView::TestCase
   end
 
   test "investment_activity_label_name translates the stored label" do
-    I18n.with_locale(:ru) do
-      assert_equal "Перевод", investment_activity_label_name("Transfer")
-      assert_equal "Автоперевод (зачисление)", investment_activity_label_name("Sweep In")
-    end
+    assert_equal I18n.t("transactions.activity_labels.sweep_in"), investment_activity_label_name("Sweep In")
     assert_equal "Buy", investment_activity_label_name("Buy")
   end
 

@@ -104,15 +104,17 @@ class GenerateInsightsJobTest < ActiveJob::TestCase
     GenerateInsightsJob.perform_now(family_id: @family.id)
   end
 
-  test "broadcasts the feed in the family's locale" do
-    @family.update!(locale: "de")
+  test "broadcasts the feed in English when the family has a stored non-English locale" do
+    # Raw SQL: update_column would run the locale normalizer and store "en".
+    Family.connection.exec_update("UPDATE families SET locale = 'de' WHERE id = #{Family.connection.quote(@family.id)}")
+    assert_equal "de", @family.reload.read_attribute(:locale)
     stub_generated([ generated_insight ])
     locales = []
     Turbo::StreamsChannel.stubs(:broadcast_replace_to).with { locales << I18n.locale; true }
 
     GenerateInsightsJob.perform_now(family_id: @family.id)
 
-    assert_equal [ :de ], locales.uniq
+    assert_equal [ :en ], locales.uniq
   end
 
   test "re-running with unchanged numbers does not duplicate or rewrite" do

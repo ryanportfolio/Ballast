@@ -1,5 +1,4 @@
 class Provider::Anthropic::BankStatementExtractor
-  include Provider::Anthropic::Concerns::UsageRecorder
   include Provider::Anthropic::Concerns::StructuredOutput
 
   TOOL_NAME = "report_bank_statement".freeze
@@ -7,14 +6,12 @@ class Provider::Anthropic::BankStatementExtractor
   # Mirrors Provider::Anthropic::PdfProcessor::MAX_PDF_BYTES.
   MAX_PDF_BYTES = 32 * 1024 * 1024
 
-  attr_reader :client, :model, :pdf_content, :langfuse_trace, :family
+  attr_reader :client, :model, :pdf_content
 
-  def initialize(client:, model:, pdf_content:, langfuse_trace: nil, family: nil)
+  def initialize(client:, model:, pdf_content:)
     @client = client
     @model = model
     @pdf_content = pdf_content
-    @langfuse_trace = langfuse_trace
-    @family = family
   end
 
   def extract
@@ -24,14 +21,8 @@ class Provider::Anthropic::BankStatementExtractor
             "PDF exceeds Anthropic's 32 MB limit (#{pdf_content.bytesize} bytes)"
     end
 
-    span = langfuse_trace&.generation(name: "extract_bank_statement_api_call", model: model, input: {
-      model: model,
-      pdf_size: pdf_content.bytesize
-    })
-
     response = create_structured_message(
       tool_name: TOOL_NAME,
-      operation: "extract_bank_statement",
       model: model,
       max_tokens: max_tokens,
       system_: Provider::Anthropic.structured_output_system(instructions, model, TOOL_NAME),
@@ -43,8 +34,7 @@ class Provider::Anthropic::BankStatementExtractor
     parsed = extract_tool_input(response)
     result = build_result(parsed)
 
-    truncated = stop_reason(response) == :max_tokens
-    if truncated
+    if stop_reason(response) == :max_tokens
       Rails.logger.warn(
         "[BankStatementExtractor] response truncated by max_tokens — extracted #{result[:transactions].size} " \
         "transactions but more may be present in the statement. Raise ANTHROPIC_MAX_TOKENS or chunk the PDF."
@@ -52,18 +42,7 @@ class Provider::Anthropic::BankStatementExtractor
       result[:truncated] = true
     end
 
-    record_usage(model, response.usage, operation: "extract_bank_statement", metadata: {
-      pdf_size: pdf_content.bytesize,
-      transaction_count: result[:transactions].size,
-      truncated: truncated
-    })
-
-    span&.end(output: { transaction_count: result[:transactions].size }, usage: usage_hash(response.usage))
     result
-  rescue => e
-    span&.end(output: { error: e.message }, level: "ERROR")
-    record_usage_error(model, operation: "extract_bank_statement", error: e, metadata: { pdf_size: pdf_content&.bytesize })
-    raise
   end
 
   private

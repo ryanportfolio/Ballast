@@ -3,10 +3,6 @@
   <div>
     <%= styled_form_with model: @user, class: "space-y-4", data: { controller: "auto-submit-form" } do |form| %>
       <%= form.hidden_field :redirect_to, value: "preferences" %>
-      <%= form.select :locale,
-          language_options,
-          { label: t(".language"), include_blank: t(".language_auto") },
-          { data: { auto_submit_form_target: "auto" } } %>
       <%= form.fields_for :family do |family_form| %>
         <%= family_form.select :timezone,
             timezone_options,
@@ -22,7 +18,6 @@
             :first,
             { label: t(".country"), searchable: true },
             { data: { auto_submit_form_target: "auto" } } %>
-        <p class="text-xs italic pl-2 text-secondary"><%= t(".translations_notice") %></p>
       <% end %>
     <% end %>
   </div>

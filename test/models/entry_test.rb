@@ -151,22 +151,6 @@ class EntryTest < ActiveSupport::TestCase
     assert_not entry.generic_name?
   end
 
-  test "generic_name? recognizes the unknown-name fallback saved under a different locale" do
-    entry = create_transaction(account: accounts(:depository), name: "Unbekannte Transaktion")
-
-    assert entry.generic_name?
-  end
-
-  test "generic_name? recognizes a category name saved under a different locale" do
-    entry = create_transaction(
-      account: accounts(:depository),
-      name: "Restaurants & Bars", # German translation of categories(:food_and_drink)
-      category: categories(:food_and_drink)
-    )
-
-    assert entry.generic_name?
-  end
-
   test "does not auto-generate a name for an already-persisted entry" do
     families(:dylan_family).update!(auto_generate_transaction_names: true)
     entry = create_transaction(account: accounts(:depository), name: "Original name")

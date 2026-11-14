@@ -14,7 +14,6 @@ class Admin::SystemHealthTest < ApplicationSystemTestCase
     AiHealth::Probe.any_instance.stubs(:function_calling).returns(probe_result(:passing))
     AiHealth::Probe.any_instance.stubs(:pdf_text_extraction).returns(probe_result(:passing))
     AiHealth::Probe.any_instance.stubs(:pdf_vision_processing).returns(probe_result(:passing))
-    AiHealth::Probe.any_instance.stubs(:openai_vector_store).returns(probe_result(:passing))
   end
 
   test "selecting AI status runs live probes" do
@@ -30,7 +29,6 @@ class Admin::SystemHealthTest < ApplicationSystemTestCase
       assert_text "PDF text-extraction path"
       assert_text "PDF vision/native path"
       assert_text "Synthetic PDF check passed", count: 2
-      assert_text "Live checks passed"
     end
   end
 
@@ -123,11 +121,11 @@ class Admin::SystemHealthTest < ApplicationSystemTestCase
     assert_selector "h2", text: "Email (SMTP)"
     within "[data-testid='optional-services']" do
       assert_selector "h2", text: "Optional services"
-      assert_selector "details:not([open])", count: 5
-      find("summary", text: "Langfuse").click
-      assert_text "LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY"
-      find("summary", text: "Langfuse").click
-      assert_selector "details:not([open])", count: 5
+      assert_selector "details:not([open])", count: 4
+      find("summary", text: "Logtail").click
+      assert_text "LOGTAIL_API_KEY and LOGTAIL_INGESTING_HOST"
+      find("summary", text: "Logtail").click
+      assert_selector "details:not([open])", count: 4
     end
     page.current_window.resize_to(390, 844)
     %w[exchange_rates storage].each do |key|
@@ -156,7 +154,6 @@ class Admin::SystemHealthTest < ApplicationSystemTestCase
         "OPENAI_ACCESS_TOKEN" => "test-token",
         "OPENAI_URI_BASE" => nil,
         "OPENAI_MODEL" => nil,
-        "VECTOR_STORE_PROVIDER" => nil,
         &block
       )
     end

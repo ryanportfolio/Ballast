@@ -120,13 +120,6 @@ class AutoMatchesControllerTest < ActionDispatch::IntegrationTest
     assert_not @family.reload.auto_match_transfers_disabled?
   end
 
-  test "bulk update notices use the Polish few form" do
-    I18n.with_locale(:pl) do
-      assert_equal "Potwierdzono 2 przelewy", I18n.t("auto_matches.bulk_update.bulk_confirmed", count: 2)
-      assert_equal "Odrzucono 3 przelewy", I18n.t("auto_matches.bulk_update.bulk_rejected", count: 3)
-    end
-  end
-
   test "bulk update confirms the selected matches and applies their transfer kinds" do
     outflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: 500)
     inflow_entry = create_transaction(date: Date.current, account: accounts(:credit_card), amount: -500)

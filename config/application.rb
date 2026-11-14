@@ -31,7 +31,11 @@ module Sure
     # Explicit source of truth for the session cookie name (also used by Codespaces).
     config.session_store :cookie_store, key: SESSION_COOKIE_KEY
 
-    # TODO: This is here for incremental adoption of localization.  This can be removed when all translations are implemented.
+    # Ballast is English only (see Localize#switch_locale).
+    config.i18n.available_locales = [ :en ]
+    config.i18n.default_locale = :en
+    # With English as the only locale this changes nothing; it stays to match
+    # config/environments/production.rb.
     config.i18n.fallbacks = true
 
     config.app_mode = (ENV["SELF_HOSTED"] == "true" || ENV["SELF_HOSTING_ENABLED"] == "true" ? "self_hosted" : "managed").inquiry

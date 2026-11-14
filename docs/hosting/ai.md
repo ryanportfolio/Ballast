@@ -291,7 +291,7 @@ Behavior:
 - Values are stringified: nested JSON objects/arrays become Ruby inspect-style strings, not valid JSON. Header values must be plain strings.
 - User headers merge over the client's managed headers — setting `Authorization` here would override the access token.
 - Unset, blank, malformed, or non-object JSON is ignored with an error in the logs; chat keeps working. The raw value is never logged.
-- These headers are NOT sent to embedding, vector-store, or AI-health-probe calls — those build separate clients. A gateway requiring the header on those endpoints is not supported.
+- These headers are NOT sent to AI-health-probe calls, which build a separate client. A gateway requiring the header on those endpoints is not supported.
 - ENV-only: there is no settings-page equivalent. The value is re-read every time a provider client is built (nothing is cached), but updating the environment requires restarting the app.
 
 ## Local LLM Setup (Ollama)
@@ -1042,67 +1042,8 @@ Good test queries that exercise different capabilities:
 
 ### Cloud Costs
 
-**Pricing table last updated and verified: October 17, 2026.** Every model
-listed in [`LlmUsage::PRICING`](../../app/models/llm_usage.rb) was checked against
-official sources. `PRICING_VERIFIED_ON` supplies the verification date shown on
-the LLM usage screen. This is a manual review date, not a claim that providers
-changed every price that day.
-
-Rates are USD per million tokens at the Standard tier. The source coverage is:
-
-| Models in the code | Official pricing source |
-| --- | --- |
-| GPT-6 Sol/6.1 Sol, GPT-5.6, GPT-5.5, GPT-5.4, GPT-5.2, GPT-5.1, GPT-5, GPT-4.1, GPT-4o, o1, o3, o4-mini (including listed variants) | [OpenAI pricing](https://developers.openai.com/api/docs/pricing) |
-| GPT-5.2/5.1 Chat aliases | [GPT-5.2 Chat](https://developers.openai.com/api/docs/models/gpt-5.2-chat-latest), [GPT-5.1 Chat](https://developers.openai.com/api/docs/models/gpt-5.1-chat-latest) |
-| o1-mini | [o1-mini](https://developers.openai.com/api/docs/models/o1-mini) |
-| Gemini 4 Argon, 3.8/3.7/3.6/3.5 Flash, 3.5/3.1 Flash-Lite, 3.1 Pro, 3 Flash, 2.5 Pro/Flash | [Google pricing](https://ai.google.dev/gemini-api/docs/pricing) |
-| Claude Opus 4.6/4.7, Sonnet 4.5/4.6, Haiku 4.5 | [Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
-
-#### Dated pricing changes
-
-| Model | Input / output | Latest relevant published date found |
-| --- | --- | --- |
-| Gemini 4 Argon | $2 / $10 | October 2026: launch promotional pricing through November 30, 2026 ($4 / $20 standard starting December 1, 2026) |
-| GPT-6.1 Sol | $2 / $10 | September 29, 2026: launch pricing |
-| GPT-6 Sol | $2 / $10 | September 22, 2026: launch pricing |
-| GPT-5.6 Sol | $4 / $20 | August 21, 2026: price reduction; promotion available at least through November 21, 2026 |
-| GPT-5.6 Terra | $2 / $12 | July 30, 2026: price reduction |
-| GPT-5.6 Luna | $0.20 / $1.20 | July 30, 2026: price reduction |
-| Claude Opus 4.7 | $5 / $25 | April 16, 2026: published launch rate; corrects Sure's erroneous $15 / $75 |
-| Claude Opus 4.6 | $5 / $25 | February 5, 2026: published base launch rate; corrects Sure's erroneous $15 / $75 |
-
-Dates above come from the [OpenAI changelog](https://developers.openai.com/api/docs/changelog),
-the [Gemini API documentation](https://ai.google.dev/gemini-api/docs/pricing),
-and the [Opus 4.7](https://www.anthropic.com/news/claude-opus-4-7) and
-[Opus 4.6](https://www.anthropic.com/news/claude-opus-4-6) announcements.
-For other listed rates, the latest price-change date was **not established**;
-their current prices were verified on October 17. Google's pricing page lists
-launch promotional pricing for Gemini 4 Argon ($2.00 / $10.00) through November 30, 2026,
-and Gemini 3.8, 3.7, and 3.6 Flash through December 31, 2026.
-
-#### Context tiers and estimate limits
-
-OpenAI's listed GPT-6 Sol, GPT-6.1 Sol, GPT-5.6, GPT-5.5/Pro and GPT-5.4/Pro
-rates increase above 272,000 input tokens: input doubles and output increases
-by 50% for the entire request. GPT-5.4 mini/nano retain their flat rates.
-Gemini 4 Argon is $2.00 / $10.00 through November 2026 ($4.00 / $20.00 standard starting
-December 2026) across its 1,048,576 token (1M) unified context window.
-Gemini 2.5 Pro changes from $1.25 / $10 to $2.50 / $15 above 200,000 input
-tokens. Gemini 3.1 Pro (and 3.1 Pro Preview) changes from $2.00 / $12.00 to
-$4.00 / $18.00 above 200,000 input tokens. Gemini 3.8 Flash, 3.7 Flash, and
-3.6 Flash are $0.75 / $3.75 through 2026 ($1.50 / $7.50 starting 2027).
-Gemini 3.5 Flash is $1.50 / $9.00, Gemini 3.5 Flash-Lite is $0.30 / $2.50,
-Gemini 3.1 Flash-Lite is $0.25 / $1.50, Gemini 3 Flash is $0.50 / $3.00,
-and Gemini 2.5 Flash remains $0.30 / $2.50.
-Claude 4.6/4.7 use standard rates throughout their context window.
-
-Sure estimates individual requests using these tiers. Aggregate categorization
-previews assume short requests. Saved usage costs are historical estimates and
-are not recalculated by this update. Estimates exclude regional premiums,
-alternative service tiers, tool charges and audio-specific rates. Anthropic
-five-minute cache writes and reads are included when reported; OpenAI and Gemini
-cache discounts and cache-write/storage charges are not currently modeled.
-Custom endpoints may charge different rates.
+Ballast does not record token counts or estimate costs. Check your provider's
+pricing page and billing dashboard for current rates and spend.
 
 For comparison, GPT-4.1 is $2 input / $8 output, GPT-5 is $1.25 / $10,
 and GPT-4o mini is $0.15 / $0.60.
@@ -1251,7 +1192,7 @@ Then restart both `web` and `worker` so the new env var is loaded. If you are us
 
 ### Chat Errors While the Model Is Still Generating
 
-**Symptom:** The chat shows "Thinking…" for a while, then an error saying the assistant is not available — but the model does produce a reply and LLM Usage shows tokens were generated.
+**Symptom:** The chat shows "Thinking…" for a while, then an error saying the assistant is not available — but the model does produce a reply and the provider's usage dashboard shows tokens were generated.
 
 **Cause:** Three settings interact here, measured over different spans:
 
@@ -1389,10 +1330,6 @@ gets its own prefix, which no longer shares a cache entry with other families on
 the same API key. The first request after each edit also pays full price. The
 result is a small, temporary increase in cost.
 
-Evals always score the default. `Eval::Runners::ChatRunner` reads
-`STATIC_INSTRUCTIONS` directly, which keeps eval scores reproducible. Editing a
-family's prompt does not change them.
-
 Custom OpenAI-compatible endpoints need a little more care. The categorizer and
 merchant parsers look for a `{"categorizations": [...]}` or `{"merchants": [...]}`
 wrapper key, but Sure also asks for that key in a per-request message your
@@ -1442,137 +1379,11 @@ Write:
 - `update_transfer` - Count a transfer into an investment account as spending or as a plain transfer
 - `create_tag` / `update_tag`, `create_category` / `update_category` / `delete_category`
 
-Documents:
-- `search_family_files` - Search uploaded documents (vector store)
-
 These are defined in `app/models/assistant/function/`. Preview tools
 (Statement Vault, `get_valuations`, `get_insights`) are listed in
 [mcp.md](mcp.md#preview-tools).
 
-### Vector Store (Document Search)
-
-Sure's AI assistant can search documents that have been uploaded to a family's vault. Under the hood, documents are indexed in a **vector store** so the assistant can retrieve relevant passages when answering questions (Retrieval-Augmented Generation).
-
-#### How It Works
-
-1. When a user uploads a document to their family vault, it is automatically pushed to the configured vector store.
-2. When the assistant needs financial context from uploaded files, it calls the `search_family_files` function.
-3. The vector store returns the most relevant passages, which the assistant uses to answer the question.
-
-#### Supported Backends
-
-| Backend | Status | Best For | Requirements |
-|---------|--------|----------|--------------|
-| **OpenAI** (default) | ready | Cloud deployments, zero setup | `OPENAI_ACCESS_TOKEN` |
-| **Pgvector** | ready | Self-hosted, full data privacy | PostgreSQL with `pgvector` extension + embedding model |
-| **Qdrant** | scaffolded | Self-hosted, dedicated vector DB | Running Qdrant instance |
-
-#### Configuration
-
-##### OpenAI (Default)
-
-No extra configuration is needed. If you already have `OPENAI_ACCESS_TOKEN` set for the AI assistant, document search works automatically. OpenAI manages chunking, embedding, and retrieval.
-
-```bash
-# Already set for AI chat - document search uses the same token
-OPENAI_ACCESS_TOKEN=sk-proj-...
-```
-
-##### Pgvector (Self-Hosted)
-
-Use PostgreSQL's pgvector extension for fully local document search. All data stays on your infrastructure.
-
-**Requirements:**
-- Use the `pgvector/pgvector:pg16-trixie` Docker image instead of `postgres:16` (drop-in replacement)
-- An embedding model served via an OpenAI-compatible `/v1/embeddings` endpoint (e.g. Ollama with `mxbai-embed-large`)
-- Run the migration with `VECTOR_STORE_PROVIDER=pgvector` to create the `vector_store_chunks` table
-
-```bash
-# Required
-VECTOR_STORE_PROVIDER=pgvector
-
-# Embedding model configuration
-EMBEDDING_MODEL=mxbai-embed-large         # Default: mxbai-embed-large
-EMBEDDING_DIMENSIONS=1024                 # Default: 1024 (must match your model)
-EMBEDDING_URI_BASE=http://ollama:11434/v1 # Falls back to OPENAI_URI_BASE if not set
-EMBEDDING_ACCESS_TOKEN=                   # Falls back to OPENAI_ACCESS_TOKEN if not set
-```
-
-Sure enables the `vector` extension when it first provisions the chunks table,
-provided the database user has permission. If the AI status page reports that
-the extension is available but not enabled and automatic provisioning cannot
-enable it, connect as the PostgreSQL superuser and run:
-
-```sql
-CREATE EXTENSION vector;
-```
-
-The LLM and embedding endpoints are independent. A common fully local setup is
-an OpenAI-compatible chat model through `OPENAI_URI_BASE`, pgvector for storage,
-and an embedding model through `EMBEDDING_URI_BASE`. Make sure
-`EMBEDDING_DIMENSIONS` matches the selected embedding model (for example,
-`mxbai-embed-large` uses 1024 dimensions).
-
-If you are using Ollama (as in `compose.example.ai.yml`), pull the embedding model:
-
-```bash
-docker compose -f compose.example.ai.yml --profile local-ai up -d --wait ollama
-docker compose exec ollama ollama pull mxbai-embed-large
-```
-
-> [!WARNING]
-> Do not change `EMBEDDING_MODEL` for an existing pgvector index without
-> rebuilding it. Vectors created by different models are not comparable, even
-> when they have the same dimensions. Back up the database and the source
-> documents, then remove the existing documents from Sure. If the new model has
-> different dimensions, drop the now-empty chunks table so Sure can recreate it
-> with the new vector size:
->
-> ```bash
-> docker compose -f compose.example.ai.yml exec web bin/rails runner \
->   'ActiveRecord::Base.connection_pool.with_connection { |connection| connection.drop_table(VectorStore::Pgvector::TABLE_NAME, if_exists: true) }'
-> ```
->
-> Change the embedding settings and restart Sure. Confirm that **System health
-> → AI status** reports the new model and dimensions, then upload the source
-> documents again. This recreates every embedding with only the new model.
-
-##### Qdrant (Self-Hosted)
-
-> [!CAUTION]
-> Qdrant is not implemented yet. Use OpenAI or pgvector for document search.
-
-Use a dedicated Qdrant vector database:
-
-```bash
-VECTOR_STORE_PROVIDER=qdrant
-QDRANT_URL=http://localhost:6333   # Default if not set
-QDRANT_API_KEY=your-api-key        # Optional, for authenticated instances
-```
-
-Docker Compose example:
-
-```yaml
-services:
-  sure:
-    environment:
-      - VECTOR_STORE_PROVIDER=qdrant
-      - QDRANT_URL=http://qdrant:6333
-    depends_on:
-      - qdrant
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
-    volumes:
-      - qdrant_data:/qdrant/storage
-
-volumes:
-  qdrant_data:
-```
-
-> **Note:** The Qdrant adapter is currently a skeleton. A future release will add full support including collection management and embedding configuration.
+### AI status checks
 
 #### Verifying the Configuration
 
@@ -1585,13 +1396,6 @@ live checks against the effective configuration:
 - The configured model must complete one trivial function call, sent the way
   the assistant sends its own tools. A model that serves plain chat but rejects
   or ignores the `tools` parameter cannot answer questions about your data.
-- The hosted OpenAI vector-store adapter must answer a list request without
-  creating or changing a store.
-- The pgvector adapter must have its extension enabled, its chunks table
-  present, and successfully execute a query.
-- A pgvector embedding endpoint must create one short test embedding, and the
-  returned vector must match `EMBEDDING_DIMENSIONS`. The test vector is not
-  stored.
 
 When `OPENAI_URI_BASE` points outside OpenAI's hosted API, the page labels the
 selected provider **OpenAI-compatible** and identifies a known effective
@@ -1608,7 +1412,7 @@ checks are written as system-wide entries in **Settings → Debug logs** and to
 #### Verifying Worker Configuration
 
 The checks above all run from the `web` process. Most AI work — assistant
-responses, embeddings, auto-categorization, and merchant
+responses, auto-categorization, and merchant
 detection — actually executes in a Sidekiq `worker` process, which can differ
 from `web` in network access, DNS, proxy rules, or even which credentials it
 loaded, especially in Kubernetes deployments using workload-specific overrides
@@ -1647,86 +1451,10 @@ A few things this does and doesn't prove:
 - **Which settings need a restart depends on how they're set.** Provider,
   model, and API-key settings changed in **Settings → Self-Hosting** are
   stored in the database and take effect automatically for the next request
-  or queued job on both `web` and `worker` — no restart needed. Embedding
-  configuration, and anything only set through an environment variable, is
-  fixed when each container starts; changing it requires restarting or
+  or queued job on both `web` and `worker` — no restart needed. Anything only set
+  through an environment variable is fixed when each container starts; changing it requires restarting or
   recreating **both** `web` and `worker`. The AI status tab labels this
   distinction next to the worker results.
-
-#### Troubleshooting Pgvector and Embeddings
-
-The AI status page reports separate failures for the PostgreSQL storage check
-and the embedding endpoint check.
-
-If PostgreSQL reports that the `vector` extension is not enabled, make sure the
-database image includes pgvector, then enable the extension as a database owner
-or superuser:
-
-```bash
-sudo -u postgres psql -d sure_production -c "CREATE EXTENSION IF NOT EXISTS vector;"
-```
-
-If `vector_store_chunks` is missing, confirm the migration state and re-run the
-conditional vector-store migration with the pgvector provider selected:
-
-```bash
-RAILS_ENV=production bundle exec rails db:migrate:status
-VECTOR_STORE_PROVIDER=pgvector RAILS_ENV=production bundle exec rails db:migrate:redo VERSION=<migration_version>
-```
-
-If the embedding check reports a dimensions mismatch, align
-`EMBEDDING_MODEL` and `EMBEDDING_DIMENSIONS` with the embedding provider's
-documented vector size. For example, `gemini-embedding-2-preview` returns 3072
-dimensions by default, so a matching configuration is:
-
-```bash
-EMBEDDING_MODEL=gemini-embedding-2-preview
-EMBEDDING_DIMENSIONS=3072
-```
-
-Changing only `EMBEDDING_DIMENSIONS` does not reshape an existing pgvector
-column. If `vector_store_chunks` was already created with a different size,
-back up the database and source documents, remove the indexed documents from
-Sure, then alter or recreate the `embedding` column/table before uploading the
-documents again. Dropping the empty chunks table lets Sure recreate it with the
-new vector size:
-
-```bash
-docker compose -f compose.example.ai.yml exec web bin/rails runner \
-  'ActiveRecord::Base.connection_pool.with_connection { |connection| connection.drop_table(VectorStore::Pgvector::TABLE_NAME, if_exists: true) }'
-```
-
-Restart Sure after changing environment values so the new settings are present
-in both web and worker processes. If the embedding live check times out, raise
-the health-check probe timeout in the service environment:
-
-```bash
-AI_HEALTH_PROBE_TIMEOUT=180
-```
-
-If normal AI chat calls also time out, raise `OPENAI_REQUEST_TIMEOUT`
-separately; it controls OpenAI-compatible LLM requests, not the health-check
-probe budget.
-
-You can also check the adapter from the Rails console:
-
-```ruby
-VectorStore.configured?          # => true / false
-VectorStore.adapter              # => #<VectorStore::Openai:...>
-VectorStore.adapter.class.name   # => "VectorStore::Openai"
-```
-
-#### Supported File Types
-
-The following file extensions are supported for document upload and search:
-
-`.pdf`, `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html`, `.css`, `.js`, `.rb`, `.py`, `.docx`, `.pptx`, `.xlsx`, `.yaml`, `.yml`, `.log`, `.sh`
-
-#### Privacy Notes
-
-- **OpenAI backend:** Document content is sent to OpenAI's API for indexing and search. The same privacy considerations as the AI chat apply.
-- **Pgvector backend:** Stored chunks stay in PostgreSQL. Text is still sent to the configured embedding endpoint, which may be local or remote.
-- **Qdrant backend:** The adapter is currently scaffolded and cannot upload or search documents.
 
 ### Multi-Model Setup
 

@@ -9,7 +9,7 @@ require "socket"
 # AiHealth (and the page built on it) proves only that the `web` process
 # resolved a valid-looking configuration and could reach the provider from
 # its own network context. Most AI workloads -- assistant responses, PDF
-# processing, embeddings, auto-categorization, merchant detection -- run in
+# processing, auto-categorization, merchant detection -- run in
 # Sidekiq `worker` processes instead, which can differ in environment, DNS,
 # proxy, network policy, credentials, or model availability. A passing web
 # check says nothing about whether those actually work.
@@ -21,7 +21,9 @@ require "socket"
 # times (or across a few replicas) can see more than one process's result,
 # but a `passing` entry only ever describes the process named on it.
 class WorkerAiHealth
-  CACHE_KEY = "worker_ai_health/results/v1"
+  # v2: Snapshot dropped its document-search members. Entries cached under
+  # v1 hold the old shape, so they're left unread instead of loaded.
+  CACHE_KEY = "worker_ai_health/results/v2"
 
   # How long a recorded result is kept in the shared store at all. Chosen to
   # comfortably outlive an operator clicking through a few checks in one
@@ -40,13 +42,12 @@ class WorkerAiHealth
 
   # One worker process's configuration fingerprint and probe outcomes. Only
   # non-secret fields: redacted endpoints (AiHealth already redacts these),
-  # model/adapter names, and probe statuses -- never a raw credential.
+  # model names, and probe statuses -- never a raw credential.
   Snapshot = Data.define(
     :process_identity, :hostname, :pid, :checked_at,
     :effective_provider, :llm_model, :llm_endpoint, :llm_request_timeout,
     :function_calling_status,
-    :vector_store_adapter, :embedding_model, :embedding_endpoint, :embedding_dimensions,
-    :llm_status, :vector_store_status,
+    :llm_status,
     :failure_codes
   ) do
     def stale?
@@ -58,7 +59,7 @@ class WorkerAiHealth
     def status
       return :stale if stale?
       return :failing if failure_codes.present?
-      return :failing if llm_status.in?(%i[not_configured failing]) || vector_store_status.in?(%i[not_configured failing])
+      return :failing if llm_status.in?(%i[not_configured failing])
       return :failing if function_calling_status.in?(%i[unavailable unsupported failing])
 
       :passing
@@ -79,11 +80,7 @@ class WorkerAiHealth
       effective_provider == ai_health.effective_llm_provider &&
         llm_model == ai_health.llm_model &&
         llm_endpoint == ai_health.llm_endpoint &&
-        llm_request_timeout == ai_health.llm_request_timeout &&
-        vector_store_adapter == ai_health.vector_store_adapter &&
-        embedding_model == ai_health.embedding_model &&
-        embedding_endpoint == ai_health.embedding_endpoint &&
-        embedding_dimensions == ai_health.embedding_dimensions
+        llm_request_timeout == ai_health.llm_request_timeout
     end
   end
 

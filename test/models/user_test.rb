@@ -72,58 +72,47 @@ class UserTest < ActiveSupport::TestCase
     assert_equal "D", user.initial
   end
 
-  test "family validation label uses localized default moniker" do
-    I18n.with_locale(:es) do
-      Current.stubs(:family).returns(nil)
-      user = User.new(email: "missing-family@example.com", password: user_password_test)
+  test "family validation label uses default moniker" do
+    Current.stubs(:family).returns(nil)
+    user = User.new(email: "missing-family@example.com", password: user_password_test)
 
-      assert_not user.valid?
-      assert_includes user.errors.full_messages, "Familia debe existir"
-    end
+    assert_not user.valid?
+    assert_includes user.errors.full_messages, "Family must exist"
   end
 
   test "family validation label uses current family moniker" do
     family = families(:dylan_family)
     family.update!(moniker: "Group")
+    Current.stubs(:family).returns(family)
+    user = User.new(email: "missing-group@example.com", password: user_password_test)
 
-    I18n.with_locale(:es) do
-      Current.stubs(:family).returns(family)
-      user = User.new(email: "missing-group@example.com", password: user_password_test)
-
-      assert_not user.valid?
-      assert_includes user.errors.full_messages, "Grupo debe existir"
-    end
+    assert_not user.valid?
+    assert_includes user.errors.full_messages, "Group must exist"
   end
 
-  test "family attribute labels use requested locale for current family moniker" do
+  test "family attribute labels use current family moniker" do
     family = families(:dylan_family)
     family.update!(moniker: "Group")
     Current.stubs(:family).returns(family)
 
-    I18n.with_locale(:en) do
-      assert_equal "Grupo", User.human_attribute_name(:family, locale: :es)
-      assert_equal "Grupo", User.human_attribute_name(:family_id, locale: :es)
-    end
+    assert_equal "Group", User.human_attribute_name(:family)
+    assert_equal "Group", User.human_attribute_name(:family_id)
   end
 
-  test "family validation label renders in every supported locale" do
-    family = families(:dylan_family)
-    family.update!(moniker: "Group")
-    Current.stubs(:family).returns(family)
+  test "a stored non-English locale reads as nil and leaves the user valid and saveable" do
+    # Raw SQL: update_column would run the locale normalizer and store nil.
+    User.connection.exec_update("UPDATE users SET locale = 'de' WHERE id = #{User.connection.quote(@user.id)}")
+    @user.reload
+    assert_equal "de", @user.read_attribute(:locale)
 
-    LanguagesHelper::SUPPORTED_LOCALES.each do |locale|
-      I18n.with_locale(locale) do
-        user = User.new(email: "missing-family-#{locale.parameterize}@example.com", password: user_password_test)
-        family_label = User.human_attribute_name(:family, locale: locale)
-        family_id_label = User.human_attribute_name(:family_id, locale: locale)
+    assert_nil @user.locale
+    assert @user.valid?
+    assert @user.update(first_name: "Renamed")
+  end
 
-        assert_not user.valid?
-        assert_includes user.errors.full_messages_for(:family).to_sentence,
-                        family_label,
-                        "expected family error to include moniker label for #{locale}"
-        assert_equal family_label, family_id_label
-      end
-    end
+  test "a non-English locale is dropped on write" do
+    @user.update!(locale: "de")
+    assert_nil @user.reload.read_attribute(:locale)
   end
 
   test "names are normalized" do

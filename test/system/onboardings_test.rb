@@ -8,14 +8,7 @@ class OnboardingsTest < ApplicationSystemTestCase
     # Reset onboarding state
     @user.update!(set_onboarding_preferences_at: nil)
 
-    # Force English locale for tests
-    I18n.locale = :en
-
     sign_in @user
-  end
-
-  teardown do
-    I18n.locale = I18n.default_locale
   end
 
   test "can complete the full onboarding flow" do
@@ -35,7 +28,6 @@ class OnboardingsTest < ApplicationSystemTestCase
     assert_selector "[data-controller='time-series-chart']"
 
     # Fill out preferences form
-    select "English (en)", from: "user_family_attributes_locale"
     select "United States Dollar (USD)", from: "user_family_attributes_currency"
     select "MM/DD/YYYY", from: "user_family_attributes_date_format"
     select_theme("light")
@@ -134,28 +126,15 @@ class OnboardingsTest < ApplicationSystemTestCase
     assert_text I18n.t("onboardings.preferences.example")
   end
 
-  test "preferences form validation" do
-    visit preferences_onboarding_path
-
-    # Clear required fields and try to submit
-    select "", from: "user_family_attributes_locale"
-    click_button I18n.t("onboardings.preferences.submit")
-
-    # Should stay on preferences page with validation errors (may have query params)
-    assert_match %r{/onboarding/preferences}, current_path
-  end
-
   test "preferences form saves data correctly" do
     visit preferences_onboarding_path
 
     # Fill out form with specific values
-    select "Spanish (es)", from: "user_family_attributes_locale"
     select "Euro (EUR)", from: "user_family_attributes_currency"
     select "DD/MM/YYYY", from: "user_family_attributes_date_format"
     select_theme("dark")
 
-    # Button text is in Spanish due to locale preview
-    click_button I18n.t("onboardings.preferences.submit", locale: :es)
+    click_button I18n.t("onboardings.preferences.submit")
 
     # Wait for redirect to goals page to ensure form was submitted
     assert_current_path goals_onboarding_path
@@ -164,7 +143,6 @@ class OnboardingsTest < ApplicationSystemTestCase
     @family.reload
     @user.reload
 
-    assert_equal "es", @family.locale
     assert_equal "EUR", @family.currency
     assert_equal "%d/%m/%Y", @family.date_format
     assert_equal "dark", @user.theme
@@ -190,7 +168,6 @@ class OnboardingsTest < ApplicationSystemTestCase
     assert_current_path preferences_onboarding_path
 
     # Complete preferences
-    select "English (en)", from: "user_family_attributes_locale"
     select "United States Dollar (USD)", from: "user_family_attributes_currency"
     select "MM/DD/YYYY", from: "user_family_attributes_date_format"
     click_button I18n.t("onboardings.preferences.submit")

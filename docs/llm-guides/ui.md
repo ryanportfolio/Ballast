@@ -44,7 +44,9 @@ system. Partials use an underscore prefix; shared partials live in
 
 Use `t()` for all user-facing strings and update the corresponding locale files
 under `config/locales/`. Follow the feature's existing locale organization; there
-is no requirement to put every new key in a single `en.yml`.
+is no requirement to put every new key in a single `en.yml`. Ballast is English
+only (`config.i18n.available_locales = [ :en ]`): add keys to `en.yml` files and
+do not add files for other languages.
 
 Use descriptive, hierarchical keys such as `accounts.index.title` and
 `components.transaction_details.show_details`. Group related keys together; use

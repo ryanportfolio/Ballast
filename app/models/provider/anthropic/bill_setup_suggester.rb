@@ -1,31 +1,21 @@
 class Provider::Anthropic::BillSetupSuggester
-  include Provider::Anthropic::Concerns::UsageRecorder
   include Provider::Anthropic::Concerns::StructuredOutput
 
   TOOL_NAME = "report_bill_setup".freeze
 
-  attr_reader :client, :model, :charges, :categories, :current_config, :langfuse_trace, :family
+  attr_reader :client, :model, :charges, :categories, :current_config
 
-  def initialize(client, model:, charges: [], categories: [], current_config: nil, langfuse_trace: nil, family: nil)
+  def initialize(client, model:, charges: [], categories: [], current_config: nil)
     @client = client
     @model = model
     @charges = charges
     @categories = categories
     @current_config = current_config
-    @langfuse_trace = langfuse_trace
-    @family = family
   end
 
   def suggest
-    span = langfuse_trace&.generation(name: "suggest_bill_setup_api_call", model: model, input: {
-      model: model,
-      charges: charges,
-      configure_mode: current_config.present?
-    })
-
     response = create_structured_message(
       tool_name: TOOL_NAME,
-      operation: "suggest_bill_setup",
       model: model,
       max_tokens: max_tokens,
       system_: Provider::Anthropic.structured_output_system(instructions, model, TOOL_NAME),
@@ -34,21 +24,7 @@ class Provider::Anthropic::BillSetupSuggester
       tool_choice: Provider::Anthropic.structured_output_tool_choice(model, TOOL_NAME)
     )
 
-    result = build_suggestion(extract_input(response))
-
-    record_usage(model, response.usage, operation: "suggest_bill_setup", metadata: {
-      charge_count: charges.size,
-      configure_mode: current_config.present?
-    })
-
-    span&.end(output: result.to_h, usage: usage_hash(response.usage))
-    result
-  rescue => e
-    span&.end(output: { error: e.message }, level: "ERROR")
-    record_usage_error(model, operation: "suggest_bill_setup", error: e, metadata: {
-      charge_count: charges.size
-    })
-    raise
+    build_suggestion(extract_input(response))
   end
 
   private

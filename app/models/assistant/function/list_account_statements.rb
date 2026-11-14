@@ -23,9 +23,9 @@ class Assistant::Function::ListAccountStatements < Assistant::Function
         `review_status: "unmatched"` for documents awaiting a human's account
         decision).
 
-        This returns document identity, not document contents. To search inside
-        uploaded documents use `search_family_files`; to fetch one statement's
-        reconciliation figures and a download link use `get_account_statement`.
+        This returns document identity, not document contents. To fetch one
+        statement's reconciliation figures and a download link use
+        `get_account_statement`.
 
         There is no cursor or offset. `has_more: true` means the result was
         truncated — raise `limit` (up to #{MAX_LIMIT}) or narrow the filters to see

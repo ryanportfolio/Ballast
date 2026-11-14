@@ -112,7 +112,7 @@ class UsersController < ApplicationController
     end
 
     def user_params
-      family_attrs = [ :name, :currency, :country, :date_format, :timezone, :locale, :month_start_day, :id ]
+      family_attrs = [ :name, :currency, :country, :date_format, :timezone, :month_start_day, :id ]
       if Current.user.admin?
         family_attrs.push(:personal_budgets, :household_budget_enabled, :investment_contributions_as_spending) # Needed for updating existing family
         family_attrs.push(:moniker, :default_account_sharing)
@@ -121,7 +121,7 @@ class UsersController < ApplicationController
 
       params.require(:user).permit(
         :first_name, :last_name, :email, :profile_image, :redirect_to, :delete_profile_image, :onboarded_at,
-        :show_sidebar, :default_period, :default_account_order, :show_ai_sidebar, :ai_enabled, :theme, :set_onboarding_preferences_at, :set_onboarding_goals_at, :locale,
+        :show_sidebar, :default_period, :default_account_order, :show_ai_sidebar, :ai_enabled, :theme, :set_onboarding_preferences_at, :set_onboarding_goals_at,
         family_attributes: family_attrs,
         goals: []
       )

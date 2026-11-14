@@ -68,29 +68,24 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     assert_select "main .bg-surface-inset h2", text: I18n.t("bills.index.this_month")
   end
 
-  test "bills page shell is localized in German" do
-    @user.update!(locale: "de")
+  test "bills page shell shows its title, views and header actions" do
     Provider::Registry.stubs(:preferred_llm_provider).returns(Object.new)
 
     get bills_url
 
     assert_response :success
 
-    translations = {
-      "bills.views.aria_label" => "Rechnungsansichten",
-      "bills.views.overview" => "Übersicht",
-      "bills.views.calendar" => "Kalender",
-      "bills.views.paycheck" => "Einkommensplan",
-      "bills.views.all" => "Alle Rechnungen",
-      "bills.index.title" => "Rechnungen",
-      "bills.index.add_bill" => "Neue Rechnung",
-      "bills.index.add_income" => "Neues Einkommen",
-      "bills.index.review_with_ai" => "Mit KI prüfen"
-    }
-
-    translations.each do |key, text|
-      assert_equal text, I18n.t(key, locale: :de, fallback: false)
-    end
+    translations = %w[
+      bills.views.aria_label
+      bills.views.overview
+      bills.views.calendar
+      bills.views.paycheck
+      bills.views.all
+      bills.index.title
+      bills.index.add_bill
+      bills.index.add_income
+      bills.index.review_with_ai
+    ].index_with { |key| I18n.t(key) }
 
     assert_select "main h1", text: translations.fetch("bills.index.title")
     assert_select "div.segmented-control[aria-label=?]", translations.fetch("bills.views.aria_label") do
@@ -287,7 +282,7 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
   # heading names a group of bills, so it takes the All bills filter's label
   # for that same group: in Russian and Ukrainian that is the plural, where a
   # row's own status reads as a single bill's.
-  test "paused bills sit under the All bills filter's word for them, in every language" do
+  test "paused bills sit under the All bills filter's word for them" do
     late = 6.days.ago.to_date
     bill = create_bill(name: "Paused gym", amount: 40, expected_day_of_month: late.day,
                        last_occurrence_date: 2.months.ago.to_date, next_expected_date: late)
@@ -297,13 +292,8 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "main h2", text: I18n.t("bills.all.status_filters.paused")
-    I18n.available_locales.each do |locale|
-      filter = I18n.t("bills.all.status_filters.paused", locale: locale, fallback: false, default: nil)
-      next if filter.nil?
-
-      assert_equal filter, I18n.t("bills.index.dormant", locale: locale, fallback: false, default: nil),
-        "#{locale}: the Paused heading and the All bills filter say different things"
-    end
+    assert_equal I18n.t("bills.all.status_filters.paused"), I18n.t("bills.index.dormant"),
+      "the Paused heading and the All bills filter say different things"
   end
 
   # The row calls the leftover Paused, and the drawer it opens, the bill's page
@@ -520,16 +510,15 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     assert_match range, response.body
   end
 
-  # "%b %-d" is English order in every locale; fr, pl and ru put the day first.
-  test "the date rail and Next up print the locale's own short date" do
+  test "the date rail and Next up print the short date" do
     travel_to Date.current.beginning_of_month + 9.days
     due = Date.current + 5
     series = declare_bill(name: "Rent", amount: 1200, due: due)
 
-    get bills_url(locale: "fr")
+    get bills_url
 
     assert_response :success
-    date = I18n.l(due, format: :short, locale: :fr)
+    date = I18n.l(due, format: :short)
     assert_select "div[class~='@lg:block']", text: date
     occurrence = series.recurring_occurrences.find_by!(due_on: due)
     assert_select "a[data-turbo-frame=drawer][href=?] p",
@@ -1038,29 +1027,22 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
                   text: I18n.t("bills.all.status_filters.ended")
   end
 
-  test "the all view dismissed state is localized in German" do
-    @user.update!(locale: "de")
+  test "the all view dismissed state shows the current-bills filter and the empty title" do
     create_bill(name: "Dismissed bill", amount: 20, status: "ended", manual: false)
 
     get bills_url(view: "all")
 
     assert_response :success
-    assert_select "select[name='q[status]'] option",
-                  text: I18n.t("bills.all.current_bills", locale: :de, fallback: false)
-    assert_match I18n.t("bills.all.no_matches_title", locale: :de, fallback: false), response.body
-    assert_match I18n.t("bills.all.dismissed_hidden_description", locale: :de, fallback: false), response.body
-    assert_select "a[href=?]", bills_path(view: "all", q: { status: "ended" }),
-                  text: I18n.t("bills.all.status_filters.ended", locale: :de, fallback: false)
+    assert_select "select[name='q[status]'] option", text: I18n.t("bills.all.current_bills")
+    assert_match I18n.t("bills.all.no_matches_title"), response.body
   end
 
-  test "the all view empty state is localized in German" do
-    @user.update!(locale: "de")
-
+  test "the all view empty state explains there are no matches" do
     get bills_url(view: "all")
 
     assert_response :success
-    assert_match I18n.t("bills.all.no_matches_title", locale: :de, fallback: false), response.body
-    assert_match I18n.t("bills.all.no_matches_description", locale: :de, fallback: false), response.body
+    assert_match I18n.t("bills.all.no_matches_title"), response.body
+    assert_match I18n.t("bills.all.no_matches_description"), response.body
   end
 
   # Content sits on a surface everywhere else in the app. The filters belong to

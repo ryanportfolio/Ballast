@@ -72,9 +72,7 @@ already derived.
 **Sure never returns a document's bytes over MCP, by design.** Stored files are
 served only to a signed-in browser session (Active Storage authorization checks
 `viewable_by?(Current.user)`), and an MCP client holds a bearer token, not a
-session. Nor is there a text fallback: statements archived through
-`upload_account_statement` do not enter the vector store, so
-`search_family_files` cannot see them either. To an agent, a statement in Sure is
+session. To an agent, a statement in Sure is
 metadata — identity, period, account, coverage, ledger reconciliation — and
 nothing more.
 
@@ -132,7 +130,6 @@ Vault is closed to guests, over MCP exactly as in the UI.
 | `get_account_statement` | One document: identity, the balances **recorded for it** (user-entered in Settings → Statement Vault, not auto-extracted — blank until filled), and the reconciliation checks against the ledger *when balances exist*. Returns no bytes and no link — see "The harness keeps the parseable master". |
 | `get_statement_coverage` | The month-by-month gap map for an account: `covered`, `missing`, `mismatched`, `ambiguous`, `duplicate`, `not_expected`. |
 | `record_valuation` | Write a value for a date, with a mandatory citation. |
-| `search_family_files` | Semantic search inside uploaded documents (needs a vector store configured). Complements the vault: identity from `list_account_statements`, contents from here. |
 | `get_accounts`, `get_holdings`, `get_balance_sheet`, `get_transactions` | Pulling L1/L2 into the harness snapshot. |
 
 ### The citation grammar
