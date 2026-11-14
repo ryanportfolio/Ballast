@@ -1,27 +1,27 @@
 # Wealth history with an external agent harness
 
 How to run a provenance-first wealth model — one where every number walks
-back to the document it came from — on top of Sure, without putting that model
-inside Sure.
+back to the document it came from — on top of Ballast, without putting that model
+inside Ballast.
 
 The model itself is specified by
 [the wealth + tax blueprint](wealth-blueprint.md). This guide is the seam:
 which half owns what, which MCP tool serves which layer of the blueprint, and
-which invariants Sure cannot enforce for you.
+which invariants Ballast cannot enforce for you.
 
 ## The two-install shape
 
-**Sure** is the system of record. Accounts, values and statement documents live
-here, and the agent's job against Sure is to keep them clean, complete and
+**Ballast** is the system of record. Accounts, values and statement documents live
+here, and the agent's job against Ballast is to keep them clean, complete and
 cited.
 
 **The harness** is your own repository, driven by an agent (OpenClaw, Claude
 Code, anything that speaks MCP). It holds the wealth + tax memory: the position
 catalog, the tax criteria, the numbered-delta compiler, the golden tests and
-the compiled workbook. It reads and writes Sure over `/mcp`.
+the compiled workbook. It reads and writes Ballast over `/mcp`.
 
 ```text
-   your repo (the harness)                         Sure
+   your repo (the harness)                         Ballast
    ───────────────────────                         ────
    catalogs/ positions, criteria, FX    ──MCP──►   accounts, entries, valuations
    tax_data/*.jsonl                                Statement Vault (documents + sha256)
@@ -30,51 +30,49 @@ the compiled workbook. It reads and writes Sure over `/mcp`.
    tests/  goldens
 ```
 
-Sure is deliberately not the compiler. The blueprint's §2 principle 1 — the
+Ballast is deliberately not the compiler. The blueprint's §2 principle 1 — the
 workbook is a build output regenerated from source — only works if the source is
 versioned, diffable and immutable once closed. That is what your git repo is
 for.
 
 ## Who owns which layer
 
-| Blueprint layer | Owner | In Sure |
+| Blueprint layer | Owner | In Ballast |
 |---|---|---|
-| L0/L1 entities, holders | Sure, partially | `Family`, `User`, `accounts.owner_id`. Holders that are not Sure users — a holding company, a trust — have no home here; keep them in the harness's entity registry. |
-| L1 account registry | **Sure** | `Account` + its `accountable`. Off-bank positions model well as `OtherAsset` or `Property` accounts. |
+| L0/L1 entities, holders | Ballast, partially | `Family`, `User`, `accounts.owner_id`. Holders that are not Ballast users — a holding company, a trust — have no home here; keep them in the harness's entity registry. |
+| L1 account registry | **Ballast** | `Account` + its `accountable`. Off-bank positions model well as `OtherAsset` or `Property` accounts. |
 | L1 positions, parameters, FX table, tax criteria | **Harness** | — |
-| L2 wealth series | **Sure** is authoritative | `Entry` / `Valuation`, `Holding`. The harness snapshots it into `data/YYYY-MM/*.csv` so `git diff` and the goldens have something to bite on. |
-| L2 tax series — criterion, `applicable`, `declared`, `legal_max` | **Harness only** | Sure has one value per account per date. "One value, one criterion" (§2 principle 6) has no representation here and should not be forced into one. |
-| L3 vault — account statements | **Split** | Sure's **Statement Vault** is the shared archive: original bytes in storage, SHA-256 dedup, period detection, account matching, review queue. But it never hands bytes back over MCP, so the harness must keep its own copy of any statement it intends to extract from. See "The harness keeps the parseable master" below. |
+| L2 wealth series | **Ballast** is authoritative | `Entry` / `Valuation`, `Holding`. The harness snapshots it into `data/YYYY-MM/*.csv` so `git diff` and the goldens have something to bite on. |
+| L2 tax series — criterion, `applicable`, `declared`, `legal_max` | **Harness only** | Ballast has one value per account per date. "One value, one criterion" (§2 principle 6) has no representation here and should not be forced into one. |
+| L3 vault — account statements | **Split** | Ballast's **Statement Vault** is the shared archive: original bytes in storage, SHA-256 dedup, period detection, account matching, review queue. But it never hands bytes back over MCP, so the harness must keep its own copy of any statement it intends to extract from. See "The harness keeps the parseable master" below. |
 | L3 vault — tax returns, annual accounts, capital accounts, contracts, minutes, email | **Harness** | The Statement Vault is statement-shaped and accepts PDF/CSV/XLSX only. Keep other primary sources in the harness's own git-ignored vault. |
-| `_control.csv` / reconcile-or-abort | **Split** | Sure's `get_account_statement` reports *ledger-agreement* checks (statement balances vs the ledger, tolerance 0.01, report-only). The blueprint's *parse-integrity* check (parts vs the document's own printed total) and the **abort** have no counterpart in Sure — keep both in the harness extractor. |
-| Gap map / `PENDING` policy | **Sure** | `get_statement_coverage` reports covered / missing / mismatched / ambiguous per month. |
+| `_control.csv` / reconcile-or-abort | **Split** | Ballast's `get_account_statement` reports *ledger-agreement* checks (statement balances vs the ledger, tolerance 0.01, report-only). The blueprint's *parse-integrity* check (parts vs the document's own printed total) and the **abort** have no counterpart in Ballast — keep both in the harness extractor. |
+| Gap map / `PENDING` policy | **Ballast** | `get_statement_coverage` reports covered / missing / mismatched / ambiguous per month. |
 | Numbered deltas, goldens, workbook, divergences report | **Harness only** | — |
 
-### Three invariants Sure cannot give you
+### Three invariants Ballast cannot give you
 
 - **Closed periods are immutable** (§2 principle 7). A Postgres row is mutable
   and keeps no history you can diff. Immutability lives in the harness snapshot
   and its commits.
 - **Golden tests** (§14). Same reason: pin row counts and snapshot totals in the
   harness, against the snapshot, not against a live query.
-- **Reconcile-or-abort as a hard gate** (§2 principle 3, §7 pass 3). Sure's
+- **Reconcile-or-abort as a hard gate** (§2 principle 3, §7 pass 3). Ballast's
   `get_account_statement` reports *statement-vs-ledger* agreement and never
   aborts; it does **not** check the blueprint's *parse-integrity* invariant
   (parsed parts summing to the document's own printed total), and its tolerance
   is a fixed 0.01, not the blueprint's 1.00-per-account-period gate. Both that
   check and the abort belong to the harness extractor. See the vocabulary map.
 
-Treat Sure as a source you re-derive from, not as the archive of what you
+Treat Ballast as a source you re-derive from, not as the archive of what you
 already derived.
 
 ## The harness keeps the parseable master
 
-**Sure never returns a document's bytes over MCP, by design.** Stored files are
+**Ballast never returns a document's bytes over MCP, by design.** Stored files are
 served only to a signed-in browser session (Active Storage authorization checks
 `viewable_by?(Current.user)`), and an MCP client holds a bearer token, not a
-session. Nor is there a text fallback: statements archived through
-`upload_account_statement` do not enter the vector store, so
-`search_family_files` cannot see them either. To an agent, a statement in Sure is
+session. To an agent, a statement in Ballast is
 metadata — identity, period, account, coverage, ledger reconciliation — and
 nothing more.
 
@@ -85,38 +83,38 @@ parses — tax returns, capital accounts, annual accounts — the harness alread
 holds locally, per the ownership table.
 
 **So parse first, publish second.** The extractor runs on the harness's own copy,
-where the bytes are; Sure receives the archived copy afterwards:
+where the bytes are; Ballast receives the archived copy afterwards:
 
 1. The document lands in the **harness's** inbox.
 2. The harness's `vault_ops` ingests it into the harness vault — canonical name,
    SHA-256, manifest, human OK (§8.1–8.3).
 3. **The extractor parses it there**, with the whole file: labelled subtotals,
    glyph decoding where needed, reconcile-or-abort against the printed total.
-4. The harness publishes a copy to Sure with `upload_account_statement`.
+4. The harness publishes a copy to Ballast with `upload_account_statement`.
 5. The harness records values with `record_valuation`, citing that SHA-256.
-6. Sure supplies what the harness cannot: ledger reconciliation, the coverage
+6. Ballast supplies what the harness cannot: ledger reconciliation, the coverage
    map, the review and linking UI, and the household's shared archive.
 
 This ordering *restores* §2 principle 8 rather than bending it. The principle
 says the recurring pipeline reads exclusively from the canonical store — and
-treating Sure as canonical would force a re-fetch the architecture never
-sanctioned. The harness vault is canonical; Sure is where you publish.
+treating Ballast as canonical would force a re-fetch the architecture never
+sanctioned. The harness vault is canonical; Ballast is where you publish.
 
 **The SHA-256 is the join key, and it removes the need to move bytes at all.**
 Both sides hash the same file independently, so
-`list_account_statements(content_sha256: …)` *verifies* that Sure holds the
+`list_account_statements(content_sha256: …)` *verifies* that Ballast holds the
 identical document. That is §8.2's "same content = same hash regardless of name"
 applied across a system boundary.
 
 Two consequences worth stating plainly rather than discovering later:
 
-- A statement someone uploads straight into Sure's web UI, which the harness
+- A statement someone uploads straight into Ballast's web UI, which the harness
   never saw, can be **known but not parsed**. You get its period, account,
   coverage and ledger reconciliation; you cannot extract from it. Per §13 any
   value derived from it is reliability C, or stays `PENDING`, until a copy
   reaches the harness inbox.
-- **Neither vault backs up the other.** Sure cannot rebuild the harness's data
-  layer, and the harness cannot rebuild Sure's archive.
+- **Neither vault backs up the other.** Ballast cannot rebuild the harness's data
+  layer, and the harness cannot rebuild Ballast's archive.
 
 ## The tools
 
@@ -132,12 +130,11 @@ Vault is closed to guests, over MCP exactly as in the UI.
 | `get_account_statement` | One document: identity, the balances **recorded for it** (user-entered in Settings → Statement Vault, not auto-extracted — blank until filled), and the reconciliation checks against the ledger *when balances exist*. Returns no bytes and no link — see "The harness keeps the parseable master". |
 | `get_statement_coverage` | The month-by-month gap map for an account: `covered`, `missing`, `mismatched`, `ambiguous`, `duplicate`, `not_expected`. |
 | `record_valuation` | Write a value for a date, with a mandatory citation. |
-| `search_family_files` | Semantic search inside uploaded documents (needs a vector store configured). Complements the vault: identity from `list_account_statements`, contents from here. |
 | `get_accounts`, `get_holdings`, `get_balance_sheet`, `get_transactions` | Pulling L1/L2 into the harness snapshot. |
 
 ### The citation grammar
 
-`record_valuation` requires a `source` and parses it. This is the one place Sure
+`record_valuation` requires a `source` and parses it. This is the one place Ballast
 can enforce §2 principle 2 — never invent a datum — so it fails loud rather than
 storing an uncited number:
 
@@ -166,7 +163,7 @@ so it travels with the value and shows in the UI.
 
 `link` and `reject` are **not** exposed. Attaching a statement to an account is
 the human sign-off step of §8.3, and §17 keeps external actions with the owner.
-Sure already proposes a match — `suggested_account` with a confidence score,
+Ballast already proposes a match — `suggested_account` with a confidence score,
 computed at upload — and the user confirms it in Settings → Statement Vault.
 
 Report the suggestion. Do not describe a suggested match as a link.
@@ -175,7 +172,7 @@ Report the suggestion. Do not describe a suggested match as a link.
 
 Reading the blueprint against this codebase:
 
-| Blueprint | Sure |
+| Blueprint | Ballast |
 |---|---|
 | `{inbox}` / staging inbox | statements with `review_status: "unmatched"` |
 | triage (mechanical-first) | `AccountStatement::MetadataDetector` — period, institution, last-4 from filename and contents |
@@ -188,7 +185,7 @@ Reading the blueprint against this codebase:
 | gap policy `PENDING` (§13) | coverage status `missing` |
 | reliability grade (§13.4) | the `(grade: A\|B\|C)` suffix on `record_valuation`'s `source` |
 
-## The monthly runbook, against Sure
+## The monthly runbook, against Ballast
 
 Blueprint §15.2, rewritten:
 
@@ -196,10 +193,10 @@ Blueprint §15.2, rewritten:
    harness's inbox, go through its own `vault_ops` (canonical name, SHA-256,
    manifest, human OK), and are parsed *there* — reconcile-or-abort against the
    printed total, while the bytes are still in reach. Only then publish each one
-   to Sure with `upload_account_statement`. A `duplicate: true` response means it
+   to Ballast with `upload_account_statement`. A `duplicate: true` response means it
    was already archived: a normal outcome, not an error, and confirmation that
    both sides hold the same file. Publishing before extracting strands you —
-   Sure will not hand the bytes back.
+   Ballast will not hand the bytes back.
 2. **Hand off the match.** Report each unmatched statement and its suggested
    account to the user; they confirm in Settings → Statement Vault. Do not
    proceed as if the link exists.
@@ -227,29 +224,29 @@ Blueprint §15.2, rewritten:
 
 ## Building the harness: the phases, remapped
 
-Blueprint §20 assumes you build everything. Against Sure, several phases are
+Blueprint §20 assumes you build everything. Against Ballast, several phases are
 already done:
 
 - **Phase 0 (map the sources)** — unchanged, and still the phase people skip.
   `list_account_statements` and `get_statement_coverage` give you the inventory
-  for anything already in Sure.
+  for anything already in Ballast.
 - **Phase 1 (catalogs, schemas, skeleton)** — build the harness's schemas and
   the snapshot writer. The account registry comes from `get_accounts` instead of
   being hand-curated; keep the positions catalog local.
-- **Phases 2–4 (extractors)** — mostly replaced. Sure's provider syncs and
+- **Phases 2–4 (extractors)** — mostly replaced. Ballast's provider syncs and
   statement parsing already produce L2. The harness's "extractor" is a
   `pull_from_sure` step writing the snapshot. Write extractors only for source
-  families Sure does not handle.
+  families Ballast does not handle.
 - **Phase 5 (views)** — unchanged, harness-side.
-- **Phase 6 (the vault)** — **partly already built**. Sure gives you archival,
+- **Phase 6 (the vault)** — **partly already built**. Ballast gives you archival,
   SHA-256 dedup, the review queue and the coverage map for account statements,
   so don't rebuild those. You still need a harness-side vault for every document
-  the extractors read — statements included, since Sure won't return their bytes
+  the extractors read — statements included, since Ballast won't return their bytes
   — plus the non-statement sources it was never going to hold.
-- **Phase 7 (the tax layer)** — entirely harness-side. Sure has no criterion
+- **Phase 7 (the tax layer)** — entirely harness-side. Ballast has no criterion
   dimension and should not grow one.
 - **Phase 8 (forensics, intel, agent memory)** — entirely harness-side. Email
-  sweeps never touch Sure; facts they establish enter as an
+  sweeps never touch Ballast; facts they establish enter as an
   `upload_account_statement` (if a document backs them) plus a
   `record_valuation` citing it.
 
@@ -257,9 +254,9 @@ already done:
 
 Worth knowing before you promise the user something:
 
-- **Non-user holders.** Sure's holder concept is a `User` in a `Family`. A
+- **Non-user holders.** Ballast's holder concept is a `User` in a `Family`. A
   holding company as a first-class holder needs the harness's own registry, with
-  its Sure accounts mapped to it.
+  its Ballast accounts mapped to it.
 - **Non-statement documents.** PDF/CSV/XLSX statements only. Tax returns and
   capital accounts can be uploaded if they fit those formats, but the vault will
   treat them as statements — period detection and account matching will produce
@@ -276,6 +273,6 @@ Worth knowing before you promise the user something:
 - [MCP Server for External AI Assistants](../hosting/mcp.md) — endpoint,
   authentication, tool list.
 - [External AI Assistant configuration](../hosting/ai.md#openclaw-gateway-example)
-  — pointing OpenClaw at Sure.
+  — pointing OpenClaw at Ballast.
 - [Gating a preview feature](gating-a-preview-feature.md) — the toggle these
   tools sit behind.

@@ -31,8 +31,7 @@ class Security::Price::Importer
     prev_currency = prev_price_currency || db_price_currency || "USD"
 
     # Fallback for holdings that predate the asset's listing on the provider
-    # (e.g. a 2018 BTCEUR trade vs. Binance's 2020-01-03 listing date, or a
-    # 2023 RDDT trade vs. the 2024-03-21 IPO on Yahoo/Twelve Data). We can't
+    # (e.g. a 2023 RDDT trade vs. the 2024-03-21 IPO on Yahoo/Twelve Data). We can't
     # anchor a price on or before start_date, but provider_prices has real
     # data later in the range — advance fill_start_date to the earliest
     # available provider date and use that price as the LOCF anchor. Days
@@ -135,7 +134,7 @@ class Security::Price::Importer
     # Update when the column is currently blank, OR when we've discovered
     # an EARLIER date than the stored one — the latter covers the
     # clear_cache-driven case where a provider has extended its backward
-    # coverage (e.g. Binance backfilling older BTCEUR history) and we
+    # coverage (e.g. backfilling older history) and we
     # want subsequent syncs to reflect the new earlier clamp. We never
     # move the column forward from a previously-discovered earlier value,
     # since that would silently hide older rows already in the DB.
@@ -250,8 +249,7 @@ class Security::Price::Importer
 
     # Effective start date after clamping to the security's known first
     # provider-available price date. Unlike start_date, this shrinks when the
-    # provider's history (e.g. Binance BTCEUR listed 2020-01-03, RDDT IPO
-    # 2024-03-21) begins after the user's original start_date. Falls through
+    # provider's history (e.g. RDDT IPO 2024-03-21) begins after the user's original start_date. Falls through
     # to start_date for any security that has never tripped the fallback.
     def clamped_start_date
       @clamped_start_date ||= begin
@@ -282,7 +280,7 @@ class Security::Price::Importer
     end
 
     # The date the gap-fill loop starts from. When the provider's history was
-    # clamped (e.g. Alpha Vantage 140 days), we start from the clamped window
+    # clamped (e.g. a 140-day limit), we start from the clamped window
     # instead of the original effective_start_date to avoid writing hundreds of
     # LOCF-filled prices for dates the provider can't actually serve.
     def fill_start_date

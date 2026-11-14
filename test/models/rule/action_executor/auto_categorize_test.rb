@@ -15,22 +15,16 @@ class Rule::ActionExecutor::AutoCategorizeTest < ActiveSupport::TestCase
     @executor = Rule::ActionExecutor::AutoCategorize.new(@rule)
   end
 
-  test "self-hosted label estimates against the resolved categorization model" do
+  test "self-hosted label with a categorization model is the plain label" do
     @family.stubs(:self_hoster?).returns(true)
     @family.stubs(:categorization_model_name).returns("~typesafe/jev-latest")
-    LlmUsage.expects(:estimate_auto_categorize_cost).with(
-      transaction_count: 20,
-      category_count: @family.categories.count,
-      model: "~typesafe/jev-latest"
-    ).returns(nil)
 
-    assert_equal "Auto-categorize transactions with AI (cost: N/A)", @executor.label
+    assert_equal "Auto-categorize transactions with AI", @executor.label
   end
 
   test "self-hosted label reports missing categorization provider" do
     @family.stubs(:self_hoster?).returns(true)
     @family.stubs(:categorization_model_name).returns(nil)
-    LlmUsage.expects(:estimate_auto_categorize_cost).never
 
     assert_equal "Auto-categorize transactions with AI (no categorization provider configured)", @executor.label
   end

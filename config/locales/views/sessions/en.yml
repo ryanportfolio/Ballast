@@ -13,7 +13,7 @@ en:
       forgot_password: Forgot your password?
       password: Password
       submit: Log in
-      title: Sure
+      title: Ballast
       password_placeholder: Enter your password
       local_login_admin_only: Local login is restricted to administrators.
       passkey_button: Sign in with a passkey

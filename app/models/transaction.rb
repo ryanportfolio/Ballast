@@ -118,7 +118,8 @@ class Transaction < ApplicationRecord
   # statement size when a merge or category destroy hits many transactions.
   REASSIGN_TOUCH_BATCH_SIZE = 5_000
 
-  # DataEnrichment sources that represent automatic category assignment
+  # DataEnrichment sources that represent automatic category assignment.
+  # "bayes" is the removed Bayes classifier's: rows it wrote stay automatic.
   AUTO_CATEGORY_SOURCES = %w[ai bayes].freeze
 
   # Stored flag values that do not mark a transaction pending: the strings
@@ -219,7 +220,7 @@ class Transaction < ApplicationRecord
   end
 
   # Transactions whose category is still the one an automatic source (e.g.
-  # "ai", "bayes") set.
+  # "ai") set.
   scope :category_from, ->(*sources, since: nil, metadata: nil) { where(category_from_sql(*sources, since:, metadata:)) }
 
   def self.category_from_sql(*sources, **options)
@@ -295,15 +296,10 @@ class Transaction < ApplicationRecord
     sanitized_query = query.to_s.strip
     return [] if sanitized_query.length < MIN_LENGTH_FOR_NAME_SUGGESTION
 
-    # distinct(false) cancels any DISTINCT inherited from the caller's scope (e.g.
-    # Account.accessible_by's left_joins(:account_shares).distinct) — Postgres rejects
-    # SELECT DISTINCT combined with an ORDER BY expression absent from the select list.
-    # Callers such as TransactionsController#name_suggestions merge in
-    # Account.accessible_by, whose left_joins(:account_shares) fans out to one row per
-    # share for accounts the current user owns (the owner predicate matches regardless of
-    # which share row it's paired with) — so COUNT(*) below would over-count transactions
-    # on any owned account shared with multiple family members. COUNT(DISTINCT
-    # transactions.id) counts each transaction once no matter how the caller's scope joins.
+    # distinct(false) cancels any DISTINCT inherited from the caller's scope — Postgres
+    # rejects SELECT DISTINCT combined with an ORDER BY expression absent from the select
+    # list. COUNT(DISTINCT transactions.id) counts each transaction once no matter how the
+    # caller's scope joins.
     # Leading-wildcard ILIKE can't use index_entries_on_lower_name (a btree on
     # lower(name), which only accelerates prefix/exact matches) and falls back
     # to a scan — same tradeoff already accepted in EntrySearch#search and

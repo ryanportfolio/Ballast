@@ -68,29 +68,24 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     assert_select "main .bg-surface-inset h2", text: I18n.t("bills.index.this_month")
   end
 
-  test "bills page shell is localized in German" do
-    @user.update!(locale: "de")
+  test "bills page shell shows its title, views and header actions" do
     Provider::Registry.stubs(:preferred_llm_provider).returns(Object.new)
 
     get bills_url
 
     assert_response :success
 
-    translations = {
-      "bills.views.aria_label" => "Rechnungsansichten",
-      "bills.views.overview" => "Übersicht",
-      "bills.views.calendar" => "Kalender",
-      "bills.views.paycheck" => "Einkommensplan",
-      "bills.views.all" => "Alle Rechnungen",
-      "bills.index.title" => "Rechnungen",
-      "bills.index.add_bill" => "Neue Rechnung",
-      "bills.index.add_income" => "Neues Einkommen",
-      "bills.index.review_with_ai" => "Mit KI prüfen"
-    }
-
-    translations.each do |key, text|
-      assert_equal text, I18n.t(key, locale: :de, fallback: false)
-    end
+    translations = %w[
+      bills.views.aria_label
+      bills.views.overview
+      bills.views.calendar
+      bills.views.paycheck
+      bills.views.all
+      bills.index.title
+      bills.index.add_bill
+      bills.index.add_income
+      bills.index.review_with_ai
+    ].index_with { |key| I18n.t(key) }
 
     assert_select "main h1", text: translations.fetch("bills.index.title")
     assert_select "div.segmented-control[aria-label=?]", translations.fetch("bills.views.aria_label") do
@@ -287,7 +282,7 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
   # heading names a group of bills, so it takes the All bills filter's label
   # for that same group: in Russian and Ukrainian that is the plural, where a
   # row's own status reads as a single bill's.
-  test "paused bills sit under the All bills filter's word for them, in every language" do
+  test "paused bills sit under the All bills filter's word for them" do
     late = 6.days.ago.to_date
     bill = create_bill(name: "Paused gym", amount: 40, expected_day_of_month: late.day,
                        last_occurrence_date: 2.months.ago.to_date, next_expected_date: late)
@@ -297,13 +292,8 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "main h2", text: I18n.t("bills.all.status_filters.paused")
-    I18n.available_locales.each do |locale|
-      filter = I18n.t("bills.all.status_filters.paused", locale: locale, fallback: false, default: nil)
-      next if filter.nil?
-
-      assert_equal filter, I18n.t("bills.index.dormant", locale: locale, fallback: false, default: nil),
-        "#{locale}: the Paused heading and the All bills filter say different things"
-    end
+    assert_equal I18n.t("bills.all.status_filters.paused"), I18n.t("bills.index.dormant"),
+      "the Paused heading and the All bills filter say different things"
   end
 
   # The row calls the leftover Paused, and the drawer it opens, the bill's page
@@ -520,16 +510,15 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     assert_match range, response.body
   end
 
-  # "%b %-d" is English order in every locale; fr, pl and ru put the day first.
-  test "the date rail and Next up print the locale's own short date" do
+  test "the date rail and Next up print the short date" do
     travel_to Date.current.beginning_of_month + 9.days
     due = Date.current + 5
     series = declare_bill(name: "Rent", amount: 1200, due: due)
 
-    get bills_url(locale: "fr")
+    get bills_url
 
     assert_response :success
-    date = I18n.l(due, format: :short, locale: :fr)
+    date = I18n.l(due, format: :short)
     assert_select "div[class~='@lg:block']", text: date
     occurrence = series.recurring_occurrences.find_by!(due_on: due)
     assert_select "a[data-turbo-frame=drawer][href=?] p",
@@ -1038,29 +1027,22 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
                   text: I18n.t("bills.all.status_filters.ended")
   end
 
-  test "the all view dismissed state is localized in German" do
-    @user.update!(locale: "de")
+  test "the all view dismissed state shows the current-bills filter and the empty title" do
     create_bill(name: "Dismissed bill", amount: 20, status: "ended", manual: false)
 
     get bills_url(view: "all")
 
     assert_response :success
-    assert_select "select[name='q[status]'] option",
-                  text: I18n.t("bills.all.current_bills", locale: :de, fallback: false)
-    assert_match I18n.t("bills.all.no_matches_title", locale: :de, fallback: false), response.body
-    assert_match I18n.t("bills.all.dismissed_hidden_description", locale: :de, fallback: false), response.body
-    assert_select "a[href=?]", bills_path(view: "all", q: { status: "ended" }),
-                  text: I18n.t("bills.all.status_filters.ended", locale: :de, fallback: false)
+    assert_select "select[name='q[status]'] option", text: I18n.t("bills.all.current_bills")
+    assert_match I18n.t("bills.all.no_matches_title"), response.body
   end
 
-  test "the all view empty state is localized in German" do
-    @user.update!(locale: "de")
-
+  test "the all view empty state explains there are no matches" do
     get bills_url(view: "all")
 
     assert_response :success
-    assert_match I18n.t("bills.all.no_matches_title", locale: :de, fallback: false), response.body
-    assert_match I18n.t("bills.all.no_matches_description", locale: :de, fallback: false), response.body
+    assert_match I18n.t("bills.all.no_matches_title"), response.body
+    assert_match I18n.t("bills.all.no_matches_description"), response.body
   end
 
   # Content sits on a surface everywhere else in the app. The filters belong to
@@ -1586,8 +1568,8 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
       { count: 2 }, "the row and its Next up item"
   end
 
-  # A bill opens over the list, the way a transaction or a budget category
-  # does, rather than expanding inline under its row.
+  # A bill opens over the list, the way a transaction does, rather than
+  # expanding inline under its row.
   test "a bill opens in the drawer and tells its story there" do
     bill = create_bill(name: "Rent", amount: 2150)
     occurrence = bill.recurring_occurrences.order(:due_on).first
@@ -2094,7 +2076,7 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     assert_includes history, "$78.50"
     assert_includes history, "Account 4821"
 
-    # Collapsible, like a transaction's or a budget category's drawer: the
+    # Collapsible, like a transaction's drawer: the
     # overview opens, the rest wait for a click.
     assert_select "details[open] > summary", text: I18n.t("bills.detail.overview")
     %w[upcoming history notes].each do |key|
@@ -2233,8 +2215,8 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, chevrons.map(&:to_html).uniq.size, "the folds' chevrons differ: #{chevrons.map { |svg| svg["class"] }.inspect}"
   end
 
-  # The pulse totals what is owed, so the bills come next, late ones first, the
-  # way Budgets leads its categories with Over budget. The queues waiting on a
+  # The pulse totals what is owed, so the bills come next, late ones first. The
+  # queues waiting on a
   # yes or no follow, and the notices, which only inform, close the page.
   test "the overview leads with the bills, late ones first, then the queues and the notices" do
     trial = create_bill(name: "Streamflix", amount: 20)
@@ -2502,48 +2484,6 @@ class BillsControllerTest < ActionDispatch::IntegrationTest
     get_bill_drawer(bill)
     assert_response :success
     assert_no_match smart_configuration_bill_path(bill), response.body
-  end
-
-  test "price changes on accounts the member cannot reach stay out of notices and the rollup" do
-    hidden = create_bill(name: "Hidden brokerage sub", amount: 24.99, account: accounts(:investment))
-    hidden.update!(bill_type: "subscription")
-    hidden.recurring_price_changes.create!(
-      effective_on: Date.current - 5, previous_amount: 19.99, new_amount: 24.99,
-      currency: "USD", source: "detected"
-    )
-    visible = create_bill(name: "Visible sub", amount: 9.99)
-    visible.update!(bill_type: "subscription")
-    visible.recurring_price_changes.create!(
-      effective_on: Date.current - 5, previous_amount: 7.99, new_amount: 9.99,
-      currency: "USD", source: "detected"
-    )
-
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    get bills_url
-    assert_response :success
-    assert_match "Visible sub", response.body
-    assert_no_match "Hidden brokerage sub", response.body
-
-    get bills_url(view: "all", q: { bill_type: "subscription" })
-    assert_response :success
-    assert_no_match "Hidden brokerage sub", response.body
-  end
-
-  test "the suggested strip only shows series on accounts the member can reach" do
-    create_suggested(name: "Hidden brokerage sub", account: accounts(:investment))
-    create_suggested(name: "Visible sub", account: accounts(:depository))
-
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-    get bills_url
-
-    assert_response :success
-    assert_match "Visible sub", response.body
-    assert_no_match "Hidden brokerage sub", response.body
   end
 
   test "income suggestions stay out of the bills review strip" do

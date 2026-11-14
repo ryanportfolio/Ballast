@@ -104,15 +104,17 @@ class GenerateInsightsJobTest < ActiveJob::TestCase
     GenerateInsightsJob.perform_now(family_id: @family.id)
   end
 
-  test "broadcasts the feed in the family's locale" do
-    @family.update!(locale: "de")
+  test "broadcasts the feed in English when the family has a stored non-English locale" do
+    # Raw SQL: update_column would run the locale normalizer and store "en".
+    Family.connection.exec_update("UPDATE families SET locale = 'de' WHERE id = #{Family.connection.quote(@family.id)}")
+    assert_equal "de", @family.reload.read_attribute(:locale)
     stub_generated([ generated_insight ])
     locales = []
     Turbo::StreamsChannel.stubs(:broadcast_replace_to).with { locales << I18n.locale; true }
 
     GenerateInsightsJob.perform_now(family_id: @family.id)
 
-    assert_equal [ :de ], locales.uniq
+    assert_equal [ :en ], locales.uniq
   end
 
   test "re-running with unchanged numbers does not duplicate or rewrite" do
@@ -148,7 +150,7 @@ class GenerateInsightsJobTest < ActiveJob::TestCase
   end
 
   # The title is built from I18n and the generator's own data, not written by
-  # the model. A goal or category renamed since the insight was stored left it
+  # the model. An account or category renamed since the insight was stored left it
   # naming something that no longer exists, for the rest of the month.
   test "a renamed subject refreshes the title without resurfacing the insight" do
     stub_generated([ generated_insight ])
@@ -259,10 +261,11 @@ class GenerateInsightsJobTest < ActiveJob::TestCase
     assert_nil insight.read_at
   end
 
-  test "expires an insight hidden because its account is no longer shared with everyone" do
+  test "expires an insight hidden because its account is no longer visible" do
+    accounts(:connected).update_column(:status, "disabled")
     insight = @family.insights.create!(
       insight_type: "idle_cash", priority: "low", status: "active", title: "Idle", body: "body",
-      metadata: { "account_id" => accounts(:connected).id }, dedup_key: "idle_cash:private",
+      metadata: { "account_id" => accounts(:connected).id }, dedup_key: "idle_cash:disabled",
       generated_at: Time.current
     )
     assert_not @family.insights.visible.exists?(id: insight.id), "precondition: the row must be hidden, not just stale"
@@ -270,7 +273,7 @@ class GenerateInsightsJobTest < ActiveJob::TestCase
 
     GenerateInsightsJob.perform_now(family_id: @family.id)
 
-    assert insight.reload.expired?, "a hidden row whose condition cleared must not come back stale once access returns"
+    assert insight.reload.expired?, "a hidden row whose condition cleared must not come back stale once the account returns"
   end
 
   private

@@ -41,17 +41,6 @@ class Assistant::Function::DeleteTransactionTest < ActiveSupport::TestCase
     assert Transaction.exists?(@transaction.id)
   end
 
-  test "does not let read-only collaborators delete transactions" do
-    transaction = transactions(:transfer_in)
-    function = Assistant::Function::DeleteTransaction.new(users(:family_member))
-
-    result = function.call("id" => transaction.id)
-
-    assert_equal false, result[:success]
-    assert_equal "not_found", result[:error]
-    assert Transaction.exists?(transaction.id)
-  end
-
   test "does not let a user from a different family delete a transaction" do
     # josh belongs to the `empty` family; the transaction belongs to
     # `dylan_family`. Cross-family ids are structurally unresolvable and must

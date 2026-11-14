@@ -23,21 +23,14 @@
       <% affected_count = @rule.affected_resource_count %>
       <div class="mb-4">
         <%= render DS::Alert.new(title: t(".ai_cost_title"), variant: :info) do %>
-          <% if @estimated_cost.present? %>
-            <p><%= t(".ai_cost_with_estimate_html", count: affected_count, cost: sprintf("%.4f", @estimated_cost)) %></p>
-          <% else %>
-            <p>
-              <%= t(".ai_cost_no_estimate_html", count: affected_count) %>
-              <% if @selected_model.present? %>
-                <span class="font-semibold"><%= t(".cost_unavailable_model", model: @selected_model) %></span>
-              <% else %>
-                <span class="font-semibold"><%= t(".cost_unavailable_no_provider") %></span>
-              <% end %>
-              <%= t(".cost_warning") %>
-            </p>
-          <% end %>
           <p>
-            <%= link_to t(".view_usage_history"), settings_llm_usage_path, class: "text-link underline" %>
+            <%= t(".ai_cost_no_estimate_html", count: affected_count) %>
+            <% if @selected_model.present? %>
+              <span class="font-semibold"><%= t(".cost_model", model: @selected_model) %></span>
+            <% else %>
+              <span class="font-semibold"><%= t(".cost_no_provider") %></span>
+            <% end %>
+            <%= t(".cost_warning") %>
           </p>
         <% end %>
       </div>

@@ -64,22 +64,23 @@ class TransactionCategoriesControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "action_type=set_transaction_category"
   end
 
+  # Guests are read-only (Ballast has no account sharing to make a guest an
+  # account's owner), so the change is refused before any rule is offered.
   test "does not offer guests to create a rule they cannot save" do
     category = categories(:income)
     @entry.update!(name: "AMZN Mktp UK")
+    original_category_id = @transaction.category_id
     rule = @entry.account.family.rules.build(name: "Amazon", resource_type: "transaction", active: true)
     rule.conditions.build(condition_type: "transaction_name", operator: "like", value: "AMAZON.CO.UK")
     rule.actions.build(action_type: "set_transaction_category", value: category.id.to_s)
     rule.save!
-    @entry.account.update!(owner: family_guest)
     sign_in family_guest
 
     patch transaction_category_url(@entry),
       params: { entry: { entryable_type: "Transaction", entryable_attributes: { id: @transaction.id, category_id: category.id } } },
       as: :turbo_stream
 
-    assert_response :success
-    assert_equal category.id, @transaction.reload.category_id
+    assert_equal original_category_id, @transaction.reload.category_id
     assert_not_includes response.body, "action_type=set_transaction_category"
   end
 

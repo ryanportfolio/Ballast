@@ -1,6 +1,6 @@
 # Chat API Documentation
 
-The Chat API allows external applications to interact with Sure's AI chat functionality. The OpenAPI description is generated directly from executable request specs, ensuring it always reflects the behaviour of the running Rails application.
+The Chat API allows external applications to interact with Ballast's AI chat functionality. The OpenAPI description is generated directly from executable request specs, ensuring it always reflects the behaviour of the running Rails application.
 
 ## Generated OpenAPI specification
 

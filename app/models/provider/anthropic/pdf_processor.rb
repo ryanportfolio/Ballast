@@ -1,5 +1,4 @@
 class Provider::Anthropic::PdfProcessor
-  include Provider::Anthropic::Concerns::UsageRecorder
   include Provider::Anthropic::Concerns::StructuredOutput
 
   TOOL_NAME = "report_document_analysis".freeze
@@ -15,14 +14,12 @@ class Provider::Anthropic::PdfProcessor
   REQUEST_ENVELOPE_BYTES = 1 * 1024 * 1024
   MAX_PDF_BYTES = (MAX_REQUEST_BYTES - REQUEST_ENVELOPE_BYTES) * 3 / 4
 
-  attr_reader :client, :model, :pdf_content, :langfuse_trace, :family
+  attr_reader :client, :model, :pdf_content
 
-  def initialize(client, model:, pdf_content:, langfuse_trace: nil, family: nil)
+  def initialize(client, model:, pdf_content:)
     @client = client
     @model = model
     @pdf_content = pdf_content
-    @langfuse_trace = langfuse_trace
-    @family = family
   end
 
   def process
@@ -32,14 +29,8 @@ class Provider::Anthropic::PdfProcessor
             "PDF is too large (#{pdf_content.bytesize} bytes); base64-encoded it would exceed Anthropic's 32 MB request limit"
     end
 
-    span = langfuse_trace&.generation(name: "process_pdf_api_call", model: model, input: {
-      model: model,
-      pdf_size: pdf_content&.bytesize
-    })
-
     response = create_structured_message(
       tool_name: TOOL_NAME,
-      operation: "process_pdf",
       model: model,
       max_tokens: max_tokens,
       system_: Provider::Anthropic.structured_output_system(instructions, model, TOOL_NAME),
@@ -49,16 +40,7 @@ class Provider::Anthropic::PdfProcessor
     )
 
     parsed = extract_tool_input(response)
-    result = build_result(parsed)
-
-    record_usage(model, response.usage, operation: "process_pdf", metadata: { pdf_size: pdf_content.bytesize })
-
-    span&.end(output: result.to_h, usage: usage_hash(response.usage))
-    result
-  rescue => e
-    span&.end(output: { error: e.message, error_detail: safe_error_detail(e) }, level: "ERROR")
-    record_usage_error(model, operation: "process_pdf", error: e, metadata: { pdf_size: pdf_content&.bytesize })
-    raise
+    build_result(parsed)
   end
 
   private

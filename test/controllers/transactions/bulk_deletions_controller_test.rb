@@ -22,6 +22,25 @@ class Transactions::BulkDeletionsControllerTest < ActionDispatch::IntegrationTes
     assert_equal "#{delete_count} transactions deleted", flash[:notice]
   end
 
+  test "a guest cannot bulk delete" do
+    sign_in family_guest
+    entry_ids = @user.family.entries.transactions.pluck(:id)
+
+    assert_no_difference [ "Transaction.count", "Entry.count" ] do
+      post transactions_bulk_deletion_url, params: { bulk_delete: { entry_ids: entry_ids } }
+    end
+
+    assert_equal "0 transactions deleted", flash[:notice]
+  end
+
+  test "a member can bulk delete" do
+    sign_in users(:family_member)
+
+    assert_difference [ "Transaction.count", "Entry.count" ], -1 do
+      post transactions_bulk_deletion_url, params: { bulk_delete: { entry_ids: [ @entry.id ] } }
+    end
+  end
+
   test "bulk delete with rejected transfers" do
     entry = entries(:transaction)
     other_entry = entries(:transfer_out)

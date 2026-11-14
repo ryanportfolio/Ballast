@@ -41,19 +41,6 @@ class Assistant::Function::GetTransferMatchCandidatesTest < ActiveSupport::TestC
     assert_empty result[:candidates]
   end
 
-  test "hides candidates in accounts the user cannot access" do
-    member = users(:family_member)
-    private_account = families(:dylan_family).accounts.create!(
-      name: "Admin private", balance: 0, currency: "USD", accountable: Depository.new, owner: @user
-    )
-    outflow = create_transaction(account: @checking, amount: 64).transaction
-    create_transaction(account: private_account, amount: -64)
-
-    result = Assistant::Function::GetTransferMatchCandidates.new(member).call("transaction_id" => outflow.id)
-
-    assert_empty result[:candidates]
-  end
-
   test "returns not_found for another family's transaction" do
     outflow = create_transaction(account: @checking, amount: 64).transaction
 

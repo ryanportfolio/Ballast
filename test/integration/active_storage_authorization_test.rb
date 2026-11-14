@@ -107,26 +107,7 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_url
   end
 
-  test "user cannot access linked statement blob for an inaccessible account" do
-    private_account = accounts(:other_asset)
-    statement = AccountStatement.create_from_upload!(
-      family: @user_a.family,
-      account: private_account,
-      file: uploaded_file(
-        filename: "private_statement.pdf",
-        content_type: "application/pdf",
-        content: "%PDF-1.4 Private Family Statement"
-      )
-    )
-
-    sign_in users(:family_member)
-
-    get rails_blob_path(statement.original_file)
-
-    assert_response :not_found
-  end
-
-  test "user can access linked statement blob for a shared account" do
+  test "member can access linked statement blob for a family account" do
     statement = AccountStatement.create_from_upload!(
       family: @user_a.family,
       account: accounts(:credit_card),
@@ -186,17 +167,6 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     sign_in @user_a
 
     get rails_blob_path(blob)
-
-    assert_response :not_found
-  end
-
-  test "blob authorization checks protected attachments even when blob is also attached elsewhere" do
-    document = FamilyDocument.create!(family: @user_a.family, filename: "shared.pdf", status: "ready")
-    document.file.attach(@statement_a.original_file.blob)
-
-    sign_in @user_b
-
-    get rails_blob_path(document.file)
 
     assert_response :not_found
   end
@@ -336,30 +306,6 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     sign_in @user_a
 
     get rails_blob_path(blob)
-
-    assert_response :not_found
-  end
-
-  test "user can access family document within their own family" do
-    document = family_documents(:tax_return)
-    document.file.attach(io: StringIO.new("Family A Tax Return"), filename: "tax.pdf", content_type: "application/pdf")
-
-    sign_in @user_a
-
-    get rails_blob_path(document.file)
-
-    assert_response :redirect
-    follow_redirect!
-    assert_response :success
-  end
-
-  test "user cannot access family document from a different family" do
-    document = family_documents(:tax_return)
-    document.file.attach(io: StringIO.new("Family A Tax Return"), filename: "tax.pdf", content_type: "application/pdf")
-
-    sign_in @user_b
-
-    get rails_blob_path(document.file)
 
     assert_response :not_found
   end

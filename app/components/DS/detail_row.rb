@@ -3,7 +3,7 @@ class DS::DetailRow < DesignSystemComponent
   # Extracted from the transaction drawer's "Additional details", which had this
   # exact dt/dd row hand-rolled seven times in one file (#3451 review) — the same
   # reason DS::Card and DS::EmptyState exist. The shape recurs across the
-  # transfer, holding, budget-category and import-summary views, so reach for
+  # transfer, holding and import-summary views, so reach for
   # this instead of repeating the class strings.
   #
   # The value may be given as a string or, when it needs its own markup (a link,

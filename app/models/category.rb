@@ -4,7 +4,6 @@ class Category < ApplicationRecord
 
   belongs_to :family
 
-  has_many :budget_categories, dependent: :destroy
   has_many :subcategories,
          -> { order(:name) },
          class_name: "Category",
@@ -263,7 +262,7 @@ class Category < ApplicationRecord
     # Returns all possible uncategorized names across all supported locales
     # Used to detect uncategorized filter regardless of URL parameter language
     def all_uncategorized_names
-      LanguagesHelper::SUPPORTED_LOCALES.map do |locale|
+      I18n.available_locales.map do |locale|
         I18n.t(UNCATEGORIZED_NAME_KEY, locale: locale)
       end.uniq
     end
@@ -281,7 +280,7 @@ class Category < ApplicationRecord
     # Returns all possible investment contributions names across all supported locales
     # Used to detect investment contributions category regardless of locale
     def all_investment_contributions_names
-      LanguagesHelper::SUPPORTED_LOCALES.map do |locale|
+      I18n.available_locales.map do |locale|
         I18n.t(INVESTMENT_CONTRIBUTIONS_NAME_KEY, locale: locale)
       end.uniq
     end
@@ -309,7 +308,7 @@ class Category < ApplicationRecord
           i18n_keys["other_investments"] = OTHER_INVESTMENTS_NAME_KEY
           i18n_keys["investment_contributions"] = INVESTMENT_CONTRIBUTIONS_NAME_KEY
 
-          LanguagesHelper::SUPPORTED_LOCALES.each_with_object({}) do |locale, mapping|
+          I18n.available_locales.each_with_object({}) do |locale, mapping|
             i18n_keys.each_value do |i18n_key|
               translated_name = I18n.t(i18n_key, locale: locale, default: nil)
               mapping[translated_name.to_s] ||= i18n_key if translated_name.present?
@@ -396,7 +395,7 @@ class Category < ApplicationRecord
     i18n_key = self.class.send(:default_category_translation_key_for, name)
     return false unless i18n_key
 
-    LanguagesHelper::SUPPORTED_LOCALES.any? do |locale|
+    I18n.available_locales.any? do |locale|
       translated = I18n.t(i18n_key, locale: locale, default: nil)
       translated.present? && normalized.casecmp?(translated)
     end

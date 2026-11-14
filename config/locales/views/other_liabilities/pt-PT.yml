@@ -1,7 +1,0 @@
----
-pt-PT:
-  other_liabilities:
-    edit:
-      edit: Editar %{account}
-    new:
-      title: Introduzir detalhes do passivo

@@ -72,7 +72,7 @@ class FamilyExport < ApplicationRecord
   end
 
   def filename
-    "sure_export_#{created_at.strftime('%Y%m%d_%H%M%S')}.zip"
+    "ballast_export_#{created_at.strftime('%Y%m%d_%H%M%S')}.zip"
   end
 
   def downloadable?

@@ -1,8 +1,0 @@
----
-uk:
-  activerecord:
-    errors:
-      models:
-        merchant_import:
-          missing_columns: "Відсутні обов'язкові стовпці: %{columns}"
-          duplicate_columns: "Дублікати назв стовпців після нормалізації: %{columns}"

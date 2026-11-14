@@ -81,7 +81,7 @@ class GenerateInsightsJob < ApplicationJob
     # its dedup_key has had its condition clear — hide it. Types whose
     # generator crashed are left untouched so a transient failure can't wipe
     # out healthy insights. By status rather than `visible`, so a row hidden
-    # because its account is no longer shared with everyone expires too.
+    # because its account is no longer visible expires too.
     def expire_stale_insights(family, result)
       family.insights
         .where(status: %w[active read])
@@ -146,7 +146,7 @@ class GenerateInsightsJob < ApplicationJob
           #
           # The title refreshes with them. It is built from I18n and the
           # generator's own data, not written by the model, so keeping it
-          # current costs nothing — and a title naming a goal or a category
+          # current costs nothing — and a title naming an account or a category
           # the user has since renamed is simply wrong on the page. Rename is
           # not a reason to resurface, so status and read state stay untouched.
           existing.update!(title: generated.title, facts: facts, generated_at: Time.current)

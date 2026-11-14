@@ -11,24 +11,14 @@
     <% if @rules.any? { |r| r.actions.any? { |a| a.action_type == "auto_categorize" } } %>
       <div class="mb-4">
         <%= render DS::Alert.new(title: t("rules.apply_all.ai_cost_title"), variant: :info) do %>
-          <% if @estimated_cost.present? %>
-            <p>
-              <%= t("rules.apply_all.ai_cost_message", transactions: @total_affected_count) %>
-              <%= t("rules.apply_all.estimated_cost", cost: sprintf("%.4f", @estimated_cost)) %>
-            </p>
-          <% else %>
-            <p>
-              <%= t("rules.apply_all.ai_cost_message", transactions: @total_affected_count) %>
-              <% if @selected_model.present? %>
-                <span class="font-semibold"><%= t("rules.apply_all.cost_unavailable_model", model: @selected_model) %></span>
-              <% else %>
-                <span class="font-semibold"><%= t("rules.apply_all.cost_unavailable_no_provider") %></span>
-              <% end %>
-              <%= t("rules.apply_all.cost_warning") %>
-            </p>
-          <% end %>
           <p>
-            <%= link_to t("rules.apply_all.view_usage"), settings_llm_usage_path, class: "text-link underline" %>
+            <%= t("rules.apply_all.ai_cost_message", transactions: @total_affected_count) %>
+            <% if @selected_model.present? %>
+              <span class="font-semibold"><%= t("rules.apply_all.cost_model", model: @selected_model) %></span>
+            <% else %>
+              <span class="font-semibold"><%= t("rules.apply_all.cost_no_provider") %></span>
+            <% end %>
+            <%= t("rules.apply_all.cost_warning") %>
           </p>
         <% end %>
       </div>

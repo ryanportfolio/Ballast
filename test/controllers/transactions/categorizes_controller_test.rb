@@ -110,62 +110,11 @@ class Transactions::CategorizesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_url
   end
 
-  # Account sharing authorization
+  # Cross-family isolation
 
-  test "show only groups entries from accounts accessible to the user" do
-    accessible_account = accounts(:depository)       # shared with family_member (full_control)
-    inaccessible_account = accounts(:investment)     # not shared with family_member
+  test "create does not categorize entries from another family's accounts" do
+    entry = create_transaction(account: foreign_account, name: "Starbucks")
 
-    create_transaction(account: accessible_account, name: "Starbucks")
-    create_transaction(account: inaccessible_account, name: "Starbucks")
-
-    sign_in users(:family_member)
-    get transactions_categorize_url(position: 0)
-
-    assert_response :success
-    # Only 1 entry should appear in the group — the inaccessible account's entry is hidden
-    assert_select "input[name='entry_ids[]']", count: 1
-  end
-
-  test "create does not categorize entries from inaccessible accounts" do
-    inaccessible_account = accounts(:investment)     # not shared with family_member
-    entry = create_transaction(account: inaccessible_account, name: "Starbucks")
-
-    sign_in users(:family_member)
-    post transactions_categorize_url,
-      params: {
-        position: 0,
-        grouping_key: "Starbucks",
-        entry_ids: [ entry.id ],
-        all_entry_ids: [ entry.id ],
-        category_id: @category.id
-      },
-      headers: { "Accept" => "text/vnd.turbo-stream.html" }
-
-    assert_nil entry.transaction.reload.category
-  end
-
-  test "assign_entry does not categorize an entry from an inaccessible account" do
-    inaccessible_account = accounts(:investment)     # not shared with family_member
-    entry = create_transaction(account: inaccessible_account, name: "Starbucks")
-
-    sign_in users(:family_member)
-    patch assign_entry_transactions_categorize_url, params: {
-      entry_id: entry.id,
-      category_id: @category.id,
-      position: 0,
-      all_entry_ids: [ entry.id ]
-    }
-
-    assert_response :not_found
-    assert_nil entry.transaction.reload.category
-  end
-
-  test "create does not categorize entries from read-only shared accounts" do
-    read_only_account = accounts(:credit_card) # shared read_only with family_member
-    entry = create_transaction(account: read_only_account, name: "Starbucks")
-
-    sign_in users(:family_member)
     post transactions_categorize_url,
       params: {
         position: 0,
@@ -180,10 +129,8 @@ class Transactions::CategorizesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create does not create a rule when no entry could be categorized" do
-    read_only_account = accounts(:credit_card) # shared read_only with family_member
-    entry = create_transaction(account: read_only_account, name: "Starbucks")
+    entry = create_transaction(account: foreign_account, name: "Starbucks")
 
-    sign_in users(:family_member)
     assert_no_difference "Rule.count" do
       post transactions_categorize_url,
         params: {
@@ -198,30 +145,9 @@ class Transactions::CategorizesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "create categorizes entries from read_write shared accounts" do
-    read_write_account = accounts(:credit_card)
-    read_write_account.account_shares.find_by!(user: users(:family_member)).update!(permission: "read_write")
-    entry = create_transaction(account: read_write_account, name: "Starbucks")
+  test "assign_entry does not categorize an entry from another family's account" do
+    entry = create_transaction(account: foreign_account, name: "Starbucks")
 
-    sign_in users(:family_member)
-    post transactions_categorize_url,
-      params: {
-        position: 0,
-        grouping_key: "Starbucks",
-        entry_ids: [ entry.id ],
-        all_entry_ids: [ entry.id ],
-        category_id: @category.id
-      },
-      headers: { "Accept" => "text/vnd.turbo-stream.html" }
-
-    assert_equal @category, entry.transaction.reload.category
-  end
-
-  test "assign_entry does not categorize an entry from a read-only shared account" do
-    read_only_account = accounts(:credit_card) # shared read_only with family_member
-    entry = create_transaction(account: read_only_account, name: "Starbucks")
-
-    sign_in users(:family_member)
     patch assign_entry_transactions_categorize_url, params: {
       entry_id: entry.id,
       category_id: @category.id,
@@ -231,21 +157,6 @@ class Transactions::CategorizesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
     assert_nil entry.transaction.reload.category
-  end
-
-  test "show and preview_rule skip entries from read-only shared accounts" do
-    read_only_account = accounts(:credit_card) # shared read_only with family_member
-    entry = create_transaction(account: read_only_account, name: "ReadOnlyShop")
-
-    sign_in users(:family_member)
-
-    get transactions_categorize_url
-    assert_not_includes response.body, entry.id
-
-    get preview_rule_transactions_categorize_url(filter: "ReadOnlyShop"),
-      headers: { "Accept" => "text/vnd.turbo-stream.html" }
-    assert_response :success
-    assert_not_includes response.body, entry.id
   end
 
   # GET /transactions/categorize/preview_rule
@@ -289,6 +200,10 @@ class Transactions::CategorizesControllerTest < ActionDispatch::IntegrationTest
       # unspecified, which made every suite that signs out this way flaky.
       # Teardown hygiene is not the behavior under test, so destroy directly.
       @user.sessions.destroy_all
+    end
+
+    def foreign_account
+      @foreign_account ||= families(:empty).accounts.create!(name: "Foreign", currency: "USD", balance: 0, accountable: Depository.new)
     end
 
     # POST /transactions/categorize

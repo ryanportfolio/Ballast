@@ -4,9 +4,9 @@
     first tag. The mobile slot hides itself while the summary is empty
     (touch has no hover affordance to show). %>
 <div class="w-full min-w-0">
-  <% if transaction.transfer? || !can_annotate_account?(entry.account) %>
+  <% if transaction.transfer? %>
     <%# Read-only: transfer tags must stay in sync across both legs (edit them
-        from the drawer), and read-only shares can't change tags at all. %>
+        from the drawer). %>
     <%= render "tags/summary", transaction: transaction, variant: variant, editable: false %>
   <% else %>
     <%= render DS::Popover.new(variant: "button", aria_label: t(".label")) do |popover| %>

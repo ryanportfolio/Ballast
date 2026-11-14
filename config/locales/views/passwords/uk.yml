@@ -1,9 +1,0 @@
-uk:
-  passwords:
-    edit:
-      password: Новий пароль
-      password_challenge: Поточний пароль
-      submit: Скинути пароль
-      title: Оновити пароль
-    update:
-      success: Ваш пароль скинуто.

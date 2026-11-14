@@ -1,26 +1,26 @@
 # MCP Server for External AI Assistants
 
-Sure includes a Model Context Protocol (MCP) server endpoint that allows external AI assistants like Claude Desktop, GPT agents, or custom AI clients to query and act on your financial data.
+Ballast includes a Model Context Protocol (MCP) server endpoint that allows external AI assistants like Claude Desktop, GPT agents, or custom AI clients to query and act on your financial data.
 
 ## What is MCP?
 
-[Model Context Protocol](https://modelcontextprotocol.io/) is a JSON-RPC 2.0 protocol that enables AI assistants to access structured data and tools from external applications. Instead of copying and pasting financial data into a chat window, your AI assistant can directly query Sure's data through a secure API.
+[Model Context Protocol](https://modelcontextprotocol.io/) is a JSON-RPC 2.0 protocol that enables AI assistants to access structured data and tools from external applications. Instead of copying and pasting financial data into a chat window, your AI assistant can directly query Ballast's data through a secure API.
 
 This is useful when:
-- You want to use an external AI assistant (Claude, GPT, custom agents) to analyze your Sure financial data
-- You prefer to keep your LLM provider separate from Sure
+- You want to use an external AI assistant (Claude, GPT, custom agents) to analyze your Ballast financial data
+- You prefer to keep your LLM provider separate from Ballast
 - You're building custom AI agents that need access to financial tools
 
 ## Authentication
 
-MCP clients authenticate with one static bearer token, which pins the MCP server to a specific Sure user. Ballast has no OAuth sign-in or dynamic client registration for MCP clients.
+MCP clients authenticate with one static bearer token, which pins the MCP server to a specific Ballast user. Ballast has no OAuth sign-in or dynamic client registration for MCP clients.
 
 Set these environment variables:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `MCP_API_TOKEN` | Bearer token for authentication | `your-secret-token-here` |
-| `MCP_USER_EMAIL` | Email of the Sure user whose data the assistant can access | `user@example.com` |
+| `MCP_USER_EMAIL` | Email of the Ballast user whose data the assistant can access | `user@example.com` |
 
 Both variables are required; without them `/mcp` rejects every request.
 
@@ -37,10 +37,10 @@ openssl rand -base64 32
 
 ### Choosing the user
 
-The `MCP_USER_EMAIL` must match an existing Sure user's email address. The AI assistant will have access to all financial data for that user's family.
+The `MCP_USER_EMAIL` must match an existing Ballast user's email address. The AI assistant will have access to all financial data for that user's family.
 
 > [!CAUTION]
-> The AI assistant can call the MCP tools available to the specified user. This includes reading financial data and write-capable tools such as account statement uploads, goal/category/tag changes, transaction updates, and budget updates. Only set this for users you trust with your AI provider.
+> The AI assistant can call the MCP tools available to the specified user. This includes reading financial data and write-capable tools such as account statement uploads, category/tag changes, and transaction updates. Only set this for users you trust with your AI provider.
 
 ## Configuration
 
@@ -74,7 +74,7 @@ Authorization: Bearer <token>
 
 ### Supported Methods
 
-Sure implements the following JSON-RPC 2.0 methods:
+Ballast implements the following JSON-RPC 2.0 methods:
 
 | Method | Description |
 |--------|-------------|
@@ -84,7 +84,7 @@ Sure implements the following JSON-RPC 2.0 methods:
 
 ### Available Tools
 
-The MCP endpoint exposes the same tool registry used by Sure's built-in assistant. Clients should treat `tools/list` as the source of truth.
+The MCP endpoint exposes the same tool registry used by Ballast's built-in assistant. Clients should treat `tools/list` as the source of truth.
 
 At the time of writing, `tools/list` includes:
 
@@ -96,11 +96,9 @@ At the time of writing, `tools/list` includes:
 | `get_holdings` | Query investment holdings |
 | `get_balance_sheet` | Net worth, assets and liabilities with a configurable history period and interval |
 | `get_income_statement` | Income and expenses for a period, with optional monthly series, prior-period comparison and account filtering |
-| `get_budget` | Budget summary for a month, with optional prior months |
 | `get_merchants` | Merchants with the ids `update_transaction` accepts and the exact names `get_transactions` filters on |
 | `get_tags` | Tags with pagination |
 | `get_categories` | Categories with hierarchy and pagination |
-| `create_goal` | Create a savings goal linked to depository accounts |
 | `set_opening_balance` | Set a manual account's opening balance and the date it applies from, reporting whether the current balance changes. Supports `dry_run` |
 | `unmatch_transfer` | Unlink a confirmed or pending transfer (by either transaction's id) so a wrong match can be redone; rejects the pairing for auto-match by default. Supports `dry_run` |
 | `update_transfer` | Switch a confirmed transfer into an investment or crypto account between an investment contribution (counted as spending) and a plain transfer, e.g. when a brokerage or crypto account only converts currency. Supports `dry_run` |
@@ -110,12 +108,10 @@ At the time of writing, `tools/list` includes:
 | `get_transfer_match_candidates` | A transaction's current transfer (including a pending auto-match) or the transactions it could be matched with, as in the "Match transfer" dialog |
 | `match_transfer` | Match a transaction as a transfer with an existing counterpart, or create the counterpart in a target account (e.g. a manual loan). Supports `dry_run` |
 | `review_transfer` | Confirm or reject a pending auto-matched transfer |
-| `update_budget` | Update budget allocations for a month |
 | `get_rules` / `get_rule_options` | Transaction rules in readable form (ids resolved to names, latest run; paginated, with a text search), and the condition and action types a rule can use |
 | `preview_rule` | Match count and a sample of matching transactions for a saved rule or an unsaved definition, without changing anything |
 | `create_rule` / `update_rule` | Save a rule definition. Rules are always saved inactive, and changing an active rule's conditions or actions deactivates it. AI-backed actions are not available |
 | `apply_rule` | Activate a rule and apply it. Requires the `preview_token` from `preview_rule`, `create_rule` or `update_rule` (never `get_rules`; it expires after 30 minutes) and refuses if the rule or its matches have changed; keeps hand-set values unless `override_locked: true` |
-| `search_family_files` | Search the family's vector-store document index. Ballast adds nothing new to it: documents only reached it through Sure's AI statement importer for PDFs, which Ballast removed. Note this is the vector-store document index, not the Statement Vault — statements archived via `upload_account_statement` are not searchable through it |
 
 ### Preview Tools
 
@@ -182,7 +178,7 @@ Response:
       "tools": {}
     },
     "serverInfo": {
-      "name": "sure",
+      "name": "ballast",
       "version": "1.0"
     }
   }
@@ -249,11 +245,11 @@ Response:
 
 ### Transient Session Isolation
 
-The MCP controller creates a **transient session** for each request. This prevents session state leaks that could expose other users' data if the Sure instance is using impersonation features.
+The MCP controller creates a **transient session** for each request, so MCP calls never reuse or change a browser session.
 
 Each MCP request:
 1. Authenticates the token
-2. Loads the authorized Sure user
+2. Loads the authorized Ballast user
 3. Creates a temporary session scoped to that user
 4. Executes the tool call
 5. Discards the session
@@ -293,8 +289,8 @@ For a production-ready setup with security scanning:
 1. **Download the example configuration:**
 
    ```bash
-   curl -o compose.ai.yml https://raw.githubusercontent.com/we-promise/sure/main/compose.example.ai.yml
-   curl -o pipelock.example.yaml https://raw.githubusercontent.com/we-promise/sure/main/pipelock.example.yaml
+   curl -o compose.ai.yml https://raw.githubusercontent.com/ryanportfolio/Ballast/main/compose.example.ai.yml
+   curl -o pipelock.example.yaml https://raw.githubusercontent.com/ryanportfolio/Ballast/main/pipelock.example.yaml
    ```
 
 2. **Set your MCP credentials in `.env`:**
@@ -316,7 +312,7 @@ For a production-ready setup with security scanning:
    http://your-server:8889
    ```
 
-The Pipelock proxy (port 8889) scans all MCP traffic before forwarding to Sure's `/mcp` endpoint.
+The Pipelock proxy (port 8889) scans all MCP traffic before forwarding to Ballast's `/mcp` endpoint.
 
 ## Connecting AI Assistants
 
@@ -349,7 +345,7 @@ MCP does not depend on the in-app assistant. To use only your own agent, set the
 **Fix:** Verify both are true:
 
 - The bearer token matches `MCP_API_TOKEN`
-- `MCP_USER_EMAIL` matches an existing Sure user
+- `MCP_USER_EMAIL` matches an existing Ballast user
 
 ### Static token works, but the user still gets rejected
 
@@ -371,6 +367,6 @@ MCP does not depend on the in-app assistant. To use only your own agent, set the
 
 ## See Also
 
-- [External AI Assistant Configuration](ai.md#external-ai-assistant) - Configure Sure's chat to use an external agent
+- [External AI Assistant Configuration](ai.md#external-ai-assistant) - Configure Ballast's chat to use an external agent
 - [Pipelock Security Proxy](pipelock.md) - Set up security scanning for MCP traffic
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/) - Official MCP documentation

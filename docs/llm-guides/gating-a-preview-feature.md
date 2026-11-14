@@ -1,6 +1,6 @@
 # Gating a preview feature
 
-Sure ships preview features behind a single per-user toggle. Users opt in via Settings → Preferences. Opted-in users see your feature; everyone else doesn't. This guide is for hooking a new feature into the gate.
+Ballast ships preview features behind a single per-user toggle. Users opt in via Settings → Preferences. Opted-in users see your feature; everyone else doesn't. This guide is for hooking a new feature into the gate.
 
 The intent is to ship in-progress work without blocking smaller PRs on a "feels finished" bar. You gate the entry points (routes, nav, anything that links into your feature) and iterate behind them. Once stable, you remove the gate in a small follow-up PR.
 
@@ -28,12 +28,12 @@ Key files:
 Add `require_preview_features!` as a `before_action`. That's it.
 
 ```ruby
-class GoalsController < ApplicationController
+class WidgetsController < ApplicationController
   before_action :require_preview_features!
 end
 ```
 
-Routes stay defined; the gate runs per-request. Users without preview access hitting `/goals` get redirected with a flash. Preview users pass through.
+Routes stay defined; the gate runs per-request. Users without preview access hitting `/widgets` get redirected with a flash. Preview users pass through.
 
 If only some actions are gated, scope the `before_action`:
 
@@ -50,7 +50,7 @@ Wrap the relevant fragment in the helper:
 ```erb
 <% if preview_features_enabled? %>
   <li>
-    <%= link_to t(".nav.goals"), goals_path %>
+    <%= link_to t(".nav.widgets"), widgets_path %>
   </li>
 <% end %>
 ```
@@ -67,7 +67,7 @@ Use the `preview_gated_nav_item` helper to wrap the entry. It returns `nil` for 
 <% mobile_nav_items = [
   { name: t(".nav.home"), path: root_path, icon: "pie-chart", icon_custom: false, active: page_active?(root_path) },
   { name: t(".nav.transactions"), path: transactions_path, icon: "credit-card", icon_custom: false, active: page_active?(transactions_path) },
-  preview_gated_nav_item({ name: t(".nav.goals"), path: goals_path, icon: "piggy-bank", icon_custom: false, active: page_active?(goals_path) }),
+  preview_gated_nav_item({ name: t(".nav.widgets"), path: widgets_path, icon: "puzzle", icon_custom: false, active: page_active?(widgets_path) }),
   { name: t(".nav.assistant"), path: chats_path, icon: "icon-assistant", icon_custom: true, active: page_active?(chats_path), mobile_only: true }
 ].compact %>
 ```
@@ -99,7 +99,7 @@ Default tone is violet. Tones available: `violet`, `indigo`, `fuchsia`, `amber`,
 Gated controllers should test both states. The pattern:
 
 ```ruby
-class GoalsControllerTest < ActionDispatch::IntegrationTest
+class WidgetsControllerTest < ActionDispatch::IntegrationTest
   setup do
     sign_in @user = users(:family_admin)
   end
@@ -107,7 +107,7 @@ class GoalsControllerTest < ActionDispatch::IntegrationTest
   test "redirects users without preview access" do
     @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => false))
 
-    get goals_url
+    get widgets_url
 
     assert_redirected_to root_path
     assert_match(/preview/i, flash[:alert])
@@ -116,7 +116,7 @@ class GoalsControllerTest < ActionDispatch::IntegrationTest
   test "renders for users with preview access" do
     @user.update!(preferences: (@user.preferences || {}).merge("preview_features_enabled" => true))
 
-    get goals_url
+    get widgets_url
 
     assert_response :success
   end
@@ -138,11 +138,11 @@ Grep for `require_preview_features!` and `preview_features_enabled?` near your f
 
 ## Notes
 
-The flag is per-user, not per-family. Two users in the same family can see different versions of the product if one opts in and the other doesn't. That's intentional. Data is family-scoped, but visibility is a personal preference. If you write a feature that creates family-shared data (goals, budgets, etc.), the data persists when a user toggles preview off. The UI just disappears from their view while still showing up for opted-in family members.
+The flag is per-user, not per-family. Two users in the same family can see different versions of the product if one opts in and the other doesn't. That's intentional. Data is family-scoped, but visibility is a personal preference. If you write a feature that creates family-shared data (widgets, etc.), the data persists when a user toggles preview off. The UI just disappears from their view while still showing up for opted-in family members.
 
-The gate does nothing for background jobs on its own — `PreviewGateable` reads `Current.user`, which a Sidekiq worker doesn't have. A cron job runs regardless of who has preview enabled. That's usually correct: data should keep flowing, so it's there when someone opts in. `SweepExpiredGoalPledgesJob` is the typical shape — it only walks pledges that opted-in users created, so it's naturally inert for everyone else and needs no gate.
+The gate does nothing for background jobs on its own — `PreviewGateable` reads `Current.user`, which a Sidekiq worker doesn't have. A cron job runs regardless of who has preview enabled. That's usually correct: data should keep flowing, so it's there when someone opts in. A hypothetical `SweepExpiredWidgetsJob` is the typical shape — it only walks widgets that opted-in users created, so it's naturally inert for everyone else and needs no gate.
 
-Gate the job when it does work that isn't free. Two cases: it sends something outward (notifications, emails — gate at the send site), or it *manufactures* data for every family rather than moving existing data around, burning compute or paid API calls per family. `GenerateInsightsJob` is the second case: seven generators over the income statement and balance sheet, for every family nightly.
+Gate the job when it does work that isn't free. Two cases: it sends something outward (notifications, emails — gate at the send site), or it *manufactures* data for every family rather than moving existing data around, burning compute or paid API calls per family. `GenerateInsightsJob` is the second case: six generators over the income statement and balance sheet, for every family nightly.
 
 For a family-scoped job, roll the per-user flag up to the family:
 

@@ -10,8 +10,6 @@ class SessionsController < ApplicationController
   end
 
   def new
-    store_pending_invitation_if_valid
-
     begin
       demo = Rails.application.config_for(:demo)
       @prefill_demo_credentials = demo_host_match?(demo)
@@ -72,7 +70,6 @@ class SessionsController < ApplicationController
         @session = create_session_for(user)
 
         if @session
-          flash[:notice] = t("invitations.accept_choice.joined_household") if accept_pending_invitation_for(user)
           redirect_to root_path
         else
           redirect_to new_session_path, alert: t("sessions.create.account_deactivated")

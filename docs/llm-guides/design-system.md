@@ -70,11 +70,9 @@ variant carries the hierarchy, not the width.
 - When a [`DS::Dialog`](../../app/components/DS/dialog.rb)'s buttons don't
   submit a form, `dialog.with_action` renders this row; `cancel_action: true`
   makes a button close the dialog.
-- Examples: [`budget_categories/_move_dialog`](../../app/views/budget_categories/_move_dialog.html.erb),
-  [`goals/consume`](../../app/views/goals/consume.html.erb), the currencies
-  dialog in [`settings/preferences/show`](../../app/views/settings/preferences/show.html.erb),
+- Examples: the currencies dialog in [`settings/preferences/show`](../../app/views/settings/preferences/show.html.erb),
   the [bulk edit drawer](../../app/views/transactions/bulk_updates/new.html.erb)
   and the [filter popover](../../app/views/transactions/searches/_menu.html.erb).
 - Amount inputs stay left-aligned, as `money_field` renders them. Right
   alignment with tabular digits is for displayed figures (`numeric: true`
-  above) and for inputs inside a column of them, such as the budget grid.
+  above) and for inputs inside a column of them.

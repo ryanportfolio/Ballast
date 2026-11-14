@@ -58,6 +58,8 @@ class Assistant::Function::ApplyRule < Assistant::Function
   end
 
   def call(params = {})
+    return guest_refusal if user.guest?
+
     rule = find_rule(params["rule_id"])
     return error("not_found", "No rule with id '#{params["rule_id"]}'.") unless rule
 

@@ -7,38 +7,16 @@ require "yaml"
 # project for getting i18n working.  More details on that here:
 # https://github.com/maybe-finance/maybe/issues/1225
 class I18nTest < ActiveSupport::TestCase
-  GERMAN_COVERAGE_GLOBS = [
-    "config/locales/breadcrumbs/*.yml",
-    "config/locales/mailers/**/*.yml",
-    "config/locales/models/**/*.yml",
-    "config/locales/views/**/*.yml"
-  ]
-
   def setup
     @i18n = I18n::Tasks::BaseTask.new
   end
 
-  def test_german_locale_files_parse
-    german_locale_paths.each do |path|
-      assert_nothing_raised do
-        YAML.load_file(path, aliases: true)
-      end
-    end
-  end
+  # Ballast is English only: en.yml files are the whole locale tree.
+  def test_english_is_the_only_locale
+    assert_equal [ :en ], I18n.available_locales
 
-  # The loan chart's labels, cards, table and accessible description all read
-  # this subtree. Fallbacks would show a German user English rather than a raw
-  # key, but the rest of UI.account.chart is translated, so a missing subtree
-  # is a gap and not a choice. Placeholders are compared too: a translation
-  # that drops %{projected_payoff_date} silently loses the figure it names.
-  def test_german_loan_chart_keys_and_placeholders_match_english
-    en = loan_chart_leaves("en")
-    de = loan_chart_leaves("de")
-
-    assert_equal en.keys.sort, de.keys.sort, "UI.account.chart.loan in de.yml must carry every key en.yml does"
-    en.each do |key, value|
-      assert_equal value.scan(/%\{\w+\}/).sort, de.fetch(key).to_s.scan(/%\{\w+\}/).sort, "placeholders differ for #{key}"
-    end
+    other = Dir[File.expand_path("../config/locales/**/*.{yml,yaml}", __dir__)].reject { |path| path.end_with?("en.yml") }
+    assert_empty other, "non-English locale files: #{other.join(", ")}"
   end
 
   def test_no_missing_keys
@@ -103,13 +81,6 @@ class I18nTest < ActiveSupport::TestCase
     assert_empty missing, "date.formats.short_with_year is missing for: #{missing.join(", ")}"
   end
 
-  def test_short_with_year_follows_the_locale
-    assert_equal "5. Jan 2027", I18n.l(Date.new(2027, 1, 5), format: :short_with_year, locale: :de)
-    # The abbreviation takes no case suffix: "tammita" and "Urtk" aren't words.
-    assert_equal "05. tammi 2027", I18n.l(Date.new(2027, 1, 5), format: :short_with_year, locale: :fi)
-    assert_equal "2027(e)ko Urt 5", I18n.l(Date.new(2027, 1, 5), format: :short_with_year, locale: :eu)
-  end
-
   # %e pads a single-digit day with a space: " 5. Jan 2027", "Jan  5, 2027".
   def test_short_with_year_has_no_padding_space_on_a_single_digit_day
     locales = Dir[File.expand_path("../config/locales/defaults/*.yml", __dir__)].map { |file| File.basename(file, ".yml") }
@@ -154,7 +125,7 @@ class I18nTest < ActiveSupport::TestCase
       "transactions.form.description_placeholder" => %w[transactions.form.description_placeholder_optional]
     }.each do |sibling, keys|
       locales = I18n.available_locales.select { |locale| I18n.t(sibling, locale: locale, fallback: false, default: nil) }
-      assert_includes locales, :de
+      assert_includes locales, :en
 
       locales.each do |locale|
         missing = keys.reject { |key| I18n.t(key, locale: locale, fallback: false, default: nil) }
@@ -164,28 +135,6 @@ class I18nTest < ActiveSupport::TestCase
   end
 
   private
-    # { "months_saved.one" => "...", ... } for UI.account.chart.loan in one locale.
-    def loan_chart_leaves(locale)
-      tree = YAML.load_file(Pathname.pwd.join("config/locales/views/components/#{locale}.yml"), aliases: true)
-        .dig(locale, "UI", "account", "chart", "loan") || {}
-      flatten_leaves(tree)
-    end
-
-    def flatten_leaves(tree, prefix = nil)
-      tree.each_with_object({}) do |(key, value), leaves|
-        path = [ prefix, key ].compact.join(".")
-        value.is_a?(Hash) ? leaves.merge!(flatten_leaves(value, path)) : leaves[path] = value
-      end
-    end
-
-    def german_locale_paths
-      @german_locale_paths ||= locale_paths.select { |path| path.basename.to_s.match?(/(^|[._-])de\.yml\z/) }
-    end
-
-    def locale_paths
-      @locale_paths ||= GERMAN_COVERAGE_GLOBS.flat_map { |glob| Pathname.pwd.glob(glob) }.uniq
-    end
-
     def duplicate_key_offenses(node, path, file)
       offenses = []
 

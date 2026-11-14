@@ -155,7 +155,7 @@ end
   assert_response :success
 
   # Verify all form fields are present
-  assert_select "select[name='user[family_attributes][locale]']"
+  assert_select "select[name='user[family_attributes][locale]']", count: 0
   assert_select "select[name='user[family_attributes][currency]']"
   assert_select "select[name='user[family_attributes][date_format]']"
   assert_select "select[name='user[theme]']"

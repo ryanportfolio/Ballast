@@ -38,11 +38,6 @@ class Setting < RailsSettings::Base
   # generate would otherwise always trip the watchdog. Read via
   # `Chat.response_timeout`, which applies ENV > Setting > default precedence.
   field :ai_response_timeout, type: :integer, default: ENV["AI_RESPONSE_TIMEOUT"]&.to_i
-  # Per-request bound for the admin "Run checks" AI probes on System Health.
-  # The PDF probes do a full extraction round trip, which cloud models often
-  # can't finish inside the 5s default. Read via `AiHealth::Probe.timeout`,
-  # which applies ENV > Setting > default precedence.
-  field :ai_health_probe_timeout, type: :integer, default: ENV["AI_HEALTH_PROBE_TIMEOUT"]&.to_i
   field :external_assistant_url, type: :string
   field :external_assistant_token, type: :string
   field :external_assistant_model, type: :string
@@ -87,20 +82,6 @@ class Setting < RailsSettings::Base
   # Multi-provider: comma-separated list of enabled securities providers
   field :securities_providers, type: :string, default: ENV.fetch("SECURITIES_PROVIDERS", "")
 
-  # New provider API keys (encrypted at rest — see EncryptedSettingFields below)
-  field :tiingo_api_key, type: :string, default: ENV["TIINGO_API_KEY"]
-  field :eodhd_api_key, type: :string, default: ENV["EODHD_API_KEY"]
-  field :alpha_vantage_api_key, type: :string, default: ENV["ALPHA_VANTAGE_API_KEY"]
-  field :tinkoff_invest_api_key, type: :string, default: ENV["TINKOFF_INVEST_API_KEY"]
-  # Mansa API (mansaapi.com) — African exchanges, including NGX (Nigeria),
-  # which none of the providers above cover. See Provider::Mansa.
-  field :mansa_api_key, type: :string, default: ENV["MANSA_API_KEY"]
-
-  # Property valuation (AVM) provider API keys
-  field :rentcast_api_key, type: :string, default: ENV["RENTCAST_API_KEY"]
-  field :realie_api_key, type: :string, default: ENV["REALIE_API_KEY"]
-  field :chimnie_api_key, type: :string, default: ENV["CHIMNIE_API_KEY"]
-
   # Transparent encryption for API key fields.  The `field` macro defines the
   # raw getter/setter on the class.  By prepending this module we intercept
   # reads (decrypt) and writes (encrypt) while `super` delegates to the
@@ -111,14 +92,6 @@ class Setting < RailsSettings::Base
   module EncryptedSettingFields
     ENCRYPTED_FIELDS = %i[
       twelve_data_api_key
-      tiingo_api_key
-      eodhd_api_key
-      alpha_vantage_api_key
-      tinkoff_invest_api_key
-      mansa_api_key
-      rentcast_api_key
-      realie_api_key
-      chimnie_api_key
       openai_access_token
       anthropic_access_token
       jev_api_key
@@ -209,16 +182,24 @@ class Setting < RailsSettings::Base
   # This prevents race conditions and ensures each field is independently managed
 
   # Onboarding and app settings
-  ONBOARDING_STATES = %w[open closed invite_only].freeze
-  DEFAULT_ONBOARDING_STATE = begin
-    env_value = ENV["ONBOARDING_STATE"].to_s.presence || "open"
-    ONBOARDING_STATES.include?(env_value) ? env_value : "open"
+  ONBOARDING_STATES = %w[open closed].freeze
+  # The default from the ONBOARDING_STATE env var. Blank means "open". Any
+  # other value that is not a current state fails closed: the removed
+  # "invite_only" (Ballast has no invitations; it kept strangers out) and
+  # typos alike.
+  def self.default_onboarding_state_from(env_value)
+    value = env_value.to_s
+    return "open" if value.blank?
+
+    ONBOARDING_STATES.include?(value) ? value : "closed"
   end
+  DEFAULT_ONBOARDING_STATE = default_onboarding_state_from(ENV["ONBOARDING_STATE"])
 
   field :onboarding_state, type: :string, default: DEFAULT_ONBOARDING_STATE
+  # Legacy flag from before onboarding_state existed. No longer written; read
+  # only so an instance that required invites keeps sign-up closed.
   field :require_invite_for_signup, type: :boolean, default: false
   field :require_email_confirmation, type: :boolean, default: ENV.fetch("REQUIRE_EMAIL_CONFIRMATION", "true") == "true"
-  field :invite_only_default_family_id, type: :string, default: nil
   # Opt-in for self-hosted demo refresh. Managed hosting retains its scheduled behavior.
   field :demo_family_refresh_enabled, type: :boolean, default: false
   field :demo_family_refresh_family_id, type: :string, default: nil
@@ -241,16 +222,23 @@ class Setting < RailsSettings::Base
       ENV["LLM_PROVIDER"].presence || raw_llm_provider
     end
 
+    # Fails closed: a stored value that is not a current state (such as the
+    # removed "invite_only") reads as "closed", and so does no stored state on
+    # an instance that still carries the legacy require_invite_for_signup flag
+    # (the field default would otherwise answer for the missing row).
     def onboarding_state
-      value = raw_onboarding_state
-      return "invite_only" if value.blank? && require_invite_for_signup
+      if require_invite_for_signup && find_by(var: "onboarding_state")&.value.blank?
+        return "closed"
+      end
 
-      value.presence || DEFAULT_ONBOARDING_STATE
+      value = raw_onboarding_state
+      return DEFAULT_ONBOARDING_STATE if value.blank?
+
+      ONBOARDING_STATES.include?(value) ? value : "closed"
     end
 
     def onboarding_state=(state)
       validate_onboarding_state!(state)
-      self.require_invite_for_signup = state == "invite_only"
       self.raw_onboarding_state = state
     end
 

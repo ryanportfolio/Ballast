@@ -18,7 +18,7 @@ class Assistant::Function::GetTransferMatchCandidates < Assistant::Function
         own accounts (e.g. a card payment, a loan repayment, a move to savings).
 
         Returns the transaction's current transfer, if any. A transfer with
-        status "pending" is an auto-match Sure suggested that the user has not
+        status "pending" is an auto-match Ballast suggested that the user has not
         reviewed yet; confirm or reject it with review_transfer.
 
         Otherwise returns candidate transactions in other accounts: opposite

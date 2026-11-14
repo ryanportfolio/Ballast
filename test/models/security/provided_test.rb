@@ -156,18 +156,18 @@ class Security::ProvidedTest < ActiveSupport::TestCase
   # --- price_data_provider ---
 
   test "price_data_provider returns assigned provider" do
-    provider = mock("tiingo_provider")
-    Security.stubs(:provider_for).with("tiingo").returns(provider)
+    provider = mock("yahoo_finance_provider")
+    Security.stubs(:provider_for).with("yahoo_finance").returns(provider)
 
-    @security.update!(price_provider: "tiingo")
+    @security.update!(price_provider: "yahoo_finance")
 
     assert_equal provider, @security.price_data_provider
   end
 
   test "price_data_provider returns nil when assigned provider is disabled" do
-    Security.stubs(:provider_for).with("tiingo").returns(nil)
+    Security.stubs(:provider_for).with("yahoo_finance").returns(nil)
 
-    @security.update!(price_provider: "tiingo")
+    @security.update!(price_provider: "yahoo_finance")
 
     assert_nil @security.price_data_provider
   end
@@ -251,9 +251,9 @@ class Security::ProvidedTest < ActiveSupport::TestCase
   # --- provider_status ---
 
   test "provider_status returns provider_unavailable when assigned provider disabled" do
-    Security.stubs(:provider_for).with("tiingo").returns(nil)
+    Security.stubs(:provider_for).with("yahoo_finance").returns(nil)
 
-    @security.update!(price_provider: "tiingo")
+    @security.update!(price_provider: "yahoo_finance")
 
     assert_equal :provider_unavailable, @security.provider_status
   end

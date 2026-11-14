@@ -7,23 +7,6 @@ class TransferMatchesControllerTest < ActionDispatch::IntegrationTest
     sign_in @user = users(:family_admin)
   end
 
-  test "new only offers candidates from accounts the user can write to" do
-    loan = accounts(:loan)
-    loan.update!(owner: users(:family_member))
-    # Accessible but not writable: candidates must be filtered by write access
-    loan.account_shares.create!(user: @user, permission: "read_only")
-
-    outflow_entry = create_transaction(amount: 100, account: accounts(:depository))
-    hidden_inflow = create_transaction(amount: -100, account: loan, name: "Hidden member inflow")
-    visible_inflow = create_transaction(amount: -100, account: accounts(:investment), name: "Visible own inflow")
-
-    get new_transaction_transfer_match_path(outflow_entry)
-
-    assert_response :success
-    assert_select "[role=option][data-value=?]", visible_inflow.id
-    assert_select "[role=option][data-value=?]", hidden_inflow.id, count: 0
-  end
-
   test "new shows account logos and preselects the closest candidate and first account" do
     Setting.stubs(:brand_fetch_client_id).returns("test-client")
     accounts(:investment).update!(institution_domain: "example-broker.com")
@@ -55,7 +38,7 @@ class TransferMatchesControllerTest < ActionDispatch::IntegrationTest
   test "new preloads account logo dependencies for every select option" do
     outflow_entry = create_transaction(amount: 123.45, account: accounts(:depository))
     3.times do |i|
-      account = @user.family.accounts.create!(name: "Logo account #{i}", currency: "USD", balance: 0, accountable: Depository.new, owner: @user)
+      account = @user.family.accounts.create!(name: "Logo account #{i}", currency: "USD", balance: 0, accountable: Depository.new)
       create_transaction(amount: -123.45, account: account)
     end
     option_account_ids = @user.family.accounts.where.not(id: outflow_entry.account_id).pluck(:id)
@@ -167,17 +150,5 @@ class TransferMatchesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match %(<turbo-stream action="remove" target="#{ActionView::RecordIdentifier.dom_id(outflow.transaction, :transfer_hint)}">), response.body
     assert RejectedTransfer.exists?(inflow_transaction_id: inflow.entryable_id, outflow_transaction_id: outflow.entryable_id)
-  end
-
-  test "destroy is refused on an account the user may only read" do
-    loan = accounts(:loan)
-    loan.update!(owner: users(:family_member))
-    loan.account_shares.create!(user: @user, permission: "read_only")
-    outflow = create_transaction(amount: 500, account: loan)
-    create_transaction(amount: -500, account: accounts(:credit_card))
-
-    assert_no_difference -> { RejectedTransfer.count } do
-      delete transaction_transfer_match_path(outflow)
-    end
   end
 end

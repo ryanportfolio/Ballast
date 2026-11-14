@@ -79,12 +79,26 @@ class Assistant::Function::GetInsightsTest < ActiveSupport::TestCase
     assert_empty result[:insights]
   end
 
-  test "include_acknowledged still hides insights about accounts not everyone can see" do
+  test "include_acknowledged still hides insights about another family's account" do
+    other_account = families(:empty).accounts.create!(name: "Other Family Account", accountable: Depository.new, currency: "USD", balance: 0)
     insight = @family.insights.create!(
       insight_type: "idle_cash", priority: "low", status: "dismissed", title: "Idle", body: "body",
-      metadata: { "account_id" => accounts(:connected).id }, dedup_key: "idle_cash:private",
+      metadata: { "account_id" => other_account.id }, dedup_key: "idle_cash:other_family",
       generated_at: Time.current
     )
+
+    ids = @fn.call("include_acknowledged" => true)[:insights].map { |i| i[:id] }
+
+    assert_not_includes ids, insight.id
+  end
+
+  # Ballast removed the budget and goal insights; their rows stay in the table.
+  test "include_acknowledged leaves out insights of a removed type" do
+    insight = @family.insights.new(
+      insight_type: "budget_at_risk", priority: "low", status: "dismissed", title: "Budget", body: "body",
+      metadata: {}, dedup_key: "budget_at_risk:removed", generated_at: Time.current
+    )
+    insight.save!(validate: false)
 
     ids = @fn.call("include_acknowledged" => true)[:insights].map { |i| i[:id] }
 

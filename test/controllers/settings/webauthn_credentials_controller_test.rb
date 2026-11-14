@@ -195,17 +195,6 @@ class Settings::WebauthnCredentialsControllerTest < ActionDispatch::IntegrationT
     assert_equal I18n.t("webauthn_credentials.rate_limited"), JSON.parse(response.body).fetch("error")
   end
 
-  test "every locale that translates the passkey form also translates the code confirmation" do
-    I18n.available_locales.each do |locale|
-      next unless I18n.exists?("webauthn_credentials.failure", locale, fallback: false)
-
-      %w[webauthn_credentials.code_already_used webauthn_credentials.invalid_code webauthn_credentials.rate_limited
-         settings.securities.show.webauthn_code_label settings.securities.show.webauthn_code_placeholder].each do |key|
-        assert I18n.exists?(key, locale, fallback: false), "#{locale} is missing #{key}"
-      end
-    end
-  end
-
   test "uses configured relying party id and allowed origin" do
     with_webauthn_config(rp_id: "example.test", allowed_origins: [ "https://app.example.test" ]) do
       client = WebAuthn::FakeClient.new("https://app.example.test")
@@ -326,7 +315,7 @@ class Settings::WebauthnCredentialsControllerTest < ActionDispatch::IntegrationT
     end
 
     def totp_code
-      ROTP::TOTP.new(@user.reload.otp_secret, issuer: "Sure Finances").now
+      ROTP::TOTP.new(@user.reload.otp_secret, issuer: "Ballast").now
     end
 
     def register(credential, code:)

@@ -602,69 +602,6 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, expense_href.scan(account_filter).length
   end
 
-  test "dashboard mounts the release highlight when the deployed release is unseen" do
-    @user.update!(preferences: {})
-
-    get root_path
-
-    assert_response :ok
-    assert_select "[data-controller='release-highlight'][data-release-highlight-tag-value=?]", Sure.version.to_release_tag
-  end
-
-  test "dashboard omits the release highlight once the deployed release was seen" do
-    @user.mark_release_seen!(Sure.version.to_release_tag)
-
-    get root_path
-
-    assert_response :ok
-    assert_select "[data-controller='release-highlight']", count: 0
-  end
-
-  test "changelog" do
-    VCR.use_cassette("git_repository_provider/fetch_latest_release_notes") do
-      get changelog_path
-      assert_response :ok
-      assert_select "[data-breadcrumbs]", text: /What's new/
-    end
-  end
-
-  test "changelog with nil release notes" do
-    # Mock the GitHub provider to return nil (simulating API failure or no releases)
-    github_provider = mock
-    github_provider.expects(:fetch_latest_release_notes).returns(nil)
-    Provider::Registry.stubs(:get_provider).with(:github).returns(github_provider)
-
-    get changelog_path
-    assert_response :ok
-    assert_select "h2", text: "Release notes unavailable"
-    assert_select "a[href='https://github.com/we-promise/sure/releases']"
-  end
-
-  test "changelog with incomplete release notes" do
-    # Mock the GitHub provider to return incomplete data (missing some fields)
-    github_provider = mock
-    incomplete_data = {
-      avatar: nil,
-      username: "maybe-finance",
-      name: "Test Release",
-      published_at: nil,
-      body: nil
-    }
-    github_provider.expects(:fetch_latest_release_notes).returns(incomplete_data)
-    Provider::Registry.stubs(:get_provider).with(:github).returns(github_provider)
-
-    get changelog_path
-    assert_response :ok
-    assert_select "h2", text: "Test Release"
-    # Should not crash even with nil values
-  end
-
-  test "feedback" do
-    get feedback_path
-    assert_response :ok
-    assert_select "[data-breadcrumbs]", text: /Feedback/
-  end
-
   test "dashboard renders spending trend widget" do
     get root_path
 

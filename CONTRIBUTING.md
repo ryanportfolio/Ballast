@@ -1,21 +1,15 @@
-# Contributing to Sure
+# Contributing to Ballast
 
-It means so much that you're interested in contributing to Sure! Seriously. Thank you. The entire community benefits from these contributions!
+Ballast is a self-hosted fork of [Sure](https://github.com/we-promise/sure) for one household. Bug reports and small fixes are welcome; changes that belong to the shared product are better sent upstream to Sure.
 
 ## House Rules
 
 - Before contributing, read the [repository guidance](AGENTS.md) and [architecture and conventions](docs/llm-guides/architecture.md). Detailed [task guides](docs/llm-guides/README.md) cover testing, UI, APIs and providers.
 - Coding-assistant setup is optional; see the [supported instruction adapters](docs/llm-guides/harness-adapters.md).
-- Before contributing, please check if it already exists in [issues](https://github.com/we-promise/sure/issues) or [PRs](https://github.com/we-promise/sure/pulls)
+- Before contributing, please check if it already exists in [issues](https://github.com/ryanportfolio/Ballast/issues) or [PRs](https://github.com/ryanportfolio/Ballast/pulls)
 - Given the speed at which we're moving on the codebase, we don't assign issues or "give" issues to anyone.
 - When multiple PRs are submitted for the same issue, we take the one that most succinctly & efficiently solves a given problem and stays within the scope of work.
 - Priority is generally given to previous committers as they've proven familiarity with the codebase and product.
-
-## What should I contribute?
-
-As we are still in the early days of this project, we recommend [heading over to the Wiki](https://github.com/we-promise/sure/wiki) to get a better idea of _what_ to contribute.
-
-In general, _full features_ that get us closer to [our 🔜 Vision](https://github.com/we-promise/sure/wiki/Vision) are the most valuable contributions at this stage.
 
 ## Development
 
@@ -27,7 +21,7 @@ To get setup for local development, you have two options:
    - A `selenium/standalone-chrome` service is included in the Dev Container setup, so **system tests work out of the box** — no local Chrome required.
    - Run system tests: `DISABLE_PARALLELIZATION=true bin/rails test:system`
    - Watch the browser live at `http://localhost:7900` or `http://localhost:4444` (password: `secret`)
-2. Local Development
+2. Local Development (setup guides from the upstream Sure wiki; they apply unchanged)
    - [Mac Setup Guide](https://github.com/we-promise/sure/wiki/Mac-Dev-Setup-Guide)
    - [Linux Setup Guide](https://github.com/we-promise/sure/wiki/Linux-Dev-Setup-Guide)
    - [Windows Setup Guide](https://github.com/we-promise/sure/wiki/Windows-Dev-Setup-Guide)

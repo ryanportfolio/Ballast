@@ -19,14 +19,12 @@ class Api::V1::HoldingsControllerTest < ActionDispatch::IntegrationTest
     @account = accounts(:investment)
     @holding = holdings(:one)
 
-    # An account owned by another family member, never shared with @user.
-    @other_member = users(:family_member)
-    @private_account = @family.accounts.create!(
-      name: "Member Brokerage",
+    # An account of another family, which @user must never reach.
+    @private_account = families(:empty).accounts.create!(
+      name: "Other Family Brokerage",
       accountable: Investment.new,
       balance: 5000,
-      currency: "USD",
-      owner: @other_member
+      currency: "USD"
     )
     @private_holding = @private_account.holdings.create!(
       security: securities(:msft),

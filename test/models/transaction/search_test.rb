@@ -147,8 +147,7 @@ class Transaction::SearchTest < ActiveSupport::TestCase
     # but the Transactions page filter used TRANSFER_KINDS and hid them, so
     # the widget's figure could not be reproduced from the list — and the
     # transactions could not be found, let alone categorized. These two kinds
-    # are budget-tracked outflows (the intentional-tracking contract also
-    # asserted by the BudgetCategoriesController drilldown tests), so they
+    # are budget-tracked outflows (the intentional-tracking contract), so they
     # stay listed.
     loan_payment = create_transaction(account: @loan_account, amount: 300, kind: "loan_payment")
     investment_contribution = create_transaction(account: @checking_account, amount: 400, kind: "investment_contribution")
@@ -642,9 +641,9 @@ class Transaction::SearchTest < ActiveSupport::TestCase
     assert_not_includes result_ids, no_match.entryable.id
   end
 
-  test "uncategorized filter works regardless of current locale since the filter value is a stable sentinel" do
-    # The category filter now matches on the stable Category::UNCATEGORIZED_FILTER_VALUE sentinel
-    # (not the translated display name), so the current locale can no longer affect matching.
+  test "uncategorized filter matches on the stable sentinel" do
+    # The category filter matches on the stable Category::UNCATEGORIZED_FILTER_VALUE sentinel,
+    # not the translated display name.
     uncategorized1 = create_transaction(
       account: @checking_account,
       amount: 100,
@@ -664,16 +663,12 @@ class Transaction::SearchTest < ActiveSupport::TestCase
       kind: "standard"
     )
 
-    LanguagesHelper::SUPPORTED_LOCALES.each do |locale|
-      I18n.with_locale(locale) do
-        results = Transaction::Search.new(@family, filters: { categories: [ Category::UNCATEGORIZED_FILTER_VALUE ] }).transactions_scope
-        result_ids = results.pluck(:id)
+    results = Transaction::Search.new(@family, filters: { categories: [ Category::UNCATEGORIZED_FILTER_VALUE ] }).transactions_scope
+    result_ids = results.pluck(:id)
 
-        assert_includes result_ids, uncategorized1.entryable.id
-        assert_includes result_ids, uncategorized2.entryable.id
-        assert_not_includes result_ids, categorized.entryable.id
-      end
-    end
+    assert_includes result_ids, uncategorized1.entryable.id
+    assert_includes result_ids, uncategorized2.entryable.id
+    assert_not_includes result_ids, categorized.entryable.id
   end
 
   test "a real category literally named like the localized Uncategorized label remains selectable" do

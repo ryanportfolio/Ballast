@@ -8,7 +8,7 @@ module WebauthnRelyingParty
       webauthn_config = Rails.application.config.x.webauthn
 
       WebAuthn::RelyingParty.new(
-        name: "Sure",
+        name: Rails.configuration.x.product_name,
         id: webauthn_config.rp_id,
         allowed_origins: webauthn_config.allowed_origins,
         # Accept consumer passkeys/security keys without attesting device vendor

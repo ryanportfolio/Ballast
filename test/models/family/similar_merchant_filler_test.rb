@@ -21,7 +21,7 @@ class Family::SimilarMerchantFillerTest < ActiveSupport::TestCase
   end
 
   def fill(*transactions, **settings)
-    Family::SimilarMerchantFiller.new(@family, settings: Family::BayesSettings.new(settings)).fill(transactions.map(&:id))
+    Family::SimilarMerchantFiller.new(@family, settings: settings).fill(transactions.map(&:id))
   end
 
   test "copies the merchant two near-duplicates agree on, as a similar enrichment" do
@@ -91,13 +91,10 @@ class Family::SimilarMerchantFillerTest < ActiveSupport::TestCase
     assert_equal 0, fill(transfer, missing)
   end
 
-  test "the family fills only the missing merchants in scope, and Bayes fills none" do
+  test "the family fills only the missing merchants in scope" do
     2.times { transaction("NETFLIX.COM 8812", merchant: @netflix) }
     missing = transaction("Netflix com 1203")
     elsewhere = transaction("Netflix com 5531")
-
-    @family.bayes_categorize_uncategorized
-    assert_nil missing.reload.merchant_id
 
     assert_equal 1, @family.fill_similar_merchants(@family.transactions.where(id: missing.id))
     assert_equal @netflix.id, missing.reload.merchant_id

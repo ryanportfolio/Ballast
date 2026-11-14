@@ -3,7 +3,7 @@
 class Provider::<%= class_name %>
   include HTTParty
 
-  headers "User-Agent" => "Sure Finance <%= class_name %> Client"
+  headers "User-Agent" => "Ballast <%= class_name %> Client"
   default_options.merge!(verify: true, ssl_verify_mode: OpenSSL::SSL::VERIFY_PEER, timeout: 120)
 
   class Error < StandardError

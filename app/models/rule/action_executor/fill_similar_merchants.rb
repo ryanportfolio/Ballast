@@ -1,4 +1,4 @@
-# The merchant matcher (Settings → Classifier) as a rule action: copies a
+# The merchant matcher (Family::SimilarMerchantFiller) as a rule action: copies a
 # missing merchant from near-duplicates, in the rule's place in the order.
 # Free, so offered without a provider. Never overrides a lock.
 class Rule::ActionExecutor::FillSimilarMerchants < Rule::ActionExecutor

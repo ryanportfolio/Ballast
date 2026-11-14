@@ -59,7 +59,7 @@ class Transactions::TransactionCategoryViewTest < ActionView::TestCase
   test "hides the outflow's category when the viewer cannot access the outflow's account" do
     category = categories(:income)
     owner_only = accounts(:investment).family.accounts.create!(
-      owner: users(:family_admin), name: "Private checking", balance: 0, currency: "USD", accountable: Depository.new
+      name: "Private checking", balance: 0, currency: "USD", accountable: Depository.new
     )
     outflow_tx = Transaction.create!(kind: "investment_contribution", category: category)
     Entry.create!(account: owner_only, entryable: outflow_tx, name: "Contribution", amount: 500, currency: "USD", date: Date.today)

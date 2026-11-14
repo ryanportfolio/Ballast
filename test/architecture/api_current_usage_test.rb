@@ -15,8 +15,7 @@ class ApiCurrentUsageTest < ActiveSupport::TestCase
   # for code paths that still derive Current.user from Current.session.user.
   # Add new entries only when they are part of that bridge and document why.
   ALLOWED_BASE_CONTROLLER_REFERENCES = [
-    "Current.session = @current_user.sessions.build(",
-    "Current.session.active_impersonator_session = nil"
+    "Current.session = @current_user.sessions.build("
   ].freeze
 
   test "api controllers scope through current_resource_owner instead of Current" do

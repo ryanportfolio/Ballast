@@ -22,7 +22,7 @@ live under their own registry concept:
 
 ```ruby
 # app/models/provider/registry.rb
-CONCEPTS = %i[exchange_rates securities llm property_valuations classification]
+CONCEPTS = %i[exchange_rates securities llm classification]
 
 when :classification
   %i[jev]
@@ -30,7 +30,7 @@ when :classification
 
 OpenAI and Anthropic stay under `:llm`. They can categorize, but they cannot
 answer typed questions, so they do not belong to a concept whose contract is
-`#decide`. The eval runner builds them by name when benchmarking.
+`#decide`.
 
 ## The contract: one `#decide`, many questions
 
@@ -111,42 +111,21 @@ for rows something else has already established are recurring.
 
 `CategoryDecision` responds to `#transaction_id` and `#category_name`, exactly
 like `Provider::LlmConcept::AutoCategorization`. That is deliberate:
-`Family::AutoCategorizer` and the eval runners consume either shape unchanged
+`Family::AutoCategorizer` consumes either shape unchanged
 and ignore the extra `confidence` / `probabilities` / `usage` fields.
 
 Keep that property when adding types. A caller should not need to know which
 kind of provider served it.
 
-## You are second in a cascade
+## Rules run before you
 
-A classification provider does not see the transaction stream. `Family#auto_categorize_transactions`
-runs `Family::BayesCategorizer` first — a pure-Ruby naive Bayes model trained on
-the family's own categorized history, costing nothing and calling nobody — and
-only the transactions it declines reach `Family::AutoCategorizer`, where your
-provider sits:
-
-```ruby
-# app/models/family.rb
-bayes_result = Family::BayesCategorizer.new(self).classify_and_apply(transaction_ids)
-remaining_ids = Array(transaction_ids) - bayes_result.categorized_ids
-# ... if remaining_ids is empty, no provider is called at all
-llm_modified_count = AutoCategorizer.new(self, transaction_ids: remaining_ids).auto_categorize
-```
-
-Two consequences worth internalising before you benchmark anything.
-
-**Your provider receives the hard tail.** Bayes takes the repeat merchants and
-the obvious descriptors; what reaches you is what a model trained on this
-family's own history could not place. Accuracy measured over a whole golden
-dataset therefore *overstates* what your provider contributes in production,
-because it credits you for rows you would never have been handed. The number
-that matters is accuracy on the subset Bayes declines.
-
-**Your confidence threshold is the second one in series.** `BayesCategorizer::CONFIDENCE_THRESHOLD`
-is a hardcoded `0.7`; `families.categorization_confidence_threshold` also
-defaults to `0.7`, derived independently from a golden-set sweep. That the two
-coincide is a coincidence — different models over different distributions.
-Do not extract them into a shared constant.
+A classification provider does not see the whole transaction stream.
+`Family::AutoCategorizer` gets the uncategorized, unlocked transactions that
+the auto-categorize rule action matched, minus those whose category a rule
+higher in the family's rule order already set in the same run (see
+`Rule::Runner`). A family with many category rules hands your provider only
+what those rules leave, so accuracy measured over a whole golden dataset can
+overstate what it adds on that install.
 
 ## Provider resolution
 
@@ -184,8 +163,8 @@ flag plays no part here — it gates whether the *selector* is offered (see
 family that opted into preview and then chose the AI provider gets the AI
 provider.
 
-Anything that needs to name the provider — the rule confirmation screen's cost
-estimate, for instance — must call this same method rather than resolving
+Anything that needs to name the provider (the rule confirmation screen, for
+instance) must call this same method rather than resolving
 separately, or the screen will quote a provider that will not run.
 
 ## Endpoints, gateways and disclosure
@@ -229,23 +208,6 @@ excludes POST, and `retry_statuses` is never consulted because `raise_error`
 converts the status to an exception first. Both have to be overridden or the
 backoff silently never runs.
 
-## Evals
-
-`Eval::ProviderFactory` builds the provider for a run, taking per-run overrides
-the registry deliberately does not accept. Add a branch there — both
-`Eval::Runners::Base` and `Eval::Langfuse::ExperimentRunner` go through it.
-
-A classification provider spending one request per sample can attribute cost per
-sample, which is what makes `cost_per_sample` meaningful. Carry `usage` on the
-returned struct so the runner can record it.
-
-```bash
-JEV_API_KEY=... PROVIDER=jev bin/rails "evals:run[categorization_golden_v2,jev-latest]"
-```
-
-Check `error_rate` before believing an accuracy figure — a stale model slug
-records every sample as incorrect and otherwise reads as a credible 0%.
-
 ## Checklist
 
 - [ ] `include ClassificationConcept`, implement `#decide`
@@ -255,6 +217,4 @@ records every sample as incorrect and otherwise reads as a credible 0%.
 - [ ] Provider resolution rescues construction failures and falls back, never raises
 - [ ] Every Choice question has an opt-out sentinel, translated to `nil`
 - [ ] Return types structurally compatible with the `LlmConcept` equivalents
-- [ ] Per-request `usage` carried through for eval cost attribution
-- [ ] Branch added to `Eval::ProviderFactory`
 - [ ] Tests stub HTTP with WebMock — the suite blocks real connections

@@ -39,24 +39,8 @@ en:
       total_income: Total Income
       total_expenses: Total Expenses
       net_savings: Net Savings
-      budget_performance: Budget Performance
       vs_previous: vs previous period
       income_minus_expenses: Income minus expenses
-      of_budget_used: of budget used
-      no_budget_data: No budget data for this period
-    budget_performance:
-      title: Budget Performance
-      spent: Spent
-      budgeted: Budgeted
-      remaining: Remaining
-      over_by: Over by
-      shared: shared
-      suggested_daily: "%{amount} suggested per day for %{days} remaining days"
-      no_budgets: No budget categories set up for this month
-      status:
-        good: On Track
-        warning: Near Limit
-        over: Over Budget
     trends:
       title: Trends & Insights
       monthly_breakdown: Monthly Breakdown
@@ -226,10 +210,8 @@ en:
         income: Income
         expenses: Expenses
         net_savings: Net Savings
-        budget: Budget
         vs_prior: "%{percent}% vs prior"
         of_income: "%{percent}% of income"
-        used: used
       # Net Worth section
       net_worth:
         title: Net Worth

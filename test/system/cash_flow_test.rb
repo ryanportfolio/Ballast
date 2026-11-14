@@ -125,19 +125,18 @@ class CashFlowTest < ApplicationSystemTestCase
     ].sort, links.sort
   end
 
-  test "preview structural labels and tooltips use the user locale" do
-    @user.update!(locale: "es")
+  test "preview structural labels and tooltips are translated" do
     sign_in @user
     chart = find("#cashflow-preview [data-preview-sankey-chart-target='chart']", match: :first)
-    assert_selector "#cashflow-preview svg text", text: "Flujo de caja"
-    assert_selector "#cashflow-preview svg text", text: "Déficit"
-    chart.find("svg text", text: "Déficit", match: :first).hover
-    assert_selector ".chart-tooltip.ph-no-capture", text: "Déficit"
+    assert_selector "#cashflow-preview svg text", text: "Cash Flow"
+    assert_selector "#cashflow-preview svg text", text: "Deficit"
+    chart.find("svg text", text: "Deficit", match: :first).hover
+    assert_selector ".chart-tooltip.ph-no-capture", text: "Deficit"
     assert_selector "#cashflow-preview svg text", text: "Sankey Groceries"
     account = @user.family.accounts.find_by!(name: "Sankey checking")
     create_transaction(account: account, amount: -1000, date: @month)
     visit root_path(start_date: @month.iso8601, end_date: Date.current.iso8601)
-    assert_selector "#cashflow-preview svg text", text: "Superávit"
+    assert_selector "#cashflow-preview svg text", text: "Surplus"
   end
 
   test "failed load can retry and an empty range clears old chart data" do

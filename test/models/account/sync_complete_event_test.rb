@@ -11,8 +11,7 @@ class Account::SyncCompleteEventTest < ActiveSupport::TestCase
   end
 
   # The row carries the account's name and balance, and every family member
-  # subscribes to the family stream, including members the account is not
-  # shared with.
+  # subscribes to the family stream; each page renders its own account list.
   test "an account sync does not broadcast the rendered row to the family" do
     streams = capture_turbo_stream_broadcasts(@account.family) do
       Account::SyncCompleteEvent.new(@account).broadcast

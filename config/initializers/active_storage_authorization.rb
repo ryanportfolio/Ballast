@@ -3,7 +3,8 @@ Rails.application.config.to_prepare do
   module ActiveStorageAttachmentAuthorization
     extend ActiveSupport::Concern
     # Imports stay listed with no branch below, so any Import attachment left by an import type
-    # Ballast removed is denied (the CSV import types attach no files).
+    # Ballast removed is denied (the CSV import types attach no files). FamilyDocument stays listed
+    # the same way: Ballast removed family documents, so any file left attached to one is denied.
     PROTECTED_RECORD_TYPES = %w[Transaction AccountStatement FamilyExport Import FamilyDocument].freeze
 
     included do
@@ -40,20 +41,19 @@ Rails.application.config.to_prepare do
           account_statement_attachment_authorized?(attachment)
         when "FamilyExport"
           family_export_attachment_authorized?(attachment)
-        when "FamilyDocument"
-          family_record_attachment_authorized?(attachment)
         else
           false
         end
       end
 
-      # Mirrors TransactionAttachmentsController#set_transaction: the account must be shared with the user.
+      # Mirrors TransactionAttachmentsController#set_transaction: the account
+      # must belong to the user's family.
       def transaction_attachment_authorized?(attachment)
         transaction = attachment.record
         return false if transaction.nil?
 
         account = transaction.entry.account
-        account.family_id == Current.family&.id && account.shared_with?(Current.user)
+        account.family_id == Current.family&.id && account.accessible_by?(Current.user)
       rescue ActiveRecord::RecordNotFound, NoMethodError
         false
       end
@@ -73,15 +73,6 @@ Rails.application.config.to_prepare do
         return false if export.nil?
 
         export.family_id == Current.family&.id && Current.user.admin?
-      rescue ActiveRecord::RecordNotFound, NoMethodError
-        false
-      end
-
-      def family_record_attachment_authorized?(attachment)
-        record = attachment.record
-        return false if record.nil?
-
-        record.family_id == Current.family&.id
       rescue ActiveRecord::RecordNotFound, NoMethodError
         false
       end

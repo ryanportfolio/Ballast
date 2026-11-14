@@ -292,8 +292,8 @@ class RecurringTransaction
       # An unconvertible obligation is counted and reported, never folded in as
       # zero, which would inflate what the plan says is safe to spend.
       # remaining_amount aggregates confirmed allocations per occurrence, one
-      # query each. Same grouped-sum-into-the-cache pattern the bills tools and
-      # BudgetCategory#bills_reservation already use.
+      # query each. Same grouped-sum-into-the-cache pattern the bills tools
+      # already use.
       def preload_confirmed_sums(occurrences)
         sums = RecurringAllocation.confirmed
                                   .where(recurring_occurrence_id: occurrences.map(&:id))

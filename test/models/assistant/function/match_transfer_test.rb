@@ -123,21 +123,6 @@ class Assistant::Function::MatchTransferTest < ActiveSupport::TestCase
     end
   end
 
-  test "does not match into an account the user can only read" do
-    # family_member has full control of the checking account but read-only on the card
-    function = Assistant::Function::MatchTransfer.new(users(:family_member))
-    outflow = create_transaction(account: @checking, amount: 120).transaction
-    inflow = create_transaction(account: @card, amount: -120).transaction
-
-    result = function.call("transaction_id" => outflow.id, "counterpart_transaction_id" => inflow.id)
-    assert_equal "not_found", result[:error]
-
-    result = function.call("transaction_id" => outflow.id, "target_account_id" => @card.id)
-    assert_equal "account_not_found", result[:error]
-
-    assert_nil outflow.reload.transfer
-  end
-
   test "does not resolve another family's transaction" do
     outflow = create_transaction(account: @checking, amount: 120).transaction
 

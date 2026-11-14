@@ -22,8 +22,7 @@ class DS::SegmentedControl < DesignSystemComponent
 
     # Expose the selected state to assistive tech: link segments use
     # `aria-current`, button segments use `aria-pressed`. A Stimulus
-    # controller that toggles `--active` should mirror these (see
-    # budget_filter_controller#filterValueChanged).
+    # controller that toggles `--active` should mirror these.
     if href
       link_to(label, href, class: classes, "aria-current": (active ? "true" : nil), **opts)
     else

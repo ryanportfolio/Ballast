@@ -239,21 +239,11 @@ class Loan::PayoffChartTest < ActiveSupport::TestCase
     )
   end
 
-  test "German loan chart translations cover the English chart keys" do
-    english = I18n.t("UI.account.chart.loan", locale: :en)
-    german = I18n.t("UI.account.chart.loan", locale: :de)
-
-    assert_equal english.keys.sort, german.keys.sort
-  end
-
   # The chart controller sets aria-roledescription from labels.interactive_chart
   # and falls back to English when the payload does not carry it.
-  test "the payload carries a localized interactive chart role description" do
-    english = Loan::PayoffChart.new(on_contract_loan, as_of: @today).payload
-    assert_equal "interactive chart", english[:labels][:interactive_chart]
-
-    german = I18n.with_locale(:de) { Loan::PayoffChart.new(on_contract_loan, as_of: @today).payload }
-    assert_equal "interaktives Diagramm", german[:labels][:interactive_chart]
+  test "the payload carries the interactive chart role description" do
+    payload = Loan::PayoffChart.new(on_contract_loan, as_of: @today).payload
+    assert_equal "interactive chart", payload[:labels][:interactive_chart]
   end
 
   # A borrower too far behind has no payoff date. The description must say so
@@ -315,9 +305,6 @@ class Loan::PayoffChartTest < ActiveSupport::TestCase
     loan = on_contract_loan
 
     assert_equal "en", Loan::PayoffChart.new(loan, as_of: @today).payload[:locale]
-    I18n.with_locale(:de) do
-      assert_equal "de", Loan::PayoffChart.new(loan, as_of: @today).payload[:locale]
-    end
   end
 
 

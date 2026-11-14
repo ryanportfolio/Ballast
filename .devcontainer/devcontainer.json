@@ -1,5 +1,5 @@
 {
-  "name": "Sure",
+  "name": "Ballast",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "runServices": [

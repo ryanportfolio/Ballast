@@ -76,7 +76,7 @@ class Assistant::Function::GetValuationsTest < ActiveSupport::TestCase
   end
 
   test "excludes valuations on accounts the user cannot access" do
-    member_fn = Assistant::Function::GetValuations.new(users(:family_member))
+    member_fn = Assistant::Function::GetValuations.new(users(:empty))
     investment_entry = accounts(:investment).entries.create!(
       name: "Hidden valuation",
       date: Date.current,

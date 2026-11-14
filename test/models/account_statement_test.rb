@@ -277,7 +277,6 @@ class AccountStatementTest < ActiveSupport::TestCase
 
     statement.account = Account.create!(
       family: families(:empty),
-      owner: users(:empty),
       name: "Other family account",
       balance: 0,
       currency: "USD",
@@ -677,7 +676,6 @@ class AccountStatementTest < ActiveSupport::TestCase
   test "moves linked statements to inbox when account is deleted" do
     account = Account.create!(
       family: @family,
-      owner: users(:family_admin),
       name: "Temporary Checking",
       balance: 0,
       currency: "USD",
@@ -705,7 +703,6 @@ class AccountStatementTest < ActiveSupport::TestCase
     )
     other_account = Account.create!(
       family: families(:empty),
-      owner: users(:empty),
       name: "Other family account",
       balance: 0,
       currency: "USD",
@@ -795,7 +792,6 @@ class AccountStatementTest < ActiveSupport::TestCase
   test "coverage year selection spans historical account data through last completed month" do
     account = Account.create!(
       family: @family,
-      owner: users(:family_admin),
       name: "Historical Checking",
       balance: 0,
       currency: "USD",
@@ -825,7 +821,6 @@ class AccountStatementTest < ActiveSupport::TestCase
   test "coverage start can come from balances entries and suggested statements" do
     account = Account.create!(
       family: @family,
-      owner: users(:family_admin),
       name: "Archive Checking",
       balance: 0,
       currency: "USD",
@@ -855,7 +850,6 @@ class AccountStatementTest < ActiveSupport::TestCase
   test "coverage marks covered duplicate ambiguous and mismatched months" do
     account = Account.create!(
       family: @family,
-      owner: users(:family_admin),
       name: "Coverage Checking",
       balance: 0,
       currency: "USD",
@@ -900,7 +894,6 @@ class AccountStatementTest < ActiveSupport::TestCase
   test "coverage does not mark adjacent statements as duplicate when they only share a calendar month" do
     account = Account.create!(
       family: @family,
-      owner: users(:family_admin),
       name: "Adjacent Statement Checking",
       balance: 0,
       currency: "USD",

@@ -233,15 +233,13 @@ class AccountStatement < ApplicationRecord
   def viewable_by?(user)
     return false unless user&.family_id == family_id
 
-    account.present? ? account.shared_with?(user) : self.class.statement_manager?(user)
+    account.present? ? account.accessible_by?(user) : self.class.statement_manager?(user)
   end
 
   def manageable_by?(user)
     return false unless user&.family_id == family_id
 
-    return self.class.statement_manager?(user) if account.blank?
-
-    account.permission_for(user).in?([ :owner, :full_control ]) && self.class.statement_manager?(user)
+    self.class.statement_manager?(user)
   end
 
   def link_to_account!(target_account, confidence: 1.0)

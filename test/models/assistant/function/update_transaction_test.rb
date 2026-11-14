@@ -65,29 +65,14 @@ class Assistant::Function::UpdateTransactionTest < ActiveSupport::TestCase
     assert_equal "invalid_category", result[:error]
   end
 
-  test "does not let read-only collaborators update transactions" do
+  test "does not let a user from another family update transactions" do
     transaction = transactions(:transfer_in)
-    function = Assistant::Function::UpdateTransaction.new(users(:family_member))
+    function = Assistant::Function::UpdateTransaction.new(users(:empty))
 
     result = function.call("id" => transaction.id, "notes" => "Should not be saved")
 
     assert_equal false, result[:success]
-    assert_equal "not_authorized", result[:error]
+    assert_equal "not_found", result[:error]
     assert_nil transaction.reload.entry.notes
-  end
-
-  test "lets read-write collaborators update annotations but not names" do
-    transaction = transactions(:transfer_in)
-    transaction.entry.account.account_shares.find_by!(user: users(:family_member)).update!(permission: "read_write")
-    function = Assistant::Function::UpdateTransaction.new(users(:family_member))
-
-    annotation_result = function.call("id" => transaction.id, "notes" => "Shared note")
-    rename_result = function.call("id" => transaction.id, "name" => "Renamed transaction")
-
-    assert_equal true, annotation_result[:success]
-    assert_equal "Shared note", transaction.reload.entry.notes
-    assert_equal false, rename_result[:success]
-    assert_equal "not_authorized", rename_result[:error]
-    assert_equal "Payment received from checking account", transaction.reload.entry.name
   end
 end

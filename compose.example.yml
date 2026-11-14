@@ -6,25 +6,35 @@
 # --------
 #
 # This file is an example Docker Compose configuration for self hosting
-# Sure on your local machine or on a cloud VPS.
+# Ballast on your local machine or on a cloud VPS.
 #
 # The configuration below is a "standard" setup. It needs SECRET_KEY_BASE and
 # POSTGRES_PASSWORD in a .env file next to it; Docker Compose refuses to start
 # without them. A public default SECRET_KEY_BASE would let anyone forge sessions.
+#
+# Image:
+# ------
+#
+# Ballast publishes no Docker image yet. The web, worker and backup services
+# below pull ghcr.io/we-promise/sure, the upstream Sure image, so this file as
+# written runs upstream Sure without Ballast's changes. To run Ballast, build
+# the image from this repository (docker build -t ballast:local .) and set it
+# for those services in a compose.override.yml; see "Which image these compose
+# files run" in the setup guide below.
 #
 # Setup:
 # ------
 #
 # To run this, you should read the setup guide:
 #
-# https://github.com/we-promise/sure/blob/main/docs/hosting/docker.md
+# https://github.com/ryanportfolio/Ballast/blob/main/docs/hosting/docker.md
 #
 # Troubleshooting:
 # ----------------
 #
-# Problems? Swing by our Discord or open a Discussion here:
+# Problems? Open an issue here:
 #
-# https://github.com/we-promise/sure/discussions/categories/general
+# https://github.com/ryanportfolio/Ballast/issues
 #
 # IPv6 Note (Yahoo Finance Sync, others?):
 # ----------------------------------------
@@ -62,12 +72,6 @@ x-rails-env: &rails_env
   OPENAI_URI_BASE: ${OPENAI_URI_BASE:-}
   LLM_CONTEXT_WINDOW: ${LLM_CONTEXT_WINDOW:-}
   OPENAI_REQUEST_TIMEOUT: ${OPENAI_REQUEST_TIMEOUT:-60}
-  # Health-check probes (System Health → AI Status → "Run checks") bound each
-  # probe call. Distinct from OPENAI_REQUEST_TIMEOUT, which bounds real LLM
-  # calls the app makes; the probe default is 5s. AI_HEALTH_PROBE_CACHE_TTL
-  # controls how long probe results are cached (default 60s).
-  AI_HEALTH_PROBE_TIMEOUT: ${AI_HEALTH_PROBE_TIMEOUT:-}
-  AI_HEALTH_PROBE_CACHE_TTL: ${AI_HEALTH_PROBE_CACHE_TTL:-}
   # Seconds the chat waits for an assistant response before showing a "no response"
   # error. This covers the whole turn, so its worst case is a sum:
   #   (1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) * OPENAI_REQUEST_TIMEOUT

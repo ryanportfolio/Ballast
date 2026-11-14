@@ -59,7 +59,7 @@ class Assistant::Function::GetStatementCoverageTest < ActiveSupport::TestCase
   end
 
   test "rejects an account the user cannot access" do
-    result = Assistant::Function::GetStatementCoverage.new(users(:family_member))
+    result = Assistant::Function::GetStatementCoverage.new(users(:empty))
       .call("account_id" => accounts(:other_asset).id)
 
     assert_not result[:success]

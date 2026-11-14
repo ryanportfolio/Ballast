@@ -7,17 +7,11 @@ module AccountAuthorizable
 
   private
 
-    def require_account_permission!(account, level = :write, redirect_path: nil)
-      permission = account.permission_for(Current.user)
-
-      allowed = case level
-      when :write    then permission.in?([ :owner, :full_control ])
-      when :annotate then permission == :owner || permission.to_s.in?(AccountShare::ANNOTATE_PERMISSIONS)
-      when :owner    then permission == :owner
-      else false
-      end
-
-      return true if allowed
+    # Ballast has no account sharing: every member of the account's family may
+    # change it and guests may not, so :write and :annotate are the same test.
+    # Accounts of another family are refused too.
+    def require_account_permission!(account, _level = :write, redirect_path: nil)
+      return true if account.writable_by?(Current.user)
 
       path = redirect_path || account_path(account)
       respond_to do |format|

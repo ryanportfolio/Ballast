@@ -1,14 +1,12 @@
 # A single-arc circular progress ring, decoupled from any domain model.
 #
-# Extracted from the goal card's inline <svg> (issue #1899) so goals, loans,
-# sub-account funding, etc. stop each hand-rolling the same two-circle SVG with
-# slightly different chrome / colors / a11y. Pass a percent and a tone; the
-# component owns the geometry (radius, circumference, dash offset) and the
-# accessible progressbar markup.
+# Callers stop each hand-rolling the same two-circle SVG with slightly
+# different chrome / colors / a11y. Pass a percent and a tone; the component
+# owns the geometry (radius, circumference, dash offset) and the accessible
+# progressbar markup.
 #
 # Not a segmented donut — that's the `donut-chart` Stimulus controller's job
-# (budget/dashboard breakdowns, and the goals/show ring). This is the simple
-# "X% of one thing" ring.
+# (dashboard and loan breakdowns). This is the simple "X% of one thing" ring.
 class DS::ProgressRing < DesignSystemComponent
   TONES = {
     success: "var(--color-success)",
@@ -17,10 +15,9 @@ class DS::ProgressRing < DesignSystemComponent
     neutral: "var(--color-gray-400)"
   }.freeze
 
-  # Track (unfilled remainder) color. Reuses the existing token to keep the
-  # goal card pixel-identical. TODO(#1899 follow-up): rename this to a generic
-  # --color-progress-track-fill in the token source — that change also touches
-  # the budget donut surfaces, so it's deferred out of this extraction.
+  # Track (unfilled remainder) color. Reuses the existing token, which keeps
+  # its upstream name (`--budget-unused-fill`) so the generated token file
+  # merges cleanly from upstream.
   DEFAULT_TRACK = "var(--budget-unused-fill)".freeze
 
   attr_reader :size, :stroke_width, :label, :show_percent
@@ -64,7 +61,7 @@ class DS::ProgressRing < DesignSystemComponent
     circumference * (1 - clamped_percent / 100.0)
   end
 
-  # Center label scales with the ring so 64px reads ~11px (the goal card's size)
+  # Center label scales with the ring so 64px reads ~11px (the default size)
   # and a 180px ring reads ~30px without a per-callsite font class.
   def percent_font_px
     (size * 0.17).round

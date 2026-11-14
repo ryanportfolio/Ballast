@@ -1,22 +1,16 @@
 class Account < ApplicationRecord
   include AASM, Syncable, Monetizable, Chartable, Linkable, Enrichable, Anchorable, Reconcileable, TaxTreatable
 
-  before_validation :assign_default_owner, if: -> { owner_id.blank? }
-
   before_destroy :capture_account_statement_ids_to_move
   before_destroy :cleanup_transfers
 
   after_destroy_commit :move_account_statements_to_inbox
 
   validates :name, :balance, :currency, presence: true
-  validate :owner_belongs_to_family, if: -> { owner_id.present? && family_id.present? }
 
   belongs_to :family
-  belongs_to :owner, class_name: "User", optional: true
   belongs_to :import, optional: true
 
-  has_many :account_shares, dependent: :destroy
-  has_many :shared_users, through: :account_shares, source: :user
   has_many :import_mappings, as: :mappable, dependent: :destroy, class_name: "Import::Mapping"
   has_many :entries, dependent: :destroy
   has_many :transactions, through: :entries, source: :entryable, source_type: "Transaction"
@@ -25,9 +19,6 @@ class Account < ApplicationRecord
   has_many :holdings, dependent: :destroy
   has_many :balances, dependent: :destroy
   has_many :recurring_transactions, dependent: :destroy
-  has_many :goal_accounts, dependent: :destroy
-  has_many :goals, through: :goal_accounts
-  has_many :goal_pledges, dependent: :destroy
   # Inverse for recurring transfers where this account is the destination.
   # Account#recurring_transactions only matches account_id; without this
   # association, destroying the destination account would hit the FK
@@ -62,8 +53,7 @@ class Account < ApplicationRecord
     visible.manual
   }
 
-  # The manual accounts +user+ may see, as /accounts lists them. Admins are
-  # not exempt: an admin sees what they own or were shared, as on /accounts.
+  # The manual accounts +user+ may see, as /accounts lists them.
   scope :visible_manual_for, ->(user) {
     visible_manual.where(id: user.accessible_accounts.select(:id))
   }
@@ -72,67 +62,14 @@ class Account < ApplicationRecord
     manual.where.not(status: :pending_deletion)
   }
 
-  # All accounts a user can access (owned + shared with them)
-  scope :accessible_by, ->(user) {
-    left_joins(:account_shares)
-      .where("accounts.owner_id = :uid OR account_shares.user_id = :uid", uid: user.id)
-      .distinct
-  }
-
-  # Accounts every active member of the account's family can access (owned or
-  # shared with them), the same test as accessible_by applied to all of them.
-  # Family-wide surfaces such as the insights feed name accounts and amounts
-  # to everyone, so they draw only from this set.
-  scope :accessible_by_all_active_members, -> {
-    where(<<~SQL.squish)
-      NOT EXISTS (
-        SELECT 1 FROM users
-        WHERE users.family_id = accounts.family_id
-          AND users.active = TRUE
-          AND users.id IS DISTINCT FROM accounts.owner_id
-          AND NOT EXISTS (
-            SELECT 1 FROM account_shares
-            WHERE account_shares.account_id = accounts.id
-              AND account_shares.user_id = users.id
-          )
-      )
-    SQL
-  }
-
-  # Accounts a user can write to (owned or shared with full_control)
-  WRITABLE_BY_CONDITION = "accounts.owner_id = :uid OR (account_shares.user_id = :uid AND account_shares.permission = 'full_control')".freeze
-
-  scope :writable_by, ->(user) {
-    left_joins(:account_shares)
-      .where(WRITABLE_BY_CONDITION, uid: user.id)
-      .distinct
-  }
-
-  # SQL boolean for "user may write to this account", for selecting next to
-  # rows already joined with account_shares (e.g. through annotatable_by).
-  def self.writable_by_sql(user)
-    Arel.sql("(#{sanitize_sql([ WRITABLE_BY_CONDITION, uid: user.id ])})")
-  end
-
-  # Accounts a user can annotate (category, tags, notes, merchant): owned,
-  # or shared with full_control or read_write
-  scope :annotatable_by, ->(user) {
-    left_joins(:account_shares)
-      .where("accounts.owner_id = :uid OR (account_shares.user_id = :uid AND account_shares.permission IN (:permissions))",
-             uid: user.id, permissions: AccountShare::ANNOTATE_PERMISSIONS)
-      .distinct
-  }
-
-  # Accounts that count in a user's financial calculations
-  scope :included_in_finances_for, ->(user) {
-    left_joins(:account_shares)
-      .where(
-        "accounts.owner_id = :uid OR " \
-        "(account_shares.user_id = :uid AND account_shares.include_in_finances = true)",
-        uid: user.id
-      )
-      .distinct
-  }
+  # Ballast has no account sharing: every user of a family can read and count
+  # every account of that family, and every user but a guest can change them.
+  # Guests are read-only, as upstream's read_only shares made them. The names
+  # stay so upstream callers keep merging cleanly.
+  scope :accessible_by, ->(user) { where(family_id: user.family_id) }
+  scope :writable_by, ->(user) { user.guest? ? none : accessible_by(user) }
+  scope :annotatable_by, ->(user) { writable_by(user) }
+  scope :included_in_finances_for, ->(user) { accessible_by(user) }
 
   has_one_attached :logo, dependent: :purge_later
   # No dependent: option; before_destroy captures IDs, after_destroy_commit moves statements back to inbox.
@@ -287,8 +224,6 @@ class Account < ApplicationRecord
           )
           raise reconciliation.error_message unless reconciliation.success?
         end
-
-        account.auto_share_with_family! if account.family.share_all_by_default?
       end
 
       # Skip initial sync for linked accounts - the provider sync will handle balance creation
@@ -391,40 +326,6 @@ class Account < ApplicationRecord
       simplefin_account_id.blank?
   end
 
-  # Default GoalPledge kind for this account. Manual accounts get
-  # `manual_save` (resolves on the next valuation), live-synced accounts
-  # get `transfer` (resolves when the synced deposit posts). Keeps the
-  # decision in one place so the new-pledge controller / preview helper
-  # can't disagree on what they're going to save.
-  def default_pledge_kind
-    # Investment accounts never use manual_save: a positive valuation delta on a
-    # brokerage is usually a market move, not a deposit, and would false-match a
-    # pledge. They resolve on transfer (cash-inflow) entries only.
-    manual? && !investment? ? "manual_save" : "transfer"
-  end
-
-  # Total fixed earmark this account currently has reserved across every goal
-  # still holding its money (unallocated/whole-balance links reserve no fixed
-  # slice). Mirrors Budget#allocated_spending. Scoped to Goal::RELEASED_STATES
-  # so this and Goal.pooled_allocations_for never disagree — if they did,
-  # free_to_earmark would contradict the figures the goals themselves show.
-  def goal_earmarked_total
-    GoalAccount.joins(:goal)
-               .where(account_id: id)
-               .where.not(allocated_amount: nil)
-               .where.not(goals: { state: Goal::RELEASED_STATES })
-               .sum(:allocated_amount)
-               .to_d
-  end
-
-  # Headroom left to earmark toward goals before fixed allocations exceed the
-  # balance. Negative means the account is over-earmarked. Intended to back a
-  # non-blocking over-allocation warning (UI is a follow-up). Mirrors
-  # Budget#available_to_allocate.
-  def free_to_earmark
-    balance.to_d - goal_earmarked_total
-  end
-
   def logo_url
     if institution_domain.present? && Setting.brand_fetch_client_id.present?
       logo_size = Setting.brand_fetch_logo_size
@@ -488,11 +389,10 @@ class Account < ApplicationRecord
   # track deletion in `status`.
   #
   # Mirrors the restore_after_failed_deletion and disable events, but written
-  # directly: an unrelated validation (an owner who has since left the family,
-  # say) must not leave the account hidden in pending_deletion or replace the
-  # destroy error with its own. Only while the row still holds the status this
-  # record saw, so a newer write (another worker's restore the user has since
-  # re-enabled, say) is not overwritten.
+  # directly: an unrelated validation must not leave the account hidden in
+  # pending_deletion or replace the destroy error with its own. Only while the
+  # row still holds the status this record saw, so a newer write (another
+  # worker's restore the user has since re-enabled, say) is not overwritten.
   def restore_after_failed_destroy
     return unless may_restore_after_failed_deletion? || may_disable?
 
@@ -601,49 +501,14 @@ class Account < ApplicationRecord
     end
   end
 
-  def owned_by?(user)
-    user.present? && owner_id == user.id
+  # Every user of the account's family may read it (no sharing).
+  def accessible_by?(user)
+    user.present? && user.family_id == family_id
   end
 
-  def shared_with?(user)
-    return false if user.nil?
-
-    owned_by?(user) ||
-      if account_shares.loaded?
-        account_shares.any? { |s| s.user_id == user.id }
-      else
-        account_shares.exists?(user: user)
-      end
-  end
-
-  def shared?
-    account_shares.any?
-  end
-
-  def permission_for(user)
-    return :owner if owned_by?(user)
-    account_shares.find_by(user: user)&.permission&.to_sym
-  end
-
-  def share_with!(user, permission: "read_only", include_in_finances: true)
-    account_shares.create!(user: user, permission: permission, include_in_finances: include_in_finances)
-  end
-
-  def unshare_with!(user)
-    account_shares.where(user: user).destroy_all
-  end
-
-  def auto_share_with_family!
-    # Guests get read_only, everyone else read_write. This mirrors
-    # Family#auto_share_existing_accounts_with so a guest's permission on an
-    # account is the same whether they joined before or after it was created.
-    records = family.users.where.not(id: owner_id).pluck(:id, :role).map do |user_id, role|
-      { account_id: id, user_id: user_id,
-        permission: role == "guest" ? "read_only" : "read_write",
-        include_in_finances: true, created_at: Time.current, updated_at: Time.current }
-    end
-
-    AccountShare.insert_all(records, unique_by: %i[account_id user_id]) if records.any?
+  # The same users may change it, except guests (see writable_by).
+  def writable_by?(user)
+    accessible_by?(user) && !user.guest?
   end
 
   private
@@ -673,31 +538,6 @@ class Account < ApplicationRecord
       restored = Account.where(id: id, status: "pending_deletion").update_all(status: restoring)
       self.status = restoring if restored == 1
       clear_attribute_changes([ :status ])
-    end
-
-    def assign_default_owner
-      return if owner.present?
-
-      if Current.user.present? && Current.user.family_id == family_id
-        self.owner = Current.user
-      else
-        # `id` breaks ties on `created_at`. Two users of the same role can share
-        # a timestamp (they are created in one transaction, or the column is
-        # backfilled), and ordering on `created_at` alone leaves the winner to
-        # the query plan — so the same family can get a different default owner
-        # from one call to the next.
-        self.owner =
-          family&.users&.where(role: "admin")&.order(:created_at, :id)&.first ||
-          family&.users&.where(role: "super_admin")&.order(:created_at, :id)&.first ||
-          family&.users&.order(:created_at, :id)&.first
-      end
-    end
-
-    def owner_belongs_to_family
-      owner_user = User.lock.find_by(id: owner_id)
-      return if owner_user&.family_id == family_id
-
-      errors.add(:owner, :invalid, message: "must belong to the same family as the account")
     end
 
     # AASM transition callbacks run after the timestamp is set and before the

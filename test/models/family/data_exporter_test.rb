@@ -78,16 +78,6 @@ class Family::DataExporterTest < ActiveSupport::TestCase
       content_type: "application/pdf"
     )
 
-    family_document = @family.family_documents.create!(
-      filename: "statement.pdf",
-      status: "ready"
-    )
-    family_document.file.attach(
-      io: StringIO.new("statement bytes"),
-      filename: "statement.pdf",
-      content_type: "application/pdf"
-    )
-
     other_account = @other_family.accounts.create!(
       name: "Other Attachment Account",
       accountable: Depository.new,
@@ -117,7 +107,6 @@ class Family::DataExporterTest < ActiveSupport::TestCase
       assert_equal 1, manifest["version"]
       assert_equal false, manifest["binary_included"]
       assert_includes filenames, "receipt.pdf"
-      assert_includes filenames, "statement.pdf"
       refute_includes filenames, "other-receipt.pdf"
 
       transaction_item = attachments.find { |attachment| attachment["record_type"] == "Transaction" }
@@ -127,12 +116,6 @@ class Family::DataExporterTest < ActiveSupport::TestCase
       assert_equal "attachments", transaction_item["name"]
       assert_equal "application/pdf", transaction_item["content_type"]
       assert_equal false, transaction_item["binary_included"]
-
-      document_item = attachments.find { |attachment| attachment["record_type"] == "FamilyDocument" }
-      assert_equal family_document.id, document_item["record_id"]
-      assert_equal "ready", document_item["status"]
-      assert_equal "file", document_item["name"]
-      assert_equal false, document_item["binary_included"]
     end
   end
 

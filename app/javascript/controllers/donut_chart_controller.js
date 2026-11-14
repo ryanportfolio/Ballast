@@ -291,8 +291,8 @@ export default class extends Controller {
     // The donut SVG uses `preserveAspectRatio="xMidYMid meet"`, so the actual
     // rendered diameter is the *smaller* of the container's width and height.
     // Using width alone over-estimates available room in non-square cells
-    // (e.g. the budget show page renders the donut inside a grid column that
-    // grows wider than tall on large viewports).
+    // (e.g. a donut inside a grid column that grows wider than tall on large
+    // viewports).
     const rect = this.chartContainerTarget.getBoundingClientRect();
     const containerSize = Math.min(rect.width, rect.height);
     if (containerSize <= 0) return;

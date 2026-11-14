@@ -1,7 +1,6 @@
 ---
 en:
   breadcrumbs:
-    account_sharings: Account sharing
     account_statements: Statement vault
     accounts: Accounts
     ai_prompts: AI Prompts
@@ -10,13 +9,9 @@ en:
     appearance: Appearance
     appearances: Appearance
     bank_sync: Bank Sync
-    budget_categories: Budget categories
-    budgets: Budgets
     categories: Categories
     categorize: Categorize
-    changelog: What's new
     chats: Chats
-    classifier: Classifier
     credit_cards: Credit cards
     cryptos: Crypto
     dashboard: Dashboard
@@ -26,19 +21,13 @@ en:
     exports: Exports
     family_exports: Exports
     family_merchants: Merchants
-    feedback: Feedback
     guides: Guides
     holdings: Holdings
     home: Home
     hostings: Self-Hosting
-    impersonation_sessions: Impersonations
     imports: Imports
     intro: Intro
     investments: Investments
-    invitations: Invitations
-    invite_codes: Invite codes
-    llm_usage: LLM Usage
-    llm_usages: LLM Usage
     loans: Loans
     mcp: MCP Server
     merchants: Merchants
@@ -48,7 +37,6 @@ en:
     other_assets: Other assets
     other_liabilities: Other liabilities
     pending_duplicate_merges: Duplicate review
-    plan: Plan
     preferences: Preferences
     profile: Profile Info
     profiles: Profile Info
@@ -64,7 +52,6 @@ en:
     sessions: Sign in
     simplefin_items: SimpleFIN
     splits: Split
-    system_health: System Health
     tags: Tags
     trades: Trades
     transactions: Transactions

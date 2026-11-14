@@ -123,6 +123,12 @@ class Api::V1::ImportsController < Api::V1::BaseController
           return render_json({ error: "forbidden", message: "Guests cannot create categories or tags", import_id: @import.id }, status: :forbidden)
         end
 
+        # Publishing writes into the import's existing accounts, as
+        # ImportsController#require_writable_import_accounts! checks for the web.
+        unless @import.accounts_writable_by?(current_resource_owner)
+          return render_json({ error: "forbidden", message: "You do not have write access to this account", import_id: @import.id }, status: :forbidden)
+        end
+
         @import.publish_later
       end
 

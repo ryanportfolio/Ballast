@@ -42,11 +42,11 @@ en:
       unlock_categories: Unlock category creation
     merge:
       title: Merge categories
-      description: Select a target category and the categories to merge into it. Matching transactions and budget lines will move to the target.
+      description: Select a target category and the categories to merge into it. Matching transactions will move to the target.
       target_label: Merge into (target)
       select_target: Select target category...
       sources_label: Categories to merge
-      sources_hint: Selected categories will be deleted after their transactions and budget lines move to the target. Do not select the target as a source.
+      sources_hint: Selected categories will be deleted after their transactions move to the target. Do not select the target as a source.
       submit: Merge selected
     menu:
       loading: Loading...

@@ -1,9 +1,6 @@
 ---
 en:
   helpers:
-    label:
-      user:
-        invite_code: Invite Code
     submit:
       user:
         create: Continue
@@ -11,14 +8,8 @@ en:
     closed: Signups are currently closed.
     create:
       failure: There was a problem signing up.
-      invalid_invite_code: Invalid invite code, please try again.
       success: You have signed up successfully.
     new:
-      invitation_message: "%{inviter} has invited you to join as a %{role}"
-      join_family_title: Join %{family} %{moniker}
-      role_admin: administrator
-      role_guest: guest
-      role_member: member
       submit: Create account
       title: Create your account
       welcome_body: To get started, you must sign up for a new account.  You will

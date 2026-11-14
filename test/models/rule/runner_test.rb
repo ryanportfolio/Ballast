@@ -260,9 +260,9 @@ class Rule::RunnerTest < ActiveSupport::TestCase
     assert_equal @dining, @other.reload.category
   end
 
-  test "a rule with a broken action does not stop the rules below" do
+  test "a rule that fails does not stop the rules below" do
     broken = create_rule("Broken", "Whole Foods", category: @groceries)
-    broken.actions.first.update_column(:action_type, "unknown_action")
+    broken.conditions.first.update_column(:operator, "unknown_operator")
     create_rule("Bottom", "Whole Foods", category: @dining)
 
     runner = Rule::Runner.new(@family, rules: @family.rules, execution_type: "manual")
@@ -272,9 +272,9 @@ class Rule::RunnerTest < ActiveSupport::TestCase
     assert_equal @dining, @whole_foods.reload.category
   end
 
-  test "a broken action above an applied rule does not stop it" do
+  test "a failing rule above an applied rule does not stop it" do
     broken = create_rule("Broken", "Whole Foods", category: @groceries)
-    broken.actions.first.update_column(:action_type, "unknown_action")
+    broken.conditions.first.update_column(:operator, "unknown_operator")
     bottom = create_rule("Bottom", "Whole Foods", category: @dining)
 
     Rule::Runner.new(@family, rules: [ bottom ], execution_type: "manual").run

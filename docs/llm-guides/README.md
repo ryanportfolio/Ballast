@@ -15,12 +15,11 @@ being changed. These guides hold the detailed conventions and procedures.
 | Add a securities price provider | [Provider walkthrough](adding-a-securities-provider.md) |
 | Add a typed classification provider (Jev/TypeSafe) | [Classification provider walkthrough](adding-a-classification-provider.md) |
 | Gate or release a preview feature | [Preview-feature gating](gating-a-preview-feature.md) |
-| Change goals, pledges or reconciliation | [Goals](goals.md) |
 
 ## External wealth integration
 
 [Wealth history with an external agent harness](wealth-agent-harness.md) describes
-Sure's read-only tool interface and the boundary with an external wealth system.
+Ballast's read-only tool interface and the boundary with an external wealth system.
 The [wealth blueprint](wealth-blueprint.md) is reference architecture for that
 separate system. Its working-memory files, private document vault and operating
 protocol apply to that external project, not to every change in this repository.

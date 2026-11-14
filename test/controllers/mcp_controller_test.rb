@@ -146,7 +146,7 @@ class McpControllerTest < ActionDispatch::IntegrationTest
       assert_equal "2.0", body["jsonrpc"]
       assert_equal 1, body["id"]
       assert_mcp_initialize_response(result)
-      assert_equal "sure", result["serverInfo"]["name"]
+      assert_equal "ballast", result["serverInfo"]["name"]
       assert result["capabilities"].key?("tools")
     end
   end
@@ -199,7 +199,6 @@ class McpControllerTest < ActionDispatch::IntegrationTest
       assert_includes tool_names, "get_balance_sheet"
       assert_includes tool_names, "get_income_statement"
       assert_includes tool_names, "update_transaction"
-      assert_includes tool_names, "update_budget"
       assert_includes tool_names, "get_transfer_match_candidates"
       assert_includes tool_names, "match_transfer"
       assert_includes tool_names, "review_transfer"
@@ -454,30 +453,6 @@ class McpControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "tools/call executes update_budget" do
-    with_mcp_env do
-      budget = budgets(:one)
-
-      post "/mcp", params: jsonrpc_request("tools/call", {
-        name: "update_budget",
-        arguments: {
-          budgeted_spending: 6200,
-          expected_income: 8800
-        }
-      }).to_json, headers: mcp_headers(@token)
-
-      assert_response :ok
-      body = JSON.parse(response.body)
-      result = body["result"]
-      inner = JSON.parse(result["content"][0]["text"])
-
-      assert_equal true, inner["success"]
-      budget.reload
-      assert_equal 6200, budget.budgeted_spending
-      assert_equal 8800, budget.expected_income
-    end
-  end
-
   test "tools/call wraps function errors as isError response" do
     Usage.expects(:capture).with("mcp_call_served_daily").once
     with_mcp_env do
@@ -545,7 +520,7 @@ class McpControllerTest < ActionDispatch::IntegrationTest
 
   # -- Session isolation --
 
-  test "does not persist sessions or inherit impersonation state" do
+  test "does not persist sessions" do
     with_mcp_env do
       assert_no_difference "Session.count" do
         post "/mcp", params: jsonrpc_request("initialize").to_json,

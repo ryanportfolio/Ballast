@@ -28,7 +28,7 @@ class DS::Disclosure < DesignSystemComponent
   # `:bare` — like `:default` on the `<details>` element (`group` only),
   # but content is yielded without the in-flow body wrapper. Use for
   # popovers anchored with absolute/fixed positioning inside the panel
-  # (e.g. goal/category color-icon pickers).
+  # (e.g. the category color-icon picker).
   #
   # In card / inline variants, callers should pass their own
   # `summary_content` slot; the built-in title rendering assumes the

@@ -1,9 +1,0 @@
----
-ru:
-  activerecord:
-    errors:
-      models:
-        recurring_allocation:
-          attributes:
-            currency:
-              must_match_occurrence: должна совпадать с валютой платежа

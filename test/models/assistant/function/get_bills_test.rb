@@ -111,17 +111,6 @@ class Assistant::Function::GetBillsTest < ActiveSupport::TestCase
     assert_equal [ merchants(:netflix).name ], result[:bills].map { |bill| bill[:name] }
   end
 
-  test "a member only sees bills on accounts they were given" do
-    create_series(name: "Visible bill", amount: 10)
-    create_series(name: "Hidden brokerage bill", amount: 99, account: accounts(:investment))
-
-    result = Assistant::Function::GetBills.new(users(:family_member)).call({})
-
-    names = result[:bills].map { |bill| bill[:name] }
-    assert_includes names, "Visible bill"
-    assert_not_includes names, "Hidden brokerage bill"
-  end
-
   test "totals exclude income and transfers and count the overdue" do
     create_series(name: "Real bill", amount: 100)
     create_series(name: "Paycheck", amount: -2000, bill_type: "income")

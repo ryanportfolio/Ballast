@@ -313,14 +313,14 @@ class Api::V1::TradesControllerTest < ActionDispatch::IntegrationTest
     assert_equal @investment_account.id, transfer.outflow_transaction.entry.account_id, "Outflow should come from investment"
   end
 
-  # The transfer books an entry on the other account too, so the key's user
-  # needs write permission there. family_member can write to the investment
-  # account here, only read credit_card and not see connected at all.
-  test "create withdrawal rejects a transfer account the user may only read or not access" do
-    @user = users(:family_member)
-    @investment_account.account_shares.create!(user: @user, permission: "full_control")
+  # The transfer books an entry on the other account too, so it must belong to
+  # the key user's family.
+  test "create withdrawal rejects a transfer account of another family" do
+    other_family_account = families(:empty).accounts.create!(
+      name: "Other family checking", balance: 0, currency: "USD", accountable: Depository.new
+    )
 
-    [ accounts(:credit_card), accounts(:connected) ].each do |transfer_account|
+    [ other_family_account ].each do |transfer_account|
       assert_no_difference [ "Entry.count", "Transfer.count" ] do
         post "/api/v1/trades",
           params: { trade: {

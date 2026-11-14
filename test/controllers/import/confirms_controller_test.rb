@@ -15,22 +15,8 @@ class Import::ConfirmsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "localizes mapping step labels in German" do
+  test "renders mapping step labels" do
     import = imports(:transaction)
-    @user.update!(locale: "de")
-    TransactionImport.any_instance.stubs(:cleaned?).returns(true)
-
-    get import_confirm_path(import)
-
-    assert_response :success
-    assert_select "span.sr-only", text: "Schritt 1", count: 1
-    assert_select "span.sr-only", text: "Schritt 2", count: 1
-    assert_select "span.sr-only", text: "Schritt 3", count: 1
-  end
-
-  test "preserves mapping step labels in English" do
-    import = imports(:transaction)
-    @user.update!(locale: "en")
     TransactionImport.any_instance.stubs(:cleaned?).returns(true)
 
     get import_confirm_path(import)

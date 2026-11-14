@@ -1,8 +1,0 @@
----
-zh-TW:
-  admin:
-    invitations:
-      destroy:
-        success: 邀請已刪除。
-      destroy_all:
-        success: 這個家庭的所有邀請都已刪除。

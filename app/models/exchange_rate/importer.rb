@@ -111,10 +111,9 @@ class ExchangeRate::Importer
   private
     attr_reader :exchange_rate_provider, :from, :to, :start_date, :end_date, :clear_cache
 
-    # Resolves the provider name the same way as ExchangeRate::Provided.provider:
-    # ENV takes precedence over the DB Setting to stay consistent in env-configured deployments.
+    # The provider name ExchangeRate.provider resolves (ExchangeRate.provider_key).
     def current_provider_name
-      @current_provider_name ||= (ENV["EXCHANGE_RATE_PROVIDER"].presence || Setting.exchange_rate_provider).to_s
+      @current_provider_name ||= ExchangeRate.provider_key
     end
 
     def upsert_rows(rows)

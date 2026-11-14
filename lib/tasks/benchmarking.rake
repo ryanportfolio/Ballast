@@ -4,7 +4,7 @@
 # 2. Setup .env.production so that the Rails app can boot with RAILS_ENV=production and connect to local sure_benchmarking DB
 # 3. Run `rake benchmark_dump:06_setup_bench_user`
 # 4. Run locally, find endpoint needed
-# 5. Run an endpoint, example: `ENDPOINT=/budgets/jun-2025/budget_categories/245637cb-129f-4612-b0a8-1de57559372b RAILS_ENV=production BENCHMARKING_ENABLED=true RAILS_LOG_LEVEL=debug rake benchmarking:ips`
+# 5. Run an endpoint, example: `ENDPOINT=/transactions RAILS_ENV=production BENCHMARKING_ENABLED=true RAILS_LOG_LEVEL=debug rake benchmarking:ips`
 namespace :benchmarking do
   desc "Benchmark specific code"
   task code: :environment do

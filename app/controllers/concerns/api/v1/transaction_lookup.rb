@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-# Family- and share-scoped transaction lookup, shared by the controllers that
-# address a transaction by id so the scoping has one place to change.
+# Family-scoped transaction lookup (only accounts of the user's family),
+# shared by the controllers that address a transaction by id so the scoping
+# has one place to change.
 module Api::V1::TransactionLookup
   extend ActiveSupport::Concern
 

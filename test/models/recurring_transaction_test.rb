@@ -1139,49 +1139,6 @@ class RecurringTransactionTest < ActiveSupport::TestCase
     assert_not RecurringTransaction.exists?(auto_recurring.id)
   end
 
-  # Account access scoping tests
-  test "accessible_by scope returns only recurring transactions from accessible accounts" do
-    admin = users(:family_admin)
-    member = users(:family_member)
-
-    # depository is shared with family_member (full_control)
-    # investment is NOT shared with family_member
-    shared_account = accounts(:depository)
-    unshared_account = accounts(:investment)
-
-    shared_recurring = @family.recurring_transactions.create!(
-      account: shared_account,
-      merchant: @merchant,
-      amount: 15.99,
-      currency: "USD",
-      expected_day_of_month: 5,
-      last_occurrence_date: 1.month.ago.to_date,
-      next_expected_date: 5.days.from_now.to_date,
-      status: "active"
-    )
-
-    unshared_recurring = @family.recurring_transactions.create!(
-      account: unshared_account,
-      merchant: merchants(:amazon),
-      amount: 9.99,
-      currency: "USD",
-      expected_day_of_month: 15,
-      last_occurrence_date: 1.month.ago.to_date,
-      next_expected_date: 5.days.from_now.to_date,
-      status: "active"
-    )
-
-    # Admin (owner of all accounts) sees both
-    admin_results = @family.recurring_transactions.accessible_by(admin)
-    assert_includes admin_results, shared_recurring
-    assert_includes admin_results, unshared_recurring
-
-    # Family member only sees the one from the shared account
-    member_results = @family.recurring_transactions.accessible_by(member)
-    assert_includes member_results, shared_recurring
-    assert_not_includes member_results, unshared_recurring
-  end
-
   test "identifier creates per-account patterns for same merchant on different accounts" do
     account_a = accounts(:depository)
     account_b = accounts(:credit_card)

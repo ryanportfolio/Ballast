@@ -10,6 +10,19 @@ class Assistant::Function::CreateRuleTest < ActiveSupport::TestCase
     @category = categories(:food_and_drink)
   end
 
+  test "refuses guests" do
+    result = nil
+    assert_no_difference "@family.rules.count" do
+      result = Assistant::Function::CreateRule.new(family_guest).call(
+        "conditions" => [ { "condition_type" => "transaction_name", "operator" => "like", "value" => "zxq" } ],
+        "actions" => [ { "action_type" => "set_transaction_category", "value" => @category.id } ]
+      )
+    end
+
+    assert_not result[:success]
+    assert_equal "forbidden", result[:error]
+  end
+
   test "saves the rule inactive and returns a preview" do
     create_transaction(name: "ZXQ Coffee Shop", amount: 4.5)
     create_transaction(name: "ZXQ Coffee Beans", amount: 25)
@@ -99,7 +112,7 @@ class Assistant::Function::CreateRuleTest < ActiveSupport::TestCase
   end
 
   test "only accepts accounts the user can see" do
-    member_fn = Assistant::Function::CreateRule.new(users(:family_member))
+    member_fn = Assistant::Function::CreateRule.new(users(:empty))
     params = {
       "conditions" => [ { "condition_type" => "transaction_account", "operator" => "=", "value" => accounts(:other_asset).id } ],
       "actions" => [ { "action_type" => "exclude_transaction" } ]

@@ -51,17 +51,14 @@ class Api::V1::SyncsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, json_response["meta"]["total_count"]
   end
 
-  test "does not list account syncs outside caller account access" do
-    private_account = @family.accounts.create!(
-      owner: @user,
-      name: "Private Sync Account",
+  test "does not list account syncs of another family" do
+    private_account = families(:empty).accounts.create!(
+      name: "Other Family Sync Account",
       balance: 0,
       currency: "USD",
       accountable: Depository.new
     )
     inaccessible_sync = Sync.create!(syncable: private_account, status: "completed", completed_at: 1.hour.ago)
-
-    @read_only_api_key.update_column(:user_id, users(:family_member).id)
 
     get api_v1_syncs_url, headers: api_headers(@read_only_api_key)
     assert_response :success

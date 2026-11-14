@@ -114,7 +114,8 @@ class RuleTest < ActiveSupport::TestCase
   end
 
   test "accepts every action executor as an action type" do
-    keys = Dir[Rails.root.join("app/models/rule/action_executor/*.rb")].map { |path| File.basename(path, ".rb") }
+    # Unsupported stands in for stored types no executor handles; it is no type itself.
+    keys = Dir[Rails.root.join("app/models/rule/action_executor/*.rb")].map { |path| File.basename(path, ".rb") } - [ "unsupported" ]
     assert_includes keys, "auto_categorize"
 
     keys.each do |key|

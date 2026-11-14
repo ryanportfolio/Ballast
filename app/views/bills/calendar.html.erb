@@ -83,8 +83,8 @@
       <% end %>
     </div>
 
-    <%# Minted for THIS member: the feed applies per-account sharing, so each
-        member's URL serves only the bills they can reach in the app. %>
+    <%# Minted for THIS member: each member's URL serves only the bills they
+        can reach in the app. %>
     <div class="flex items-center justify-end gap-3 px-4 py-2 border-t border-subdued">
       <%= link_to t(".subscribe_ical"),
             bills_feed_path(token: Current.family.bills_feed_token_for(Current.user)),

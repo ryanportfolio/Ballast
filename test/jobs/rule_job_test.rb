@@ -91,7 +91,7 @@ class RuleJobTest < ActiveJob::TestCase
       conditions: [ Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "Whole Foods") ],
       actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @groceries.id) ]
     )
-    above.actions.first.update_column(:action_type, "unknown_action")
+    above.conditions.first.update_column(:operator, "unknown_operator")
     rule = @family.rules.create!(
       name: "Applied", resource_type: "transaction",
       conditions: [ Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "Whole Foods") ],
@@ -110,8 +110,8 @@ class RuleJobTest < ActiveJob::TestCase
       conditions: [ Rule::Condition.new(condition_type: "transaction_name", operator: "like", value: "Whole Foods") ],
       actions: [ Rule::Action.new(action_type: "set_transaction_category", value: @food_and_dining.id) ]
     )
-    rule.actions.first.update_column(:action_type, "unknown_action")
+    rule.conditions.first.update_column(:operator, "unknown_operator")
 
-    assert_raises(Rule::Registry::UnsupportedActionError) { RuleJob.perform_now(rule) }
+    assert_raises(Rule::ConditionFilter::UnsupportedOperatorError) { RuleJob.perform_now(rule) }
   end
 end

@@ -23,22 +23,19 @@ class Demo::DataCleanerTest < ActiveSupport::TestCase
     assert_equal 0, User.count
   end
 
-  # Neither row has an association that removes it, and each one's foreign key
-  # stopped the cascade at the family or user it points to.
-  test "clears families that unlinked a merchant or were impersonated" do
+  # The row has no association that removes it, and its foreign key stopped
+  # the cascade at the family it points to.
+  test "clears families that unlinked a merchant" do
     FamilyMerchantAssociation.create!(family: families(:dylan_family), merchant: merchants(:netflix),
                                       unlinked_at: 1.day.ago)
-    impersonation_sessions(:in_progress).logs.create!(controller: "pages", action: "dashboard",
-                                                      method: "GET", path: "/")
 
     clear!
 
     assert_equal 0, Family.count
-    assert_equal 0, ImpersonationSessionLog.count
   end
 
   # Family.destroy_all skipped a family whose destroy aborted without a word,
-  # then wiped the settings, invite codes and exchange rates anyway.
+  # then wiped the settings and exchange rates anyway.
   test "a family that cannot be destroyed stops the reset before anything else goes" do
     Setting.exchange_rate_provider = "yahoo_finance"
     families = Family.count

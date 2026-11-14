@@ -58,7 +58,6 @@ class MixedCurrencyTest < ActionDispatch::IntegrationTest
       Assistant::Function::GetHoldings => { "page" => 1 },
       Assistant::Function::GetIncomeStatement => { "start_date" => 1.year.ago.to_date.iso8601, "end_date" => Date.current.iso8601 },
       Assistant::Function::GetTransactions => {},
-      Assistant::Function::GetBudget => {},
       Assistant::Function::GetInsights => {},
       Assistant::Function::GetRecurringTransactions => {},
       Assistant::Function::GetValuations => {},
@@ -79,14 +78,12 @@ class MixedCurrencyTest < ActionDispatch::IntegrationTest
     # The trade page is left out: its unrealized gain still subtracts a cost
     # basis in the trade's currency from a price in the security's. That
     # call site is fixed in a separate change.
-    paths = %w[/ /accounts /transactions /reports /reports?period_type=quarterly /plan /goals /bills /insights /recurring_transactions]
-    paths << budget_path(Budget.date_to_param(Date.current))
+    paths = %w[/ /accounts /transactions /reports /reports?period_type=quarterly /bills /insights /recurring_transactions]
     paths += @family.accounts.map { |account| account_path(account) }
     paths += Holding.where(account: @family.accounts).map { |holding| holding_path(holding) }
     paths += Entry.where(account: @family.accounts, entryable_type: %w[Transaction Valuation]).map do |entry|
       entry.entryable_type == "Transaction" ? transaction_path(entry) : valuation_path(entry)
     end
-    paths += @family.goals.map { |goal| goal_path(goal) }
 
     assert_no_currency_mismatch do
       paths.each do |path|
@@ -101,7 +98,7 @@ class MixedCurrencyTest < ActionDispatch::IntegrationTest
                              display_key: "mixed_currency_#{SecureRandom.hex(8)}")
 
     assert_no_currency_mismatch do
-      %w[accounts balance_sheet holdings trades transactions insights budgets recurring_transactions balances valuations].each do |resource|
+      %w[accounts balance_sheet holdings trades transactions insights recurring_transactions balances valuations].each do |resource|
         get "/api/v1/#{resource}", headers: api_headers(api_key)
         assert_response :success, "GET /api/v1/#{resource}"
       end

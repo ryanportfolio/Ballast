@@ -383,14 +383,7 @@ class AccountsController < ApplicationController
 
     def set_manageable_account
       @account = Current.user.accessible_accounts.find(params[:id])
-      permission = @account.permission_for(Current.user)
-      unless permission.in?([ :owner, :full_control ])
-        respond_to do |format|
-          format.html { redirect_to account_path(@account), alert: t("accounts.not_authorized") }
-          format.turbo_stream { stream_redirect_to(account_path(@account), alert: t("accounts.not_authorized")) }
-        end
-        nil
-      end
+      require_account_permission!(@account)
     end
 
     # The accounts a provider card on this page may list. A card is admitted
@@ -448,9 +441,7 @@ class AccountsController < ApplicationController
       @statement_coverage = AccountStatement::Coverage.for_year(@account, params[:statement_year])
       @account_statements = @account.account_statements.with_attached_original_file.ordered.to_a
       @statement_reconciliation_statuses = AccountStatement.reconciliation_statuses_for(@account_statements, account: @account)
-      permission = @account.permission_for(Current.user)
-      @can_manage_statements = AccountStatement.statement_manager?(Current.user) &&
-        permission.in?([ :owner, :full_control ])
+      @can_manage_statements = AccountStatement.statement_manager?(Current.user)
     end
 
     def statement_tab_frame_request?

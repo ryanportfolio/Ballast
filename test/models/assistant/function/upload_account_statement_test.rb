@@ -54,19 +54,6 @@ class Assistant::Function::UploadAccountStatementTest < ActiveSupport::TestCase
     assert_nil result[:statement][:account]
   end
 
-  test "reports a duplicate without disclosing a statement filed against a hidden account" do
-    @function.call(params(filename: "statement.csv", account_id: accounts(:other_asset).id))
-
-    result = Assistant::Function::UploadAccountStatement.new(users(:family_member))
-      .call(params(filename: "statement.csv"))
-
-    assert result[:success]
-    assert result[:duplicate]
-    assert_equal Digest::SHA256.hexdigest(@content), result[:statement][:content_sha256]
-    assert_nil result[:statement][:account]
-    assert_nil result[:statement][:filename]
-  end
-
   test "refuses a user who cannot manage the vault" do
     result = Assistant::Function::UploadAccountStatement.new(family_guest).call(params(filename: "statement.csv"))
 

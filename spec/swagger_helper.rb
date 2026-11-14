@@ -10,13 +10,13 @@ RSpec.configure do |config|
     'openapi.yaml' => {
       openapi: '3.0.3',
       info: {
-        title: 'Sure API',
+        title: 'Ballast API',
         version: 'v1',
         description: 'OpenAPI documentation generated from executable request specs.'
       },
       servers: [
         {
-          url: 'https://app.sure.am',
+          url: 'https://ballast.example.com',
           description: 'Production'
         },
         {
@@ -343,7 +343,7 @@ RSpec.configure do |config|
           },
           FamilySettings: {
             type: :object,
-            required: %w[id currency locale date_format month_start_day moniker default_account_sharing custom_enabled_currencies enabled_currencies created_at updated_at],
+            required: %w[id currency locale date_format month_start_day moniker custom_enabled_currencies enabled_currencies created_at updated_at],
             properties: {
               id: { type: :string, format: :uuid },
               name: { type: :string, nullable: true },
@@ -354,7 +354,6 @@ RSpec.configure do |config|
               timezone: { type: :string, nullable: true },
               month_start_day: { type: :integer, minimum: 1, maximum: 28 },
               moniker: { type: :string, enum: Family::MONIKERS },
-              default_account_sharing: { type: :string, enum: %w[shared private] },
               custom_enabled_currencies: { type: :boolean },
               enabled_currencies: {
                 type: :array,
@@ -362,142 +361,6 @@ RSpec.configure do |config|
               },
               created_at: { type: :string, format: :'date-time' },
               updated_at: { type: :string, format: :'date-time' }
-            }
-          },
-          BudgetSummary: {
-            type: :object,
-            required: %w[id start_date end_date name currency initialized current created_at updated_at],
-            properties: {
-              id: { type: :string, format: :uuid },
-              start_date: { type: :string, format: :date },
-              end_date: { type: :string, format: :date },
-              name: { type: :string },
-              currency: { type: :string },
-              initialized: { type: :boolean },
-              current: { type: :boolean },
-              budgeted_spending: { type: :string, nullable: true },
-              budgeted_spending_cents: { type: :integer, nullable: true },
-              expected_income: { type: :string, nullable: true },
-              expected_income_cents: { type: :integer, nullable: true },
-              allocated_spending: { type: :string },
-              allocated_spending_cents: { type: :integer },
-              created_at: { type: :string, format: :'date-time' },
-              updated_at: { type: :string, format: :'date-time' }
-            }
-          },
-          Budget: {
-            type: :object,
-            required: %w[id start_date end_date name currency initialized current created_at updated_at],
-            properties: {
-              id: { type: :string, format: :uuid },
-              start_date: { type: :string, format: :date },
-              end_date: { type: :string, format: :date },
-              name: { type: :string },
-              currency: { type: :string },
-              initialized: { type: :boolean },
-              current: { type: :boolean },
-              budgeted_spending: { type: :string, nullable: true },
-              budgeted_spending_cents: { type: :integer, nullable: true },
-              expected_income: { type: :string, nullable: true },
-              expected_income_cents: { type: :integer, nullable: true },
-              allocated_spending: { type: :string },
-              allocated_spending_cents: { type: :integer },
-              actual_spending: { type: :string },
-              actual_spending_cents: { type: :integer },
-              actual_income: { type: :string },
-              actual_income_cents: { type: :integer },
-              available_to_spend: { type: :string },
-              available_to_spend_cents: { type: :integer },
-              available_to_allocate: { type: :string },
-              available_to_allocate_cents: { type: :integer },
-              created_at: { type: :string, format: :'date-time' },
-              updated_at: { type: :string, format: :'date-time' }
-            }
-          },
-          BudgetCollection: {
-            type: :object,
-            required: %w[budgets pagination],
-            properties: {
-              budgets: {
-                type: :array,
-                items: { '$ref' => '#/components/schemas/BudgetSummary' }
-              },
-              pagination: { '$ref' => '#/components/schemas/Pagination' }
-            }
-          },
-          BudgetCategorySummary: {
-            type: :object,
-            required: %w[id budget_id currency subcategory inherits_parent_budget rollover_enabled category created_at updated_at],
-            properties: {
-              id: { type: :string, format: :uuid },
-              budget_id: { type: :string, format: :uuid },
-              currency: { type: :string },
-              subcategory: { type: :boolean },
-              inherits_parent_budget: { type: :boolean },
-              rollover_enabled: { type: :boolean },
-              budgeted_spending: { type: :string },
-              budgeted_spending_cents: { type: :integer },
-              display_budgeted_spending: { type: :string },
-              display_budgeted_spending_cents: { type: :integer },
-              category: {
-                type: :object,
-                required: %w[id name color lucide_icon],
-                properties: {
-                  id: { type: :string, format: :uuid },
-                  name: { type: :string },
-                  color: { type: :string },
-                  lucide_icon: { type: :string },
-                  parent_id: { type: :string, format: :uuid, nullable: true }
-                }
-              },
-              created_at: { type: :string, format: :'date-time' },
-              updated_at: { type: :string, format: :'date-time' }
-            }
-          },
-          BudgetCategory: {
-            type: :object,
-            required: %w[id budget_id currency subcategory inherits_parent_budget rollover_enabled category created_at updated_at],
-            properties: {
-              id: { type: :string, format: :uuid },
-              budget_id: { type: :string, format: :uuid },
-              currency: { type: :string },
-              subcategory: { type: :boolean },
-              inherits_parent_budget: { type: :boolean },
-              rollover_enabled: { type: :boolean },
-              budgeted_spending: { type: :string },
-              budgeted_spending_cents: { type: :integer },
-              display_budgeted_spending: { type: :string },
-              display_budgeted_spending_cents: { type: :integer },
-              actual_spending: { type: :string },
-              actual_spending_cents: { type: :integer },
-              rolled_over_amount: { type: :string },
-              rolled_over_amount_cents: { type: :integer },
-              available_to_spend: { type: :string },
-              available_to_spend_cents: { type: :integer },
-              category: {
-                type: :object,
-                required: %w[id name color lucide_icon],
-                properties: {
-                  id: { type: :string, format: :uuid },
-                  name: { type: :string },
-                  color: { type: :string },
-                  lucide_icon: { type: :string },
-                  parent_id: { type: :string, format: :uuid, nullable: true }
-                }
-              },
-              created_at: { type: :string, format: :'date-time' },
-              updated_at: { type: :string, format: :'date-time' }
-            }
-          },
-          BudgetCategoryCollection: {
-            type: :object,
-            required: %w[budget_categories pagination],
-            properties: {
-              budget_categories: {
-                type: :array,
-                items: { '$ref' => '#/components/schemas/BudgetCategorySummary' }
-              },
-              pagination: { '$ref' => '#/components/schemas/Pagination' }
             }
           },
           Balance: {

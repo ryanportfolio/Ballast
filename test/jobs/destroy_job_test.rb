@@ -229,10 +229,12 @@ class DestroyJobTest < ActiveJob::TestCase
     assert_equal "disabled", account.reload.status
   end
 
-  test "an account whose owner left the family is still left disabled after a failed destroy" do
+  # The restore is written directly, so a validation the account no longer
+  # passes neither keeps it in pending_deletion nor replaces the destroy error.
+  test "an account that fails an unrelated validation is still left disabled after a failed destroy" do
     account = accounts(:depository)
     account.mark_for_deletion!
-    account.owner.update_column(:family_id, families(:empty).id)
+    account.update_column(:name, nil)
     account.stubs(:cleanup_transfers).raises(StandardError, "destroy failed")
 
     assert_difference "DebugLogEntry.count", 1 do

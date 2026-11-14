@@ -39,9 +39,8 @@ class Assistant::Function::CreateTransaction < Assistant::Function
         external_id returns the existing transaction instead of creating a
         duplicate. This makes batch imports safe to retry.
 
-        The account must be one the user can write to (owner or full-control
-        share). Related ids (category, merchant, tags) must belong to the
-        user's family.
+        The account must belong to the user's family. Related ids (category,
+        merchant, tags) must belong to the user's family too.
 
         Example:
 
@@ -72,7 +71,7 @@ class Assistant::Function::CreateTransaction < Assistant::Function
       properties: {
         account_id: {
           type: "string",
-          description: "UUID of the account to record the transaction on. The user must be able to write to it (owner or full-control share)."
+          description: "UUID of the account to record the transaction on. It must belong to the user's family."
         },
         date: {
           type: "string",
@@ -225,7 +224,7 @@ class Assistant::Function::CreateTransaction < Assistant::Function
 
   private
     # Find a writable account by UUID, scoped to accounts the user can write to
-    # (owner or full-control share). Returns nil if the id is not a valid UUID
+    # (every account of their family). Returns nil if the id is not a valid UUID
     # or the account is not writable — callers treat that as not_found.
     def resolve_account(account_id)
       return nil unless valid_uuid?(account_id)

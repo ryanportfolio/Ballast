@@ -11,9 +11,9 @@
 # - `Error` (Class)           — provider-scoped error class
 # - `RateLimitError` (Class)  — provider-scoped rate-limit error class
 #
-# And MAY define a `PROVIDER_ENV_PREFIX` constant (e.g. "ALPHA_VANTAGE") used
+# And MAY define a `PROVIDER_ENV_PREFIX` constant (e.g. "MY_PROVIDER") used
 # to derive the ENV key for the min request interval override.  When omitted
-# the prefix is derived from the class name (Provider::AlphaVantage → "ALPHA_VANTAGE").
+# the prefix is derived from the class name (Provider::Frankfurter → "FRANKFURTER").
 module Provider::RateLimitable
   extend ActiveSupport::Concern
 

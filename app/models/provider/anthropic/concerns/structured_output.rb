@@ -7,20 +7,11 @@ module Provider::Anthropic::Concerns::StructuredOutput
     # `auto` path (models that reject a forced tool_choice) the model may answer
     # with text only, so one retry asks for the tool again in the prompt. The
     # retry keeps `auto`: those models answer a forced tool with a 400.
-    #
-    # The first response is billed even though it carried no result, so its
-    # usage is recorded here, and so is the retry's when it fails too (the caller
-    # raises then); the caller records a successful final response as usual.
-    def create_structured_message(tool_name:, operation:, **params)
+    def create_structured_message(tool_name:, **params)
       response = client.messages.create(**params)
       return response unless retry_for_missing_tool?(response, params[:tool_choice])
 
-      record_usage(model, response.usage, operation: operation, metadata: { attempt: 1, retried: true })
-      retry_response = client.messages.create(**params, messages: params[:messages] + tool_retry_messages(response, tool_name))
-      if Array(retry_response.content).none? { |block| structured_block_type(block) == :tool_use }
-        record_usage(model, retry_response.usage, operation: operation, metadata: { attempt: 2, retried: true })
-      end
-      retry_response
+      client.messages.create(**params, messages: params[:messages] + tool_retry_messages(response, tool_name))
     end
 
     def retry_for_missing_tool?(response, tool_choice)

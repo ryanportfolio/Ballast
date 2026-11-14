@@ -9,15 +9,8 @@ class Account::ReconciliationManager
   def reconcile_balance(balance:, date: Date.current, dry_run: false, existing_valuation_entry: nil)
     old_balance_components = old_balance_components(reconciliation_date: date, existing_valuation_entry: existing_valuation_entry)
     prepared_valuation = prepare_reconciliation(balance, date, existing_valuation_entry)
-    # Captured before save!: the amount this valuation already had on disk
-    # (nil when this reconciliation creates it). See valuation_contribution.
-    prior_valuation_amount = prepared_valuation.amount_in_database
 
-    unless dry_run
-      prepared_valuation.save!
-      contribution = valuation_contribution(prepared_valuation, prior_valuation_amount, old_balance_components)
-      GoalPledge::Reconciler.new(prepared_valuation, valuation_delta: contribution).run
-    end
+    prepared_valuation.save! unless dry_run
 
     ReconciliationResult.new(
       success?: true,
@@ -46,40 +39,6 @@ class Account::ReconciliationManager
       keyword_init: true
     )
 
-    # Contribution recorded by this reconciliation: how much the balance moved
-    # vs. the prior balance. This (not the full new balance) is what a
-    # manual_save GoalPledge matches against.
-    #
-    # The prior balance is resolved in freshness order:
-    #   1. The valuation's own pre-save amount, when this reconciliation
-    #      updates an existing valuation. The balances table recomputes
-    #      asynchronously (sync_later fires after this manager returns), so a
-    #      same-date re-reconcile racing that sync would otherwise read the
-    #      pre-first-reconcile row and over- or under-state the delta — an
-    #      overstated delta could wrongly close a larger pledge, which never
-    #      self-heals. The valuation's own prior amount is immune to that
-    #      race, and once the sync lands the two sources are identical (the
-    #      valuation anchors that date's end_balance).
-    #   2. The balances-table row for the date (first reconcile on a date).
-    #      This can still be stale in one residual window: a reconcile on a
-    #      NEW date racing the previous date's pending sync reads a
-    #      carried-forward row. A missed match self-heals on the next re-save
-    #      — the pledge stays open and retryable until `expires_at`, and the
-    #      date/amount tolerance in GoalPledge#matches? accepts the retry.
-    #   3. 0, for a brand-new account with no balance record yet, so the
-    #      first reconciliation's full balance is its contribution.
-    #
-    # The delta is only ever consumed by manual_save pledges, which never
-    # attach to investment accounts: Account#default_pledge_kind forces
-    # `transfer` there and GoalPledge#matches? rejects valuation deltas on
-    # investment accounts (a market move isn't a deposit). So a positive delta
-    # only feeds depository saves, where balances are positive and a positive
-    # delta really is a deposit — the reconciler's positive-delta guard holds.
-    def valuation_contribution(valuation, prior_valuation_amount, old_balance_components)
-      prior_balance = prior_valuation_amount || old_balance_components[:balance] || 0
-      valuation.amount.to_d - prior_balance.to_d
-    end
-
     def prepare_reconciliation(balance, date, existing_valuation)
       valuation_record = existing_valuation ||
                          account.entries.valuations.find_by(date: date) || # In case of conflict, where existing valuation is not passed as arg, but one exists
@@ -94,9 +53,9 @@ class Account::ReconciliationManager
         currency: account.currency
       )
 
-      # A provider may have labelled this day's reconciliation (see
-      # Property#name_avm_valuation!); a later write — e.g. a manual edit —
-      # goes back to the default name, and providers relabel after their own.
+      # Older reconciliations can carry a provider label (Sure's removed
+      # property valuation providers wrote one); a later write, such as a
+      # manual edit, goes back to the default name.
       if valuation_record.entryable.is_a?(Valuation) && valuation_record.entryable.reconciliation?
         valuation_record.name = Valuation.build_reconciliation_name(account.accountable_type)
       end

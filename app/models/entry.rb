@@ -367,7 +367,7 @@ class Entry < ApplicationRecord
     # Checked across every supported locale, not just the current one -- a
     # name generated (or saved by a background job) under one locale must
     # still read as generic when this is later checked under another.
-    return true if LanguagesHelper::SUPPORTED_LOCALES.any? { |locale| normalized.casecmp?(I18n.t("transactions.unknown_name", locale: locale)) }
+    return true if I18n.available_locales.any? { |locale| normalized.casecmp?(I18n.t("transactions.unknown_name", locale: locale)) }
     return false unless entryable_type == "Transaction"
 
     category = entryable&.category
@@ -624,9 +624,7 @@ class Entry < ApplicationRecord
     #
     # No authorization happens here: callers must scope the relation to entries
     # the user may change (e.g. Current.annotatable_entries, Account.writable_by)
-    # and pass only the fields that permission allows
-    # (AccountShare::ANNOTATE_* for annotate-only shares), and must resolve
-    # category, merchant and tag IDs through the family.
+    # and must resolve category, merchant and tag IDs through the family.
     #
     # Tags are handled separately from other entryable attributes because they use
     # a join table (taggings) rather than a direct column. This means:

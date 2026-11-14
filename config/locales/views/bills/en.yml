@@ -10,7 +10,7 @@ en:
       none_found: No new recurring patterns found. You can add bills by hand.
       already_running: Detection is already running. Check back in a moment.
     feed:
-      calendar_name: Sure Bills
+      calendar_name: Ballast Bills
     ai_prompts:
       due_before_paycheck: What's due before my next paycheck?
       subscriptions_up: Which subscriptions went up this year?
@@ -326,6 +326,6 @@ en:
         other: "%{count} need you"
       empty:
         title: No bills yet
-        description: Bills are your recurring expenses. Sure finds them automatically from your transaction history, and you can add a payment link to each one so you can pay straight from here.
+        description: Bills are your recurring expenses. Ballast finds them automatically from your transaction history, and you can add a payment link to each one so you can pay straight from here.
         action: Find recurring transactions
-        no_history_description: No transactions yet. Connect an account or import history and Sure will find your bills automatically, or add one by hand.
+        no_history_description: No transactions yet. Connect an account or import history and Ballast will find your bills automatically, or add one by hand.

@@ -175,8 +175,8 @@ en:
         other: "%{count} possible duplicates need review"
       view_duplicate_suggestions: View suggested duplicates
       stale_pending:
-        one: "%{count} stale pending transaction (excluded from budgets)"
-        other: "%{count} stale pending transactions (excluded from budgets)"
+        one: "%{count} stale pending transaction (excluded from totals)"
+        other: "%{count} stale pending transactions (excluded from totals)"
       view_stale_pending: View affected accounts
       stale_pending_count:
         one: "%{count} transaction"

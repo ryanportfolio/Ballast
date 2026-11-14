@@ -87,24 +87,6 @@ class GuestReadOnlyConfigTest < ActionDispatch::IntegrationTest
     assert_equal I18n.t("shared.require_non_guest"), flash[:alert]
   end
 
-  test "guest cannot revert or delete an import whose created accounts they cannot write" do
-    import = family_guest.family.imports.create!(type: "TransactionImport", status: :complete)
-    account = family_guest.family.accounts.create!(
-      name: "Imported by admin", balance: 0, currency: "USD", accountable: Depository.new,
-      owner: users(:family_admin), import: import
-    )
-    Import.any_instance.expects(:revert_later).never
-
-    put revert_import_path(import)
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
-
-    assert_no_difference([ "Import.count", "Account.count" ]) do
-      delete import_path(import)
-    end
-    assert_equal I18n.t("accounts.not_authorized"), flash[:alert]
-    assert account.reload.persisted?
-  end
-
   test "guest cannot publish an import that would create categories or tags" do
     import = family_guest.family.imports.create!(type: "TransactionImport")
     import.mappings.create!(type: "Import::CategoryMapping", key: "Guest category", create_when_empty: true)
@@ -115,15 +97,12 @@ class GuestReadOnlyConfigTest < ActionDispatch::IntegrationTest
     assert_equal I18n.t("imports.publish.guest_new_categories_or_tags"), flash[:alert]
   end
 
-  test "guest gets 403 instead of a redirect when a non-HTML revert is not allowed" do
-    import = family_guest.family.imports.create!(type: "TransactionImport", status: :complete)
-    family_guest.family.accounts.create!(
-      name: "Imported by admin", balance: 0, currency: "USD", accountable: Depository.new,
-      owner: users(:family_admin), import: import
-    )
-    Import.any_instance.expects(:revert_later).never
+  test "guest gets 403 instead of a redirect when a non-HTML publish is not allowed" do
+    import = family_guest.family.imports.create!(type: "TransactionImport")
+    import.mappings.create!(type: "Import::CategoryMapping", key: "Guest category", create_when_empty: true)
+    Import.any_instance.expects(:publish_later).never
 
-    put revert_import_path(import), as: :turbo_stream
+    post publish_import_path(import), as: :turbo_stream
 
     assert_response :forbidden
   end

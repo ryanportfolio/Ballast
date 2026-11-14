@@ -57,176 +57,26 @@ class FamilyTest < ActiveSupport::TestCase
     end
   end
 
-  test "investment_contributions_category uses family locale consistently" do
+  test "a stored non-English locale reads as en and leaves the family valid and saveable" do
     family = families(:dylan_family)
-    family.update!(locale: "fr")
-    family.categories.where(name: [ "Investment Contributions", "Contributions aux investissements" ]).destroy_all
+    store_raw_locale(family, "fr")
 
-    # Simulate different request locales (e.g., from Accept-Language header)
-    # The category should always be created with the family's locale (French)
-    category_from_english_request = I18n.with_locale(:en) do
-      family.investment_contributions_category
-    end
+    assert_equal "en", family.locale
+    assert family.valid?
+    assert family.update(name: "Renamed family")
+  end
 
-    assert_equal "Contributions aux investissements", category_from_english_request.name
+  test "investment_contributions_category uses the English name when a non-English locale is stored" do
+    family = families(:dylan_family)
+    store_raw_locale(family, "fr")
+    family.categories.where(name: "Investment Contributions").destroy_all
 
-    # Second request with different locale should find the same category
+    category = family.investment_contributions_category
+    assert_equal "Investment Contributions", category.name
+
     assert_no_difference "Category.count" do
-      category_from_dutch_request = I18n.with_locale(:nl) do
-        family.investment_contributions_category
-      end
-
-      assert_equal category_from_english_request.id, category_from_dutch_request.id
-      assert_equal "Contributions aux investissements", category_from_dutch_request.name
+      assert_equal category.id, family.investment_contributions_category.id
     end
-  end
-
-  test "investment_contributions_category prevents duplicate categories across locales" do
-    family = families(:dylan_family)
-    family.update!(locale: "en")
-    family.categories.where(name: [ "Investment Contributions", "Contributions aux investissements" ]).destroy_all
-
-    # Create category under English family locale
-    english_category = family.investment_contributions_category
-    assert_equal "Investment Contributions", english_category.name
-
-    # Simulate a request with French locale (e.g., from browser Accept-Language)
-    # Should still return the English category, not create a French one
-    assert_no_difference "Category.count" do
-      I18n.with_locale(:fr) do
-        french_request_category = family.investment_contributions_category
-        assert_equal english_category.id, french_request_category.id
-        assert_equal "Investment Contributions", french_request_category.name
-      end
-    end
-  end
-
-  test "investment_contributions_category reuses legacy category with wrong locale" do
-    family = families(:dylan_family)
-    family.update!(locale: "fr")
-    family.categories.where(name: [ "Investment Contributions", "Contributions aux investissements" ]).destroy_all
-
-    # Simulate legacy: category was created with English name (old bug behavior)
-    legacy_category = family.categories.create!(
-      name: "Investment Contributions",
-      color: "#0d9488",
-      lucide_icon: "trending-up"
-    )
-
-    # Should find and reuse the legacy category, updating its name to French
-    assert_no_difference "Category.count" do
-      result = family.investment_contributions_category
-      assert_equal legacy_category.id, result.id
-      assert_equal "Contributions aux investissements", result.name
-    end
-  end
-
-  test "investment_contributions_category merges multiple locale variants" do
-    family = families(:dylan_family)
-    family.update!(locale: "en")
-    family.categories.where(name: [ "Investment Contributions", "Contributions aux investissements" ]).destroy_all
-
-    # Simulate legacy: multiple categories created under different locales
-    english_category = family.categories.create!(
-      name: "Investment Contributions",
-      color: "#0d9488",
-      lucide_icon: "trending-up"
-    )
-
-    french_category = family.categories.create!(
-      name: "Contributions aux investissements",
-      color: "#0d9488",
-      lucide_icon: "trending-up"
-    )
-
-    # Create transactions pointing to both categories
-    account = family.accounts.first
-    txn1 = Transaction.create!(category: english_category)
-    Entry.create!(
-      account: account,
-      entryable: txn1,
-      amount: 100,
-      currency: "USD",
-      date: Date.current,
-      name: "Test 1"
-    )
-
-    txn2 = Transaction.create!(category: french_category)
-    Entry.create!(
-      account: account,
-      entryable: txn2,
-      amount: 200,
-      currency: "USD",
-      date: Date.current,
-      name: "Test 2"
-    )
-
-    txn2_entry_updated_at = txn2.entry.updated_at
-
-    # Should merge both categories into one, keeping the oldest
-    assert_difference "Category.count", -1 do
-      result = travel_to(1.minute.from_now) { family.investment_contributions_category }
-      assert_equal english_category.id, result.id
-      assert_equal "Investment Contributions", result.name
-
-      # Both transactions should now point to the keeper
-      assert_equal english_category.id, txn1.reload.category_id
-      assert_equal english_category.id, txn2.reload.category_id
-
-      # Reassignment must touch entries so entry-keyed caches bust
-      # (only txn2 is reassigned — txn1 already points at the keeper)
-      assert txn2.entry.reload.updated_at > txn2_entry_updated_at
-
-      # French category should be deleted
-      assert_nil Category.find_by(id: french_category.id)
-    end
-  end
-
-  test "investment_contributions_category merges duplicates across accounts" do
-    family = families(:dylan_family)
-    family.update!(locale: "en")
-    family.categories.where(name: [ "Investment Contributions", "Contributions aux investissements" ]).destroy_all
-
-    english_category = family.categories.create!(
-      name: "Investment Contributions",
-      color: "#0d9488",
-      lucide_icon: "trending-up"
-    )
-
-    french_category = family.categories.create!(
-      name: "Contributions aux investissements",
-      color: "#0d9488",
-      lucide_icon: "trending-up"
-    )
-
-    # Transactions on two different accounts of the same family: the
-    # transactions-through-accounts scope must reach both.
-    txn1 = Transaction.create!(category: english_category)
-    Entry.create!(
-      account: accounts(:depository),
-      entryable: txn1,
-      amount: 100,
-      currency: "USD",
-      date: Date.current,
-      name: "First account txn"
-    )
-
-    txn2 = Transaction.create!(category: french_category)
-    Entry.create!(
-      account: accounts(:credit_card),
-      entryable: txn2,
-      amount: 50,
-      currency: "USD",
-      date: Date.current,
-      name: "Second account txn"
-    )
-
-    result = family.investment_contributions_category
-
-    assert_equal english_category.id, result.id
-    assert_equal english_category.id, txn1.reload.category_id
-    assert_equal english_category.id, txn2.reload.category_id,
-      "transaction on the second account must also be reassigned to the keeper"
   end
 
   test "moniker helpers return expected singular and plural labels" do
@@ -421,113 +271,6 @@ class FamilyTest < ActiveSupport::TestCase
     assert_equal Money::Currency.as_options.map(&:iso_code), family.reload.enabled_currency_codes
   end
 
-  test "upload_document stores provided metadata on family document" do
-    family = families(:dylan_family)
-    family.update!(vector_store_id: nil)
-
-    adapter = mock("vector_store_adapter")
-    adapter.expects(:create_store).with(name: "Family #{family.id} Documents").returns(
-      VectorStore::Response.new(success?: true, data: { id: "vs_test123" }, error: nil)
-    )
-    adapter.expects(:upload_file).with(
-      store_id: "vs_test123",
-      file_content: "hello",
-      filename: "notes.txt"
-    ).returns(
-      VectorStore::Response.new(success?: true, data: { file_id: "file-xyz" }, error: nil)
-    )
-
-    VectorStore::Registry.stubs(:adapter).returns(adapter)
-
-    document = family.upload_document(
-      file_content: "hello",
-      filename: "notes.txt",
-      metadata: { "type" => "financial_document" }
-    )
-
-    assert_not_nil document
-    assert_equal({ "type" => "financial_document" }, document.metadata)
-    assert_equal "vs_test123", family.reload.vector_store_id
-  end
-
-  # auto_share_existing_accounts_with -----------------------------------------
-
-  test "auto_share_existing_accounts_with shares existing family accounts read_write when sharing is default" do
-    family = families(:dylan_family)
-    family.update!(default_account_sharing: "shared")
-    newcomer = users(:empty)
-    newcomer.update_columns(family_id: family.id, role: "member")
-
-    expected_ids = family.accounts.where.not(owner_id: newcomer.id).pluck(:id).sort
-    assert expected_ids.any?, "fixture family must have shareable accounts"
-
-    family.auto_share_existing_accounts_with(newcomer)
-
-    shares = AccountShare.where(user: newcomer)
-    assert_equal expected_ids, shares.pluck(:account_id).sort
-    assert shares.all?(&:read_write?), "shares must grant read_write"
-    assert shares.all?(&:include_in_finances?), "shares must be included in finances"
-  end
-
-  test "auto_share_existing_accounts_with shares existing family accounts read_only for guests" do
-    family = families(:dylan_family)
-    family.update!(default_account_sharing: "shared")
-    newcomer = users(:empty)
-    newcomer.update_columns(family_id: family.id, role: "guest")
-
-    expected_ids = family.accounts.where.not(owner_id: newcomer.id).pluck(:id).sort
-    assert expected_ids.any?, "fixture family must have shareable accounts"
-
-    family.auto_share_existing_accounts_with(newcomer)
-
-    shares = AccountShare.where(user: newcomer)
-    assert_equal expected_ids, shares.pluck(:account_id).sort
-    assert shares.all?(&:read_only?), "guest shares must grant read_only"
-    assert shares.all?(&:include_in_finances?), "shares must be included in finances"
-  end
-
-  test "auto_share_existing_accounts_with is a no-op when family sharing is private" do
-    family = families(:dylan_family)
-    family.update!(default_account_sharing: "private")
-    newcomer = users(:empty)
-    newcomer.update_columns(family_id: family.id, role: "member")
-
-    assert_no_difference "AccountShare.count" do
-      family.auto_share_existing_accounts_with(newcomer)
-    end
-  end
-
-  test "auto_share_existing_accounts_with does not share with a user outside the family" do
-    family = families(:dylan_family)
-    family.update!(default_account_sharing: "shared")
-    outsider = users(:empty)
-    outsider.update_columns(family_id: families(:empty).id, role: "member")
-
-    assert_no_difference "AccountShare.count" do
-      family.auto_share_existing_accounts_with(outsider)
-    end
-  end
-
-  test "auto_share_existing_accounts_with never shares a user's own account and is idempotent" do
-    family = families(:dylan_family)
-    family.update!(default_account_sharing: "shared")
-    newcomer = users(:empty)
-    newcomer.update_columns(family_id: family.id, role: "member")
-    owned = family.accounts.first
-    owned.update!(owner: newcomer)
-
-    family.auto_share_existing_accounts_with(newcomer)
-    count_after_first = AccountShare.where(user: newcomer).count
-
-    assert_not AccountShare.exists?(user: newcomer, account: owned),
-      "must not share a user's own account with themselves"
-
-    family.auto_share_existing_accounts_with(newcomer) # re-run
-
-    assert_equal count_after_first, AccountShare.where(user: newcomer).count,
-      "re-running must not create duplicate shares"
-  end
-
   # Preview access is per-user, but jobs that act on family-scoped data have no
   # Current.user. One opted-in member enables the family.
   test "preview_features_enabled? is true when any member has opted in" do
@@ -617,7 +360,7 @@ class FamilyTest < ActiveSupport::TestCase
       "repeated calls for the same user must reuse the same BalanceSheet instance"
 
     refute_same first_call_for_admin, family.balance_sheet(user: member),
-      "different users must not share a memoized BalanceSheet (family sharing scoping)"
+      "different users must not share a memoized BalanceSheet"
   end
 
   test "investment_statement memoizes per user for the same family instance" do
@@ -631,7 +374,7 @@ class FamilyTest < ActiveSupport::TestCase
       "repeated calls for the same user must reuse the same InvestmentStatement instance"
 
     refute_same first_call_for_admin, family.investment_statement(user: member),
-      "different users must not share a memoized InvestmentStatement (family sharing scoping)"
+      "different users must not share a memoized InvestmentStatement"
   end
 
   # A non-loopback http:// endpoint is the misconfiguration these guard: the
@@ -771,5 +514,12 @@ class FamilyTest < ActiveSupport::TestCase
   private
     def set_preview_features(user, enabled)
       user.update!(preferences: (user.preferences || {}).merge("preview_features_enabled" => enabled))
+    end
+
+    # Raw SQL: update_column would run the locale normalizer and store "en".
+    def store_raw_locale(family, locale)
+      Family.connection.exec_update("UPDATE families SET locale = #{Family.connection.quote(locale)} WHERE id = #{Family.connection.quote(family.id)}")
+      family.reload
+      assert_equal locale, family.read_attribute(:locale)
     end
 end

@@ -1,11 +1,22 @@
 module ExchangeRate::Provided
   extend ActiveSupport::Concern
 
+  DEFAULT_EXCHANGE_RATE_PROVIDER = "twelve_data"
+
   class_methods do
     def provider
-      provider = ENV["EXCHANGE_RATE_PROVIDER"].presence || Setting.exchange_rate_provider
-      registry = Provider::Registry.for_concept(:exchange_rates)
-      registry.get_provider(provider.to_sym)
+      Provider::Registry.for_concept(:exchange_rates).get_provider(provider_key.to_sym)
+    end
+
+    # The name of the exchange-rate provider in use. ENV takes precedence over
+    # the DB Setting. A choice that names no registered provider (one Ballast
+    # removed from Sure, still stored in the settings table or set in
+    # EXCHANGE_RATE_PROVIDER) falls back to the default provider instead of
+    # raising Provider::Registry::Error.
+    def provider_key
+      key = (ENV["EXCHANGE_RATE_PROVIDER"].presence || Setting.exchange_rate_provider).to_s
+      registered = Provider::Registry.for_concept(:exchange_rates).provider_keys.map(&:to_s)
+      registered.include?(key) ? key : DEFAULT_EXCHANGE_RATE_PROVIDER
     end
 
     # Maximum number of days to look back for a cached rate before calling the provider.

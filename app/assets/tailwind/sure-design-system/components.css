@@ -268,8 +268,8 @@
 
     No position transition here on purpose: cursor-following tooltips
     (sankey, time-series) update left/top every mousemove and a transition
-    makes them trail the pointer. Snap-positioned tooltips (goal projection,
-    which jumps between dates) opt into the 80ms glide via inline style.
+    makes them trail the pointer. Snap-positioned tooltips (ones that jump
+    between dates) opt into the 80ms glide via inline style.
   */
   .chart-tooltip {
     background: var(--color-container);

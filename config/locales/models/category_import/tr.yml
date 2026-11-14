@@ -1,8 +1,0 @@
----
-tr:
-  activerecord:
-    errors:
-      models:
-        category_import:
-          missing_columns: 'Eksik zorunlu sütunlar: %{columns}'
-          own_parent: "'%{name}' kategorisi kendi üst kategorisi olamaz"

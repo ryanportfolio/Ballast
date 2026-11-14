@@ -150,9 +150,8 @@ class ImportsController < ApplicationController
     end
 
     # Imports are family-scoped, so a member can reach an import configured by
-    # someone else, or one whose target account was unshared since. Publishing,
-    # reverting or deleting writes into its accounts, so require write access
-    # to all.
+    # someone else. Publishing, reverting or deleting writes into its accounts,
+    # so require write access to all.
     def require_writable_import_accounts!
       return if @import.accounts_writable_by?(Current.user)
 

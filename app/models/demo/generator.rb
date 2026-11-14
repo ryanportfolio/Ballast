@@ -75,10 +75,6 @@ class Demo::Generator
         create_realistic_categories!(family)
         create_realistic_accounts!(family)
         create_realistic_transactions!(family)
-        generate_budget_auto_fill!(family)
-
-        puts "🎯 Seeding goals..."
-        generate_goals!(family)
       end
 
       family.sync_later
@@ -104,11 +100,6 @@ class Demo::Generator
       create_realistic_categories!(family)
       create_realistic_accounts!(family)
       create_realistic_transactions!(family)
-      # Auto-fill current-month budget based on recent spending averages
-      generate_budget_auto_fill!(family)
-
-      puts "🎯 Seeding goals..."
-      generate_goals!(family)
 
       puts "🔑 Creating monitoring API key..."
       create_monitoring_api_key!(family)
@@ -401,42 +392,6 @@ class Demo::Generator
 
       puts "🔄 Final sync to calculate adjusted balances..."
       sync_family_accounts!(family)
-    end
-
-    # Auto-fill current-month budget based on recent spending averages
-    def generate_budget_auto_fill!(family)
-      current_month   = Date.current.beginning_of_month
-      analysis_start  = (current_month - 3.months).beginning_of_month
-      analysis_period = analysis_start..(current_month - 1.day)
-
-      # Fetch expense transactions in the analysis period (positive amounts = expenses)
-      txns = Entry.joins("INNER JOIN transactions ON transactions.id = entries.entryable_id")
-                  .joins("INNER JOIN categories ON categories.id = transactions.category_id")
-                  .where(entries: { entryable_type: "Transaction", date: analysis_period, account_id: family.accounts.select(:id) })
-                  .where("entries.amount > 0")
-
-      spend_per_cat = txns.group("categories.id").sum("entries.amount")
-
-      budget = family.budgets.where(start_date: current_month).first_or_initialize
-      budget.update!(
-        end_date: current_month.end_of_month,
-        currency: "USD",
-        budgeted_spending: spend_per_cat.values.sum / 3.0, # placeholder, refine below
-        expected_income: 0 # Could compute similarly if desired
-      )
-
-      spend_per_cat.each do |cat_id, total|
-        avg = total / 3.0
-        rounded = ((avg / 25.0).round) * 25
-        category = Category.find(cat_id)
-        budget.budget_categories.find_or_create_by!(category: category) do |bc|
-          bc.budgeted_spending = rounded
-          bc.currency = "USD"
-        end
-      end
-
-      # Update aggregate budgeted_spending to sum of categories
-      budget.update!(budgeted_spending: budget.budget_categories.sum(:budgeted_spending))
     end
 
     # Helper method to get weighted random date (favoring recent years)
@@ -1346,184 +1301,5 @@ class Demo::Generator
       )
 
       puts "   ✅ Set property and vehicle valuations"
-    end
-
-    def generate_goals!(family)
-      # Order so primary/secondary picks stay stable across reseeds — the
-      # state-coverage matrix below routes goals to specific accounts to
-      # surface every status branch, so DB return order can't pick.
-      depository_accounts = family.accounts
-                                  .where(accountable_type: "Depository")
-                                  .visible
-                                  .order(:created_at, :id)
-                                  .to_a
-      return if depository_accounts.empty?
-
-      currency = depository_accounts.first.currency
-      eligible = depository_accounts.select { |a| a.currency == currency }
-      primary = eligible.first
-      secondary = (eligible - [ primary ]).first || primary
-
-      # Demo coverage matrix. The demo seeds a heavy primary checking
-      # balance (~$150k) plus a smaller secondary account (~$10k). To
-      # surface every goal state we deliberately route goals to different
-      # account pools so progress lands above or below the target:
-      #
-      #   AASM states:    active, paused, completed, archived
-      #   Computed status (on active goals):
-      #                   :reached, :on_track, :behind, :no_target_date
-      #   Edge surfaces:  past-due target_date ("was due"), open pledge
-      #                   banner, matched pledge ("last pledge matched")
-      goals = [
-        # active · behind — secondary account only, target above its balance
-        {
-          name: "Vacation in Italy",
-          target: 20_000,
-          target_date: 4.months.from_now.to_date,
-          accounts: [ secondary ],
-          allocations: { secondary => 3_000 },
-          pledges: [
-            { account: secondary, amount: 250, kind: "transfer", status: "open", expires_at: 5.days.from_now }
-          ]
-        },
-        # active · reached — earmark comfortably above target
-        {
-          name: "Wedding fund",
-          target: 2_400,
-          target_date: 12.months.from_now.to_date,
-          accounts: [ primary ],
-          allocations: { primary => 2_500 }
-        },
-        # active · no_target_date — secondary so progress doesn't auto-cap at 100%
-        {
-          name: "Emergency fund",
-          target: 30_000,
-          target_date: nil,
-          accounts: [ secondary ],
-          allocations: { secondary => 3_000 }
-        },
-        # active · behind big — combined pools still well short of the target
-        {
-          name: "House downpayment",
-          target: 500_000,
-          target_date: 24.months.from_now.to_date,
-          accounts: eligible.first(2),
-          allocations: { primary => 1_000, secondary => 2_000 },
-          pledges: [
-            { account: primary, amount: 2_000, kind: "transfer", status: "open", expires_at: 4.days.from_now }
-          ]
-        },
-        # active · on_track — the one goal left holding all of `primary`, so
-        # its balance stays close enough to the target for a 60-month pace to
-        # read as on track
-        {
-          name: "Long-term portfolio",
-          target: 200_000,
-          target_date: 60.months.from_now.to_date,
-          accounts: [ primary ]
-        },
-        # active · past-due — exercises "was due" header copy + the
-        # months_remaining = 0 branch in monthly_target_amount
-        {
-          name: "Tax prep buffer",
-          target: 1_200,
-          target_date: 2.months.ago.to_date,
-          accounts: [ secondary ],
-          allocations: { secondary => 1_000 }
-        },
-        # AASM paused
-        {
-          name: "Sabbatical",
-          target: 15_000,
-          target_date: 18.months.from_now.to_date,
-          state: "paused",
-          accounts: [ primary ],
-          allocations: { primary => 1_000 }
-        },
-        # AASM archived
-        {
-          name: "Old laptop fund",
-          target: 1_500,
-          target_date: 12.months.ago.to_date,
-          state: "archived",
-          accounts: [ primary ],
-          allocations: { primary => 500 }
-        },
-        # AASM completed
-        {
-          name: "Paid-off car",
-          target: 8_000,
-          target_date: 6.months.ago.to_date,
-          state: "completed",
-          accounts: [ primary ],
-          allocations: { primary => 8_000 }
-        }
-      ]
-
-      wedding_goal = nil
-      goals.each do |goal_spec|
-        goal = family.goals.new(
-          name: goal_spec[:name],
-          target_amount: goal_spec[:target],
-          target_date: goal_spec[:target_date],
-          currency: currency,
-          color: Goal::COLORS.sample,
-          state: goal_spec[:state] || "active"
-        )
-        goal_spec[:accounts].uniq.each do |a|
-          goal.goal_accounts.build(account: a, allocated_amount: goal_spec.dig(:allocations, a))
-        end
-        goal.save!
-        wedding_goal = goal if goal_spec[:name] == "Wedding fund"
-
-        Array(goal_spec[:pledges]).each do |pledge_spec|
-          goal.goal_pledges.create!(
-            account: pledge_spec[:account] || goal.linked_accounts.first,
-            amount: pledge_spec[:amount],
-            currency: currency,
-            kind: pledge_spec[:kind] || "transfer",
-            status: pledge_spec[:status] || "open",
-            expires_at: pledge_spec[:expires_at] || 7.days.from_now
-          )
-        end
-      end
-
-      seed_matched_pledge_demo_for_wedding!(wedding_goal, currency, primary) if wedding_goal && primary
-
-      puts "   ✅ Seeded #{goals.size} goals"
-    end
-
-    # Bind one matched pledge on the Wedding fund to a real recent demo
-    # inflow Transaction. Surfaces the "Last pledge matched N days ago"
-    # header copy + exercises the partial-unique index on
-    # transactions.extra->'goal'->>'pledge_id'.
-    def seed_matched_pledge_demo_for_wedding!(wedding, currency, primary)
-      return unless wedding && primary
-
-      recent_inflow_entry = Entry
-        .joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
-        .where(account_id: primary.id, excluded: false)
-        .where("entries.amount < 0")
-        .where("entries.date >= ?", 30.days.ago.to_date)
-        .where("(transactions.extra -> 'goal' ->> 'pledge_id') IS NULL")
-        .order("entries.date DESC", "entries.id DESC")
-        .first
-
-      return unless recent_inflow_entry
-
-      pledge = wedding.goal_pledges.create!(
-        account: primary,
-        amount: recent_inflow_entry.amount.to_d.abs,
-        currency: currency,
-        kind: "transfer",
-        status: "matched",
-        matched_transaction_id: recent_inflow_entry.entryable_id,
-        expires_at: 7.days.ago
-      )
-
-      txn = recent_inflow_entry.entryable
-      new_extra = (txn.extra || {}).deep_dup
-      new_extra["goal"] = (new_extra["goal"] || {}).merge("pledge_id" => pledge.id)
-      txn.update!(extra: new_extra)
     end
 end

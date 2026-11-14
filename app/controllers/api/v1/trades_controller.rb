@@ -6,6 +6,7 @@ class Api::V1::TradesController < Api::V1::BaseController
   before_action :ensure_read_scope, only: [ :index, :show ]
   before_action :ensure_write_scope, only: [ :create, :update, :destroy ]
   before_action :set_trade, only: [ :show, :update, :destroy ]
+  before_action :ensure_account_write_permission, only: [ :update, :destroy ]
 
   def index
     family = current_resource_owner.family
@@ -40,6 +41,7 @@ class Api::V1::TradesController < Api::V1::BaseController
     end
 
     account = current_resource_owner.family.accounts.visible.find(trade_params[:account_id])
+    return unless require_account_write!(account)
 
     unless account.supports_trades?
       return render_validation_error(
@@ -130,6 +132,12 @@ class Api::V1::TradesController < Api::V1::BaseController
       @entry = @trade.entry
     rescue ActiveRecord::RecordNotFound
       render json: { error: "not_found", message: "Trade not found" }, status: :not_found
+    end
+
+    def ensure_account_write_permission
+      return if performed?
+
+      require_account_write!(@entry.account)
     end
 
     def ensure_read_scope

@@ -40,9 +40,9 @@ class Api::V1::HoldingsController < Api::V1::BaseController
       render json: { error: "not_found", message: "Holding not found" }, status: :not_found
     end
 
-    # Holdings restricted to accounts the token owner can access (owned or shared),
-    # not the whole family. Mirrors Api::V1::BalancesController and the web
-    # HoldingsController, both of which scope through Account.accessible_by.
+    # Holdings restricted to accounts the token owner can access. Mirrors
+    # Api::V1::BalancesController and the web HoldingsController, both of which
+    # scope through Account.accessible_by.
     def accessible_holdings
       Holding
         .joins(:account)

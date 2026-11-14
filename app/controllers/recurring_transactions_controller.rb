@@ -375,9 +375,8 @@ class RecurringTransactionsController < ApplicationController
                                       .find(params[:id])
     end
 
-    # Reading a shared bill is fine; changing it is not. Sharing is per
-    # account, so a read-only account share must not mutate the series.
-    # Accountless series carry no account gate. Same contract as
+    # Changing a bill needs write access to its account. Accountless series
+    # carry no account gate. Same contract as
     # RecurringOccurrencesController#ensure_series_writable.
     def ensure_series_writable
       raise ActiveRecord::RecordNotFound unless series_writable?(@recurring_transaction)
@@ -469,9 +468,7 @@ class RecurringTransactionsController < ApplicationController
 
       if attrs.key?(:account_id)
         # Blank means "any account"; a present id that does not resolve must
-        # not silently detach the bill from its account. Writable, not merely
-        # visible: attaching a series to an account changes what that
-        # account's owners see, so a read-only share cannot be a destination.
+        # not silently detach the bill from its account.
         if attrs[:account_id].blank?
           @recurring_transaction.account = nil
         elsif (account = Account.writable_by(Current.user).find_by(id: attrs[:account_id]))
@@ -502,9 +499,8 @@ class RecurringTransactionsController < ApplicationController
     # for example), and they all pay at the same portal. Opting in copies the link to
     # the caller's other bills for that merchant so the user types it once.
     #
-    # Scoped to what this user can WRITE, not merely see: a series on an account
-    # shared read-only must not be rewritten by the copy, and accountless series
-    # carry no account gate. Merchant-less rows are skipped entirely, because
+    # Scoped to what this user can WRITE; accountless series carry no account
+    # gate. Merchant-less rows are skipped entirely, because
     # their only identity is a free-text name that says nothing about where to pay.
     # `update_all` is deliberate: the value being copied was already normalized and
     # validated on the source record, and a row-by-row save would let an unrelated

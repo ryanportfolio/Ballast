@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::Base
-  include RestoreLayoutPreferences, Onboardable, Localize, AutoSync, Authentication, Invitable,
-          SelfHostable, StoreLocation, Impersonatable, Breadcrumbable,
+  include RestoreLayoutPreferences, Onboardable, Localize, AutoSync, Authentication,
+          SelfHostable, StoreLocation, Breadcrumbable,
           FeatureGuardable, Notifiable, SafePagination, AccountAuthorizable,
           PreviewGateable
   include Pundit::Authorization
@@ -18,31 +18,9 @@ class ApplicationController < ActionController::Base
   before_action :set_default_chat
   before_action :set_active_storage_url_options
 
-  helper_method :demo_config, :demo_host_match?, :show_demo_warning?, :current_sidekiq_health
+  helper_method :demo_config, :demo_host_match?, :show_demo_warning?
 
   private
-    def accept_pending_invitation_for(user)
-      return false if user.blank?
-
-      token = session[:pending_invitation_token]
-      return false if token.blank?
-
-      invitation = Invitation.pending.find_by(token: token.to_s)
-      return false unless invitation
-      return false unless invitation.accept_for(user)
-
-      session.delete(:pending_invitation_token)
-      true
-    end
-
-    def store_pending_invitation_if_valid
-      token = params[:invitation].to_s.presence
-      return if token.blank?
-
-      invitation = Invitation.pending.find_by(token: token)
-      session[:pending_invitation_token] = token if invitation
-    end
-
     def require_admin!
       return if Current.user&.admin?
 
@@ -137,18 +115,6 @@ class ApplicationController < ActionController::Base
 
     def show_demo_warning?
       demo_host_match?
-    end
-
-    # Returns the current Sidekiq health snapshot in self-hosted mode and
-    # `nil` in managed mode. Memoized per request and additionally cached
-    # across requests by `SidekiqHealth.current`, so an authenticated page
-    # render adds at most one Redis round-trip per cache window — not three
-    # per request. Returns `nil` (not a healthy stand-in) in managed mode
-    # so callers must explicitly handle the "check disabled" case; the
-    # banner already gates on `Current.user&.super_admin?` and `present?`.
-    def current_sidekiq_health
-      return @current_sidekiq_health if defined?(@current_sidekiq_health)
-      @current_sidekiq_health = Rails.application.config.app_mode.self_hosted? ? SidekiqHealth.current : nil
     end
 
     def accessible_accounts

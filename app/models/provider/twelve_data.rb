@@ -252,9 +252,9 @@ class Provider::TwelveData < Provider
 
     # TwelveData tags crypto symbols with `instrument_type: "Digital Currency"` and
     # `mic_code: "DIGITAL_CURRENCY"`, and returns an empty `currency` field for them.
-    # We exclude them so crypto is handled exclusively by Provider::BinancePublic —
-    # TD's empty currency would otherwise cascade into Security::Price rows defaulting
-    # to USD, silently mispricing EUR/GBP crypto holdings.
+    # We exclude them because TD's empty currency would otherwise cascade into
+    # Security::Price rows defaulting to USD, silently mispricing EUR/GBP crypto
+    # holdings.
     def crypto_row?(row)
       row["instrument_type"].to_s.casecmp?("Digital Currency") ||
         row["mic_code"].to_s.casecmp?("DIGITAL_CURRENCY")

@@ -51,28 +51,6 @@
       <% if @show_twelve_data_settings %>
         <%= render "settings/hostings/twelve_data_settings" %>
       <% end %>
-      <% if @show_tiingo_settings %>
-        <%= render "settings/hostings/tiingo_settings" %>
-      <% end %>
-      <% if @show_eodhd_settings %>
-        <%= render "settings/hostings/eodhd_settings" %>
-      <% end %>
-      <% if @show_alpha_vantage_settings %>
-        <%= render "settings/hostings/alpha_vantage_settings" %>
-      <% end %>
-      <% if @show_tinkoff_invest_settings %>
-        <%= render "settings/hostings/tinkoff_invest_settings" %>
-      <% end %>
-      <% if @show_mansa_settings %>
-        <%= render "settings/hostings/mansa_settings" %>
-      <% end %>
-    </div>
-  <% end %>
-  <%= settings_section title: t(".property_valuation_providers") do %>
-    <div class="space-y-6">
-      <%= render "settings/hostings/rentcast_settings" %>
-      <%= render "settings/hostings/realie_settings" %>
-      <%= render "settings/hostings/chimnie_settings" %>
     </div>
   <% end %>
   <%= settings_section title: t(".sync_settings") do %>
@@ -80,8 +58,8 @@
   <% end %>
 <% end %>
 <% if Current.user.super_admin? %>
-  <%= settings_section title: t(".invites") do %>
-    <%= render "settings/hostings/invite_code_settings" %>
+  <%= settings_section title: t(".onboarding") do %>
+    <%= render "settings/hostings/onboarding_settings" %>
   <% end %>
 <% end %>
 <% if Current.user.super_admin? %>

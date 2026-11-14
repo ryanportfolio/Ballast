@@ -13,7 +13,7 @@ class <%= class_name %>Account::Processor
     account = <%= file_name %>_account.current_account
     return unless account
 
-    Rails.logger.info "<%= class_name %>Account::Processor - Processing account #{<%= file_name %>_account.id} -> Sure account #{account.id}"
+    Rails.logger.info "<%= class_name %>Account::Processor - Processing account #{<%= file_name %>_account.id} -> Ballast account #{account.id}"
 
     # Update account balance FIRST (before processing transactions/holdings/activities)
     update_account_balance(account)

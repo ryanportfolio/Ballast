@@ -1,5 +1,4 @@
 class Provider::Openai::AutoMerchantDetector
-  include Provider::Openai::Concerns::UsageRecorder
   include Provider::Openai::Concerns::JsonMode
 
   # Threshold for auto mode: if more than this percentage returns null, retry with none mode
@@ -10,15 +9,14 @@ class Provider::Openai::AutoMerchantDetector
   BUSINESS_NAME_KEYS = %w[business_name name merchant_name merchant].freeze
   BUSINESS_URL_KEYS = %w[business_url url website].freeze
 
-  attr_reader :client, :model, :transactions, :user_merchants, :custom_provider, :langfuse_trace, :family, :json_mode
+  attr_reader :client, :model, :transactions, :user_merchants, :custom_provider, :family, :json_mode
 
-  def initialize(client, model: "", transactions:, user_merchants:, custom_provider: false, langfuse_trace: nil, family: nil, json_mode: nil)
+  def initialize(client, model: "", transactions:, user_merchants:, custom_provider: false, family: nil, json_mode: nil)
     @client = client
     @model = model
     @transactions = transactions
     @user_merchants = user_merchants
     @custom_provider = custom_provider
-    @langfuse_trace = langfuse_trace
     @family = family
     @json_mode = json_mode || default_json_mode
   end
@@ -101,12 +99,6 @@ class Provider::Openai::AutoMerchantDetector
   private
 
     def auto_detect_merchants_openai_native
-      span = langfuse_trace&.generation(name: "auto_detect_merchants_api_call", model: model.presence || Provider::Openai::DEFAULT_MODEL, input: {
-        model: model.presence || Provider::Openai::DEFAULT_MODEL,
-        transactions: transactions,
-        user_merchants: user_merchants
-      })
-
       response = client.responses.create(parameters: {
         model: model.presence || Provider::Openai::DEFAULT_MODEL,
         input: [ { role: "developer", content: developer_message } ],
@@ -124,23 +116,7 @@ class Provider::Openai::AutoMerchantDetector
       Rails.logger.info("Tokens used to auto-detect merchants: #{response.dig("usage", "total_tokens")}")
 
       merchants = extract_merchants_native(response)
-      result = build_response(merchants)
-
-      record_usage(
-        model.presence || Provider::Openai::DEFAULT_MODEL,
-        response.dig("usage"),
-        operation: "auto_detect_merchants",
-        metadata: {
-          transaction_count: transactions.size,
-          merchant_count: user_merchants.size
-        }
-      )
-
-      span&.end(output: result.map(&:to_h), usage: response.dig("usage"))
-      result
-    rescue => e
-      span&.end(output: { error: e.message }, level: "ERROR")
-      raise
+      build_response(merchants)
     end
 
     def auto_detect_merchants_openai_generic
@@ -197,13 +173,6 @@ class Provider::Openai::AutoMerchantDetector
     end
 
     def auto_detect_merchants_with_mode(mode)
-      span = langfuse_trace&.generation(name: "auto_detect_merchants_api_call", model: model.presence || Provider::Openai::DEFAULT_MODEL, input: {
-        model: model.presence || Provider::Openai::DEFAULT_MODEL,
-        transactions: transactions,
-        user_merchants: user_merchants,
-        json_mode: mode
-      })
-
       # Build parameters with configurable JSON response format
       params = {
         model: model.presence || Provider::Openai::DEFAULT_MODEL,
@@ -225,24 +194,7 @@ class Provider::Openai::AutoMerchantDetector
       Rails.logger.info("Tokens used to auto-detect merchants: #{response.dig("usage", "total_tokens")} (json_mode: #{mode})")
 
       merchants = extract_merchants_generic(response)
-      result = build_response(merchants)
-
-      record_usage(
-        model.presence || Provider::Openai::DEFAULT_MODEL,
-        response.dig("usage"),
-        operation: "auto_detect_merchants",
-        metadata: {
-          transaction_count: transactions.size,
-          merchant_count: user_merchants.size,
-          json_mode: mode
-        }
-      )
-
-      span&.end(output: result.map(&:to_h), usage: response.dig("usage"))
-      result
-    rescue => e
-      span&.end(output: { error: e.message }, level: "ERROR")
-      raise
+      build_response(merchants)
     end
 
     AutoDetectedMerchant = Provider::LlmConcept::AutoDetectedMerchant

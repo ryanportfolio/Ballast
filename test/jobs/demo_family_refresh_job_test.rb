@@ -33,11 +33,8 @@ class DemoFamilyRefreshJobTest < ActiveJob::TestCase
     )
   end
 
-  test "anonymizes old demo user email, enqueues deletion, regenerates data, and notifies super admins" do
+  test "anonymizes old demo user email, enqueues deletion, and regenerates data" do
     travel_to Time.utc(2026, 1, 1, 5, 0, 0) do
-      Session.create!(user: @demo_user)
-      Family.create!(name: "New Family Today", created_at: 6.hours.ago)
-      Family.create!(name: "Old Family", created_at: 2.days.ago)
       @demo_user.api_keys.create!(
         name: "monitoring",
         key: ApiKey::DEMO_MONITORING_KEY,
@@ -52,7 +49,7 @@ class DemoFamilyRefreshJobTest < ActiveJob::TestCase
       Demo::Generator.expects(:new).returns(generator)
 
       assert_enqueued_with(job: DestroyJob, args: [ @demo_family ]) do
-        assert_enqueued_jobs 2, only: ActionMailer::MailDeliveryJob do
+        assert_no_enqueued_jobs only: ActionMailer::MailDeliveryJob do
           DemoFamilyRefreshJob.perform_now
         end
       end

@@ -29,19 +29,6 @@ class AutoMatchesControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr##{ActionView::RecordIdentifier.dom_id(outflow_entry.transaction.transfer)}", false
   end
 
-  test "index excludes matches where the outflow account is private to another family member" do
-    # other_asset is owned by family_admin and not shared with family_member;
-    # depository is shared with family_member (full_control).
-    outflow_entry = create_transaction(date: Date.current, account: accounts(:other_asset), amount: 500)
-    inflow_entry = create_transaction(date: Date.current, account: accounts(:depository), amount: -500)
-    @family.auto_match_transfers!
-
-    sign_in users(:family_member)
-    get auto_matches_url
-    assert_response :success
-    assert_select "tr##{ActionView::RecordIdentifier.dom_id(outflow_entry.transaction.transfer)}", false
-  end
-
   # Regression: the bulk-select <form> used to wrap the whole table,
   # including each row's own Confirm/Reject button_to form. Nested <form>
   # elements are invalid HTML -- browsers flatten them, which merged every
@@ -118,13 +105,6 @@ class AutoMatchesControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_not @family.reload.auto_match_transfers_disabled?
-  end
-
-  test "bulk update notices use the Polish few form" do
-    I18n.with_locale(:pl) do
-      assert_equal "Potwierdzono 2 przelewy", I18n.t("auto_matches.bulk_update.bulk_confirmed", count: 2)
-      assert_equal "Odrzucono 3 przelewy", I18n.t("auto_matches.bulk_update.bulk_rejected", count: 3)
-    end
   end
 
   test "bulk update confirms the selected matches and applies their transfer kinds" do

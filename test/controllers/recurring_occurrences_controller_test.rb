@@ -92,94 +92,23 @@ class RecurringOccurrencesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?][data-turbo-frame=drawer][data-turbo-prefetch=false]", bill_path(@series, occurrence: @occurrence.id)
   end
 
-  test "recurring occurrence feedback is localized in German" do
-    @user.update!(locale: "de")
-
+  test "recurring occurrence drawer renders its due label and payment actions" do
     get recurring_occurrence_url(@occurrence), headers: { "Turbo-Frame" => "drawer" }
 
     assert_response :success
 
-    translations = {
-      "history_status.paid" => "Bezahlt",
-      "history_status.skipped" => "Übersprungen",
-      "history_status.missed" => "Verpasst",
-      "history_status.scheduled" => "Offen",
-      "show.paid_of" => "%{paid} von %{expected} bezahlt",
-      "show.paid_headline" => "%{amount} bezahlt",
-      "show.remaining" => "%{amount} ausstehend",
-      "show.overpaid" => "mehr als erwartet",
-      "show.skipped" => "Übersprungen",
-      "show.missed" => "Als verpasst markiert",
-      "show.payments" => "Zahlungen",
-      "show.manual_payment" => "Manuelle Zahlung",
-      "show.unlink" => "Verknüpfung aufheben",
-      "show.review_heading" => "Zahlung prüfen",
-      "show.find_heading" => "Zahlung finden",
-      "show.add_heading" => "Weitere Zahlung hinzufügen",
-      "show.other_matches" => "Weitere mögliche Treffer",
-      "show.no_ranked_candidates" => "Derzeit sieht hier keine Transaktion nach einer Zahlung für diese Rechnung aus.",
-      "show.search_all" => "Alle Transaktionen durchsuchen",
-      "show.search_placeholder" => "Transaktionen suchen",
-      "show.no_candidates" => "Keine passenden Transaktionen in zeitlicher Nähe gefunden.",
-      "show.no_search_results" => "Keine Treffer für „%{query}“.",
-      "show.link_payment" => "Zahlung verknüpfen",
-      "show.not_this_one" => "Nicht diese Transaktion",
-      "show.cant_find" => "Transaktion nicht gefunden?",
-      "show.manual_explainer" => "Erfasse eine tatsächlich erfolgte Zahlung, wenn hier keine passende Transaktion dabei ist.",
-      "show.manual_amount_label" => "Betrag",
-      "show.manual_date_label" => "Datum",
-      "show.record_payment" => "Zahlung erfassen",
-      "show.mark_paid" => "Als bezahlt markieren",
-      "show.mark_paid_hint" => "Markiert den Restbetrag als bezahlt, ohne eine Transaktion zu erfassen.",
-      "show.skip" => "Überspringen",
-      "show.snooze_week" => "Um eine Woche verschieben",
-      "show.reopen" => "Wieder öffnen",
-      "show.view_bill" => "Rechnung anzeigen",
-      "mark_paid.success" => "Rechnung als bezahlt markiert",
-      "skip.success" => "Rechnung übersprungen",
-      "reopen.success" => "Rechnung wieder geöffnet",
-      "snooze.success" => "Bis %{date} verschoben",
-      "snooze.invalid_date" => "Das Datum konnte nicht erkannt werden",
-      "override_amount.success" => "Erwarteter Betrag aktualisiert"
-    }
-
-    translations.each do |key, text|
-      assert_equal text, I18n.t("recurring_occurrences.#{key}", locale: :de, fallback: false)
-    end
-
-    due_label_translations = {
-      "overdue.one" => "Seit 1 Tag überfällig · fällig am %{date}",
-      "overdue.other" => "Seit %{count} Tagen überfällig · fällig am %{date}",
-      "today" => "Heute fällig",
-      "settled" => "War am %{date} fällig",
-      "due_since" => "Fällig am %{date}",
-      "snoozed" => "Verschoben bis %{date}",
-      "upcoming.one" => "Morgen fällig · %{date}",
-      "upcoming.other" => "In %{count} Tagen fällig · %{date}"
-    }
-
-    due_label_translations.each do |key, text|
-      assert_equal text, I18n.t("bills.due_label.#{key}", locale: :de, fallback: false)
-    end
-
     days_until_due = (@occurrence.effective_due_on - Date.current).to_i
-    localized_due_date = I18n.l(@occurrence.effective_due_on, locale: :de, format: :short).strip
-    german_due_label = I18n.t("bills.due_label.upcoming", count: days_until_due,
-      date: localized_due_date, locale: :de, fallback: false)
-    english_due_label = I18n.t("bills.due_label.upcoming", count: days_until_due,
-      date: localized_due_date, locale: :en)
+    due_date = I18n.l(@occurrence.effective_due_on, format: :short).strip
+    assert_select "h2 + p", text: I18n.t("bills.due_label.upcoming", count: days_until_due, date: due_date)
 
-    assert_select "h2 + p", text: german_due_label
-    assert_select "h2 + p", text: english_due_label, count: 0
-
-    assert_select "p", text: /ausstehend/
-    assert_select "p", text: translations.fetch("show.find_heading")
-    assert_select "summary", text: translations.fetch("show.search_all")
-    assert_select "input[placeholder=?]", translations.fetch("show.search_placeholder")
-    assert_select "summary", text: translations.fetch("show.cant_find")
-    assert_select "a", text: translations.fetch("show.mark_paid")
-    assert_select "p", text: translations.fetch("show.mark_paid_hint")
-    assert_select "a", text: translations.fetch("show.view_bill")
+    assert_select "p", text: /remaining/
+    assert_select "p", text: I18n.t("recurring_occurrences.show.find_heading")
+    assert_select "summary", text: I18n.t("recurring_occurrences.show.search_all")
+    assert_select "input[placeholder=?]", I18n.t("recurring_occurrences.show.search_placeholder")
+    assert_select "summary", text: I18n.t("recurring_occurrences.show.cant_find")
+    assert_select "a", text: I18n.t("recurring_occurrences.show.mark_paid")
+    assert_select "p", text: I18n.t("recurring_occurrences.show.mark_paid_hint")
+    assert_select "a", text: I18n.t("recurring_occurrences.show.view_bill")
   end
 
   # The dialog used to list the fifteen most RECENT transactions in the window.
@@ -438,24 +367,6 @@ class RecurringOccurrencesControllerTest < ActionDispatch::IntegrationTest
     assert_equal I18n.t("recurring_allocations.already_allocated"), flash[:alert]
   end
 
-  # Sharing is per account. A member with no share on the brokerage must not be
-  # able to settle a bill with a transaction from it, which would both spend an
-  # obligation against money they cannot see and echo the charge back to them.
-  test "a member cannot pay a bill with a transaction from an account they were never given" do
-    hidden = accounts(:investment).entries.create!(
-      date: Date.current, amount: 15.99, currency: "USD", name: "PRIVATE BROKERAGE FEE",
-      entryable: Transaction.new
-    )
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    post recurring_occurrence_allocations_url(@occurrence, entry_id: hidden.id), params: { amount: "15.99" }
-
-    assert_response :not_found
-    assert_equal 0, @occurrence.reload.allocations.count
-  end
-
   test "confirming and rejecting suggestions from the queue" do
     entry = accounts(:depository).entries.create!(
       date: Date.current, amount: 15.99, currency: "USD", name: "Netflix charge",
@@ -501,64 +412,7 @@ class RecurringOccurrencesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
-  # Sharing is per account. An accountless bill is visible family-wide, but
-  # its candidate list must still show only entries from accounts the viewer
-  # can reach, or the drawer leaks names and amounts from unshared accounts.
-  test "an accountless bill's candidates exclude entries from unshared accounts" do
-    accountless = @family.recurring_transactions.create!(
-      name: "Water Utility", amount: 60, currency: "USD",
-      expected_day_of_month: Date.current.day, anchor_date: Date.current,
-      last_occurrence_date: Date.current, next_expected_date: Date.current,
-      status: "active", manual: true
-    )
-    occurrence = accountless.recurring_occurrences.order(:due_on).first
-
-    hidden = accounts(:investment).entries.create!(
-      date: occurrence.due_on, amount: 60, currency: "USD",
-      name: "Broker service fee", entryable: Transaction.new
-    )
-    visible = accounts(:depository).entries.create!(
-      date: occurrence.due_on, amount: 60, currency: "USD",
-      name: "Shared checking charge", entryable: Transaction.new
-    )
-
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-    get recurring_occurrence_url(occurrence), headers: { "Turbo-Frame" => "drawer" }
-
-    assert_response :success
-    assert_no_match hidden.name, response.body,
-      "an entry on an account never shared with the viewer must not render"
-    assert_match visible.name, response.body,
-      "positive control: the same-shaped entry on a shared account must render"
-  end
-
-  # credit_card is shared read-only with family_member in the fixtures; a
-  # read-only share can look at the bill but never move its payment state.
-  test "a read-only account share cannot mutate an occurrence" do
-    occurrence = credit_card_occurrence
-
-    member = users(:family_member)
-    member.update!(preferences: (member.preferences || {}).merge("preview_features_enabled" => true))
-    sign_in member
-
-    post mark_paid_recurring_occurrence_url(occurrence)
-    assert_response :not_found
-    assert occurrence.reload.scheduled?, "a read-only share must not settle the bill"
-
-    post skip_recurring_occurrence_url(occurrence)
-    assert_response :not_found
-
-    patch override_amount_recurring_occurrence_url(occurrence, amount: "1")
-    assert_response :not_found
-    assert_nil occurrence.reload.expected_amount
-
-    get recurring_occurrence_url(occurrence), headers: { "Turbo-Frame" => "drawer" }
-    assert_response :success, "reading the shared bill stays allowed"
-  end
-
-  test "the account owner still settles the same occurrence" do
+  test "a card occurrence can be settled" do
     occurrence = credit_card_occurrence
 
     post mark_paid_recurring_occurrence_url(occurrence)

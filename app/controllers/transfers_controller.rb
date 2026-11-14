@@ -19,8 +19,7 @@ class TransfersController < ApplicationController
     # Whether the current user can hit `mark_as_recurring` (feature flag on)
     # or switch the investment contribution: both need write access to BOTH
     # transfer endpoints. Gating the view controls on this avoids showing a
-    # CTA that the controller would reject via `require_account_permission!`
-    # for read-only sharers.
+    # CTA that the controller would reject via `require_account_permission!`.
     endpoint_ids = [ @transfer.from_account&.id, @transfer.to_account&.id ].compact
     writable_endpoint_count = Account.writable_by(Current.user).where(id: endpoint_ids).distinct.count
     both_endpoints_writable = endpoint_ids.size == 2 && writable_endpoint_count == 2
@@ -203,7 +202,7 @@ class TransfersController < ApplicationController
     def set_transfer
       # Finds the transfer and ensures the user has access to it. Unlinking
       # (reject/destroy) only needs access to one side, so a user can undo a
-      # match against an account that is not shared with them. Any other
+      # match against an account they cannot reach. Any other
       # update edits both entries, so it needs access to both sides.
       accessible_transaction_ids = Current.family.transactions
         .joins(entry: :account)

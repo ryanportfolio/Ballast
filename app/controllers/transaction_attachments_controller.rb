@@ -1,7 +1,7 @@
 class TransactionAttachmentsController < ApplicationController
   before_action :set_transaction
   before_action :set_attachment, only: [ :show, :destroy ]
-  before_action :set_permissions, only: [ :create, :destroy ]
+  before_action :require_writable_account!, only: [ :create, :destroy ]
 
   def show
     disposition = params[:disposition] == "attachment" ? "attachment" : "inline"
@@ -9,11 +9,6 @@ class TransactionAttachmentsController < ApplicationController
   end
 
   def create
-    unless @can_upload
-      redirect_back_or_to transaction_path(@transaction), alert: t("accounts.not_authorized")
-      return
-    end
-
     attachments = attachment_params
 
     if attachments.present?
@@ -66,11 +61,6 @@ class TransactionAttachmentsController < ApplicationController
   end
 
   def destroy
-    unless @can_delete
-      redirect_back_or_to transaction_path(@transaction), alert: t("accounts.not_authorized")
-      return
-    end
-
     @attachment.purge
     message = t("transactions.attachments.attachment_deleted")
     respond_to do |format|
@@ -98,10 +88,9 @@ class TransactionAttachmentsController < ApplicationController
       @attachment = @transaction.attachments.find(params[:id])
     end
 
-    def set_permissions
-      permission = @transaction.entry.account.permission_for(Current.user)
-      @can_upload = permission.in?([ :owner, :full_control, :read_write ])
-      @can_delete = permission.in?([ :owner, :full_control ])
+    # Guests may view attachments but not add or delete them.
+    def require_writable_account!
+      require_account_permission!(@transaction.entry.account, redirect_path: transaction_path(@transaction))
     end
 
     def attachment_params

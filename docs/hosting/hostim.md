@@ -1,12 +1,12 @@
-# Deploying Sure on Hostim.dev
+# Deploying Ballast on Hostim.dev
 
 [Hostim.dev](https://hostim.dev) is a managed container-hosting platform that runs
-Sure with a managed PostgreSQL database, managed Redis, persistent storage, and
+Ballast with a managed PostgreSQL database, managed Redis, persistent storage, and
 automatic HTTPS — no server to provision or maintain.
 
 ## One-click template
 
-Sure is available as a one-click template. It provisions the Rails web server, the
+Upstream Sure is available as a one-click template. It provisions the Rails web server, the
 Sidekiq background worker, PostgreSQL, and Redis for you, and generates
 `SECRET_KEY_BASE` automatically.
 
@@ -19,7 +19,7 @@ A full walkthrough is in the [Hostim.dev Sure guide](https://hostim.dev/docs/tem
 
 ## Manual setup
 
-To configure the app yourself, create an app from the `ghcr.io/we-promise/sure:stable`
+To configure the app yourself, create an app from the upstream Sure image `ghcr.io/we-promise/sure:stable`
 image and set the following environment variables:
 
 | Variable | Value |
@@ -35,7 +35,7 @@ Run the web server and a Sidekiq worker from the same image, both sharing the sa
 migrations are applied — for example with a start command like
 `sh -c "./bin/rails db:prepare && (bundle exec sidekiq &) && exec ./bin/rails server -b 0.0.0.0"`.
 
-Mount a persistent volume at `/rails/storage`. Sure stores uploaded files (such as
+Mount a persistent volume at `/rails/storage`. Ballast stores uploaded files (such as
 imported statements) there via Active Storage's local disk service by default;
 without a persistent volume they are lost when the container is replaced, while the
 database still references them.

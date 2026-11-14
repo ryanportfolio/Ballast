@@ -1,10 +1,10 @@
 # LLM Configuration Guide
 
-This document explains how Sure uses Large Language Models (LLMs) for AI features and how to configure them for your deployment.
+This document explains how Ballast uses Large Language Models (LLMs) for AI features and how to configure them for your deployment.
 
 ## Overview
 
-Sure includes an AI assistant that can help users understand their financial data by answering questions about accounts, transactions, income, expenses, net worth, and more. The assistant uses LLMs to process natural language queries and provide insights based on the user's financial data.
+Ballast includes an AI assistant that can help users understand their financial data by answering questions about accounts, transactions, income, expenses, net worth, and more. The assistant uses LLMs to process natural language queries and provide insights based on the user's financial data.
 
 > [!CAUTION]
 > Only `gpt-4.1` was ever supported prior to `v0.6.5-alpha*` builds!
@@ -13,14 +13,14 @@ Sure includes an AI assistant that can help users understand their financial dat
 
 ## Architecture: Two AI Pipelines
 
-Sure has **two separate AI systems** that operate independently. Understanding this is important because they have different configuration requirements.
+Ballast has **two separate AI systems** that operate independently. Understanding this is important because they have different configuration requirements.
 
 ### 1. Chat Assistant (conversational)
 
 The interactive chat where users ask questions about their finances. Routes through one of two backends, or is turned off:
 
-- **Builtin** (default): Uses the LLM provider selected by `LLM_PROVIDER`: the OpenAI-compatible provider (`OPENAI_ACCESS_TOKEN` / `OPENAI_URI_BASE` / `OPENAI_MODEL`, the default) or the [native Anthropic provider](#anthropic-native). Calls Sure's function tools directly (get_accounts, get_transactions, etc.).
-- **External**: Delegates the entire conversation to a remote AI agent. The agent calls back to Sure via MCP to access financial data. Set `ASSISTANT_TYPE=external` as a global override, or configure each family's assistant type in Settings.
+- **Builtin** (default): Uses the LLM provider selected by `LLM_PROVIDER`: the OpenAI-compatible provider (`OPENAI_ACCESS_TOKEN` / `OPENAI_URI_BASE` / `OPENAI_MODEL`, the default) or the [native Anthropic provider](#anthropic-native). Calls Ballast's function tools directly (get_accounts, get_transactions, etc.).
+- **External**: Delegates the entire conversation to a remote AI agent. The agent calls back to Ballast via MCP to access financial data. Set `ASSISTANT_TYPE=external` as a global override, or configure each family's assistant type in Settings.
 - **None in app** (`mcp_only`): Removes the in-app chat for the household: the right-hand chat sidebar and its toggle, and the buttons that start a chat. Bring your own agent and connect it through [MCP](mcp.md), which keeps working. Set `ASSISTANT_TYPE=mcp_only` to remove the chat for every family.
 
 ### 2. Auto-Categorization and Merchant Detection (background)
@@ -37,7 +37,7 @@ Background jobs that classify transactions and detect merchants. These use the L
 
 If you use an external agent for chat, you still need an LLM provider configured (`OPENAI_ACCESS_TOKEN` or `ANTHROPIC_API_KEY`) for auto-categorization and merchant detection to work. The two systems are fully independent.
 
-With `mcp_only`, Sure also skips the features that need a user's AI consent: the bills AI shortcuts (review, smart fill, smart configuration). Insights never use AI: their text comes from templates.
+With `mcp_only`, Ballast also skips the features that need a user's AI consent: the bills AI shortcuts (review, smart fill, smart configuration). Insights never use AI: their text comes from templates.
 
 ### Where AI jobs run (Sidekiq lanes)
 
@@ -53,23 +53,22 @@ AI work runs in the Sidekiq `worker`, in its own capsule ("lane"), so a slow mod
 - **Busy notice:** with one AI thread in a single worker process running the AI queues, while another AI job (a background job or another chat) is running, a chat's "Thinking" bubble says the system is busy until the chat's job starts. `AI_RESPONSE_TIMEOUT` includes that wait.
 - **Chat reservation:** with one AI thread, clicking into or typing in the chat box, and each finished reply, hold back new background AI jobs for 60 seconds, so the message runs next. This applies when a single worker process runs the AI queues; with several, a chat can run on one while another runs background jobs, so nothing is held. Back-to-back holds stop after 15 minutes and resume 60 seconds later, so background AI work gets a turn. When you click into or type in the chat box while background AI jobs wait, a bubble above it shows the countdown, or says one is still finishing. A job that is already running is not interrupted.
 - **One AI thread suits a model that serves one request at a time,** such as a local model on CPU: a chat turn's calls then run back to back, keeping the model's prompt cache warm. If your provider serves requests in parallel (hosted APIs, or a local server with several slots), raise `RAILS_AI_MAX_THREADS`, and `RAILS_MAX_THREADS` by the same amount so the default lane keeps its threads.
-- **The worker must load `config/sidekiq.yml`,** as `bundle exec sidekiq` does by default. A worker started with its own queue list (`sidekiq -q …`) doesn't get the AI lane. If no worker polls `ai_high_priority` and `ai_low_priority`, **System health** (`/admin/system_health`) and the site-wide banner report "No worker is processing the AI queues", and the chat page warns that responses may not be delivered. Keep `-C config/sidekiq.yml`; adding `-q ai_high_priority -q ai_low_priority` also works, but AI jobs then share that worker's threads, and the chat reservation doesn't hold them, since a chat can usually take another thread.
-- **System health:** AI backlog doesn't count towards "queue backed up" (a large merchant-detection run can queue for hours), but "Oldest job age" still includes it. Check the queue table or `/sidekiq` to see which queue is waiting.
+- **The worker must load `config/sidekiq.yml`,** as `bundle exec sidekiq` does by default. A worker started with its own queue list (`sidekiq -q …`) doesn't get the AI lane. If no worker polls `ai_high_priority` and `ai_low_priority`, the chat page warns that responses may not be delivered. Keep `-C config/sidekiq.yml`; adding `-q ai_high_priority -q ai_low_priority` also works, but AI jobs then share that worker's threads, and the chat reservation doesn't hold them, since a chat can usually take another thread.
 - **Upgrading:** AI jobs moved from `high_priority` (chat), `medium_priority` and `scheduled` to the AI queues. Jobs already queued under the old names still run once, in the default lane.
-- **Large batches:** Sure doesn't limit `LLM_MAX_ITEMS_PER_CALL`. OpenAI-compatible providers split a batch that doesn't fit the context window; with the native Anthropic provider, raise `ANTHROPIC_MAX_TOKENS` (default `4096`) along with it, or replies are cut off.
+- **Large batches:** Ballast doesn't limit `LLM_MAX_ITEMS_PER_CALL`. OpenAI-compatible providers split a batch that doesn't fit the context window; with the native Anthropic provider, raise `ANTHROPIC_MAX_TOKENS` (default `4096`) along with it, or replies are cut off.
 
 ## Quickstart: OpenAI Token
 
-The easiest way to get started with AI features in Sure is to use OpenAI:
+The easiest way to get started with AI features in Ballast is to use OpenAI:
 
 1. Get an API key from [OpenAI](https://platform.openai.com/api-keys)
 2. Set the environment variable:
    ```bash
    OPENAI_ACCESS_TOKEN=sk-proj-...your-key-here...
    ```
-3. (Re-)Start Sure (both `web` and `worker` services!) and the AI assistant will be available to use after you agree/allow via UI option
+3. (Re-)Start Ballast (both `web` and `worker` services!) and the AI assistant will be available to use after you agree/allow via UI option
 
-That's it! Sure will use OpenAI's with a default model (currently `gpt-4.1`) for all AI operations.
+That's it! Ballast will use OpenAI's with a default model (currently `gpt-4.1`) for all AI operations.
 
 ## Local vs. Cloud Inference
 
@@ -131,7 +130,7 @@ The amount of VRAM (GPU memory) you need depends on the model size:
 
 ## Cloud Providers
 
-Sure supports any OpenAI-compatible API endpoint. Here are tested providers:
+Ballast supports any OpenAI-compatible API endpoint. Here are tested providers:
 
 ### OpenAI (Primary Support)
 
@@ -170,7 +169,7 @@ reasoning models; the default 2048-token context is intended for small local mod
 
 ### Anthropic (native)
 
-Sure talks to Anthropic's Messages API directly. It serves chat (streamed), auto-categorization, merchant detection and enhancement, and bill setup suggestions.
+Ballast talks to Anthropic's Messages API directly. It serves chat (streamed), auto-categorization, merchant detection and enhancement, and bill setup suggestions.
 
 ```bash
 LLM_PROVIDER=anthropic
@@ -187,7 +186,7 @@ Or in the UI: **Settings** → **Self-Hosting** → **AI Provider** → **Anthro
 
 | Variable | Default | What it does |
 |----------|---------|--------------|
-| `LLM_PROVIDER` | `openai` | `anthropic` selects this provider. If the selected provider has no key, Sure uses the other one. While a custom OpenAI-compatible provider is configured (`OPENAI_URI_BASE` with an access token and model), chat still goes to it, so remove those settings when switching. |
+| `LLM_PROVIDER` | `openai` | `anthropic` selects this provider. If the selected provider has no key, Ballast uses the other one. While a custom OpenAI-compatible provider is configured (`OPENAI_URI_BASE` with an access token and model), chat still goes to it, so remove those settings when switching. |
 | `ANTHROPIC_API_KEY` | — | API key. `ANTHROPIC_ACCESS_TOKEN` also works and wins if both are set. |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Model for chat and all background jobs. Must start with `claude` unless a base URL is set. |
 | `ANTHROPIC_MAX_TOKENS` | `4096` | Reply limit, sent with every request (the Messages API requires one). |
@@ -204,7 +203,7 @@ How it differs from the OpenAI-compatible provider:
 - **Batch size.** Auto-categorization, merchant detection and merchant enhancement send `LLM_MAX_ITEMS_PER_CALL` items per request (default `25`), with no splitting to fit the context window. Raise `ANTHROPIC_MAX_TOKENS` along with it, or replies are cut off (see [Where AI jobs run](#where-ai-jobs-run-sidekiq-lanes)).
 - **Its own timeout.** `ANTHROPIC_REQUEST_TIMEOUT` replaces `OPENAI_REQUEST_TIMEOUT`. `AI_RESPONSE_TIMEOUT` still covers the whole chat turn. `OPENAI_EXTRA_HEADERS`, `LLM_JSON_MODE` and `OPENAI_SUPPORTS_*` don't apply.
 
-**Bedrock, Vertex and proxies:** `ANTHROPIC_BASE_URL` can point at any endpoint that speaks the Anthropic Messages API, such as a gateway in front of AWS Bedrock or Google Vertex AI. Set `ANTHROPIC_MODEL` to that endpoint's model ID (for Bedrock, e.g. `anthropic.claude-sonnet-4-5-20250929-v1:0`); the `claude` prefix check is skipped. Sure sends the key as an Anthropic API key (`x-api-key`) and doesn't sign AWS or Google requests itself.
+**Bedrock, Vertex and proxies:** `ANTHROPIC_BASE_URL` can point at any endpoint that speaks the Anthropic Messages API, such as a gateway in front of AWS Bedrock or Google Vertex AI. Set `ANTHROPIC_MODEL` to that endpoint's model ID (for Bedrock, e.g. `anthropic.claude-sonnet-4-5-20250929-v1:0`); the `claude` prefix check is skipped. Ballast sends the key as an Anthropic API key (`x-api-key`) and doesn't sign AWS or Google requests itself.
 
 ### Google Gemini
 
@@ -291,7 +290,7 @@ Behavior:
 - Values are stringified: nested JSON objects/arrays become Ruby inspect-style strings, not valid JSON. Header values must be plain strings.
 - User headers merge over the client's managed headers — setting `Authorization` here would override the access token.
 - Unset, blank, malformed, or non-object JSON is ignored with an error in the logs; chat keeps working. The raw value is never logged.
-- These headers are NOT sent to embedding, vector-store, or AI-health-probe calls — those build separate clients. A gateway requiring the header on those endpoints is not supported.
+- These headers are NOT sent to AI-health-probe calls, which build a separate client. A gateway requiring the header on those endpoints is not supported.
 - ENV-only: there is no settings-page equivalent. The value is re-read every time a provider client is built (nothing is cached), but updating the environment requires restarting the app.
 
 ## Local LLM Setup (Ollama)
@@ -331,7 +330,7 @@ Behavior:
 
 ### Configuration
 
-Configure Sure to use Ollama:
+Configure Ballast to use Ollama:
 
 ```bash
 # Dummy token (Ollama doesn't need authentication)
@@ -472,12 +471,12 @@ For self-hosted deployments, you can configure AI settings through the web inter
 
 ## External AI Assistant
 
-Instead of using the built-in LLM (which calls OpenAI or a local model directly), you can delegate chat to an **external AI agent**. The agent receives the conversation, can call back to Sure's financial data via MCP, and streams a response.
+Instead of using the built-in LLM (which calls OpenAI or a local model directly), you can delegate chat to an **external AI agent**. The agent receives the conversation, can call back to Ballast's financial data via MCP, and streams a response.
 
 This is useful when:
 - You have a custom AI agent with domain knowledge, memory, or personality
 - You want to use a non-OpenAI-compatible model (the agent translates)
-- You want to keep LLM credentials and logic outside Sure entirely
+- You want to keep LLM credentials and logic outside Ballast entirely
 
 > [!IMPORTANT]
 > **Set `ASSISTANT_TYPE=external` to route all users to the external agent.** Without it, routing falls back to each family's `assistant_type` DB column (configurable per-family in the Settings UI), then defaults to `"builtin"`. If you want a global override that applies to every family regardless of their UI setting, set the env var. If you only want specific families to use the external agent, skip the env var and configure it per-family in Settings.
@@ -487,11 +486,11 @@ This is useful when:
 
 ### How It Works
 
-1. User sends a message in the Sure chat UI
-2. Sure sends the conversation to your agent's API endpoint (OpenAI chat completions format)
+1. User sends a message in the Ballast chat UI
+2. Ballast sends the conversation to your agent's API endpoint (OpenAI chat completions format)
 3. Your agent processes it using whatever LLM, tools, or context it needs
-4. Your agent can call Sure's `/mcp` endpoint for financial data and actions (accounts, transactions, balance sheet, budgets, file search, account statements, goals)
-5. Your agent streams the response back to Sure via Server-Sent Events (SSE)
+4. Your agent can call Ballast's `/mcp` endpoint for financial data and actions (accounts, transactions, balance sheet, file search, account statements)
+5. Your agent streams the response back to Ballast via Server-Sent Events (SSE)
 
 The agent's API must be **OpenAI chat completions compatible**: accept `POST` with a `messages` array, return SSE with `delta.content` chunks.
 
@@ -519,7 +518,7 @@ When environment variables are set, the corresponding UI fields are disabled (en
 
 ### MCP Callback Endpoint
 
-Sure exposes a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) endpoint at `/mcp` so your external agent can call back and query financial data. This is how the agent accesses accounts, transactions, balance sheets, and other user data.
+Ballast exposes a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) endpoint at `/mcp` so your external agent can call back and query financial data. This is how the agent accesses accounts, transactions, balance sheets, and other user data.
 
 **Protocol:** JSON-RPC 2.0 over HTTP POST
 
@@ -528,7 +527,7 @@ Sure exposes a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) 
 The only accepted token is the static bearer token configured with `MCP_API_TOKEN` and `MCP_USER_EMAIL`:
 ```bash
 MCP_API_TOKEN=your-secret-token    # Bearer token the agent sends to authenticate
-MCP_USER_EMAIL=user@example.com    # Email of the Sure user the agent acts as
+MCP_USER_EMAIL=user@example.com    # Email of the Ballast user the agent acts as
 ```
 
 The agent must send requests to `https://your-sure-instance/mcp` with:
@@ -580,7 +579,7 @@ EXTERNAL_ASSISTANT_AGENT_ID=your-agent-name
 
 **OpenClaw setup requirements:**
 - The gateway must have `chatCompletions.enabled: true` in its config
-- The agent's MCP config must point to Sure's `/mcp` endpoint with the correct `MCP_API_TOKEN`
+- The agent's MCP config must point to Ballast's `/mcp` endpoint with the correct `MCP_API_TOKEN`
 - The URL format is always `/v1/chat/completions` (OpenAI-compatible)
 
 **Kubernetes in-cluster example** (agent in a different namespace):
@@ -595,8 +594,8 @@ An external agent can do more than answer questions about the current balance:
 with its own repository behind it, it can maintain a document-backed history of
 a family's wealth, where every figure traces back to the statement it came from.
 
-That is a two-install shape — Sure as the system of record, the agent harness as
-the model and the compiler — rather than a feature inside Sure. Sure exposes a
+That is a two-install shape — Ballast as the system of record, the agent harness as
+the model and the compiler — rather than a feature inside Ballast. Ballast exposes a
 set of preview MCP tools for it (the Statement Vault, coverage gaps, and
 valuations that require a source citation).
 
@@ -606,10 +605,10 @@ it implements.
 
 ### Security with Pipelock
 
-When [Pipelock](https://github.com/luckyPipewrench/pipelock) is enabled (the `pipelock` service in Docker Compose), Sure configures two mediated routes:
+When [Pipelock](https://github.com/luckyPipewrench/pipelock) is enabled (the `pipelock` service in Docker Compose), Ballast configures two mediated routes:
 
-- **Outbound** (Sure -> agent): routed through Pipelock's forward proxy via `HTTPS_PROXY`
-- **Inbound** (agent -> Sure /mcp): routed through Pipelock's MCP reverse proxy (port 8889)
+- **Outbound** (Ballast -> agent): routed through Pipelock's forward proxy via `HTTPS_PROXY`
+- **Inbound** (agent -> Ballast /mcp): routed through Pipelock's MCP reverse proxy (port 8889)
 
 The MCP reverse proxy scans readable MCP traffic for prompt injection, DLP violations, and tool poisoning. The forward proxy applies tunnel-level controls to HTTPS, but the default examples don't enable TLS interception and can't scan encrypted bodies. The external agent doesn't need Pipelock installed.
 
@@ -621,14 +620,14 @@ See the [Pipelock documentation](https://github.com/luckyPipewrench/pipelock) fo
 
 ### Network Policies (Kubernetes)
 
-If you use Kubernetes NetworkPolicies (and you should), both Sure and the agent's namespace need rules to allow traffic in both directions.
+If you use Kubernetes NetworkPolicies (and you should), both Ballast and the agent's namespace need rules to allow traffic in both directions.
 
 > [!WARNING]
 > **Port number gotcha:** Kubernetes network policies evaluate **after** kube-proxy DNAT. This means egress rules must use the pod's `targetPort`, not the service port. If your agent's Service maps port 18789 to targetPort 18790, the network policy must allow port **18790**.
 
-**Sure namespace egress** (Sure calling the agent):
+**Ballast namespace egress** (Ballast calling the agent):
 ```yaml
-# Allow Sure -> agent namespace
+# Allow Ballast -> agent namespace
 - to:
     - namespaceSelector:
         matchLabels:
@@ -638,9 +637,9 @@ If you use Kubernetes NetworkPolicies (and you should), both Sure and the agent'
       port: 18790  # targetPort, not service port!
 ```
 
-**Sure namespace ingress** (agent calling Sure's pipelock MCP reverse proxy):
+**Ballast namespace ingress** (agent calling Ballast's pipelock MCP reverse proxy):
 ```yaml
-# Allow agent -> Sure pipelock MCP reverse proxy
+# Allow agent -> Ballast pipelock MCP reverse proxy
 - from:
     - namespaceSelector:
         matchLabels:
@@ -650,7 +649,7 @@ If you use Kubernetes NetworkPolicies (and you should), both Sure and the agent'
       port: 8889
 ```
 
-**Agent namespace** needs the reverse: egress to Sure on port 8889, ingress from Sure on its listening port.
+**Agent namespace** needs the reverse: egress to Ballast on port 8889, ingress from Ballast on its listening port.
 
 ### Access Control
 
@@ -671,11 +670,11 @@ Or configure the assistant via the Settings UI after startup (MCP env vars are s
 
 ## Assistant Architecture
 
-Sure's AI assistant system uses a modular architecture that allows different assistant implementations to be plugged in based on configuration. This section explains the architecture for contributors who want to understand or extend the system.
+Ballast's AI assistant system uses a modular architecture that allows different assistant implementations to be plugged in based on configuration. This section explains the architecture for contributors who want to understand or extend the system.
 
 ### Overview
 
-The assistant system evolved from a monolithic class to a module-based architecture with a registry pattern. This allows Sure to support multiple assistant types (builtin, external) and makes it easy to add new implementations.
+The assistant system evolved from a monolithic class to a module-based architecture with a registry pattern. This allows Ballast to support multiple assistant types (builtin, external) and makes it easy to add new implementations.
 
 **Key benefits:**
 - **Extensible:** Add new assistant types without modifying existing code
@@ -752,7 +751,7 @@ Implementation for delegating chat to a remote AI agent. Located in `app/models/
 
 **Features:**
 - Sends conversation to external agent via OpenAI-compatible API
-- Agent calls back to Sure's `/mcp` endpoint for financial data
+- Agent calls back to Ballast's `/mcp` endpoint for financial data
 - Supports access control via email allowlist
 - Streams responses from the agent
 
@@ -897,8 +896,8 @@ family.update(assistant_type: "my_custom")
 #### Pipelock Integration
 
 For external assistants, Pipelock can scan traffic:
-- **Outbound:** Sure -> agent (via `HTTPS_PROXY`)
-- **Inbound:** Agent -> Sure /mcp (via MCP reverse proxy on port 8889)
+- **Outbound:** Ballast -> agent (via `HTTPS_PROXY`)
+- **Inbound:** Agent -> Ballast /mcp (via MCP reverse proxy on port 8889)
 
 See the [External AI Assistant](#external-ai-assistant) and [Pipelock](pipelock.md) documentation for configuration.
 
@@ -922,11 +921,11 @@ Register it in the `REGISTRY` and add to `Family::ASSISTANT_TYPES` to activate.
 
 ## AI Cache Management
 
-Sure caches AI-generated results (like auto-categorization and merchant detection) to avoid redundant API calls and costs. However, there are situations where you may want to clear this cache.
+Ballast caches AI-generated results (like auto-categorization and merchant detection) to avoid redundant API calls and costs. However, there are situations where you may want to clear this cache.
 
 ### What is the AI Cache?
 
-When AI rules process transactions, Sure stores:
+When AI rules process transactions, Ballast stores:
 - **Enrichment records**: Which attributes were set by AI (category, merchant, etc.)
 - **Attribute locks**: Prevents rules from re-processing already-handled transactions
 
@@ -989,7 +988,7 @@ Before resetting the cache, consider:
 
 Test your AI configuration:
 
-1. Go to the Chat interface in Sure
+1. Go to the Chat interface in Ballast
 2. Try these test prompts:
    - "Show me my total spending this month"
    - "What are my top 5 spending categories?"
@@ -1002,7 +1001,7 @@ Test your AI configuration:
 
 ### Automated Evaluation
 
-Sure doesn't currently include automated evals, but you can build your own:
+Ballast doesn't currently include automated evals, but you can build your own:
 
 1. **Collect baseline responses:** Run test prompts and save responses
 2. **Create an evaluation dataset** from those prompts and responses
@@ -1042,67 +1041,8 @@ Good test queries that exercise different capabilities:
 
 ### Cloud Costs
 
-**Pricing table last updated and verified: October 17, 2026.** Every model
-listed in [`LlmUsage::PRICING`](../../app/models/llm_usage.rb) was checked against
-official sources. `PRICING_VERIFIED_ON` supplies the verification date shown on
-the LLM usage screen. This is a manual review date, not a claim that providers
-changed every price that day.
-
-Rates are USD per million tokens at the Standard tier. The source coverage is:
-
-| Models in the code | Official pricing source |
-| --- | --- |
-| GPT-6 Sol/6.1 Sol, GPT-5.6, GPT-5.5, GPT-5.4, GPT-5.2, GPT-5.1, GPT-5, GPT-4.1, GPT-4o, o1, o3, o4-mini (including listed variants) | [OpenAI pricing](https://developers.openai.com/api/docs/pricing) |
-| GPT-5.2/5.1 Chat aliases | [GPT-5.2 Chat](https://developers.openai.com/api/docs/models/gpt-5.2-chat-latest), [GPT-5.1 Chat](https://developers.openai.com/api/docs/models/gpt-5.1-chat-latest) |
-| o1-mini | [o1-mini](https://developers.openai.com/api/docs/models/o1-mini) |
-| Gemini 4 Argon, 3.8/3.7/3.6/3.5 Flash, 3.5/3.1 Flash-Lite, 3.1 Pro, 3 Flash, 2.5 Pro/Flash | [Google pricing](https://ai.google.dev/gemini-api/docs/pricing) |
-| Claude Opus 4.6/4.7, Sonnet 4.5/4.6, Haiku 4.5 | [Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
-
-#### Dated pricing changes
-
-| Model | Input / output | Latest relevant published date found |
-| --- | --- | --- |
-| Gemini 4 Argon | $2 / $10 | October 2026: launch promotional pricing through November 30, 2026 ($4 / $20 standard starting December 1, 2026) |
-| GPT-6.1 Sol | $2 / $10 | September 29, 2026: launch pricing |
-| GPT-6 Sol | $2 / $10 | September 22, 2026: launch pricing |
-| GPT-5.6 Sol | $4 / $20 | August 21, 2026: price reduction; promotion available at least through November 21, 2026 |
-| GPT-5.6 Terra | $2 / $12 | July 30, 2026: price reduction |
-| GPT-5.6 Luna | $0.20 / $1.20 | July 30, 2026: price reduction |
-| Claude Opus 4.7 | $5 / $25 | April 16, 2026: published launch rate; corrects Sure's erroneous $15 / $75 |
-| Claude Opus 4.6 | $5 / $25 | February 5, 2026: published base launch rate; corrects Sure's erroneous $15 / $75 |
-
-Dates above come from the [OpenAI changelog](https://developers.openai.com/api/docs/changelog),
-the [Gemini API documentation](https://ai.google.dev/gemini-api/docs/pricing),
-and the [Opus 4.7](https://www.anthropic.com/news/claude-opus-4-7) and
-[Opus 4.6](https://www.anthropic.com/news/claude-opus-4-6) announcements.
-For other listed rates, the latest price-change date was **not established**;
-their current prices were verified on October 17. Google's pricing page lists
-launch promotional pricing for Gemini 4 Argon ($2.00 / $10.00) through November 30, 2026,
-and Gemini 3.8, 3.7, and 3.6 Flash through December 31, 2026.
-
-#### Context tiers and estimate limits
-
-OpenAI's listed GPT-6 Sol, GPT-6.1 Sol, GPT-5.6, GPT-5.5/Pro and GPT-5.4/Pro
-rates increase above 272,000 input tokens: input doubles and output increases
-by 50% for the entire request. GPT-5.4 mini/nano retain their flat rates.
-Gemini 4 Argon is $2.00 / $10.00 through November 2026 ($4.00 / $20.00 standard starting
-December 2026) across its 1,048,576 token (1M) unified context window.
-Gemini 2.5 Pro changes from $1.25 / $10 to $2.50 / $15 above 200,000 input
-tokens. Gemini 3.1 Pro (and 3.1 Pro Preview) changes from $2.00 / $12.00 to
-$4.00 / $18.00 above 200,000 input tokens. Gemini 3.8 Flash, 3.7 Flash, and
-3.6 Flash are $0.75 / $3.75 through 2026 ($1.50 / $7.50 starting 2027).
-Gemini 3.5 Flash is $1.50 / $9.00, Gemini 3.5 Flash-Lite is $0.30 / $2.50,
-Gemini 3.1 Flash-Lite is $0.25 / $1.50, Gemini 3 Flash is $0.50 / $3.00,
-and Gemini 2.5 Flash remains $0.30 / $2.50.
-Claude 4.6/4.7 use standard rates throughout their context window.
-
-Sure estimates individual requests using these tiers. Aggregate categorization
-previews assume short requests. Saved usage costs are historical estimates and
-are not recalculated by this update. Estimates exclude regional premiums,
-alternative service tiers, tool charges and audio-specific rates. Anthropic
-five-minute cache writes and reads are included when reported; OpenAI and Gemini
-cache discounts and cache-write/storage charges are not currently modeled.
-Custom endpoints may charge different rates.
+Ballast does not record token counts or estimate costs. Check your provider's
+pricing page and billing dashboard for current rates and spend.
 
 For comparison, GPT-4.1 is $2 input / $8 output, GPT-5 is $1.25 / $10,
 and GPT-4o mini is $0.15 / $0.60.
@@ -1151,7 +1091,7 @@ CHAT_PROVIDER=openai
 CHAT_MODEL=gpt-4.1
 ```
 
-**Note:** Sure currently uses a single provider for all operations, but this could be customized.
+**Note:** Ballast currently uses a single provider for all operations, but this could be customized.
 
 ## Troubleshooting
 
@@ -1192,16 +1132,8 @@ function calls, so every chat request carries a `tools` payload. A model
 without function-calling support rejects it — OpenRouter answers `404` for
 models such as `tngtech/deepseek-r1t2-chimera:free`.
 
-**Confirm it:** Open **System health → AI status**
-(`/admin/system_health?tab=ai`). **Function calling (tools)** reports *Not
-supported by the effective provider/model* when the endpoint served the plain
-chat check but rejected the same request carrying tools, and *Tools accepted,
-but the model called none* when the model answered with text instead of
-calling the tool.
-
 **Fix:** Set `OPENAI_MODEL` to a model your provider documents as supporting
-tools/function calling — see [For Chat Assistant](#for-chat-assistant) above —
-then run the checks again. Free tiers are a poor place to look: providers
+tools/function calling — see [For Chat Assistant](#for-chat-assistant) above. Free tiers are a poor place to look: providers
 commonly log their prompts and completions for training, and the assistant
 sends your accounts, transactions, and holdings in every tool call.
 
@@ -1213,7 +1145,7 @@ sends your accounts, transactions, and holdings in every tool call.
 Fixed prompt tokens (2108) exceed context budget (1280)
 ```
 
-**Cause:** Sure computes the usable prompt budget as:
+**Cause:** Ballast computes the usable prompt budget as:
 
 ```text
 context_window - max_response_tokens - system_prompt_reserve
@@ -1224,7 +1156,7 @@ The defaults are conservative:
 - `LLM_MAX_RESPONSE_TOKENS=512`
 - `LLM_SYSTEM_PROMPT_RESERVE=256`
 
-That leaves `1280` input tokens. On local or custom models, the fixed prompt can already exceed that budget once you include Sure's instructions, category taxonomy, and schema payloads.
+That leaves `1280` input tokens. On local or custom models, the fixed prompt can already exceed that budget once you include Ballast's instructions, category taxonomy, and schema payloads.
 
 **Fix:**
 ```bash
@@ -1251,7 +1183,7 @@ Then restart both `web` and `worker` so the new env var is loaded. If you are us
 
 ### Chat Errors While the Model Is Still Generating
 
-**Symptom:** The chat shows "Thinking…" for a while, then an error saying the assistant is not available — but the model does produce a reply and LLM Usage shows tokens were generated.
+**Symptom:** The chat shows "Thinking…" for a while, then an error saying the assistant is not available — but the model does produce a reply and the provider's usage dashboard shows tokens were generated.
 
 **Cause:** Three settings interact here, measured over different spans:
 
@@ -1291,7 +1223,7 @@ Restart `web` and `worker` after changing the environment variables, and make su
 **Fix:**
 1. Check `OPENAI_ACCESS_TOKEN` is set
 2. For custom providers, verify `OPENAI_URI_BASE` and `OPENAI_MODEL`
-3. Restart Sure after changing environment variables
+3. Restart Ballast after changing environment variables
 4. Check logs for specific error messages
 
 ### "Failed to generate response" with External Assistant
@@ -1300,14 +1232,14 @@ Restart `web` and `worker` after changing the environment variables, and make su
 
 **Check in order:**
 
-1. **Is external routing active?** Sure uses external mode when `ASSISTANT_TYPE=external` is set as an env var, OR when the family's `assistant_type` is set to "external" in Settings. Check what the pod sees:
+1. **Is external routing active?** Ballast uses external mode when `ASSISTANT_TYPE=external` is set as an env var, OR when the family's `assistant_type` is set to "external" in Settings. Check what the pod sees:
    ```bash
    kubectl exec deploy/sure-web -c rails -- env | grep ASSISTANT_TYPE
    kubectl exec deploy/sure-worker -c sidekiq -- env | grep ASSISTANT_TYPE
    ```
    If the env var is unset, check the family setting in the database or Settings UI.
 
-2. **Can Sure reach the agent?** Test from inside the worker pod (use `sh -c` so the env var expands inside the pod, not locally):
+2. **Can Ballast reach the agent?** Test from inside the worker pod (use `sh -c` so the env var expands inside the pod, not locally):
    ```bash
    kubectl exec deploy/sure-worker -c sidekiq -- \
      sh -c 'curl -s -o /dev/null -w "%{http_code}" \
@@ -1317,7 +1249,7 @@ Restart `web` and `worker` after changing the environment variables, and make su
      $EXTERNAL_ASSISTANT_URL'
    ```
    - **Exit code 7 (connection refused):** Network policy is blocking. Check egress rules, and remember to use the `targetPort`, not the service port.
-   - **HTTP 401/403:** Token mismatch between Sure's `EXTERNAL_ASSISTANT_TOKEN` and the agent's expected token.
+   - **HTTP 401/403:** Token mismatch between Ballast's `EXTERNAL_ASSISTANT_TOKEN` and the agent's expected token.
    - **HTTP 404:** Wrong URL path. Must be `/v1/chat/completions`.
 
 3. **Check worker logs** for the actual error:
@@ -1389,13 +1321,9 @@ gets its own prefix, which no longer shares a cache entry with other families on
 the same API key. The first request after each edit also pays full price. The
 result is a small, temporary increase in cost.
 
-Evals always score the default. `Eval::Runners::ChatRunner` reads
-`STATIC_INSTRUCTIONS` directly, which keeps eval scores reproducible. Editing a
-family's prompt does not change them.
-
 Custom OpenAI-compatible endpoints need a little more care. The categorizer and
 merchant parsers look for a `{"categorizations": [...]}` or `{"merchants": [...]}`
-wrapper key, but Sure also asks for that key in a per-request message your
+wrapper key, but Ballast also asks for that key in a per-request message your
 override does not replace, so rewording or dropping the example JSON is safe on
 its own. Parsing breaks when an override *contradicts* the output format:
 asking for reasoning before the answer, a different wrapper key, YAML, or tags
@@ -1432,301 +1360,18 @@ Read and analysis:
 - `get_holdings` - Investment holdings
 - `get_balance_sheet` - Net worth, assets and liabilities with a configurable history period and interval
 - `get_income_statement` - Income and expenses for a period, with monthly series, prior-period comparison and account filtering
-- `get_budget` - Budget summary for a month
 - `get_merchants` - Merchants with the ids update_transaction accepts and the exact names get_transactions filters on
 - `get_tags` / `get_categories` - Tag and category listings with pagination
 
 Write:
-- `update_transaction`, `update_budget`, `create_goal`
+- `update_transaction`
 - `unmatch_transfer` - Unlink a wrongly matched transfer
 - `update_transfer` - Count a transfer into an investment account as spending or as a plain transfer
 - `create_tag` / `update_tag`, `create_category` / `update_category` / `delete_category`
 
-Documents:
-- `search_family_files` - Search uploaded documents (vector store)
-
 These are defined in `app/models/assistant/function/`. Preview tools
 (Statement Vault, `get_valuations`, `get_insights`) are listed in
 [mcp.md](mcp.md#preview-tools).
-
-### Vector Store (Document Search)
-
-Sure's AI assistant can search documents that have been uploaded to a family's vault. Under the hood, documents are indexed in a **vector store** so the assistant can retrieve relevant passages when answering questions (Retrieval-Augmented Generation).
-
-#### How It Works
-
-1. When a user uploads a document to their family vault, it is automatically pushed to the configured vector store.
-2. When the assistant needs financial context from uploaded files, it calls the `search_family_files` function.
-3. The vector store returns the most relevant passages, which the assistant uses to answer the question.
-
-#### Supported Backends
-
-| Backend | Status | Best For | Requirements |
-|---------|--------|----------|--------------|
-| **OpenAI** (default) | ready | Cloud deployments, zero setup | `OPENAI_ACCESS_TOKEN` |
-| **Pgvector** | ready | Self-hosted, full data privacy | PostgreSQL with `pgvector` extension + embedding model |
-| **Qdrant** | scaffolded | Self-hosted, dedicated vector DB | Running Qdrant instance |
-
-#### Configuration
-
-##### OpenAI (Default)
-
-No extra configuration is needed. If you already have `OPENAI_ACCESS_TOKEN` set for the AI assistant, document search works automatically. OpenAI manages chunking, embedding, and retrieval.
-
-```bash
-# Already set for AI chat - document search uses the same token
-OPENAI_ACCESS_TOKEN=sk-proj-...
-```
-
-##### Pgvector (Self-Hosted)
-
-Use PostgreSQL's pgvector extension for fully local document search. All data stays on your infrastructure.
-
-**Requirements:**
-- Use the `pgvector/pgvector:pg16-trixie` Docker image instead of `postgres:16` (drop-in replacement)
-- An embedding model served via an OpenAI-compatible `/v1/embeddings` endpoint (e.g. Ollama with `mxbai-embed-large`)
-- Run the migration with `VECTOR_STORE_PROVIDER=pgvector` to create the `vector_store_chunks` table
-
-```bash
-# Required
-VECTOR_STORE_PROVIDER=pgvector
-
-# Embedding model configuration
-EMBEDDING_MODEL=mxbai-embed-large         # Default: mxbai-embed-large
-EMBEDDING_DIMENSIONS=1024                 # Default: 1024 (must match your model)
-EMBEDDING_URI_BASE=http://ollama:11434/v1 # Falls back to OPENAI_URI_BASE if not set
-EMBEDDING_ACCESS_TOKEN=                   # Falls back to OPENAI_ACCESS_TOKEN if not set
-```
-
-Sure enables the `vector` extension when it first provisions the chunks table,
-provided the database user has permission. If the AI status page reports that
-the extension is available but not enabled and automatic provisioning cannot
-enable it, connect as the PostgreSQL superuser and run:
-
-```sql
-CREATE EXTENSION vector;
-```
-
-The LLM and embedding endpoints are independent. A common fully local setup is
-an OpenAI-compatible chat model through `OPENAI_URI_BASE`, pgvector for storage,
-and an embedding model through `EMBEDDING_URI_BASE`. Make sure
-`EMBEDDING_DIMENSIONS` matches the selected embedding model (for example,
-`mxbai-embed-large` uses 1024 dimensions).
-
-If you are using Ollama (as in `compose.example.ai.yml`), pull the embedding model:
-
-```bash
-docker compose -f compose.example.ai.yml --profile local-ai up -d --wait ollama
-docker compose exec ollama ollama pull mxbai-embed-large
-```
-
-> [!WARNING]
-> Do not change `EMBEDDING_MODEL` for an existing pgvector index without
-> rebuilding it. Vectors created by different models are not comparable, even
-> when they have the same dimensions. Back up the database and the source
-> documents, then remove the existing documents from Sure. If the new model has
-> different dimensions, drop the now-empty chunks table so Sure can recreate it
-> with the new vector size:
->
-> ```bash
-> docker compose -f compose.example.ai.yml exec web bin/rails runner \
->   'ActiveRecord::Base.connection_pool.with_connection { |connection| connection.drop_table(VectorStore::Pgvector::TABLE_NAME, if_exists: true) }'
-> ```
->
-> Change the embedding settings and restart Sure. Confirm that **System health
-> → AI status** reports the new model and dimensions, then upload the source
-> documents again. This recreates every embedding with only the new model.
-
-##### Qdrant (Self-Hosted)
-
-> [!CAUTION]
-> Qdrant is not implemented yet. Use OpenAI or pgvector for document search.
-
-Use a dedicated Qdrant vector database:
-
-```bash
-VECTOR_STORE_PROVIDER=qdrant
-QDRANT_URL=http://localhost:6333   # Default if not set
-QDRANT_API_KEY=your-api-key        # Optional, for authenticated instances
-```
-
-Docker Compose example:
-
-```yaml
-services:
-  sure:
-    environment:
-      - VECTOR_STORE_PROVIDER=qdrant
-      - QDRANT_URL=http://qdrant:6333
-    depends_on:
-      - qdrant
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
-    volumes:
-      - qdrant_data:/qdrant/storage
-
-volumes:
-  qdrant_data:
-```
-
-> **Note:** The Qdrant adapter is currently a skeleton. A future release will add full support including collection management and embedding configuration.
-
-#### Verifying the Configuration
-
-Super admins can open **System health → AI status** at
-`/admin/system_health?tab=ai`. Opening that URL runs bounded, non-destructive
-live checks against the effective configuration:
-
-- OpenAI-compatible and Anthropic providers must return the configured model
-  from their models API.
-- The configured model must complete one trivial function call, sent the way
-  the assistant sends its own tools. A model that serves plain chat but rejects
-  or ignores the `tools` parameter cannot answer questions about your data.
-- The hosted OpenAI vector-store adapter must answer a list request without
-  creating or changing a store.
-- The pgvector adapter must have its extension enabled, its chunks table
-  present, and successfully execute a query.
-- A pgvector embedding endpoint must create one short test embedding, and the
-  returned vector must match `EMBEDDING_DIMENSIONS`. The test vector is not
-  stored.
-
-When `OPENAI_URI_BASE` points outside OpenAI's hosted API, the page labels the
-selected provider **OpenAI-compatible** and identifies a known effective
-provider from the endpoint (for example Ollama, OpenRouter, Together, Kilo, or
-Cloudflare Workers AI/AI Gateway). Unrecognized services are shown as **Custom
-endpoint**.
-
-Results are cached for 60 seconds by default. **Run checks again** bypasses the
-cache. Set `AI_HEALTH_PROBE_TIMEOUT` to change the default five-second request
-timeout and `AI_HEALTH_PROBE_CACHE_TTL` to change the cache duration. Failed
-checks are written as system-wide entries in **Settings → Debug logs** and to
-`Rails.logger`; endpoints are redacted and credentials are never included.
-
-#### Verifying Worker Configuration
-
-The checks above all run from the `web` process. Most AI work — assistant
-responses, embeddings, auto-categorization, and merchant
-detection — actually executes in a Sidekiq `worker` process, which can differ
-from `web` in network access, DNS, proxy rules, or even which credentials it
-loaded, especially in Kubernetes deployments using workload-specific overrides
-or a Secret updated without a pod restart. A passing web check does not prove
-a worker can reach the same provider.
-
-Click **Verify worker configuration** on the AI status tab to queue an
-asynchronous check (`WorkerAiHealthCheckJob`). It runs the same live probes
-from inside whichever worker process dequeues it, and the tab lists the
-result: that worker's process identity, when it checked, whether its
-effective configuration matches what `web` resolved, and probe outcomes.
-
-A few things this does and doesn't prove:
-
-- **One check verifies one worker.** Sidekiq doesn't broadcast a job to every
-  process, so a passing result confirms the process named on it is healthy —
-  not your whole fleet. With multiple worker replicas, queue the check again
-  to sample another; only the 5 most recently checked-in distinct processes
-  are kept (`WorkerAiHealth::MAX_RESULTS`) — a 6th eviction can push out an
-  older entry before its own `WorkerAiHealth::RETENTION` (15 minutes) is up —
-  and a result older than `WorkerAiHealth::STALE_AFTER` displays as **Stale**
-  rather than pass/fail.
-- **Worker checks never reuse a web-cached result, or vice versa.** The web
-  page's probes are cached briefly (see above) so repeat page loads don't
-  re-hit providers; the worker job deliberately bypasses that shared cache so
-  its result always reflects a live call from its own network context, and
-  never leaves an entry a web request could read back as if it had checked
-  itself.
-- **In local development, the web and worker results won't show up together.**
-  `bin/dev` runs `web` and `worker` as separate OS processes, and
-  `config/environments/development.rb` uses a process-local `:memory_store` /
-  `:null_store` cache there (production uses a shared Redis store). A worker
-  check queued locally writes to the worker process's own in-memory cache, so
-  the web page's "Verify worker configuration" button can appear to do
-  nothing — it isn't a bug, there's just no result for it to read back.
-- **Which settings need a restart depends on how they're set.** Provider,
-  model, and API-key settings changed in **Settings → Self-Hosting** are
-  stored in the database and take effect automatically for the next request
-  or queued job on both `web` and `worker` — no restart needed. Embedding
-  configuration, and anything only set through an environment variable, is
-  fixed when each container starts; changing it requires restarting or
-  recreating **both** `web` and `worker`. The AI status tab labels this
-  distinction next to the worker results.
-
-#### Troubleshooting Pgvector and Embeddings
-
-The AI status page reports separate failures for the PostgreSQL storage check
-and the embedding endpoint check.
-
-If PostgreSQL reports that the `vector` extension is not enabled, make sure the
-database image includes pgvector, then enable the extension as a database owner
-or superuser:
-
-```bash
-sudo -u postgres psql -d sure_production -c "CREATE EXTENSION IF NOT EXISTS vector;"
-```
-
-If `vector_store_chunks` is missing, confirm the migration state and re-run the
-conditional vector-store migration with the pgvector provider selected:
-
-```bash
-RAILS_ENV=production bundle exec rails db:migrate:status
-VECTOR_STORE_PROVIDER=pgvector RAILS_ENV=production bundle exec rails db:migrate:redo VERSION=<migration_version>
-```
-
-If the embedding check reports a dimensions mismatch, align
-`EMBEDDING_MODEL` and `EMBEDDING_DIMENSIONS` with the embedding provider's
-documented vector size. For example, `gemini-embedding-2-preview` returns 3072
-dimensions by default, so a matching configuration is:
-
-```bash
-EMBEDDING_MODEL=gemini-embedding-2-preview
-EMBEDDING_DIMENSIONS=3072
-```
-
-Changing only `EMBEDDING_DIMENSIONS` does not reshape an existing pgvector
-column. If `vector_store_chunks` was already created with a different size,
-back up the database and source documents, remove the indexed documents from
-Sure, then alter or recreate the `embedding` column/table before uploading the
-documents again. Dropping the empty chunks table lets Sure recreate it with the
-new vector size:
-
-```bash
-docker compose -f compose.example.ai.yml exec web bin/rails runner \
-  'ActiveRecord::Base.connection_pool.with_connection { |connection| connection.drop_table(VectorStore::Pgvector::TABLE_NAME, if_exists: true) }'
-```
-
-Restart Sure after changing environment values so the new settings are present
-in both web and worker processes. If the embedding live check times out, raise
-the health-check probe timeout in the service environment:
-
-```bash
-AI_HEALTH_PROBE_TIMEOUT=180
-```
-
-If normal AI chat calls also time out, raise `OPENAI_REQUEST_TIMEOUT`
-separately; it controls OpenAI-compatible LLM requests, not the health-check
-probe budget.
-
-You can also check the adapter from the Rails console:
-
-```ruby
-VectorStore.configured?          # => true / false
-VectorStore.adapter              # => #<VectorStore::Openai:...>
-VectorStore.adapter.class.name   # => "VectorStore::Openai"
-```
-
-#### Supported File Types
-
-The following file extensions are supported for document upload and search:
-
-`.pdf`, `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html`, `.css`, `.js`, `.rb`, `.py`, `.docx`, `.pptx`, `.xlsx`, `.yaml`, `.yml`, `.log`, `.sh`
-
-#### Privacy Notes
-
-- **OpenAI backend:** Document content is sent to OpenAI's API for indexing and search. The same privacy considerations as the AI chat apply.
-- **Pgvector backend:** Stored chunks stay in PostgreSQL. Text is still sent to the configured embedding endpoint, which may be local or remote.
-- **Qdrant backend:** The adapter is currently scaffolded and cannot upload or search documents.
 
 ### Multi-Model Setup
 
@@ -1766,26 +1411,26 @@ EXTERNAL_ASSISTANT_MODEL=openclaw/main
 
 Configuration behavior:
 
-- `EXTERNAL_ASSISTANT_URL` is the full chat-completions endpoint. Sure sends requests to this URL verbatim; it does not append `/v1/chat/completions`.
-- The Settings form requires an agent selection. After the URL and token are saved, Sure requests the sibling `/v1/models` endpoint and shows the returned entries as agent choices. If you change the endpoint or token and the previously selected agent is not offered there, Sure saves the new connection and asks you to pick an agent again.
+- `EXTERNAL_ASSISTANT_URL` is the full chat-completions endpoint. Ballast sends requests to this URL verbatim; it does not append `/v1/chat/completions`.
+- The Settings form requires an agent selection. After the URL and token are saved, Ballast requests the sibling `/v1/models` endpoint and shows the returned entries as agent choices. If you change the endpoint or token and the previously selected agent is not offered there, Ballast saves the new connection and asks you to pick an agent again.
 - The selected value is sent as the OpenAI-compatible `model` routing value, such as `openclaw/main`. This selects an external agent. It does not select or change the LLM configured behind that agent.
 - The gateway must return standard streaming chat-completion events (`choices[0].delta.content`) followed by `data: [DONE]`.
-- An authentication, endpoint, or agent-selection failure comes from the external gateway. Check the gateway's response and logs when Sure reports an HTTP error.
+- An authentication, endpoint, or agent-selection failure comes from the external gateway. Check the gateway's response and logs when Ballast reports an HTTP error.
 
-Upgrading: deployments that set only the URL and token keep working. When no agent is selected, Sure uses `openclaw/main`, which matches the previous implicit `main` agent. `EXTERNAL_ASSISTANT_AGENT_ID` is still read for existing deployments and maps to `openclaw/<id>` until an agent is selected. Once a model is selected in Settings or with `EXTERNAL_ASSISTANT_MODEL`, the agent routing header always follows that model. New configurations should use `EXTERNAL_ASSISTANT_MODEL`.
+Upgrading: deployments that set only the URL and token keep working. When no agent is selected, Ballast uses `openclaw/main`, which matches the previous implicit `main` agent. `EXTERNAL_ASSISTANT_AGENT_ID` is still read for existing deployments and maps to `openclaw/<id>` until an agent is selected. Once a model is selected in Settings or with `EXTERNAL_ASSISTANT_MODEL`, the agent routing header always follows that model. New configurations should use `EXTERNAL_ASSISTANT_MODEL`.
 
 ## Resources
 
 - [OpenAI Documentation](https://platform.openai.com/docs)
 - [Ollama Documentation](https://github.com/ollama/ollama)
 - [OpenRouter Documentation](https://openrouter.ai/docs)
-- [Sure GitHub Repository](https://github.com/we-promise/sure)
+- [Ballast GitHub Repository](https://github.com/ryanportfolio/Ballast)
 
 ## Support
 
 For issues with AI features:
 1. Check this documentation first
-2. Search [existing GitHub issues](https://github.com/we-promise/sure/issues)
+2. Search [existing GitHub issues](https://github.com/ryanportfolio/Ballast/issues)
 3. Open a new issue with:
    - Your configuration (redact API keys!)
    - Error messages

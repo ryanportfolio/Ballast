@@ -42,12 +42,6 @@ namespace :security do
     # Note: otp_backup_codes excluded - it's a PostgreSQL array column incompatible with AR encryption
     results[:users] = backfill_model(User, %i[otp_secret email unconfirmed_email first_name last_name], batch_size, dry_run)
 
-    # Invitation tokens and email
-    results[:invitations] = backfill_model(Invitation, %i[token email], batch_size, dry_run)
-
-    # InviteCode tokens
-    results[:invite_codes] = backfill_model(InviteCode, %i[token], batch_size, dry_run)
-
     # Session user_agent (encryption) and ip_address_digest (hashing)
     results[:sessions] = backfill_sessions(batch_size, dry_run)
 

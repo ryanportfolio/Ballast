@@ -192,8 +192,7 @@ export default class extends Controller {
       precision === null ? formatUnroundedAmount(parsed) : parsed.toFixed(precision);
 
     // auto_submit_form listens for "change" on number inputs while validation
-    // and the goal form's suggestion listen for "input", and assigning .value
-    // emits neither.
+    // listens for "input", and assigning .value emits neither.
     this.amountTarget.dispatchEvent(new Event("input", { bubbles: true }));
     this.amountTarget.dispatchEvent(new Event("change", { bubbles: true }));
   }

@@ -16,9 +16,6 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
 
     @provider.stubs(:health_status).returns(:healthy)
     Provider::Registry.stubs(:get_provider).with(:yahoo_finance).returns(@provider)
-    Provider::Registry.stubs(:get_provider).with(:rentcast).returns(nil)
-    Provider::Registry.stubs(:get_provider).with(:realie).returns(nil)
-    Provider::Registry.stubs(:get_provider).with(:chimnie).returns(nil)
     @provider.stubs(:usage).returns(provider_success_response(
       OpenStruct.new(
         used: 10,
@@ -32,7 +29,7 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
   teardown do
     # These tests persist global Setting.* values; reset them so state can't
     # leak into later (order-dependent) tests.
-    %i[anthropic_access_token anthropic_base_url anthropic_model jev_api_key jev_endpoint jev_model llm_provider twelve_data_api_key openai_access_token openai_request_timeout ai_response_timeout ai_health_probe_timeout external_assistant_url external_assistant_token external_assistant_model external_assistant_agent_id rentcast_api_key realie_api_key chimnie_api_key demo_family_refresh_enabled demo_family_refresh_family_id
+    %i[anthropic_access_token anthropic_base_url anthropic_model jev_api_key jev_endpoint jev_model llm_provider twelve_data_api_key openai_access_token openai_request_timeout ai_response_timeout external_assistant_url external_assistant_token external_assistant_model external_assistant_agent_id demo_family_refresh_enabled demo_family_refresh_family_id
        market_data_sync_enabled market_data_sync_time market_data_sync_timezone].each do |key|
       Setting.public_send("#{key}=", nil)
     end
@@ -45,7 +42,7 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     get settings_hosting_url
     assert_response :forbidden
 
-    patch settings_hosting_url, params: { setting: { onboarding_state: "invite_only" } }
+    patch settings_hosting_url, params: { setting: { onboarding_state: "closed" } }
     assert_response :forbidden
   end
 
@@ -130,37 +127,20 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "renders OpenAI model and timeout guidance in German" do
+  test "renders OpenAI model and timeout guidance" do
     sign_in users(:sure_support_staff)
 
     with_self_hosting do
-      get settings_hosting_url(locale: :de)
+      get settings_hosting_url
 
       assert_response :success
-      assert_includes response.body, "Konfiguriertes Modell prüfen"
-      assert_includes response.body, "Tools beziehungsweise Function Calling unterstützt"
-      assert_includes response.body, "Zeitlimits"
-      assert_includes response.body, "Anfragezeitlimit in Sekunden (optional)"
+      assert_includes response.body, "tools/function calling"
+      assert_includes response.body, "Timeouts"
+      assert_includes response.body, "Request Timeout in Seconds (Optional)"
       assert_includes response.body, "OPENAI_REQUEST_TIMEOUT"
-      assert_includes response.body, "Antwortzeitlimit in Sekunden (optional)"
-      assert_includes response.body, "(1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) × Anfragezeitlimit"
+      assert_includes response.body, "Response Timeout in Seconds (Optional)"
+      assert_includes response.body, "(1 + ASSISTANT_MAX_TOOL_CALL_ITERATIONS) × request timeout"
       assert_includes response.body, "AI_RESPONSE_TIMEOUT"
-      refute_includes response.body, "Request Timeout in Seconds"
-    end
-
-    %w[
-      model_function_calling_help
-      model_function_calling_link
-      timeout_heading
-      timeout_description
-      openai_request_timeout_label
-      openai_request_timeout_help
-      ai_response_timeout_label
-      ai_response_timeout_help
-      ai_health_probe_timeout_label
-      ai_health_probe_timeout_help
-    ].each do |key|
-      assert I18n.exists?("settings.hostings.openai_settings.#{key}", :de, fallback: false)
     end
   end
 
@@ -234,30 +214,6 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "can update rentcast api key when self hosting is enabled" do
-    with_self_hosting do
-      patch settings_hosting_url, params: { setting: { rentcast_api_key: "rentcast-token" } }
-
-      assert_equal "rentcast-token", Setting.rentcast_api_key
-    end
-  end
-
-  test "can update realie api key when self hosting is enabled" do
-    with_self_hosting do
-      patch settings_hosting_url, params: { setting: { realie_api_key: "realie-token" } }
-
-      assert_equal "realie-token", Setting.realie_api_key
-    end
-  end
-
-  test "can update chimnie api key when self hosting is enabled" do
-    with_self_hosting do
-      patch settings_hosting_url, params: { setting: { chimnie_api_key: "chimnie-token" } }
-
-      assert_equal "chimnie-token", Setting.chimnie_api_key
-    end
-  end
-
   test "shows Yahoo Finance rate limiting as a warning" do
     @provider.stubs(:health_status).returns(:rate_limited)
 
@@ -300,36 +256,14 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "renders Spanish Yahoo Finance health guidance" do
-    @provider.stubs(:health_status).returns(:rate_limited, :unavailable, :unknown)
-
-    with_env_overrides("EXCHANGE_RATE_PROVIDER" => "yahoo_finance") do
-      with_self_hosting do
-        get settings_hosting_url(locale: :es)
-        assert_includes response.body, "Yahoo Finance está limitando temporalmente las solicitudes."
-        assert_includes response.body, "No es necesario realizar ninguna acción."
-
-        get settings_hosting_url(locale: :es)
-        assert_includes response.body, "Yahoo Finance no está disponible en este momento."
-        assert_includes response.body, "Comprueba tu conexión a internet"
-
-        get settings_hosting_url(locale: :es)
-        assert_includes response.body, "Se está comprobando el estado de Yahoo Finance."
-      end
-    end
-  end
-
-  # Italian translates part of yahoo_finance_settings but not the rate-limited
-  # strings this path renders (status_rate_limited, rate_limited_title,
-  # rate_limited_message), which is what makes it exercise the fallback. Move to
-  # another such locale if it gains them, rather than dropping the coverage.
-  test "falls back to English for untranslated Yahoo Finance health guidance" do
+  test "ignores a non-English locale param for Yahoo Finance health guidance" do
     @provider.stubs(:health_status).returns(:rate_limited)
 
     with_env_overrides("EXCHANGE_RATE_PROVIDER" => "yahoo_finance") do
       with_self_hosting do
         get settings_hosting_url(locale: :it)
 
+        assert_response :success
         assert_includes response.body, "Yahoo Finance is temporarily rate limiting requests."
         assert_not_includes response.body, "translation missing"
       end
@@ -367,15 +301,17 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     sign_in users(:sure_support_staff)
 
     with_self_hosting do
-      patch settings_hosting_url, params: { setting: { onboarding_state: "invite_only" } }
-
-      assert_equal "invite_only", Setting.onboarding_state
-      assert Setting.require_invite_for_signup
-
       patch settings_hosting_url, params: { setting: { onboarding_state: "closed" } }
 
       assert_equal "closed", Setting.onboarding_state
-      refute Setting.require_invite_for_signup
+
+      patch settings_hosting_url, params: { setting: { onboarding_state: "open" } }
+
+      assert_equal "open", Setting.onboarding_state
+
+      patch settings_hosting_url, params: { setting: { onboarding_state: "invite_only" } }
+
+      assert_equal "open", Setting.onboarding_state
     end
   end
 
@@ -1121,8 +1057,7 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
         llm_max_response_tokens: "1024",
         llm_max_items_per_call: "40",
         openai_request_timeout: "180",
-        ai_response_timeout: "240",
-        ai_health_probe_timeout: "30"
+        ai_response_timeout: "240"
       } }
 
       assert_redirected_to settings_hosting_url
@@ -1131,15 +1066,13 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
       assert_equal 40, Setting.llm_max_items_per_call
       assert_equal 180, Setting.openai_request_timeout
       assert_equal 240, Setting.ai_response_timeout
-      assert_equal 30, Setting.ai_health_probe_timeout
 
       patch settings_hosting_url, params: { setting: {
         llm_context_window: "",
         llm_max_response_tokens: "",
         llm_max_items_per_call: "",
         openai_request_timeout: "",
-        ai_response_timeout: "",
-        ai_health_probe_timeout: ""
+        ai_response_timeout: ""
       } }
 
       assert_nil Setting.llm_context_window
@@ -1147,7 +1080,6 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
       assert_nil Setting.llm_max_items_per_call
       assert_nil Setting.openai_request_timeout
       assert_nil Setting.ai_response_timeout
-      assert_nil Setting.ai_health_probe_timeout
     end
   ensure
     Setting.llm_context_window = nil
@@ -1155,7 +1087,6 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     Setting.llm_max_items_per_call = nil
     Setting.openai_request_timeout = nil
     Setting.ai_response_timeout = nil
-    Setting.ai_health_probe_timeout = nil
   end
 
   test "rejects llm budget below field minimum" do
@@ -1183,12 +1114,6 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
       assert_response :unprocessable_entity
       assert_match(/must be a whole number/, flash[:alert])
       assert_nil Setting.openai_request_timeout
-
-      patch settings_hosting_url, params: { setting: { ai_health_probe_timeout: "0" } }
-
-      assert_response :unprocessable_entity
-      assert_match(/must be a whole number/, flash[:alert])
-      assert_nil Setting.ai_health_probe_timeout
     end
   ensure
     Setting.llm_context_window = nil
@@ -1210,29 +1135,6 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     end
   ensure
     Setting.openai_request_timeout = nil
-  end
-
-  test "shows environment backed health check timeout when field is disabled" do
-    with_self_hosting do
-      Setting.ai_health_probe_timeout = 30
-
-      with_env_overrides("AI_HEALTH_PROBE_TIMEOUT" => "45") do
-        get settings_hosting_url
-
-        assert_response :success
-        assert_select "input[name='setting[ai_health_probe_timeout]'][value='45'][disabled='disabled']"
-      end
-
-      # A non-positive env value is ignored by the probes, so it must not lock the field either.
-      with_env_overrides("AI_HEALTH_PROBE_TIMEOUT" => "0") do
-        get settings_hosting_url
-
-        assert_response :success
-        assert_select "input[name='setting[ai_health_probe_timeout]'][value='30']:not([disabled])"
-      end
-    end
-  ensure
-    Setting.ai_health_probe_timeout = nil
   end
 
   test "can clear data only when admin" do
@@ -1278,12 +1180,12 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
 
   test "removing a provider marks linked securities offline" do
     with_self_hosting do
-      security = Security.create!(ticker: "CSPX", exchange_operating_mic: "XLON", price_provider: "tiingo", offline: false)
+      security = Security.create!(ticker: "CSPX", exchange_operating_mic: "XLON", price_provider: "yahoo_finance", offline: false)
 
-      # First enable tiingo
-      Setting.securities_providers = "twelve_data,tiingo"
+      # First enable yahoo_finance
+      Setting.securities_providers = "twelve_data,yahoo_finance"
 
-      # Then remove tiingo
+      # Then remove yahoo_finance
       patch settings_hosting_url, params: { setting: { securities_providers: [ "twelve_data" ] } }
 
       security.reload
@@ -1298,14 +1200,14 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     with_self_hosting do
       security = Security.create!(
         ticker: "CSPX2", exchange_operating_mic: "XLON",
-        price_provider: "tiingo", offline: true, offline_reason: "provider_disabled"
+        price_provider: "yahoo_finance", offline: true, offline_reason: "provider_disabled"
       )
 
-      # Start without tiingo
+      # Start without yahoo_finance
       Setting.securities_providers = "twelve_data"
 
-      # Re-add tiingo
-      patch settings_hosting_url, params: { setting: { securities_providers: [ "twelve_data", "tiingo" ] } }
+      # Re-add yahoo_finance
+      patch settings_hosting_url, params: { setting: { securities_providers: [ "twelve_data", "yahoo_finance" ] } }
 
       security.reload
       refute security.offline?, "Security should come back online when its provider is re-added"
@@ -1333,74 +1235,6 @@ class Settings::HostingsControllerTest < ActionDispatch::IntegrationTest
     # the field's default.
     Setting.securities_providers = ""
     Setting.securities_provider = "twelve_data"
-  end
-
-  # --- T-Invest visibility (issue #3089) ---
-
-  test "hides T-Invest settings when neither tinkoff_invest nor moex_public is enabled" do
-    with_self_hosting do
-      patch settings_hosting_url, params: { setting: { securities_providers: [ "twelve_data" ] } }
-
-      get settings_hosting_url
-
-      assert_response :success
-      # "T-Invest (T-Bank)" also appears as a checkbox label in the always-rendered
-      # securities checklist, so assert on the settings block's own field instead.
-      assert_select "input[name='setting[tinkoff_invest_api_key]']", false
-    end
-  ensure
-    Setting.securities_providers = ""
-  end
-
-  test "shows T-Invest settings when tinkoff_invest is enabled, without the moex-only notice" do
-    with_self_hosting do
-      patch settings_hosting_url, params: { setting: { securities_providers: [ "tinkoff_invest" ] } }
-
-      get settings_hosting_url
-
-      assert_response :success
-      assert_select "input[name='setting[tinkoff_invest_api_key]']"
-      assert_not_includes response.body, I18n.t("settings.hostings.tinkoff_invest_settings.moex_only_notice")
-    end
-  ensure
-    Setting.securities_providers = ""
-  end
-
-  test "shows T-Invest settings with the moex-only notice when moex_public is enabled, even without tinkoff_invest" do
-    with_self_hosting do
-      patch settings_hosting_url, params: { setting: { securities_providers: [ "moex_public" ] } }
-
-      notices = {
-        en: "Not enabled for prices above — T-Invest is used to fetch brand logos for all your securities whenever a token is configured, independent of the checkbox above.",
-        de: "Oben nicht für Kursdaten aktiviert – sobald ein Token eingerichtet ist, ruft T-Invest unabhängig vom obigen Kontrollkästchen Logos für alle deine Wertpapiere ab."
-      }
-      notices.each do |locale, notice|
-        get settings_hosting_url(locale: locale)
-
-        assert_response :success
-        assert_select "input[name='setting[tinkoff_invest_api_key]']"
-        assert_includes response.body, notice
-        assert_equal notice, I18n.t("settings.hostings.tinkoff_invest_settings.moex_only_notice", locale: locale, fallback: false, raise: true)
-      end
-    end
-  ensure
-    Setting.securities_providers = ""
-  end
-
-  test "shows T-Invest settings when a token is already configured, even with neither checkbox enabled" do
-    with_self_hosting do
-      Setting.tinkoff_invest_api_key = "some-token"
-      patch settings_hosting_url, params: { setting: { securities_providers: [ "twelve_data" ] } }
-
-      get settings_hosting_url
-
-      assert_response :success
-      assert_select "input[name='setting[tinkoff_invest_api_key]']"
-      assert_includes response.body, I18n.t("settings.hostings.tinkoff_invest_settings.moex_only_notice")
-    end
-  ensure
-    Setting.securities_providers = ""
-    Setting.tinkoff_invest_api_key = nil
   end
 
   test "can update market data sync settings when self hosting is enabled" do

@@ -154,21 +154,6 @@ class RackAttackTest < ActionDispatch::IntegrationTest
     assert_nil ip_block.call(request), "authentication rejects this session, so it must not spend the ip budget"
   end
 
-  test "password change throttle keys an impersonation by the impersonated user" do
-    user_block = Rack::Attack.throttles["password_change/user"].block
-    impersonation = impersonation_sessions(:in_progress)
-    support_session = users(:sure_support_staff).sessions.create!(active_impersonator_session: impersonation)
-
-    request = throttle_request("/password", method: "PATCH", session_cookie: support_session.id)
-    assert_equal "user:#{users(:family_member).id}", user_block.call(request),
-      "the password being checked is the impersonated user's, like Current.user"
-
-    impersonation.complete!
-    request = throttle_request("/password", method: "PATCH", session_cookie: support_session.id)
-    assert_equal "user:#{users(:sure_support_staff).id}", user_block.call(request),
-      "once the impersonation ends the session owner is the user again"
-  end
-
   test "password change throttle blocks a signed-in session that rotates ips" do
     # End to end through the real middleware stack: proves the session cookie
     # is readable from inside Rack::Attack, which runs after MethodOverride

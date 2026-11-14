@@ -1,6 +1,6 @@
 # Tags API
 
-The Tags API allows external applications to manage tags within Sure. Tags provide a flexible way to categorize and label transactions beyond the standard category system.
+The Tags API allows external applications to manage tags within Ballast. Tags provide a flexible way to categorize and label transactions beyond the standard category system.
 
 ## Generated OpenAPI specification
 
@@ -54,7 +54,7 @@ A tag response includes:
 
 ## Available colors
 
-Sure provides a predefined set of colors for tags. If no color is specified when creating a tag, one will be randomly assigned from this palette:
+Ballast provides a predefined set of colors for tags. If no color is specified when creating a tag, one will be randomly assigned from this palette:
 
 ```text
 #e99537, #4da568, #6471eb, #db5a54, #df4e92,

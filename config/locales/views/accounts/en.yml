@@ -22,7 +22,6 @@ en:
       remove_default: Unset default
       default_label: Default
       delete: Delete account
-      sharing: Sharing
     chart:
       data_not_available: Data not available for the selected period
     create:
@@ -121,7 +120,6 @@ en:
         import_trades: Import trades
         import_transactions: Import transactions
         manage: Manage accounts
-        sharing: Sharing
         statements: Statements
         exclude_from_reports: Exclude from all reports
         include_in_reports: Include in reports

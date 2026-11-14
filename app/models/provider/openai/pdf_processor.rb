@@ -1,32 +1,24 @@
 class Provider::Openai::PdfProcessor
-  include Provider::Openai::Concerns::UsageRecorder
   include Provider::Openai::Concerns::JsonMode
 
-  attr_reader :client, :model, :pdf_content, :custom_provider, :langfuse_trace, :family, :max_response_tokens,
+  attr_reader :client, :model, :pdf_content, :custom_provider, :max_response_tokens,
               :processing_mode, :json_mode
 
-  def initialize(client, model: "", pdf_content: nil, custom_provider: false, langfuse_trace: nil, family: nil,
+  def initialize(client, model: "", pdf_content: nil, custom_provider: false,
                  max_response_tokens:, processing_mode: :auto, json_mode: nil)
     @client = client
     @model = model
     @pdf_content = pdf_content
     @custom_provider = custom_provider
-    @langfuse_trace = langfuse_trace
-    @family = family
     @max_response_tokens = max_response_tokens
     @processing_mode = processing_mode
     @json_mode = json_mode || default_json_mode
   end
 
   def process
-    span = langfuse_trace&.generation(name: "process_pdf_api_call", model: model.presence || Provider::Openai::DEFAULT_MODEL, input: {
-      model: model.presence || Provider::Openai::DEFAULT_MODEL,
-      pdf_size: pdf_content&.bytesize
-    })
-
     # Try text extraction first (works with all models)
     # Fall back to vision API with images if text extraction fails (for scanned PDFs)
-    response, usage = case processing_mode
+    case processing_mode
     when :text
       process_with_text_extraction
     when :vision
@@ -41,12 +33,6 @@ class Provider::Openai::PdfProcessor
     else
       raise ArgumentError, "Unknown PDF processing mode: #{processing_mode.inspect}"
     end
-
-    span&.end(output: response.to_h, usage: usage)
-    response
-  rescue => e
-    span&.end(output: { error: e.message, error_detail: safe_error_detail(e) }, level: "ERROR")
-    raise
   end
 
   def instructions
@@ -136,13 +122,6 @@ class Provider::Openai::PdfProcessor
 
       Rails.logger.info("Tokens used to process PDF: #{response.dig("usage", "total_tokens")}")
 
-      record_usage(
-        effective_model,
-        response.dig("usage"),
-        operation: "process_pdf",
-        metadata: { pdf_size: pdf_content&.bytesize }
-      )
-
       parse_response_generic(response)
     end
 
@@ -200,13 +179,6 @@ class Provider::Openai::PdfProcessor
 
       Rails.logger.info("Tokens used to process PDF via vision: #{response.dig("usage", "total_tokens")}")
 
-      record_usage(
-        effective_model,
-        response.dig("usage"),
-        operation: "process_pdf_vision",
-        metadata: { pdf_size: pdf_content&.bytesize, pages: images_base64.size }
-      )
-
       parse_response_generic(response)
     end
 
@@ -256,7 +228,7 @@ class Provider::Openai::PdfProcessor
       raw = response.dig("choices", 0, "message", "content")
       parsed = parse_json_flexibly(raw)
 
-      [ build_result(parsed), response["usage"] ]
+      build_result(parsed)
     end
 
     def build_result(parsed)

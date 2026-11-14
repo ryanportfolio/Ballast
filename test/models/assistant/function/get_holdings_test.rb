@@ -20,16 +20,6 @@ class Assistant::Function::GetHoldingsTest < ActiveSupport::TestCase
     assert_empty tickers("securities" => [ "NOPE" ])
   end
 
-  test "get_holdings security filter does not reach another user's private account" do
-    private_account = @user.family.accounts.create!(name: "Member Brokerage", accountable: Investment.new, balance: 0, currency: "USD", owner: users(:family_member))
-    hidden = private_account.holdings.create!(security: securities(:aapl), date: Date.current, qty: 9, price: 200, amount: 1800, currency: "USD")
-
-    rows = @fn.call("page" => 1, "securities" => [ "AAPL" ])[:holdings]
-
-    assert_includes rows.map { |row| row[:account] }, @account.name, "the user's own AAPL went too"
-    assert_not_includes rows.map { |row| row[:account] }, hidden.account.name
-  end
-
   test "get_holdings without a security filter is unchanged" do
     assert_equal [ "AAPL", "MSFT" ], tickers({})
   end

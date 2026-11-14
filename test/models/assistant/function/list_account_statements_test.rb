@@ -79,7 +79,7 @@ class Assistant::Function::ListAccountStatementsTest < ActiveSupport::TestCase
     private_account = accounts(:other_asset)
     create_statement(account: private_account, content: "date,amount\n2024-03-01,3\n")
 
-    result = Assistant::Function::ListAccountStatements.new(users(:family_member)).call
+    result = Assistant::Function::ListAccountStatements.new(users(:empty)).call
 
     assert result[:success]
     assert_empty result[:statements]

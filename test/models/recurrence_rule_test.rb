@@ -120,59 +120,57 @@ class RecurrenceRuleTest < ActiveSupport::TestCase
       "an ordinal with no weekday persists an incoherent day anchor"
   end
 
-  test "validation errors are localized in German" do
+  test "validation errors use the English attribute names and messages" do
     attribute_names = {
-      frequency: "Häufigkeit",
-      interval: "Intervall",
-      day_of_month: "Tag des Monats",
-      weekday: "Wochentag",
-      weekday_ordinal: "Woche des Monats",
-      month_of_year: "Monat"
+      frequency: "Frequency",
+      interval: "Interval",
+      day_of_month: "Day of month",
+      weekday: "Weekday",
+      weekday_ordinal: "Week of month",
+      month_of_year: "Month"
     }
 
-    I18n.with_locale(:de) do
-      attribute_names.each do |attribute, expected|
-        assert_equal expected, RecurrenceRule.human_attribute_name(attribute)
-      end
-
-      assert_rule_errors(
-        { frequency: "monthly" },
-        [ "Wähle entweder einen Tag des Monats oder einen Wochentag aus" ]
-      )
-      assert_rule_errors(
-        { frequency: "weekly" },
-        [ "Wochentag muss für eine wöchentliche Regel angegeben werden" ]
-      )
-      assert_rule_errors(
-        { frequency: "weekly", weekday: 4, weekday_ordinal: 2, day_of_month: 10, month_of_year: 3 },
-        [
-          "Woche des Monats gilt nicht für eine wöchentliche Regel",
-          "Tag des Monats gilt nicht für eine wöchentliche Regel",
-          "Monat gilt nur für eine jährliche Regel"
-        ]
-      )
-      assert_rule_errors(
-        { frequency: "monthly", weekday: 5 },
-        [ "Woche des Monats muss angegeben werden, wenn ein Wochentag festgelegt ist" ]
-      )
-      assert_rule_errors(
-        { frequency: "monthly", day_of_month: 10, weekday_ordinal: 2 },
-        [ "Woche des Monats gilt nur, wenn ein Wochentag festgelegt ist" ]
-      )
-      assert_rule_errors(
-        { frequency: "yearly", day_of_month: 1 },
-        [ "Monat muss für eine jährliche Regel angegeben werden" ]
-      )
-      assert_rule_errors(
-        { frequency: "monthly", day_of_month: 5, month_of_year: 3 },
-        [ "Monat gilt nur für eine jährliche Regel" ]
-      )
-
-      @recurring.recurrence_rules.build(frequency: "monthly")
-      assert_not @recurring.valid?
-      assert_includes @recurring.errors.full_messages,
-                      "Wiederholungsregel: Wähle entweder einen Tag des Monats oder einen Wochentag aus"
+    attribute_names.each do |attribute, expected|
+      assert_equal expected, RecurrenceRule.human_attribute_name(attribute)
     end
+
+    assert_rule_errors(
+      { frequency: "monthly" },
+      [ "Choose exactly one of a day of the month or a weekday" ]
+    )
+    assert_rule_errors(
+      { frequency: "weekly" },
+      [ "Weekday is required for a weekly rule" ]
+    )
+    assert_rule_errors(
+      { frequency: "weekly", weekday: 4, weekday_ordinal: 2, day_of_month: 10, month_of_year: 3 },
+      [
+        "Week of month does not apply to a weekly rule",
+        "Day of month does not apply to a weekly rule",
+        "Month only applies to a yearly rule"
+      ]
+    )
+    assert_rule_errors(
+      { frequency: "monthly", weekday: 5 },
+      [ "Week of month is required when a weekday is set" ]
+    )
+    assert_rule_errors(
+      { frequency: "monthly", day_of_month: 10, weekday_ordinal: 2 },
+      [ "Week of month only applies when a weekday is set" ]
+    )
+    assert_rule_errors(
+      { frequency: "yearly", day_of_month: 1 },
+      [ "Month is required for a yearly rule" ]
+    )
+    assert_rule_errors(
+      { frequency: "monthly", day_of_month: 5, month_of_year: 3 },
+      [ "Month only applies to a yearly rule" ]
+    )
+
+    @recurring.recurrence_rules.build(frequency: "monthly")
+    assert_not @recurring.valid?
+    assert_includes @recurring.errors.full_messages,
+                    "Recurrence rule: Choose exactly one of a day of the month or a weekday"
   end
 
   test "nested validation errors use English recurrence rule names" do
@@ -185,20 +183,18 @@ class RecurrenceRuleTest < ActiveSupport::TestCase
       month_of_year: "Month"
     }
 
-    I18n.with_locale(:en) do
-      attribute_names.each do |attribute, expected|
-        assert_equal expected, RecurringTransaction.human_attribute_name("recurrence_rules.#{attribute}")
-      end
-
-      assert_nested_rule_error(
-        { frequency: "monthly" },
-        "Recurrence rule: Choose exactly one of a day of the month or a weekday"
-      )
-      assert_nested_rule_error(
-        { frequency: "weekly" },
-        "Weekday is required for a weekly rule"
-      )
+    attribute_names.each do |attribute, expected|
+      assert_equal expected, RecurringTransaction.human_attribute_name("recurrence_rules.#{attribute}")
     end
+
+    assert_nested_rule_error(
+      { frequency: "monthly" },
+      "Recurrence rule: Choose exactly one of a day of the month or a weekday"
+    )
+    assert_nested_rule_error(
+      { frequency: "weekly" },
+      "Weekday is required for a weekly rule"
+    )
   end
 
   private

@@ -1,4 +1,6 @@
 base_locale: en
+locales:
+  - en
 fallbacks:
   - default
 data:

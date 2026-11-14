@@ -7,8 +7,8 @@
 #
 # Net means expense minus refunds in the same category, the way the cash flow
 # Sankey nets them, so a refunded purchase doesn't count as spending. Totals
-# come from the user-scoped IncomeStatement, so transfers, exclusions and
-# account sharing follow the rest of Reports.
+# come from the user-scoped IncomeStatement, so transfers and exclusions
+# follow the rest of Reports.
 #
 # as_json is the shared representation for the public API (for the mobile
 # app); the Reports section renders the same rows.

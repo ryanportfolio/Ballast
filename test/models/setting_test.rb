@@ -199,4 +199,43 @@ class SettingTest < ActiveSupport::TestCase
     Setting.securities_providers = original_providers.presence || ""
     Setting.securities_provider = original_provider.presence || "twelve_data"
   end
+
+  # Ballast removed invitations and invite codes. An instance that was
+  # invite-only must stay closed to strangers, never fall open.
+  test "a stored invite_only onboarding state reads as closed" do
+    Setting.raw_onboarding_state = "invite_only"
+
+    assert_equal "closed", Setting.onboarding_state
+  end
+
+  test "a blank onboarding state with the legacy invite flag reads as closed" do
+    Setting.where(var: "onboarding_state").delete_all
+    Setting.require_invite_for_signup = true
+    Setting.clear_cache
+
+    assert_equal "closed", Setting.onboarding_state
+  end
+
+  test "a stored unknown onboarding state reads as closed" do
+    Setting.raw_onboarding_state = "something_else"
+
+    assert_equal "closed", Setting.onboarding_state
+  end
+
+  test "onboarding_state= accepts open and closed only" do
+    Setting.onboarding_state = "open"
+    assert_equal "open", Setting.onboarding_state
+
+    assert_raises(Setting::ValidationError) { Setting.onboarding_state = "invite_only" }
+    assert_equal "open", Setting.onboarding_state
+  end
+
+  test "the ONBOARDING_STATE env default is open when blank and closed when unknown" do
+    assert_equal "open", Setting.default_onboarding_state_from(nil)
+    assert_equal "open", Setting.default_onboarding_state_from("")
+    assert_equal "open", Setting.default_onboarding_state_from("open")
+    assert_equal "closed", Setting.default_onboarding_state_from("closed")
+    assert_equal "closed", Setting.default_onboarding_state_from("invite_only")
+    assert_equal "closed", Setting.default_onboarding_state_from("opne")
+  end
 end

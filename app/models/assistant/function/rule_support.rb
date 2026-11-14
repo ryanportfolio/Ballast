@@ -347,7 +347,7 @@ module Assistant::Function::RuleSupport
       names = name_lookup(key)
       return nil unless names
 
-      names.fetch(value.to_s) { key.in?(ACCOUNT_KEYS) ? "(account not shared with you)" : "(deleted)" }
+      names.fetch(value.to_s) { key.in?(ACCOUNT_KEYS) ? "(account not accessible)" : "(deleted)" }
     end
 
     def name_lookup(key)
@@ -468,6 +468,12 @@ module Assistant::Function::RuleSupport
 
     def error(key, message, **extra)
       { success: false, error: key, message: message }.merge(extra)
+    end
+
+    # Rules are family configuration: guests may read them but not change
+    # them, as RulesController's require_non_guest! enforces for the pages.
+    def guest_refusal
+      error("forbidden", "Guests can view rules but not create, change or apply them. Do not retry.")
     end
 
     # A pattern can outlive the statement timeout (Rule::SafeRegex), which

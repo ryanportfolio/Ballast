@@ -10,8 +10,7 @@ class Assistant::Function::DeleteCategory < Assistant::Function
 
         Use get_categories first to find the category id. Transactions in the deleted category
         are moved to replacement_id when given, otherwise they become uncategorized. Subcategories
-        of a deleted top-level category are kept and become top-level categories. Budget
-        allocations for the deleted category are removed.
+        of a deleted top-level category are kept and become top-level categories.
 
         Confirm with the user before calling this tool.
       INSTRUCTIONS

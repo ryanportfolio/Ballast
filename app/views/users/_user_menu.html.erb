@@ -34,10 +34,10 @@
         <div class="px-4 py-3 border-t border-tertiary">
           <p class="text-sm">
             <span class="font-medium text-primary"><%= t(".version") %>:</span>
-            <%= link_to Sure.version.to_release_tag, "https://github.com/we-promise/sure/releases/tag/#{Sure.version.to_release_tag}", target: "_blank", class: "hover:underline" %>
+            <%= Sure.version.to_release_tag %>
 
             <% if Sure.commit_sha.present? %>
-              (<%= link_to Sure.commit_sha.first(7), "https://github.com/we-promise/sure/commit/#{Sure.commit_sha}", target: "_blank", class: "hover:underline" %>)
+              (<%= link_to Sure.commit_sha.first(7), "https://github.com/ryanportfolio/Ballast/commit/#{Sure.commit_sha}", target: "_blank", class: "hover:underline" %>)
             <% end %>
           </p>
         </div>
@@ -55,12 +55,7 @@
         icon: "settings",
         href: intro_mode ? settings_profile_path : accounts_path(return_to: request.fullpath)
       ) %>
-      <%= render DS::MenuItem.new(variant: "link", roving: false, text: t(".changelog"), icon: "box", href: changelog_path) %>
-
-      <% if self_hosted? && !intro_mode %>
-        <%= render DS::MenuItem.new(variant: "link", roving: false, text: t(".feedback"), icon: "megaphone", href: feedback_path) %>
-      <% end %>
-      <%= render DS::MenuItem.new(variant: "link", roving: false, text: t(".contact"), icon: "message-square-more", href: "https://discord.gg/36ZGBsxYEK", target: "_blank", rel: "noopener noreferrer") %>
+      <%= render DS::MenuItem.new(variant: "link", roving: false, text: t(".contact"), icon: "message-square-more", href: "https://github.com/ryanportfolio/Ballast/issues", target: "_blank", rel: "noopener noreferrer") %>
 
       <%= render DS::MenuItem.new(variant: "divider") %>
 

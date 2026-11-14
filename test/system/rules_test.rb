@@ -59,7 +59,6 @@ class RulesTest < ApplicationSystemTestCase
   end
 
   test "rules page renders gracefully when a condition has an unsupported condition_type" do
-    @user.update!(locale: "de")
     rule = @user.family.rules.create!(
       name: "Legacy bad rule",
       resource_type: "transaction",
@@ -77,7 +76,7 @@ class RulesTest < ApplicationSystemTestCase
     visit rules_path
 
     assert_selector "h3", text: "Legacy bad rule"
-    assert_text "Nicht unterstützt (name)"
+    assert_text "Unsupported (name)"
   end
 
   test "fixed split summary follows edits to the exact amount condition" do

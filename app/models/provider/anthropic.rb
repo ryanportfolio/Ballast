@@ -1,6 +1,5 @@
 class Provider::Anthropic < Provider
   include LlmConcept
-  include LangfuseTraceable
 
   # Subclass so errors caught in this provider are raised as Provider::Anthropic::Error
   Error = Class.new(Provider::Error)
@@ -107,26 +106,13 @@ class Provider::Anthropic < Provider
 
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "anthropic.auto_categorize",
-        input: { transactions: transactions, user_categories: user_categories }
-      )
-
-      result = AutoCategorizer.new(
+      AutoCategorizer.new(
         client,
         model: effective_model,
         transactions: transactions,
         user_categories: user_categories,
-        langfuse_trace: trace,
         family: family
       ).auto_categorize
-
-      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -134,27 +120,13 @@ class Provider::Anthropic < Provider
     with_provider_response do
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "anthropic.suggest_bill_setup",
-        input: { charges: charges, configure_mode: current_config.present? }
-      )
-
-      result = BillSetupSuggester.new(
+      BillSetupSuggester.new(
         client,
         model: effective_model,
         charges: charges,
         categories: categories,
-        current_config: current_config,
-        langfuse_trace: trace,
-        family: family
+        current_config: current_config
       ).suggest
-
-      finish_langfuse_trace(trace: trace, output: result.to_h)
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -162,26 +134,13 @@ class Provider::Anthropic < Provider
     with_provider_response do
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "anthropic.auto_detect_merchants",
-        input: { transactions: transactions, user_merchants: user_merchants }
-      )
-
-      result = AutoMerchantDetector.new(
+      AutoMerchantDetector.new(
         client,
         model: effective_model,
         transactions: transactions,
         user_merchants: user_merchants,
-        langfuse_trace: trace,
         family: family
       ).auto_detect_merchants
-
-      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -189,25 +148,11 @@ class Provider::Anthropic < Provider
     with_provider_response do
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "anthropic.enhance_provider_merchants",
-        input: { merchants: merchants }
-      )
-
-      result = ProviderMerchantEnhancer.new(
+      ProviderMerchantEnhancer.new(
         client,
         model: effective_model,
-        merchants: merchants,
-        langfuse_trace: trace,
-        family: family
+        merchants: merchants
       ).enhance_merchants
-
-      finish_langfuse_trace(trace: trace, output: result.map(&:to_h))
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -222,25 +167,11 @@ class Provider::Anthropic < Provider
       effective_model = model.presence || @default_model
       raise Error, "Model does not support PDF processing: #{effective_model}" unless supports_pdf_processing?(model: effective_model)
 
-      trace = create_langfuse_trace(
-        name: "anthropic.process_pdf",
-        input: { pdf_size: pdf_content&.bytesize }
-      )
-
-      result = PdfProcessor.new(
+      PdfProcessor.new(
         client,
         model: effective_model,
-        pdf_content: pdf_content,
-        langfuse_trace: trace,
-        family: family
+        pdf_content: pdf_content
       ).process
-
-      finish_langfuse_trace(trace: trace, output: result.to_h)
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -248,25 +179,11 @@ class Provider::Anthropic < Provider
     with_provider_response do
       effective_model = model.presence || @default_model
 
-      trace = create_langfuse_trace(
-        name: "anthropic.extract_bank_statement",
-        input: { pdf_size: pdf_content&.bytesize }
-      )
-
-      result = BankStatementExtractor.new(
+      BankStatementExtractor.new(
         client: client,
         pdf_content: pdf_content,
-        model: effective_model,
-        langfuse_trace: trace,
-        family: family
+        model: effective_model
       ).extract
-
-      finish_langfuse_trace(trace: trace, output: { transaction_count: result[:transactions].size })
-
-      result
-    rescue => error
-      finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      raise
     end
   end
 
@@ -298,56 +215,10 @@ class Provider::Anthropic < Provider
 
       request_params = chat_config.build_request(model: model)
 
-      trace = create_langfuse_trace(
-        name: "anthropic.chat_response",
-        input: { messages: request_params[:messages], system: request_params[:system_] },
-        session_id: session_id,
-        user_identifier: user_identifier
-      )
-
-      partial_usage_recorded = false
-
-      begin
-        parsed, usage =
-          if streamer.present?
-            stream_chat_response(
-              streamer: streamer,
-              request_params: request_params,
-              on_partial: ->(partial_usage) {
-                record_llm_usage(family: family, model: model, operation: "chat", usage: partial_usage)
-                partial_usage_recorded = true
-              }
-            )
-          else
-            sync_chat_response(request_params: request_params)
-          end
-
-        log_langfuse_generation(
-          name: "chat_response",
-          model: model,
-          input: request_params[:messages],
-          output: parsed.messages.map(&:output_text).join("\n"),
-          usage: usage,
-          trace: trace
-        )
-        # Record once. On a normal stream `on_partial` never fires (it only runs
-        # from stream_chat_response's rescue on a mid-stream error, which
-        # re-raises past here), so today this is the sole recorder. Guard it
-        # anyway so a future change that emits partial usage on success can't
-        # silently double-bill — the symptom we chased in the #1984 review.
-        record_llm_usage(family: family, model: model, operation: "chat", usage: usage) unless partial_usage_recorded
-
-        parsed
-      rescue => e
-        log_langfuse_generation(
-          name: "chat_response",
-          model: model,
-          input: request_params[:messages],
-          error: e,
-          trace: trace
-        )
-        record_llm_usage(family: family, model: model, operation: "chat", error: e) unless partial_usage_recorded
-        raise
+      if streamer.present?
+        stream_chat_response(streamer: streamer, request_params: request_params)
+      else
+        sync_chat_response(request_params: request_params)
       end
     end
   end
@@ -361,33 +232,22 @@ class Provider::Anthropic < Provider
 
     def sync_chat_response(request_params:)
       raw = client.messages.create(**request_params)
-      parsed = ChatParser.new(raw).parsed
-      usage = build_usage_hash(raw.usage)
-      [ parsed, usage ]
+      ChatParser.new(raw).parsed
     end
 
-    def stream_chat_response(streamer:, request_params:, on_partial: nil)
+    def stream_chat_response(streamer:, request_params:)
       final_message = nil
       stream = client.messages.stream(**request_params)
 
-      # If `stream.each` raises mid-iteration (network drop, client abort),
-      # we still want to surface whatever tokens accumulated so the cost
-      # ledger doesn't lose partial-output billing.
-      begin
-        stream.each do |event|
-          case event
-          when ::Anthropic::Streaming::TextEvent
-            streamer.call(
-              Provider::LlmConcept::ChatStreamChunk.new(type: "output_text", data: event.text, usage: nil)
-            )
-          when ::Anthropic::Streaming::MessageStopEvent
-            final_message = event.message
-          end
+      stream.each do |event|
+        case event
+        when ::Anthropic::Streaming::TextEvent
+          streamer.call(
+            Provider::LlmConcept::ChatStreamChunk.new(type: "output_text", data: event.text, usage: nil)
+          )
+        when ::Anthropic::Streaming::MessageStopEvent
+          final_message = event.message
         end
-      rescue => mid_stream_error
-        partial = safe_accumulated_message(stream)
-        on_partial&.call(build_usage_hash(partial&.usage)) if partial
-        raise mid_stream_error
       end
 
       final_message ||= safe_accumulated_message(stream)
@@ -398,7 +258,7 @@ class Provider::Anthropic < Provider
         Provider::LlmConcept::ChatStreamChunk.new(type: "response", data: parsed, usage: usage)
       )
 
-      [ parsed, usage ]
+      parsed
     end
 
     def safe_accumulated_message(stream)
@@ -426,97 +286,5 @@ class Provider::Anthropic < Provider
       end
 
       hash
-    end
-
-    def log_langfuse_generation(name:, model:, input:, trace:, output: nil, usage: nil, error: nil)
-      return unless langfuse_client
-
-      generation = trace&.generation(
-        name: name,
-        model: model,
-        input: input,
-        start_time: trace.start_time
-      )
-
-      if error
-        generation&.end(
-          output: { error: error.message, details: error.respond_to?(:details) ? error.details : nil },
-          level: "ERROR"
-        )
-        finish_langfuse_trace(trace: trace, output: { error: error.message }, level: "ERROR")
-      else
-        generation&.end(output: output, usage: usage)
-        finish_langfuse_trace(trace: trace, output: output)
-      end
-    rescue => e
-      Rails.logger.warn("Langfuse logging failed: #{e.class}: #{e.message}")
-    end
-
-    def record_llm_usage(family:, model:, operation:, usage: nil, error: nil)
-      return unless family
-
-      if error.present?
-        http_status_code = extract_http_status_code(error)
-
-        family.llm_usages.create!(
-          provider: "anthropic",
-          model: model,
-          operation: operation,
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-          estimated_cost: nil,
-          metadata: {
-            error: safe_error_message(error),
-            http_status_code: http_status_code
-          }
-        )
-        return
-      end
-
-      return unless usage
-
-      prompt_tokens = usage["input_tokens"] || 0
-      completion_tokens = usage["output_tokens"] || 0
-      total_tokens = usage["total_tokens"] || (prompt_tokens + completion_tokens)
-
-      estimated_cost = LlmUsage.calculate_cost(
-        model: model,
-        prompt_tokens: prompt_tokens,
-        completion_tokens: completion_tokens,
-        cache_creation_tokens: usage["cache_creation_input_tokens"],
-        cache_read_tokens: usage["cache_read_input_tokens"]
-      )
-
-      family.llm_usages.create!(
-        provider: "anthropic",
-        model: model,
-        operation: operation,
-        prompt_tokens: prompt_tokens,
-        completion_tokens: completion_tokens,
-        total_tokens: total_tokens,
-        cache_creation_tokens: usage["cache_creation_input_tokens"],
-        cache_read_tokens: usage["cache_read_input_tokens"],
-        estimated_cost: estimated_cost,
-        metadata: {}
-      )
-    rescue => e
-      Rails.logger.error("Failed to record LLM usage: #{e.message}")
-    end
-
-    def extract_http_status_code(error)
-      if error.respond_to?(:status)
-        error.status
-      elsif error.respond_to?(:http_status)
-        error.http_status
-      elsif safe_error_message(error) =~ /(\d{3})/
-        $1.to_i
-      end
-    end
-
-    def safe_error_message(error)
-      error&.message
-    rescue => e
-      "(message unavailable: #{e.class})"
     end
 end

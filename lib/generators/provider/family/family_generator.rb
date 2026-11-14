@@ -567,11 +567,11 @@ class Provider::FamilyGenerator < Rails::Generators::NamedBase
     if investment_provider?
       say "     app/models/#{file_name}_account/holdings_processor.rb"
       say "     app/models/#{file_name}_account/activities_processor.rb"
-      say "     - Map provider field names to Sure fields"
+      say "     - Map provider field names to Ballast fields"
       say "     - Customize activity type mappings"
     else
       say "     app/models/#{file_name}_account/transactions/processor.rb"
-      say "     - Map provider transaction format to Sure entries"
+      say "     - Map provider transaction format to Ballast entries"
     end
     say ""
     say "  5. Test the integration:"

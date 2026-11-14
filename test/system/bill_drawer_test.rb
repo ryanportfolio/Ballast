@@ -1,6 +1,6 @@
 require "application_system_test_case"
 
-# A bill opens the way a transaction or a budget category does: in the drawer,
+# A bill opens the way a transaction does: in the drawer,
 # over the list. Closing it has to put keyboard focus back on the row, or every
 # bill someone checks sends them back to the top of the page.
 class BillDrawerTest < ApplicationSystemTestCase

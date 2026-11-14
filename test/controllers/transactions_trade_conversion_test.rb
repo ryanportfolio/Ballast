@@ -154,26 +154,6 @@ class TransactionsTradeConversionTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "annotation-only and read-only shares cannot convert" do
-    member = users(:family_member)
-    share = @account.account_shares.create!(user: member, permission: "read_write")
-    sign_in member
-
-    %w[read_write read_only].each do |permission|
-      share.update!(permission: permission)
-      get convert_to_trade_transaction_url(@entry.transaction), headers: { "Turbo-Frame" => "modal" }
-      assert_response :redirect
-
-      assert_no_difference "Trade.count" do
-        post create_trade_from_transaction_transaction_url(@entry.transaction), params: {
-          security_id: securities(:aapl).id, qty: 2, price: 50, investment_activity_label: "Buy"
-        }
-      end
-      assert_response :redirect
-      assert_not @entry.reload.excluded?
-    end
-  end
-
   test "another family cannot convert the transaction" do
     sign_in users(:empty)
 

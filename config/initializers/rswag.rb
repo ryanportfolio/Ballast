@@ -1,6 +1,6 @@
 if defined?(Rswag::Ui) && Rails.env.development?
   Rswag::Ui.configure do |c|
-    c.openapi_endpoint "/api-docs/openapi.yaml", "Sure API V1"
+    c.openapi_endpoint "/api-docs/openapi.yaml", "Ballast API V1"
   end
 end
 

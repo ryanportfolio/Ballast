@@ -40,6 +40,27 @@ class ExchangeRatePairTest < ActiveSupport::TestCase
     end
   end
 
+  test "a stored removed provider resolves to the default provider everywhere" do
+    ExchangeRatePair.delete_all
+
+    original_provider = Setting.exchange_rate_provider
+    begin
+      ClimateControl.modify(EXCHANGE_RATE_PROVIDER: nil) do
+        Setting.exchange_rate_provider = "moex_public"
+
+        assert_equal "twelve_data", ExchangeRate.provider_key
+        assert_equal "twelve_data", ExchangeRatePair.resolve_provider_name
+        ExchangeRatePair.record_first_provider_rate_on(from: "USD", to: "EUR", date: 1.month.ago.to_date)
+        assert_equal "twelve_data", ExchangeRatePair.find_by!(from_currency: "USD", to_currency: "EUR").provider_name
+
+        Setting.exchange_rate_provider = "frankfurter"
+        assert_equal "frankfurter", ExchangeRate.provider_key
+      end
+    ensure
+      Setting.exchange_rate_provider = original_provider
+    end
+  end
+
   test "record_first_provider_rate_on sets date on NULL" do
     ExchangeRatePair.delete_all
     ExchangeRatePair.for_pair(from: "USD", to: "EUR")

@@ -32,13 +32,10 @@ class CashFlowsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_path
   end
 
-  test "matches the API graph with family timezone and finance-account scope" do
+  test "matches the API graph with family timezone and family account scope" do
     @user.family.update!(timezone: "Pacific Time (US & Canada)")
-    own = @user.family.accounts.create!(name: "Own", owner: @user, currency: "USD", balance: 0, accountable: Depository.new)
-    other = @user.family.accounts.create!(name: "Excluded", owner: users(:family_member), currency: "USD", balance: 0, accountable: Depository.new)
-    other.account_shares.create!(user: @user, permission: "read_only", include_in_finances: false)
+    own = @user.family.accounts.create!(name: "Own", currency: "USD", balance: 0, accountable: Depository.new)
     create_transaction(account: own, amount: 12, date: Date.new(2024, 2, 1))
-    create_transaction(account: other, amount: 900, date: Date.new(2024, 2, 1))
     unrelated = users(:empty).family.accounts.create!(name: "Other family", currency: "USD", balance: 0, accountable: Depository.new)
     create_transaction(account: unrelated, amount: 700, date: Date.new(2024, 2, 1))
     sign_in @user
@@ -93,12 +90,11 @@ class CashFlowsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "2099-01-02", response.parsed_body.dig("period", "end_date")
   end
 
-  test "uses the impersonated browser identity without adopting API credentials" do
+  test "uses the browser identity without adopting API credentials" do
     target = users(:family_member)
     target.update!(preferences: { "preview_features_enabled" => true })
     target.family.update!(currency: "JPY")
-    sign_in users(:sure_support_staff)
-    post join_impersonation_sessions_path, params: { impersonation_session_id: impersonation_sessions(:in_progress).id }
+    sign_in target
     get dashboard_cash_flow_path, params: @dates, headers: { "X-Api-Key" => "not-used-for-browser-auth" }
     assert_response :success
     assert_equal "JPY", response.parsed_body["currency"]

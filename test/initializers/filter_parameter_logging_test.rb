@@ -10,14 +10,10 @@ class FilterParameterLoggingTest < ActiveSupport::TestCase
   test "filters one-time codes and other bearer values from logs" do
     filtered = @filter.filter(
       code: "123456",
-      invite_code: "deadbeef",
-      user: { invite_code: "deadbeef" },
       simplefin_item: { access_url: "https://user:secret@bridge.example/simplefin" }
     )
 
     assert_equal "[FILTERED]", filtered[:code]
-    assert_equal "[FILTERED]", filtered[:invite_code]
-    assert_equal "[FILTERED]", filtered.dig(:user, :invite_code)
     assert_equal "[FILTERED]", filtered.dig(:simplefin_item, :access_url)
   end
 

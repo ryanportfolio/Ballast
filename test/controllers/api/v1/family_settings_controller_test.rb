@@ -14,8 +14,7 @@ class Api::V1::FamilySettingsControllerTest < ActionDispatch::IntegrationTest
       country: "SG",
       timezone: "Asia/Singapore",
       month_start_day: 15,
-      moniker: "Family",
-      default_account_sharing: "private"
+      moniker: "Family"
     )
 
     @user.api_keys.active.destroy_all
@@ -44,7 +43,7 @@ class Api::V1::FamilySettingsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Asia/Singapore", response_body["timezone"]
     assert_equal 15, response_body["month_start_day"]
     assert_equal "Family", response_body["moniker"]
-    assert_equal "private", response_body["default_account_sharing"]
+    assert_not response_body.key?("default_account_sharing")
     assert_equal true, response_body["custom_enabled_currencies"]
     assert_equal @family.enabled_currency_codes, response_body["enabled_currencies"]
     assert_equal @family.created_at.change(usec: 0), Time.iso8601(response_body["created_at"])
