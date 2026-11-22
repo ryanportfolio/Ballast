@@ -57,6 +57,7 @@
     "writing": "native",
     "writing-plans": "native",
     "gauntlet": "disabled",
-    "user-walk": "native"
+    "user-walk": "native",
+    "long-horizon-lite": "disabled"
   }
 }

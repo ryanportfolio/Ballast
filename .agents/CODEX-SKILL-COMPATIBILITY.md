@@ -26,7 +26,7 @@ for comparison, backup, reconciliation, and discovery checks.
 | Adapted | `apply-firmware`, `astra-review`, `claude-review`, `codex-review`, `deep-plan`, `init-project`, `lab`, `optimize-context`, `opus-fullreview`, `sync-starter` |
 | Capability-gated | `advocate`, `arena`, `cache-loop`, `climb-loop`, `conversion-ux`, `dare`, `design-prototypes`, `impartial-review`, `long-horizon`, `motion-design`, `perf-loop`, `product-walkthrough`, `redesign-concepts`, `security-loop`, `seo-loop`, `ui-quality`, `untangle`, `user-walk`, `why`, `wow-animation`, `wow-loop` |
 | Dangerous | `adopt-repo`, `merge` |
-| Claude-only | `astra-fullreview`, `codex-fullreview`, `codex-image-gen`, `coordinate`, `gauntlet`, `long-horizon-workflows` |
+| Claude-only | `astra-fullreview`, `codex-fullreview`, `codex-image-gen`, `coordinate`, `gauntlet`, `long-horizon-lite`, `long-horizon-workflows` |
 
 `forge-repo-ui-skill`'s Codex copy keeps stricter gates than its Claude copy on purpose: commits, pushes and PRs need their own authorization, and a fresh agent needs the user's permission, because `AGENTS.md` has no commit-on-completion rule. Edits to those lines stay Claude-only.
 
